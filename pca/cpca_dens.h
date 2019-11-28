@@ -1,0 +1,13 @@
+int calculate_densities(int n, cufftDoubleComplex *wf,
+                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *kkz, 
+                            double *d_fbetaEn, 
+                            double *d_densities,  
+                            int gradients_computed, int nthreads);
+
+int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
+                            double *kkz, 
+                            double *d_fbetaEn, 
+                            double *d_weights, 
+                            double *d_densities,
+                            int nthreads);
+
