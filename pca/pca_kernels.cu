@@ -374,22 +374,11 @@ __global__ void kernel_compute_potentials(int it,
         // NOTE: divergence terms include when applied hamiltonian - here not needed
 #endif
         
-        // prepare other variables for self-consistent process
-        t6= dc_t0 + dc_dt*it; // time is stored here
-        // -----|-------|------------|------|----------------->
-        //  1.0   swtch   const=p20   swtch  1.0
-        //     p21     p22          p23    p24
-        if     (t6<dc_params[21]) t7=1.0;
-        else if(t6<dc_params[22]) t7=1.0 - (1.0-dc_params[20])*switch_function(t6-dc_params[21], dc_params[22]-dc_params[21], 1.0);
-        else if(t6<dc_params[23]) t7=dc_params[20];
-        else if(t6<dc_params[24]) t7=dc_params[20] + (1.0-dc_params[20])*switch_function(t6-dc_params[23], dc_params[24]-dc_params[23], 1.0);
-        else                      t7=1.0;
-            
         t1=dalphp_dna/alph_plus; 
         t2=dalphp_dnb/alph_plus;
-        t3=der_tildeC__der_na(na, nb, t7) / alph_plus; // dtildeC_dna / alph_plus
-        t4=der_tildeC__der_nb(na, nb, t7) / alph_plus; // dtildeC_dnb / alph_plus
-        t5 = tildeC(na, nb, t7); // tC
+        t3=der_tildeC__der_na(na, nb, 1.0) / alph_plus; // dtildeC_dna / alph_plus
+        t4=der_tildeC__der_nb(na, nb, 1.0) / alph_plus; // dtildeC_dnb / alph_plus
+        t5 = tildeC(na, nb, 1.0); // tC
         Va = V_a[ixyz]; // initial values
         Vb = V_b[ixyz]; // initial values
         lnu = nu[ixyz];

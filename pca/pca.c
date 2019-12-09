@@ -1,10 +1,15 @@
 // This is code for solving DFT equations for polarized cold atoms 
 
 // Authors:
-// Gabriel Wlazlowski <gabrielw@if.pw.edu.pl>
+// Gabriel Wlazlowski <gabriel.wlazlowski@pw.edu.pl>
 
 // compile:
-// mpicc pca.c -o pca -lm
+//      make -f Makefile.pca.(machine)
+
+// test run:
+//      mpirun -np 8 ./pca input.test.pca.txt 
+
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -24,24 +29,6 @@
 #include "pca_uniform.h"
 #include "pca_logger.h"
 #include "pca_checkpoint.h"
-
-// #define CALC_ANDREEV
-
-double ccoeff(double time, double *params)
-{
-    double t6=time;
-    double t7;
-    
-    // taken from kernels
-        if     (t6<params[21]) t7=1.0;
-        else if(t6<params[22]) t7=1.0 - (1.0-params[20])*h_switch_function(t6-params[21], params[22]-params[21], 1.0);
-        else if(t6<params[23]) t7=params[20];
-        else if(t6<params[24]) t7=params[20] + (1.0-params[20])*h_switch_function(t6-params[23], params[24]-params[23], 1.0);
-        else                   t7=1.0;    
-        
-    return t7;
-}
-
 
 int main( int argc , char ** argv ) 
 {
@@ -113,21 +100,7 @@ int main( int argc , char ** argv )
     
     // current corrections
     double cccoeff=0.0;
-    
-#ifdef CALC_ANDREEV
-    // TODO - ad hoc section
-    double *h_weight_andreev, *d_weight_andreev;
-    double *h_densities_andreev; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
-    double *d_densities_andreev; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
-    gpu_exec( host_malloc_pl((size_t)12*NXYZ*sizeof(double), (void **)&h_densities_andreev) );
-    gpu_exec(     gpu_malloc((size_t)12*NXYZ*sizeof(double), (void **)&d_densities_andreev) );
-    // TODO - end of section
-#endif
-
-    // Check phase difference
-    int done_update_params=0;
-    double phase1, phase2, phase_diff;
-    
+        
     /* start main */
     wt_b_t(); // tag init time
     
@@ -700,7 +673,7 @@ int main( int argc , char ** argv )
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
-        double Ntotb=0.0, Nmyb=0.0; // TODO
+        double Ntotb=0.0, Nmyb=0.0;
         for(iwf=0; iwf<nwfip; iwf++)
         {
             ixyz=0;
@@ -788,40 +761,6 @@ int main( int argc , char ** argv )
             MPI_Barrier(MPI_COMM_WORLD);
         }
          
-#ifdef CALC_ANDREEV
-        // TODO - ad hoc section - creates weights that select only Andreev states
-        cppmallocl(h_weight_andreev, nwfip, double);
-        // NOTE: params20 and params21 used for cutthing the states
-        for(i=0; i<nwfip; i++) 
-            if((h_fbetaEn[i]/eF)>md.params[20] && (h_fbetaEn[i]/eF)<md.params[21]) h_weight_andreev[i]=1.0; 
-            else                                                                   h_weight_andreev[i]=0.0;
-            
-        gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_andreev) );
-        gpu_exec( memcopy_host2gpu(h_weight_andreev, d_weight_andreev,  (size_t)nwfip*sizeof(double)) ); 
-        
-        double andreev_states=0.0, andreev_states_t=0.0;
-        for(i=0; i<nwfip; i++) andreev_states+=h_weight_andreev[i];
-        MPI_Allreduce( &andreev_states, &andreev_states_t, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# ANDREEV: number of states=%.1f\n", andreev_states_t);
-        
-        // save waigth to output file, for futher reuse
-        double *h_weight_andreev_t;
-        cppmallocl(h_weight_andreev_t, nwf, double);
-        for(iwf=0; iwf<nwf; iwf++) h_weight_andreev_t[iwf]=0.0;
-        for(iwf=0; iwf<nwfip; iwf++) h_weight_andreev_t[mylidx+iwf]=h_weight_andreev[iwf];
-        MPI_Allreduce( MPI_IN_PLACE, h_weight_andreev_t, nwf, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0)
-        {
-            sprintf(file_name, "%s_weight_andreev.dat", md.outprefix);
-            printf("# CREATIG FILE WITH ANDREEV  WEIGHTS: `%s`\n", file_name);
-            FILE *_f_weight_andreev_t = fopen(file_name, "wb");
-            fwrite(h_weight_andreev_t, sizeof(double)*nwf, 1, _f_weight_andreev_t);
-            fclose(_f_weight_andreev_t);
-        }
-        free(h_weight_andreev_t);
-        // TODO - end of ad hoc section
-#endif
-
         for(i=0; i<nwfip; i++) h_fbetaEn[i]=fbeta(h_fbetaEn[i],beta); // convert quasiparticle energies into weights
         
         free(nwf_per_file);
@@ -1040,26 +979,30 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-        #define OUTPUT_ENTRIES 17
+        #define OUTPUT_ENTRIES 18
         
-        double line_items[OUTPUT_ENTRIES]={     
-            time*eF, // 1
-            Na, // 2
-            Nb, // 3
-            Na+Nb, // 4
-            energy_tot/Effg, // 5
-            energy_kin/Effg, // 6
-            energy_pot/Effg, // 7
-            energy_pair/Effg, // 8
-            energy_CM/Effg, // 9
-            energy_uext/Effg, //10
-            qfalpha, //11
+        double line_items[OUTPUT_ENTRIES]={ 
+            // line id (added automatically): 1
+            time*eF, // 2
+            Na, // 3
+            Nb, // 4
+            Na+Nb, // 5
+            energy_tot/Effg, // 6
+            energy_kin/Effg, // 7
+            energy_pot/Effg, // 8
+            energy_pair/Effg, // 9
+            energy_CM/Effg, // 10
+            energy_uext/Effg, //11
             Laz/Na, // 12
             Lbz/Nb, // 13
             (Laz+Lbz)/(Na+Nb), // 14
-            ccoeff(time, md.params), // 15
-            cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 16
-            rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2] // 17
+            cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+            rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+            rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+            qfalpha, //18
+            cccoeff // 19
+            // time per measurment (added automatically)
+            // date & time of adding enetry
         };
         cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
     }    
@@ -1097,44 +1040,6 @@ int main( int argc , char ** argv )
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );   
     }
-    
-#ifdef CALC_ANDREEV
-    // TODO - ad hoc section
-    if(ip==0)
-    {
-        // Create empty files with headers - do it once
-        sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
-        sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
-    }
-    
-    // densities - for andreev states only
-    gpu_exec( calculate_densities_weighted(nwfip, d_wf, d_fbetaEn, d_weight_andreev, d_densities_andreev, md.nthreads) );
-    // densities - global reduction
-    gpu_exec( memcopy_gpu2host(d_densities_andreev, h_densities_andreev,  (size_t)12*NXYZ*sizeof(double)) ); 
-    MPI_Allreduce( MPI_IN_PLACE, h_densities_andreev, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    if(md.spinsymmetry>0) symmetrize_densities(h_densities_andreev); // special calse: spin-symmetric system
-    
-    double andreev_particles[2], andreev_particles_total[2];
-    if(ip==0)
-    {
-        // for each measurement add data to file
-        sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, h_densities_andreev+0*NXYZ, sizeof(double)*NXYZ) );
-        sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, h_densities_andreev+1*NXYZ, sizeof(double)*NXYZ) );
-        
-        for(j=0; j<2; j++) // spin up and down
-        {
-            andreev_particles[j]=0.0;
-            for(ixyz=0; ixyz<NXYZ; ixyz++) andreev_particles[j]+=h_densities_andreev[j*NXYZ + ixyz];
-        }
-        
-        printf("# ANDREEV %12.4f %12.8f %12.8f\n", time*eF, andreev_particles[0], andreev_particles[1]);
-    }
-    // TODO - end of ad hoc section
-#endif
     
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
@@ -1403,24 +1308,28 @@ int main( int argc , char ** argv )
             // Create run log and add entry
             cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
 
-            double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+            double line_items[OUTPUT_ENTRIES]={ 
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-                ccoeff(time, md.params), // 15
-                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 16
-                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2] // 17
+                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+                rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
         }    
@@ -1573,49 +1482,8 @@ int main( int argc , char ** argv )
         
         rt=e_t(0); // get timing
 
+        time=t0+it*dt;
 
-	// Check phase difference K.S.
-	time=t0+it*dt;
-	if(md.params[16]*eF>1000.0 && time>md.params[15] && done_update_params==0)
-	{
-	    ix=NX/2;
-	    iy=NY/2;
-
-	    iz=(int)(md.params[12])+5;
-	    ixyz = iz + iy * NZ + ix * NY * NZ ;
-	    phase1=carg(delta[ixyz]);
-	    if(phase1 < 0.0) phase1+=2.0*M_PI;// [-pi,+pi] -> [0,2pi]
-
-	    iz=(int)(md.params[12])-5;
-	    ixyz = iz + iy * NZ + ix * NY * NZ ;
-	    phase2=carg(delta[ixyz]);
-	    if(phase2 < 0.0) phase2+=2.0*M_PI;// [-pi,+pi] -> [0,2pi]
-
-	    phase_diff=fabs(phase1-phase2);
-	    if(phase_diff>M_PI) phase_diff=2.0*M_PI-phase_diff;// [0,pi]
-
-	    if(ip==0)
-	    {
-	      FILE *fp;
-	      fp=fopen("phase.log","a");
-	      fprintf(fp,"time=%f phase1=%f phase2=%f phase_diff=%f\n", time*eF, phase1, phase2, phase_diff);
-	      fclose(fp);
-	    }
-	    if(phase_diff>=M_PI*0.95)
-	    {
-                md.params[16]=time+md.params[17];
-		gpu_exec( memcopy_const_params(md.params) );
-		done_update_params=1;
-		if(ip==0) printf("# UPDATE OF PARAMS: time*eF=%f params[16]*eF=%f\n",time*eF,md.params[16]);
-
-#ifdef CURRENT_CORRECTIONS
-		md.ccstart=time*eF; // activate cc when remove the barrier
-		if(ip==0) printf("# ACTIVATE CURRENT CORRECTIONS\n");
-#endif
-	    }
-	}
-
-        
         // report result
         if(ip==0)
         {
@@ -1633,24 +1501,28 @@ int main( int argc , char ** argv )
             
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
             
-            double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+            double line_items[OUTPUT_ENTRIES]={ 
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-                ccoeff(time, md.params), // 15
-                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 16
-                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2] // 17
+                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+                rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(i_meas+1, rt, OUTPUT_ENTRIES, line_items) );
         } 
@@ -1670,33 +1542,6 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_current_b.dpca", md.outprefix);
             file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
         }
-#ifdef CALC_ANDREEV
-        // TODO ad hoc section
-        // densities - for andreev states only
-        gpu_exec( calculate_densities_weighted(nwfip, d_wf, d_fbetaEn, d_weight_andreev, d_densities_andreev, md.nthreads) );
-        // densities - global reduction
-        gpu_exec( memcopy_gpu2host(d_densities_andreev, h_densities_andreev,  (size_t)12*NXYZ*sizeof(double)) ); 
-        MPI_Allreduce( MPI_IN_PLACE, h_densities_andreev, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(md.spinsymmetry>0) symmetrize_densities(h_densities_andreev); // special calse: spin-symmetric system
-        
-        if(ip==0)
-        {
-            // for each measurement add data to file
-            sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, h_densities_andreev+0*NXYZ, sizeof(double)*NXYZ) );
-            sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, h_densities_andreev+1*NXYZ, sizeof(double)*NXYZ) );
-            
-            for(j=0; j<2; j++) // spin up and down
-            {
-                andreev_particles[j]=0.0;
-                for(ixyz=0; ixyz<NXYZ; ixyz++) andreev_particles[j]+=h_densities_andreev[j*NXYZ + ixyz];
-            }
-            
-            printf("# ANDREEV %12.4f %12.8f %12.8f\n", time*eF, andreev_particles[0], andreev_particles[1]);
-        }
-        // TODO end of ad hoc section
-#endif
         
         if(ip==0) 
         {

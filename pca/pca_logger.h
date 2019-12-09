@@ -82,7 +82,17 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
     fprintf(log,"# FAST_CONST_EFFECTIVE_MASS_MODE: YES\n");
 #else
     fprintf(log,"# FAST_CONST_EFFECTIVE_MASS_MODE: NO\n");
-#endif    
+#endif  
+#ifdef USE_CUBIC_CUTOFF
+    fprintf(log,"# USE_CUBIC_CUTOFF: YES\n");
+#else
+    fprintf(log,"# USE_CUBIC_CUTOFF: NO\n");
+#endif
+#ifdef UNIFORM_TEST_MODE
+    fprintf(log,"# UNIFORM_TEST_MODE: YES\n");
+#else
+    fprintf(log,"# UNIFORM_TEST_MODE: NO\n");
+#endif
     fprintf(log,"# A0=%f\n", A0);
     fprintf(log,"# A1=%f\n", A1);
     fprintf(log,"# A2=%f\n", A2);
