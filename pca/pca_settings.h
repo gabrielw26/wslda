@@ -13,23 +13,13 @@
 // Lattice
 
 // Lattice
-#define NX 40
-#define NY 40
-#define NZ 40
+#define NX 8
+#define NY 10
+#define NZ 12
 
 #define DX 1.0
 #define DY 1.0                                                                                                                                       
 #define DZ 1.0
-
-// #define NX 96
-// #define NY 64
-// #define NZ 48
-// 
-// // Lattice spacing - NOTE only supported in s3dpca code!!!
-// #define DX (96./NX)
-// #define DY (64./NY)                                                                                                                                       
-// #define DZ (48./NZ)
-
 
 #define DXYZ (DX*DY*DZ)
 
@@ -76,7 +66,7 @@
 // #define USE_CUBIC_CUTOFF
 
 // activate this flag for setting code in testing mode with uniform system
-// #define UNIFORM_TEST_MODE
+#define UNIFORM_TEST_MODE
 
 // active rotating frame framework
 // NOTE: in rotating frame the code uses constant variables dc_Omega_a and dc_Omega_b
