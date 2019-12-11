@@ -38,7 +38,7 @@ __device__  double u_ext_test(int ix, int iy, int iz, int it, int spin)
     double _z = (double)(iz) - 1.0*(NZ/2);
     double time=dc_t0 + dc_dt*it;
     
-    #define eF_a 0.509318
+    #define eF_a 0.5
     #define T_START 10.0
     #define T_STOP  100.0
     #define T_SWITCH 25.0
@@ -49,7 +49,7 @@ __device__  double u_ext_test(int ix, int iy, int iz, int it, int spin)
 
     double gauss = AMPLITUDE * eF_a *
                    smooth_step(time, T_START/eF_a, T_STOP/eF_a, T_SWITCH/eF_a, 1.0) *
-                   exp(-1.*_x*_x/(2.*SIGX*SIGX) -1.*_y*_y/(2.*SIGY*SIGY) /*-1.*_z*_z/(2.*SIGZ*SIGZ)*/ );
+                   exp(-1.*_x*_x/(2.*SIGX*SIGX) -1.*_y*_y/(2.*SIGY*SIGY) -1.*_z*_z/(2.*SIGZ*SIGZ) );
     
 //     return gauss;
 

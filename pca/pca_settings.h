@@ -57,7 +57,7 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
+// #define SPINSYMMETRY_MODE
 
 // if spin-symmetric system is assumed (spinsymmetry==1) then only states where fbeta(ek,beta)>SPINSYMMETRY_CUTOFF are considered
 #define SPINSYMMETRY_CUTOFF 1.0e-18
@@ -67,6 +67,10 @@
 
 // activate this flag for setting code in testing mode with uniform system
 #define UNIFORM_TEST_MODE
+
+// compute kinetic energy density using formula tau ~ |nabla Psi|^2
+// This is less acurate method than default, but we keep it for compability with older results
+// #define TAU_COMPUTATION_VIA_GRADIENTS
 
 // active rotating frame framework
 // NOTE: in rotating frame the code uses constant variables dc_Omega_a and dc_Omega_b
@@ -89,18 +93,18 @@
 // if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
 // #define BDG_MODE
 
-// // effective mass - not 1.0 then current corrections are needed!
-// #define CURRENT_CORRECTIONS
-// #define A0 1.094
-// #define A1 0.156
-// #define A2 -0.532
+// effective mass - not 1.0 then current corrections are needed!
+#define CURRENT_CORRECTIONS
+#define A0 1.094
+#define A1 0.156
+#define A2 -0.532
 
-// effective mass - equal 1.0 then no current corrections
-// activate this flag to skip computation of gradients of wf - significant spped up
-#define FAST_CONST_EFFECTIVE_MASS_MODE
-#define A0 1.000
-#define A1 0.0
-#define A2 0.0
+// // effective mass - equal 1.0 then no current corrections
+// // activate this flag to skip computation of gradients of wf - significant spped up
+// #define FAST_CONST_EFFECTIVE_MASS_MODE
+// #define A0 1.000
+// #define A1 0.0
+// #define A2 0.0
 
 // normal part
 #define G0 0.357

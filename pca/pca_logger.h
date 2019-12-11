@@ -93,6 +93,11 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #else
     fprintf(log,"# UNIFORM_TEST_MODE: NO\n");
 #endif
+#ifdef TAU_COMPUTATION_VIA_GRADIENTS
+    fprintf(log,"# TAU_COMPUTATION_VIA_GRADIENTS: YES\n");
+#else
+    fprintf(log,"# TAU_COMPUTATION_VIA_GRADIENTS: NO\n");
+#endif
     fprintf(log,"# A0=%f\n", A0);
     fprintf(log,"# A1=%f\n", A1);
     fprintf(log,"# A2=%f\n", A2);
