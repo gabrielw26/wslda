@@ -102,9 +102,14 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     i=0;
     for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
     {
-        double _kkx=kkx[ix]; if(ix==NX/2) _kkx=0.0;
-        double _kky=kky[iy]; if(iy==NY/2) _kky=0.0;
-        double _kkz=kkz[iz]; if(iz==NZ/2) _kkz=0.0;
+        double _kkx=kkx[ix];
+        double _kky=kky[iy];
+        double _kkz=kkz[iz];
+#ifdef TAU_COMPUTATION_VIA_GRADIENTS       
+        if(ix==NX/2) _kkx=0.0;
+        if(iy==NY/2) _kky=0.0;
+        if(iz==NZ/2) _kkz=0.0;
+#endif
         kk2tau[i]=_kkx*_kkx + _kky*_kky + _kkz*_kkz;
         i++;
     }
