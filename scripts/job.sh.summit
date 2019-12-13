@@ -1,0 +1,21 @@
+#!/bin/bash
+#BSUB -P nph126
+#BSUB -W 12:00
+#BSUB -nnodes 166
+#BSUB -J NAME
+#BSUB -o OUTPUTFILE.%J
+#BSUB -e OUTPUTFILE.%J
+#BSUB -N
+#BSUB -B
+
+## For submission use:
+##      bsub job.sh.summit
+## For checking status use:
+##      bjobs
+## NOTE: -n=-nnodes*6
+
+cd $LS_SUBCWD
+pwd
+module load cuda
+jsrun -n996 -a1 -g1 -c1 ./pca input.txt.g0.5 > g0.5.r1.out
+
