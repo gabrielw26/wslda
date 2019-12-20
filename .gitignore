@@ -37,3 +37,7 @@
 pca/tkpca_cloud_size
 
 pca/pca
+
+pca/tkpca_checkpoint2dto3d
+
+pca/s3dpca
