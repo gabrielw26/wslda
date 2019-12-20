@@ -247,8 +247,8 @@ int main( int argc , char ** argv )
     fwrite(&eF          , sizeof(double)      , 1 , pFile); 
     fwrite(&kF          , sizeof(double)      , 1 , pFile);
     fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-    fwrite(out_h_potentials , sizeof(double)*outNX*outNY, 4 , pFile);
-    fwrite(out_h_densities  , sizeof(double)*outNX*outNY, 12, pFile);
+    fwrite(out_h_potentials , sizeof(double)*outNX*outNY*outNZ, 4 , pFile);
+    fwrite(out_h_densities  , sizeof(double)*outNX*outNY*outNZ, 12, pFile);
     fwrite(energy       , sizeof(double)      , 5 , pFile);
     fwrite(npart        , sizeof(double)      , 2 , pFile);
             
