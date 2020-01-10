@@ -788,7 +788,7 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT5: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
+        if(ip==0) printf("# INIT5: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g TOTAL\n", Ntota, Ntotb, Ntota+Ntotb); 
         if(md.spinsymmetry==1) Ntota = Ntotb;
         Effg = 0.6 * Ntota * eF;
         

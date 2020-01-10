@@ -641,7 +641,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
             takeit=0;
             if(md.spinsymmetry>0)
             {
-                if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF) 
+                if(ek>0.0) 
                 {
                     nwf++;
                     if(nwf>=idxfrom && nwf<idxto) takeit=1;
@@ -696,7 +696,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
             takeit=0;
             if(md.spinsymmetry>0)
             {
-                if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF) 
+                if(ek>0.0) 
                 {
                     nwf++;
                     if(nwf>=idxfrom && nwf<idxto) takeit=1;
