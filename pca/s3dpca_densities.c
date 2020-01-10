@@ -19,9 +19,10 @@ double fbeta(double E, double beta);
  * @param beta inverse of temperature
  * @param h_densities array with densities to be updated (INPUT/OUTPUT)
  * @param mdfft metadata for ffts plans execution (INPUT) 
+ * @param spinsymmetry
  * */
 int compute_contribution_to_densities(double *En, double complex *psi, int nwfip, double beta, double *h_densities, 
-                                      metadata_s3dpca_fft *mdfft)
+                                      metadata_s3dpca_fft *mdfft, int spinsymmetry)
 {
     int ien; 
     int ix, iy, iz, ixyz;
@@ -29,6 +30,8 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
     double kx, ky, kz;
     double fbEn, fbmEn;
     double complex wfdx, wfdy, wfdz;
+    double complex wfdxv, wfdyv, wfdzv;
+    double complex wfdxu, wfdyu, wfdzu;
     double norm;
     
     // densities - decode 
@@ -80,9 +83,11 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
             else        kz=2.*M_PI/(( double )NZ*DZ) * ( double )(iz-NZ) / (NXYZ);
             
             // corrections for gradient computation
+#ifdef TAU_COMPUTATION_VIA_GRADIENTS 
             if(ix==NX/2) kx=0.0;
             if(iy==NY/2) ky=0.0;    
             if(iz==NZ/2) kz=0.0;
+#endif
             
             mdfft->fft3grad[ixyz       ] = mdfft->fft3uv[ixyz     ] * I * kx; // du/dx
             mdfft->fft3grad[ixyz+1*NXYZ] = mdfft->fft3uv[ixyz+NXYZ] * I * kx; // dv/dx
@@ -104,7 +109,30 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
         fbEn=fbeta(En[ien], beta)*DENS_FACTOR_M;
         fbmEn = DENS_FACTOR_M - fbEn;
             
-        for(ixyz=0; ixyz<NXYZ; ixyz++)
+        if(spinsymmetry>0) for(ixyz=0; ixyz<NXYZ; ixyz++) // spin symmetric case
+        {
+            // form na, nb, nu
+            // rho_a[ixyz]+=... will be taken as rho_b later
+            rho_b[ixyz]+=(cnorm(v[ixyz])*fbmEn + cnorm(u[ixyz])*fbEn);
+            nu[ixyz]+=u[ixyz]*conj(v[ixyz])*(fbmEn-fbEn);     
+            
+            // form taua and j_a
+            // skip, will be taken from b component later
+            
+            // form taub and j_b
+            wfdxu = mdfft->fft3grad[ixyz       ]; // du/dx
+            wfdyu = mdfft->fft3grad[ixyz+2*NXYZ]; // du/dy
+            wfdzu = mdfft->fft3grad[ixyz+4*NXYZ]; // du/dz
+            wfdxv = mdfft->fft3grad[ixyz+1*NXYZ]; // dv/dx
+            wfdyv = mdfft->fft3grad[ixyz+3*NXYZ]; // dv/dy
+            wfdzv = mdfft->fft3grad[ixyz+5*NXYZ]; // dv/dz
+            tau_b[ixyz]+=(cnorm(wfdxv)+cnorm(wfdyv)+cnorm(wfdzv))*fbmEn + (cnorm(wfdxu)+cnorm(wfdyu)+cnorm(wfdzu))*fbEn;
+            j_b_x[ixyz]-=cimag(conj(v[ixyz])*wfdxv)*fbmEn - cimag(conj(u[ixyz])*wfdxu)*fbEn;
+            j_b_y[ixyz]-=cimag(conj(v[ixyz])*wfdyv)*fbmEn - cimag(conj(u[ixyz])*wfdyu)*fbEn;
+            j_b_z[ixyz]-=cimag(conj(v[ixyz])*wfdzv)*fbmEn - cimag(conj(u[ixyz])*wfdzu)*fbEn;
+            
+        }
+        else for(ixyz=0; ixyz<NXYZ; ixyz++) // spin-imbalanced case
         {
             // form na, nb, nu
             rho_a[ixyz]+=cnorm(u[ixyz])*fbEn;

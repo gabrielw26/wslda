@@ -924,10 +924,10 @@ int append_wf_from_s3dpca_part1(char * prefix, double *En, double complex *psi, 
     
     for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
     {
+         
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
-#ifdef SPINSYMMETRY_MODE
-        if(md.spinsymmetry>0 && fbeta(-1.0*En[ien],beta)<SPINSYMMETRY_CUTOFF) continue; // spin symmetric mode - take only positive states
-#endif            
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
+         
         (*nwf)++; // we have new state
         
 //         fbEn=fbeta(En[ien], beta);
@@ -969,9 +969,7 @@ int append_wf_from_s3dpca_part2(char * prefix, double *En, double complex *psi, 
     {
         
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
-#ifdef SPINSYMMETRY_MODE
-        if(md.spinsymmetry>0 && fbeta(-1.0*En[ien],beta)<SPINSYMMETRY_CUTOFF) continue; // spin symmetric mode - take only positive states
-#endif
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         // docompose state
         u = psi + ien*2*NXYZ; 
@@ -1013,9 +1011,7 @@ int append_wf_from_s3dpca_part3(char * prefix, double *En, double complex *psi, 
     for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
     {
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
-#ifdef SPINSYMMETRY_MODE
-        if(md.spinsymmetry>0 && fbeta(-1.0*En[ien],beta)<SPINSYMMETRY_CUTOFF) continue; // spin symmetric mode - take only positive states
-#endif
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         
         // docompose state

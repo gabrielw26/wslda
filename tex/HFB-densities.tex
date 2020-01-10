@@ -1,0 +1,158 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{bm}
+
+\newcommand{\abs}[1]{\lvert{#1}\rvert}            % Small absolute value
+\newcommand{\order}{O}
+\newcommand{\nup}{n_{\uparrow}}
+\newcommand{\nupr}{n_{\uparrow}(\bm{r})}
+\newcommand{\ndown}{n_{\downarrow}}
+\newcommand{\ndownr}{n_{\downarrow}(\bm{r})}
+
+%opening
+\title{HFB densities}
+\author{Gabriel Wlaz\l{}owski}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Basic relations used for computation of various densities.
+\end{abstract}
+
+\section{General case}
+
+HFB problem in general case is given by:
+
+\begin{align}\label{eq:hfbspin}
+\begin{gathered}
+\begin{pmatrix}
+h_{\uparrow \uparrow}  & h_{\uparrow \downarrow} & 0 & \Delta \\
+h_{\downarrow \uparrow} & h_{\downarrow \downarrow}& -\Delta & 0 \\
+0 & -\Delta^* &  -h^*_{\uparrow \uparrow}& -h^*_{\uparrow \downarrow} \\
+\Delta^* & 0 & -h^*_{\downarrow \uparrow} & -h^*_{\downarrow \downarrow}
+\end{pmatrix} 
+\begin{pmatrix}
+u_{n\uparrow} \\
+u_{n\downarrow} \\
+v_{n\uparrow} \\
+v_{n\downarrow}
+\end{pmatrix}
+= E_n
+\begin{pmatrix}
+u_{n\uparrow} \\
+u_{n\downarrow} \\
+v_{n\uparrow} \\
+v_{n\downarrow}
+\end{pmatrix} 
+\end{gathered}
+\end{align}
+and corresponding densities are constructed as follow:
+\begin{eqnarray}
+n_{\sigma}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{v_{n,\sigma}(\bm{r})}^2 f_{\beta}(-E_n),\label{eqn:densities0}\\
+\tau_{\sigma}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{\nabla v_{n,\sigma}(\bm{r})}^2 f_{\beta}(-E_n),\\
+\nu(\bm{r}) &=& \dfrac{1}{2}\sum_{|E_n|<E_c} (u_{n,\uparrow}(\bm{r})v_{n,\downarrow}^{*}(\bm{r})-u_{n,\downarrow}(\bm{r})v_{n,\uparrow}^{*}(\bm{r}))f_{\beta}(-E_n),\\
+\bm{j}_{\sigma}(\bm{r}) &=& \sum_{|E_n|<E_c} \textrm{Im}[v_{n,\sigma}(\bm{r})\nabla v_{n,\sigma}^*(\bm{r})] f_{\beta}(-E_n),
+\label{eqn:densities}
+\end{eqnarray}
+where subscripts $\sigma=\{\uparrow,\downarrow\}$ indicate spin, $E_{n}$ denotes quasi-particle energy and $E_c$ is energy cut-off scale. Fermi distribution function $f_{\beta}(E)=1/(\exp(\beta E)+1)$ is introduced to model temperature $k_B T=1/\beta$ effects. In zero temperature limit $T=0$ Fermi distribution function reduces to  $f_{\beta}(E)=\theta(-E)$, where $\theta(x)$ is Heaviside step function. Note also that $f_{\beta}(E)=1-f_{\beta}(-E)$.\\
+
+\noindent\textit{Relation 1:} If vector $\varphi_{+}=\left( u_{n\uparrow},u_{n\downarrow},v_{n\uparrow},v_{n\downarrow}\right) ^{T}$ is solution of Eq.~(\ref{eq:hfbspin}) with eigenvalue $E_n$, then also vector $\varphi_{-}=(v_{n\uparrow}^*,v_{n\downarrow}^*,u_{n\uparrow}^*,u_{n\downarrow}^*)^{T}$ is solution with eigenvalue $-E_n$.\\
+
+\noindent\textit{Conclusion 1:} It is sufficient to extract only solutions for positive eigenvalues $E_n$. 
+
+\section{Case where $h_{\uparrow \downarrow}=h_{\downarrow \uparrow}=0$}
+If $h_{\uparrow \downarrow}=h_{\downarrow \uparrow}=0$ (typically it corresponds to no spin-orbit case) then Eq.~(\ref{eq:hfbspin}) decouples into two sets of equations:
+
+\begin{align}\label{eq:hfbspin1}
+\begin{gathered}
+\begin{pmatrix}
+h_{\uparrow \uparrow}  &  \Delta \\
+\Delta^* &  -h^*_{\downarrow \downarrow}
+\end{pmatrix} 
+\begin{pmatrix}
+u_{n\uparrow} \\
+v_{n\downarrow}
+\end{pmatrix}
+= E_n
+\begin{pmatrix}
+u_{n\uparrow} \\
+v_{n\downarrow}
+\end{pmatrix} ,
+\end{gathered}
+\end{align}
+
+\begin{align}\label{eq:hfbspin2}
+\begin{gathered}
+\begin{pmatrix}
+h_{\downarrow \downarrow}& -\Delta \\
+-\Delta^* &  -h^*_{\uparrow \uparrow}
+\end{pmatrix} 
+\begin{pmatrix}
+u_{n\downarrow} \\
+v_{n\uparrow}
+\end{pmatrix}
+= E_n
+\begin{pmatrix}
+u_{n\downarrow} \\
+v_{n\uparrow}
+\end{pmatrix} .
+\end{gathered}
+\end{align}
+
+\noindent\textit{Relation 2:} If vector $\varphi_{+}=\left( u_{n\uparrow},v_{n\downarrow}\right)^{T}$ is solution of Eq.~(\ref{eq:hfbspin1}) with eigenvalue $E_n$, then vector $\varphi_{-}=(v_{n\uparrow}^*,u_{n\downarrow}^*)^{T}$ is solution of Eq.~(\ref{eq:hfbspin2}) with eigenvalue $-E_n$.\\
+
+\noindent\textit{Conclusion 2:} Having solutions of Eq.~(\ref{eq:hfbspin1}) one can construct solutions of Eq.~(\ref{eq:hfbspin2}) by using transformation: $u_{n,\uparrow}\rightarrow v_{n,\uparrow}^*$, $v_{n,\downarrow}\rightarrow u_{n,\downarrow}^*$ and $E_n\rightarrow -E_n$. \\
+In practice we solve only Eq.~(\ref{eq:hfbspin1}) and we express all densities via $\{u_{n\uparrow},v_{n\downarrow}\}$:
+\begin{eqnarray}
+n_{\uparrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{u_{n,\uparrow}(\bm{r})}^2 f_{\beta}(E_n),\\
+n_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{v_{n,\downarrow}(\bm{r})}^2 f_{\beta}(-E_n)\\
+\tau_{\uparrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{\nabla u_{n,\uparrow}(\bm{r})}^2 f_{\beta}(E_n),\\
+\tau_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{\nabla v_{n,\downarrow}(\bm{r})}^2 f_{\beta}(-E_n),\\
+\nu(\bm{r}) &=& \dfrac{1}{2}\sum_{|E_n|<E_c} u_{n,\uparrow}(\bm{r})v_{n,\downarrow}^{*}(\bm{r})\left( f_{\beta}(-E_n)-f_{\beta}(E_n)\right) ,\\
+\bm{j}_{\uparrow}(\bm{r}) &=& -\sum_{|E_n|<E_c} \textrm{Im}[u_{n,\uparrow}(\bm{r})\nabla u_{n,\uparrow}^*(\bm{r})] f_{\beta}(E_n),\\
+\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c} \textrm{Im}[v_{n,\downarrow}(\bm{r})\nabla v_{n,\downarrow}^*(\bm{r})] f_{\beta}(-E_n).
+\label{eqn:densities1}
+\end{eqnarray}
+
+\section{Case where $h_{\uparrow \uparrow}=h_{\downarrow \downarrow}=h$}
+If $h_{\uparrow \uparrow}=h_{\downarrow \downarrow}=h$ (typically it corresponds to the spin-balanced case) then Eq.~(\ref{eq:hfbspin1}) takes form, as typically cited in papers (spin indices are dropped):
+\begin{align}\label{eq:hfbspin3}
+\begin{gathered}
+\begin{pmatrix}
+h  &  \Delta \\
+\Delta^* &  -h^*
+\end{pmatrix} 
+\begin{pmatrix}
+u_{n} \\
+v_{n}
+\end{pmatrix}
+= E_n
+\begin{pmatrix}
+u_{n} \\
+v_{n}
+\end{pmatrix} .
+\end{gathered}
+\end{align}
+
+\noindent\textit{Relation 3:} If vector $\varphi_{+}=\left( u,v\right)^{T}$ is solution of Eq.~(\ref{eq:hfbspin3}) with eigenvalue $E_n$, then vector $\varphi_{-}=(v_{n}^*,-u_{n}^*)^{T}$ is also solution with eigenvalue $-E_n$.\\
+
+\noindent\textit{Conclusion 3:} Having solutions of Eq.~(\ref{eq:hfbspin3}) for positive energies $E_n$ one can construct all solutions of this equation.\\
+In practice for spin-balanced case we solve Eq.~(\ref{eq:hfbspin3}) for positive $E_n$ and we express all densities via these states:
+\begin{eqnarray}
+n_{\uparrow}(\bm{r})=n_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left( \abs{v_{n}(\bm{r})}^2 f_{\beta}(-E_n)+\abs{u_{n}(\bm{r})}^2 f_{\beta}(E_n)\right) \\
+\tau_{\uparrow}(\bm{r})=\tau_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left( \abs{\nabla v_{n}(\bm{r})}^2 f_{\beta}(-E_n) + \abs{\nabla u_{n}(\bm{r})}^2 f_{\beta}(E_n)\right) ,\\
+\nu(\bm{r}) &=& \sum_{0<E_n<E_c} u_{n}(\bm{r})v_{n}^{*}(\bm{r})\left( f_{\beta}(-E_n)-f_{\beta}(E_n)\right) ,\\
+\bm{j}_{\uparrow}(\bm{r})=\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left(  \textrm{Im}[v_{n}(\bm{r})\nabla v_{n}^*(\bm{r})] f_{\beta}(-E_n)\right.\nonumber \\
+&& \quad\quad\quad\quad - \left. \textrm{Im}[u_{n}(\bm{r})\nabla u_{n}^*(\bm{r})] f_{\beta}(E_n) \right) .
+\label{eqn:densities2}
+\end{eqnarray}
+
+\end{document}
+
+
