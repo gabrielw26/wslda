@@ -1289,6 +1289,16 @@ int main( int argc , char ** argv )
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY*NZ, V_a, delta) );
             }
             
+            // Create check.stamp
+            if(iam==0)
+            {
+                // write check.stamp file
+                sprintf(file_name, "%s_check.stamp", md.outprefix);
+                printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+                file_operation( touch_file(file_name) );
+                file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, 5, energy) );
+            }
+            
             if(iam==0) printf("# SAVING ITERATION DONE.\n");
             break;
         }

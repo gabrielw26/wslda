@@ -1138,4 +1138,47 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
     return 0;
 }
 
+/**
+ * Function add entries to check.stamp file
+ * @param prefix is used for creation file name of form prefix_check.stamp
+ * @param indens number of densities stored in densities array
+ * @param ndens number of elements for each density
+ * @param densities array with densities, total size is indens*ndens
+ * @param ineregies number of entries in array energies
+ * @param energies energies of the system
+ * @return 0 - ok, otherwies error
+ **/
+int check_stamp_entry(const char *file_name, int idens, int ndens, double *densities, int ienergies, double *energies)
+{
+    // write
+    FILE *check_stamp = fopen(file_name, "a");
+    if(check_stamp==NULL) return 1;
+    
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [20];
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    strftime (buffer,20,"%x-%X",timeinfo);
+    fprintf(check_stamp, "CHECK STAMP DATE: %s\n", buffer);
+    
+    double sum;
+    int i, n;
+    for(i=0; i<idens; i++)
+    {
+        sum=0.0;
+        for(n=0; n<ndens; n++) sum+=densities[i*ndens + n];
+        fprintf(check_stamp, "SUM(DESNITY[%2d])=%16.8g\n", i, sum);
+    }
+    
+    for(i=0; i<ienergies; i++)
+    {
+        fprintf(check_stamp, "ENERGY[%2d])=%16.8f\n", i, energies[i]);
+    }
+    
+    fclose(check_stamp);
+                
+    return 0;
+}
+
 #endif
