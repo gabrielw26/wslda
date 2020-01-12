@@ -59,9 +59,6 @@
 // spin-symmetric mode decreases computing time for factor about two
 #define SPINSYMMETRY_MODE
 
-// if spin-symmetric system is assumed (spinsymmetry==1) then only states where fbeta(ek,beta)>SPINSYMMETRY_CUTOFF are considered
-#define SPINSYMMETRY_CUTOFF 1.0e-16
-
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
 

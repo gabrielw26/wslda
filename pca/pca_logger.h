@@ -74,7 +74,6 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #endif
 #ifdef SPINSYMMETRY_MODE
     fprintf(log,"# SPINSYMMETRY_MODE: YES\n");
-    fprintf(log,"# SPINSYMMETRY_CUTOFF= %g\n", SPINSYMMETRY_CUTOFF);
 #else    
     fprintf(log,"# SPINSYMMETRY_MODE: NO\n");
 #endif

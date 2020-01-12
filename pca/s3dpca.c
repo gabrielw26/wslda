@@ -1106,6 +1106,10 @@ int main( int argc , char ** argv )
             j_a_y[ixyz]=j_b_y[ixyz];
             j_a_z[ixyz]=j_b_z[ixyz];
         }
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS  
+        // finalize computation of tau
+        cpu_exec( density_caculate_tau(h_densities, &mdfft) );
+#endif
         rt_dens+=e_t(0);
                 
         // free temporary resources
