@@ -1,5 +1,4 @@
-# ssh67
-# module load cuda
+# module load cuda/9.0
 
 MPICC = mpicc 
 NVCC = nvcc 
@@ -9,10 +8,11 @@ INCLUDECC = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_
 INCLUDENVCC = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h reduce_suffle.h
 
 # for dwarf
-CCFLAGS = -I/usr/local/cuda-9.1/include/
-CCLIB =  -L/usr/local/cuda-9.1/lib64 -lcudart -lcufft -I/usr/local/cuda-9.1/include/ -lm
-CCFLAGS = -O3 -DTARGET_MACHINE=DWARF_ONE_NODE
-NVCCFLAGS = -arch sm_60 -O3 
+CCFLAGS = -I/usr/local/cuda-9.0/include/
+CCLIB =  -L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -I/usr/local/cuda-9.0/include/ -lm
+#CCFLAGS = -O3 -DTARGET_MACHINE=DWARF_ONE_NODE
+CCFLAGS = -O3 -DTARGET_MACHINE=DWARF
+NVCCFLAGS = -arch sm_35 -O3 
 
 OBJ = pca_derivative.o pca_kernels.o pca_dens.o reduce_suffle.o
 OBJmpi =  pca.o pca_checkpoint.o
