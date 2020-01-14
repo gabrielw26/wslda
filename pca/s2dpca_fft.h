@@ -31,10 +31,10 @@ typedef struct
     
     int batch;
     
-} metadata_kzpca_fft;
+} metadata_s2dpca_fft;
 
-int create_fft_plans(metadata_kzpca_fft *mdfft, int batch);
-int destroy_fft_plans(metadata_kzpca_fft *mdfft);
-int compute_laplace_real_f(double *f, double *laplace_f, metadata_kzpca_fft *mdfft);
+int create_fft_plans(metadata_s2dpca_fft *mdfft, int batch);
+int destroy_fft_plans(metadata_s2dpca_fft *mdfft);
+int compute_laplace_real_f(double *f, double *laplace_f, metadata_s2dpca_fft *mdfft);
 
 #endif

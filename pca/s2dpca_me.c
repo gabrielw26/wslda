@@ -15,8 +15,8 @@ extern double dc_Omega_b;
 #include <stddef.h>
 #include "pca_settings.h"
 #include "pca_macro.h"
-#include "kzpca_fft.h"
-#include "kzpca_uext.h"
+#include "s2dpca_fft.h"
+#include "s2dpca_uext.h"
 #include "s3dpca_grid.h"
 
 // EDF functions
@@ -311,7 +311,7 @@ double k_1D(int k, int l, int N, double a)
  * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
  * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
  * */
-int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     // densities - decode 
     double *rho_a = (double *)(h_densities +  0*NX*NY);
@@ -901,7 +901,7 @@ int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, 
  * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
  * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
  * */
-int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     // densities - decode 
     double *rho_a = (double *)(h_densities +  0*NX*NY);
@@ -1137,7 +1137,7 @@ int recompute_potentials(int it, double *h_densities, double *h_potentials, doub
     else                   return recompute_potentials_bdg  (it, h_densities, h_potentials, h_potentials_new);
 }
 
-int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     if(fabs(aBdG)<1.0e-12) return compute_matrix_elements_aslda(bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);
     else                   return compute_matrix_elements_bdg  (bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);

@@ -13,18 +13,17 @@
 #include <math.h>
 #include <complex.h>
 #include <mpi.h>
-#include <omp.h>
 
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "pca_io.h"
-#include "kzpca_edf.h"
+#include "s2dpca_edf.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
-#include "kzpca_fft.h"
-#include "kzSLpca_me.h"
-#include "kzSLpca_densities.h"
+#include "s2dpca_fft.h"
+#include "s2dpca_me.h"
+#include "s2dpca_densities.h"
 #include "s3dpca_grid.h"
 
 // Pick-up diagonalization library - pick only ONE!!!
@@ -496,7 +495,7 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.kzpca", md.inprefix);
+            sprintf(file_name, "%s_checkpoint.s2dpca", md.inprefix);
             printf("# READING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "rb");
             
@@ -585,9 +584,8 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // ================================== FFTW PLANS =====================================
     // ===================================================================================
-    omp_set_num_threads(1);
-//     printf("# PROCESS %d ACTIVATES %d THREADS FOR FFTW, BATCH=%d\n", iam, omp_get_max_threads(), md.batch); fflush(stdout);
-    metadata_kzpca_fft mdfft; // keeps plans and buffers for fftw
+    if(iam==0) { printf("# CREATING FFTW PLANS...\n"); fflush(stdout); }
+    metadata_s2dpca_fft mdfft; // keeps plans and buffers for fftw
     create_fft_plans(&mdfft, md.batch);
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -826,21 +824,21 @@ int main( int argc , char ** argv )
                 //handle special case - no states - create empty files only
                 if(saving_iteration==1 && gr_iam==0)
                 {
-                    sprintf(file_name, "%s_kzpca.%04d.info", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
                     mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                     file_operation( create_checkpoint_info_pca(file_name, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) ); 
                 
                     // Create empty files
-                    sprintf(file_name, "%s_kzpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_kzpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_kzpca.%04d.kkz", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s_kzpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -908,16 +906,16 @@ int main( int argc , char ** argv )
                 if(gr_iam==0)
                 {                
                     // Create empty files
-                    sprintf(file_name, "%s_kzpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_kzpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_kzpca.%04d.kkz", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s_kzpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -963,7 +961,7 @@ int main( int argc , char ** argv )
                 // finilize I/O
                 MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
                 
-                sprintf(file_name, "%s_kzpca.%04d.info", md.outprefix, ikz);
+                sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
@@ -1132,7 +1130,7 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.kzpca", md.outprefix);
+            sprintf(file_name, "%s_checkpoint.s2dpca", md.outprefix);
             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "wb");
             
@@ -1168,12 +1166,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s_kzpca.info", md.outprefix);
+                sprintf(file_name, "%s_s2dpca.info", md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
                 
                 // write potentials
-                sprintf(file_name, "%s_kzpca.pud", md.outprefix);
+                sprintf(file_name, "%s_s2dpca.pud", md.outprefix);
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY, V_a, delta) );
             }
             

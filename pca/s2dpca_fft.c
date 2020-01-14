@@ -6,14 +6,14 @@
 #include <omp.h>
 #include "pca_settings.h"
 #include "pca_macro.h"
-#include "kzpca_fft.h"
+#include "s2dpca_fft.h"
 
 /**
  * Function creates plans and allocates memory
  * @param mdfft pointer to structure holding metadata for fft handling
  * @param batch number of vectors transformed by plan many  
  * */
-int create_fft_plans(metadata_kzpca_fft *mdfft, int batch)
+int create_fft_plans(metadata_s2dpca_fft *mdfft, int batch)
 {
     mdfft->batch=batch;
     
@@ -23,10 +23,6 @@ int create_fft_plans(metadata_kzpca_fft *mdfft, int batch)
     cppmallocl(mdfft->fft2grad,2*2*NX*NY,double complex); // (u,v) * (dx,dy)
     cppmallocl(mdfft->fft2uv,2*NX*NY,double complex); // (u,v)
     cppmallocl(mdfft->fft2rc,NX*NY,double); 
-    
-    // activate threads
-    fftw_init_threads();
-    fftw_plan_with_nthreads(omp_get_max_threads());
     
     // create plans
     // FFTW_ESTIMATE or FFTW_MEASURE
@@ -83,7 +79,7 @@ int create_fft_plans(metadata_kzpca_fft *mdfft, int batch)
  * Function clears memory
  * @param mdfft pointer to structure holding metadata for fft handling
  * */
-int destroy_fft_plans(metadata_kzpca_fft *mdfft)
+int destroy_fft_plans(metadata_s2dpca_fft *mdfft)
 {
     free(mdfft->fft2);
     free(mdfft->fft2many);
@@ -99,7 +95,7 @@ int destroy_fft_plans(metadata_kzpca_fft *mdfft)
  * @param laplace_f laplace of function, can be the same as f (OUTPUT)
  * @return 0-OK, otherwise PROBLEM
  * */
-int compute_laplace_real_f(double *f, double *laplace_f, metadata_kzpca_fft *mdfft)
+int compute_laplace_real_f(double *f, double *laplace_f, metadata_s2dpca_fft *mdfft)
 {
     int ixyz;
     int ix, iy;

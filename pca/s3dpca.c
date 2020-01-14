@@ -44,7 +44,7 @@
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "pca_io.h"
-#include "kzpca_edf.h"
+#include "s2dpca_edf.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
 #include "s3dpca_fft.h"

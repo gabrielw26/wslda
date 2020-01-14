@@ -6,8 +6,8 @@
 #include <stddef.h>
 #include "pca_settings.h"
 #include "pca_macro.h"
-#include "kzpca_fft.h"
-#include "kzSLpca_densities.h"
+#include "s2dpca_fft.h"
+#include "s2dpca_densities.h"
 
 double fbeta(double E, double beta);
 
@@ -23,7 +23,7 @@ double fbeta(double E, double beta);
  * @param kz value of kz (INPUT)  
  * */
 int compute_contribution_to_densities(int nwf, double *En, double complex *psi, double ecut, double beta, double *h_densities, 
-                                      metadata_kzpca_fft *mdfft, double kz)
+                                      metadata_s2dpca_fft *mdfft, double kz)
 {
     int ien; 
     int ix, iy, iz, ixyz;

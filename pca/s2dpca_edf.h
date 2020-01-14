@@ -4,7 +4,7 @@
 // and functional derivaties
 
 // Commands to generate:
-// cp pca_edf.h kzpca_edf.h
+// cp pca_edf.h s2dpca_edf.h
 // Remmove: __device__ __host__
 // Remove: extern "C"
 

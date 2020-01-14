@@ -33,7 +33,7 @@
 
 
 
-
+# pca folder 
 pca/tkpca_cloud_size
 
 pca/pca
@@ -41,3 +41,16 @@ pca/pca
 pca/tkpca_checkpoint2dto3d
 
 pca/s3dpca
+pca/s2dpca
+pca/pca
+pca/cpca
+pca/*run.log
+pca/*.dpca
+pca/*.info
+pca/*.en
+pca/*.solution
+pca/*.pud
+pca/*.wfv
+pca/*.wfu
+pca/*.s3dpca
+pca/*.s2dpca
