@@ -255,6 +255,8 @@ int main( int argc , char ** argv )
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
     
+    if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
+    
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
     md.Nb = md.Na;
@@ -820,7 +822,7 @@ int main( int argc , char ** argv )
     while(1) // do until reached self-consitency
     {
         b_t();
-        if((kziter+1)==md.kzmaxiters  && md.writewf==1) 
+        if((kziter+1)==md.kzmaxiters && md.writewf==1) 
         {
             if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
             saving_iteration=1;
@@ -1209,6 +1211,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("  ------------------------------------------------------------------------\n");
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
+        if(iam==0) printf("# MINIMIZATION FUNCTION: E_tot - dc_mu_a*Na - dc_mu_b*Nb - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b = %16.8f\n", E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b);
+        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old));
         if(iam==0)
         {
             #define OUTPUT_ENTRIES 15

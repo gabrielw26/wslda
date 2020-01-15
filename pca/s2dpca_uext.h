@@ -606,6 +606,10 @@ void imprint_vortex_u_ext_QT_tube(int it, double *h_densities, double *h_potenti
  * */
 double u_ext(int ix, int iy, int it, int spin)
 {
+#ifdef UNIFORM_TEST_MODE
+    return 0.0; // no external potential
+#endif
+
 //     return 0.0; // no external potential
     
     return u_ext_tube(ix, iy, it, spin);
@@ -627,12 +631,14 @@ double u_ext(int ix, int iy, int it, int spin)
  * */
 void process_params(double *params, double kF)
 {
+#ifndef UNIFORM_TEST_MODE
     // no processing
     process_u_ext_tube(params, kF);
 //      process_params_u_ext_HO(params, kF);
 //      process_params_u_ext_smooth_HO(params, kF); // glitch studies
 //       process_params_u_ext_QT_tube(params, kF);
 //     process_params_u_ext_QT_tube2(params, kF);
+#endif
 }
 
 /**
@@ -640,6 +646,7 @@ void process_params(double *params, double kF)
  * */
 void modify_potentials(int it, double *h_densities, double *h_potentials, double *extra_data)
 {
+#ifndef UNIFORM_TEST_MODE
 //     if(it<dc_params[5]) modify_potentials_imprint_ferron(it, h_densities, h_potentials, extra_data);
     
     modify_potentials_phase_imprint2(it, h_densities, h_potentials, extra_data);
@@ -659,7 +666,7 @@ void modify_potentials(int it, double *h_densities, double *h_potentials, double
 //      
 //         modify_potentials_u_ext_vortex_imprint(it, h_densities, h_potentials);
 //      }
-
+#endif
 }
 #endif
 

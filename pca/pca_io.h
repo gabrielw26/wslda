@@ -494,10 +494,10 @@ int append_wf_from_kzpca(char * prefix, double *En, double complex *psi, double 
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_kzpca.wfu", prefix);
-    sprintf(file_name_v, "%s_kzpca.wfv", prefix);
-    sprintf(file_name_kkz, "%s_kzpca.kkz", prefix);
-    sprintf(file_name_fbeta, "%s_kzpca.en", prefix);
+    sprintf(file_name_u, "%s_s2dpca.wfu", prefix);
+    sprintf(file_name_v, "%s_s2dpca.wfv", prefix);
+    sprintf(file_name_kkz, "%s_s2dpca.kkz", prefix);
+    sprintf(file_name_fbeta, "%s_s2dpca.en", prefix);
     
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -519,6 +519,7 @@ int append_wf_from_kzpca(char * prefix, double *En, double complex *psi, double 
     {
         
         if(fabs(En[ien])>ecut) continue; // skip states above the cut-off energy
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         (*nwf)++; // we have new state
         
@@ -560,10 +561,10 @@ int append_wf_from_kzpcaSL(char * prefix, double *En, double complex *psi, doubl
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_kzpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_kzpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_kzpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_kzpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
     
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -583,6 +584,9 @@ int append_wf_from_kzpcaSL(char * prefix, double *En, double complex *psi, doubl
     
     for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
     {
+        
+        if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         (*nwf)++; // we have new state
         
@@ -625,10 +629,10 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_kzpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_kzpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_kzpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_kzpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
     
     // open files
     FILE *fkkz = fopen(file_name_kkz, "ab");
@@ -644,6 +648,8 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
     for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
     {
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
+        
             
         (*nwf)++; // we have new state
         
@@ -674,10 +680,10 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_kzpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_kzpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_kzpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_kzpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
     
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -692,6 +698,7 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
     {
         
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         // docompose state
         u = psi + ien*2*NX*NY; 
@@ -718,10 +725,10 @@ int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi,
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_kzpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_kzpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_kzpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_kzpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
     
     // open files
     FILE *fv = fopen(file_name_v, "ab");
@@ -735,6 +742,7 @@ int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi,
     for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
     {
         if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
+        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         
         // docompose state
@@ -793,7 +801,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     
     for(ikz=0; ikz<nz/2; ikz++)
     {
-        sprintf(file_name, "%s_kzpca.%04d.info", prefix, ikz);
+        sprintf(file_name, "%s_s2dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return 1000+ikz;
@@ -853,10 +861,10 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                 if(fu==NULL) // open files
                 {
 //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s_kzpca.%04d.wfu", prefix, ikz);
-                    sprintf(file_name_v, "%s_kzpca.%04d.wfv", prefix, ikz);
-                    sprintf(file_name_kkz, "%s_kzpca.%04d.kkz", prefix, ikz);
-                    sprintf(file_name_fbeta, "%s_kzpca.%04d.en", prefix, ikz);
+                    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+                    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+                    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+                    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
                     
                     fu = fopen(file_name_u, "rb");
                     fv = fopen(file_name_v, "rb");
@@ -1169,6 +1177,50 @@ int check_stamp_entry(const char *file_name, int idens, int ndens, double *densi
         sum=0.0;
         for(n=0; n<ndens; n++) sum+=densities[i*ndens + n];
         fprintf(check_stamp, "SUM(DESNITY[%2d])=%16.8g\n", i, sum);
+    }
+    
+    for(i=0; i<ienergies; i++)
+    {
+        fprintf(check_stamp, "ENERGY[%2d])=%16.8f\n", i, energies[i]);
+    }
+    
+    fclose(check_stamp);
+                
+    return 0;
+}
+
+/**
+ * Function add entries to check.stamp file
+ * @param prefix is used for creation file name of form prefix_check.stamp
+ * @param indens number of densities stored in densities array
+ * @param ndens number of elements for each density
+ * @param densities array with densities, total size is indens*ndens
+ * @param ineregies number of entries in array energies
+ * @param energies energies of the system
+ * @param dens_coeff sum of densities will be mutiplied by this coeff before writing the stamp
+ * @return 0 - ok, otherwies error
+ **/
+int check_stamp_entry_coeff(const char *file_name, int idens, int ndens, double *densities, int ienergies, double *energies, double dens_coeff)
+{
+    // write
+    FILE *check_stamp = fopen(file_name, "a");
+    if(check_stamp==NULL) return 1;
+    
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [20];
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    strftime (buffer,20,"%x-%X",timeinfo);
+    fprintf(check_stamp, "CHECK STAMP DATE: %s\n", buffer);
+    
+    double sum;
+    int i, n;
+    for(i=0; i<idens; i++)
+    {
+        sum=0.0;
+        for(n=0; n<ndens; n++) sum+=densities[i*ndens + n];
+        fprintf(check_stamp, "SUM(DESNITY[%2d])=%16.8g\n", i, sum*dens_coeff);
     }
     
     for(i=0; i<ienergies; i++)

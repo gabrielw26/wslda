@@ -452,8 +452,8 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
                 // rotating frame
                 if(dc_Omega_a!=0.0)
                 {
-                    if(ix1==ix2) h[ij] += me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
-                    if(iy1==iy2) h[ij] += me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] -= me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
+                    if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
                 
             }
@@ -528,8 +528,8 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
                 // rotating frame
                 if(dc_Omega_b!=0.0)
                 {
-                    if(ix1==ix2) h[ij] -= conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
-                    if(iy1==iy2) h[ij] -= conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
+                    if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
             }
             
@@ -980,8 +980,8 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
                 // rotating frame
                 if(dc_Omega_a!=0.0)
                 {
-                    if(ix1==ix2) h[ij] += me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
-                    if(iy1==iy2) h[ij] += me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] -= me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
+                    if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
                 
             }
@@ -1025,8 +1025,8 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
                 // rotating frame
                 if(dc_Omega_b!=0.0)
                 {
-                    if(ix1==ix2) h[ij] -= conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
-                    if(iy1==iy2) h[ij] -= conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
+                    if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
             }
             
