@@ -14,11 +14,12 @@
 
 ### Building
 
-In pca folder you will find make files of form Makefile._code_._machine_. In header of each make file are listed module that you need to load before you compile the code. For example:
+In pca folder you will find make files of form Makefile._code_._machine_. In header of each make file are listed modules that you need to load before you compile the code. For example:
 
 ```bash
 module load cuda
 make -f Makefile.pca.summit
 ```
 
-
+### Wiki
+For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/home)

@@ -116,7 +116,8 @@ n_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{v_{n,\downarrow}(\bm{r})}^2 f_{\
 \tau_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c}\abs{\nabla v_{n,\downarrow}(\bm{r})}^2 f_{\beta}(-E_n),\\
 \nu(\bm{r}) &=& \dfrac{1}{2}\sum_{|E_n|<E_c} u_{n,\uparrow}(\bm{r})v_{n,\downarrow}^{*}(\bm{r})\left( f_{\beta}(-E_n)-f_{\beta}(E_n)\right) ,\\
 \bm{j}_{\uparrow}(\bm{r}) &=& -\sum_{|E_n|<E_c} \textrm{Im}[u_{n,\uparrow}(\bm{r})\nabla u_{n,\uparrow}^*(\bm{r})] f_{\beta}(E_n),\\
-\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c} \textrm{Im}[v_{n,\downarrow}(\bm{r})\nabla v_{n,\downarrow}^*(\bm{r})] f_{\beta}(-E_n).
+\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{|E_n|<E_c} \textrm{Im}[v_{n,\downarrow}(\bm{r})\nabla v_{n,\downarrow}^*(\bm{r})] f_{\beta}(-E_n),\\
+S&=&-k_B\sum_{|E_n|<E_c}\left( f_{\beta}(E_n)\ln\ f_{\beta}(E_n) + f_{\beta}(-E_n)\ln f_{\beta}(-E_n)\right).  
 \label{eqn:densities1}
 \end{eqnarray}
 
@@ -149,7 +150,9 @@ n_{\uparrow}(\bm{r})=n_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left( \abs{v_{n
 \tau_{\uparrow}(\bm{r})=\tau_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left( \abs{\nabla v_{n}(\bm{r})}^2 f_{\beta}(-E_n) + \abs{\nabla u_{n}(\bm{r})}^2 f_{\beta}(E_n)\right) ,\\
 \nu(\bm{r}) &=& \sum_{0<E_n<E_c} u_{n}(\bm{r})v_{n}^{*}(\bm{r})\left( f_{\beta}(-E_n)-f_{\beta}(E_n)\right) ,\\
 \bm{j}_{\uparrow}(\bm{r})=\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left(  \textrm{Im}[v_{n}(\bm{r})\nabla v_{n}^*(\bm{r})] f_{\beta}(-E_n)\right.\nonumber \\
-&& \quad\quad\quad\quad - \left. \textrm{Im}[u_{n}(\bm{r})\nabla u_{n}^*(\bm{r})] f_{\beta}(E_n) \right) .
+&& \quad\quad\quad\quad - \left. \textrm{Im}[u_{n}(\bm{r})\nabla u_{n}^*(\bm{r})] f_{\beta}(E_n) \right), \\
+S&=&-2k_B\sum_{0<E_n<E_c}\left( f_{\beta}(E_n)\ln\ f_{\beta}(E_n)\right. \nonumber \\
+&& \quad\quad\quad\quad\quad\quad + \left. f_{\beta}(-E_n)\ln f_{\beta}(-E_n)\right).
 \label{eqn:densities2}
 \end{eqnarray}
 
