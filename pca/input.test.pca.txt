@@ -1,5 +1,5 @@
 # start type                                                                                                                                                                                                      
-inittype                3      # 0 - create uniform solution;                                                                                                                                                     
+inittype                0      # 0 - create uniform solution;                                                                                                                                                     
                                # 1 - read uniform solution from file `inprefix`_uniform.solution                                                                                                                  
                                # 2 - start from PCA checkpoint                                                                                                                                                    
                                # 3 - start from s2dpca solution                                                                                                                                            
@@ -11,8 +11,8 @@ measurements            100
 timesteps               100 
 
 # files
-outprefix               torm2
-inprefix                torm
+outprefix               torm
+inprefix                none
 overwrite               1
 
 # gpus threading set
