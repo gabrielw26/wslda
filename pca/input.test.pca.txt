@@ -1,8 +1,8 @@
 # start type                                                                                                                                                                                                      
-inittype                0      # 0 - create uniform solution;                                                                                                                                                     
+inittype                3      # 0 - create uniform solution;                                                                                                                                                     
                                # 1 - read uniform solution from file `inprefix`_uniform.solution                                                                                                                  
-                               # 3 - start from PCA checkpoint                                                                                                                                                    
-                               # 4 - start from kzSLpca wave-functions                                                                                                                                            
+                               # 2 - start from PCA checkpoint                                                                                                                                                    
+                               # 3 - start from s2dpca solution                                                                                                                                            
                                # 5 - start from s3dpca solution                                                                                                                                                   
                                                                                                                                                                                                                   
 # trajectory length                                                                                                                                                                                               
@@ -11,8 +11,8 @@ measurements            100
 timesteps               100 
 
 # files
-outprefix               torm
-inprefix                none
+outprefix               torm2
+inprefix                torm
 overwrite               1
 
 # gpus threading set

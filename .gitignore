@@ -54,3 +54,5 @@ pca/*.wfv
 pca/*.wfu
 pca/*.s3dpca
 pca/*.s2dpca
+pca/*.kkz
+pca/*.stamp

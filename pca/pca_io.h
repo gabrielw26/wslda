@@ -906,6 +906,106 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     return 0;
 }
 
+/**
+ * Function reads wf from kzSLpca standard
+ * */
+int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, int mylidx, int myuidx, 
+                    double complex *h_wavefun, double *h_fbetaEn, double *h_kkz)
+{
+    char file_name[256];
+    int ikz, iwf=0, ii, dd, dcoeff;
+    int nwfip = myuidx-mylidx;
+
+    char file_name_u[512];
+    char file_name_v[512];
+    char file_name_kkz[512];
+    char file_name_fbeta[512];
+    
+    FILE *fu;
+    FILE *fv;
+    FILE *fkkz;
+    FILE *ffbeta;
+    
+//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+    
+    for(ikz=0; ikz<nz/2; ikz++)
+    {
+        // reset pointer to file
+        fu=NULL;
+        
+        if(ikz==0) dcoeff=1;
+        else dcoeff=2;
+        
+        for(dd=0; dd<dcoeff; dd++)
+        {
+            if(fu!=NULL && dd==1) // reset pointer to the beginning
+            {
+                // shift pointer to correct position
+                if(fseek ( fu, 0, SEEK_SET ) != 0 ) return -111; // cannot seek pointer
+                if(fseek ( fv, 0, SEEK_SET ) != 0 ) return -112; // cannot seek pointer
+                if(fseek ( fkkz, 0, SEEK_SET ) != 0 ) return -113; // cannot seek pointer
+                if(fseek ( ffbeta, 0, SEEK_SET ) != 0 ) return -114; // cannot seek pointer
+            } 
+            
+            for(ii=0; ii<nwf_per_kz[ikz]; ii++)
+            {
+                if(iwf>=mylidx && iwf<myuidx)
+                {
+    //                 printf("loading iwf=%d %d\n", iwf, ikz);
+                    
+                    if(fu==NULL) // open files
+                    {
+    //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+                        sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
+                        sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
+                        sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
+                        
+                        fu = fopen(file_name_u, "rb");
+                        fv = fopen(file_name_v, "rb");
+                        fkkz = fopen(file_name_kkz, "rb");
+                        ffbeta = fopen(file_name_fbeta, "rb");
+                        
+                        if (fu==NULL)  return -1; // cannot open  
+                        if (fv==NULL)  return -2; // cannot open  
+                        if (fkkz==NULL)  return -3; // cannot open  
+                        if (ffbeta==NULL)  return -4; // cannot open        
+                        
+                        // shift pointer to correct position
+                        if(fseek ( fu, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
+                        if(fseek ( fv, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
+                        if(fseek ( fkkz, sizeof(double)*ii, SEEK_SET ) != 0 ) return -13; // cannot seek pointer
+                        if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
+                    }
+                    
+                    if( fread(h_wavefun + NXY*(iwf-mylidx)            , sizeof(double complex)*NXY, 1 , fu) != 1) return -21;
+                    if( fread(h_wavefun + NXY*(iwf-mylidx) + NXY*nwfip, sizeof(double complex)*NXY, 1 , fv) != 1) return -22;
+                    if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
+                    if( fread(h_kkz     + (iwf-mylidx) , sizeof(double), 1 , fkkz)   != 1) return -23;
+                    
+                    
+                    if(dd==1) // revert sign of kz vector
+                        h_kkz[iwf-mylidx]*=-1.0; 
+                }
+                
+                iwf++;
+            }
+        }
+        
+        // close files if opened
+        if(fu!=NULL)
+        {
+            fclose(fu);
+            fclose(fv);
+            fclose(fkkz);
+            fclose(ffbeta);
+//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+        }
+    }
+    
+    return 0;
+}
+
 // ---------------------------------------- s3dpca IO -------------------------------------------
 /**
  * Function writes data from s3dpca solver
