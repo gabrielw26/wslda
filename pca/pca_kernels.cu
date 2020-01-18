@@ -1083,6 +1083,7 @@ __global__ void kernel_apply_hamiltonian_bdg(
 
 #ifdef WORK_IN_ROTATING_FRAME
     Complex gax, gay;
+    Complex gbx, gby;
     int ix, iy; // need to decode coordinate
 #endif
     
@@ -1100,11 +1101,11 @@ __global__ void kernel_apply_hamiltonian_bdg(
 #ifdef WORK_IN_ROTATING_FRAME
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
         
-        gax=Complex(0.0,-1.0*dc_Omega_a*(double)(iy-NY/2));
-        gbx=Complex(0.0,     dc_Omega_b*(double)(iy-NY/2)); // NOTE: complex conjugate included
+        gax=Complex(0.0,     dc_Omega_a*(double)(iy-NY/2));
+        gbx=Complex(0.0,-1.0*dc_Omega_b*(double)(iy-NY/2)); // NOTE: complex conjugate included
         
-        gay=Complex(0.0,     dc_Omega_a*(double)(ix-NX/2));
-        gby=Complex(0.0,-1.0*dc_Omega_b*(double)(ix-NX/2)); // NOTE: complex conjugate included
+        gay=Complex(0.0,-1.0*dc_Omega_a*(double)(ix-NX/2));
+        gby=Complex(0.0,     dc_Omega_b*(double)(ix-NX/2)); // NOTE: complex conjugate included
 #endif
         
         // apply to each wave-function
