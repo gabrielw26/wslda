@@ -1015,6 +1015,14 @@ int main( int argc , char ** argv )
             // pass - do not mix
             if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
         }
+        else if(saving_iteration==1) //special case - saving interation
+        {
+            // typically results from this iteration are loded into dynamical code
+            // for clear comparision of read corretness skip mixing here
+            
+            // pass - do not mix
+            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+        }
         else
         {
             for(ixyz=0; ixyz<12*NX*NY; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
