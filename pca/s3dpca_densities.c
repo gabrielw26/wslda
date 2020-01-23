@@ -136,7 +136,7 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             tau_b[ixyz]+=(cnorm(wfdxv)+cnorm(wfdyv)+cnorm(wfdzv))*fbmEn + (cnorm(wfdxu)+cnorm(wfdyu)+cnorm(wfdzu))*fbEn;
 #else
-            tau_b[ixyz]+=conj(v[ixyz])*mdfft->fft3uv[ixyz+NXYZ]*fbmEn + conj(u[ixyz])*mdfft->fft3uv[ixyz     ]*fbEn;
+            tau_b[ixyz]+=creal( conj(v[ixyz])*mdfft->fft3uv[ixyz+NXYZ]*fbmEn + conj(u[ixyz])*mdfft->fft3uv[ixyz     ]*fbEn );
 #endif
             j_b_x[ixyz]-=cimag(conj(v[ixyz])*wfdxv)*fbmEn - cimag(conj(u[ixyz])*wfdxu)*fbEn;
             j_b_y[ixyz]-=cimag(conj(v[ixyz])*wfdyv)*fbmEn - cimag(conj(u[ixyz])*wfdyu)*fbEn;
@@ -157,7 +157,7 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             tau_a[ixyz]+=(cnorm(wfdx)+cnorm(wfdy)+cnorm(wfdz))*fbEn;
 #else
-            tau_a[ixyz]+=conj(u[ixyz])*mdfft->fft3uv[ixyz     ]*fbEn;
+            tau_a[ixyz]+=creal( conj(u[ixyz])*mdfft->fft3uv[ixyz     ]*fbEn );
 #endif
             j_a_x[ixyz]+=cimag(conj(u[ixyz])*wfdx)*fbEn;
             j_a_y[ixyz]+=cimag(conj(u[ixyz])*wfdy)*fbEn;
@@ -170,7 +170,7 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             tau_b[ixyz]+=(cnorm(wfdx)+cnorm(wfdy)+cnorm(wfdz))*fbmEn;
 #else
-            tau_b[ixyz]+=conj(v[ixyz])*mdfft->fft3uv[ixyz+NXYZ]*fbmEn;
+            tau_b[ixyz]+=creal( conj(v[ixyz])*mdfft->fft3uv[ixyz+NXYZ]*fbmEn );
 #endif
             j_b_x[ixyz]-=cimag(conj(v[ixyz])*wfdx)*fbmEn;
             j_b_y[ixyz]-=cimag(conj(v[ixyz])*wfdy)*fbmEn;

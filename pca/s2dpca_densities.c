@@ -141,8 +141,8 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
             tau_b[ixyz]+=(cnorm(wfdxv)+cnorm(wfdyv)+cnorm(wfdzv))*fbmEn / LZ * weight 
                        + (cnorm(wfdxu)+cnorm(wfdyu)+cnorm(wfdzu))*fbEn  / LZ * weight;
 #else
-            tau_b[ixyz]+=conj(v[ixyz])*(mdfft->fft2uv[ixyz+NX*NY] - v[ixyz]*kz*kz)*fbmEn / LZ * weight 
-                       + conj(u[ixyz])*(mdfft->fft2uv[ixyz      ] - u[ixyz]*kz*kz)*fbEn  / LZ * weight;
+            tau_b[ixyz]+=creal( conj(v[ixyz])*(mdfft->fft2uv[ixyz+NX*NY] - v[ixyz]*kz*kz)*fbmEn / LZ * weight 
+                       + conj(u[ixyz])*(mdfft->fft2uv[ixyz      ] - u[ixyz]*kz*kz)*fbEn  / LZ * weight );
 #endif
             j_b_x[ixyz]-=cimag(conj(v[ixyz])*wfdxv)*fbmEn / LZ * weight - cimag(conj(u[ixyz])*wfdxu)*fbEn / LZ * weight;
             j_b_y[ixyz]-=cimag(conj(v[ixyz])*wfdyv)*fbmEn / LZ * weight - cimag(conj(u[ixyz])*wfdyu)*fbEn / LZ * weight;
@@ -162,7 +162,7 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             tau_a[ixyz]+=(cnorm(wfdx)+cnorm(wfdy)+cnorm(wfdz))*fbEn / LZ * weight;
 #else
-            tau_a[ixyz]+=conj(u[ixyz])*(mdfft->fft2uv[ixyz     ] - u[ixyz]*kz*kz)*fbEn / LZ * weight;
+            tau_a[ixyz]+=creal( conj(u[ixyz])*(mdfft->fft2uv[ixyz     ] - u[ixyz]*kz*kz)*fbEn / LZ * weight );
 #endif
             j_a_x[ixyz]+=cimag(conj(u[ixyz])*wfdx)*fbEn / LZ * weight;
             j_a_y[ixyz]+=cimag(conj(u[ixyz])*wfdy)*fbEn / LZ * weight;
@@ -175,7 +175,7 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             tau_b[ixyz]+=(cnorm(wfdx)+cnorm(wfdy)+cnorm(wfdz))*fbmEn / LZ * weight;
 #else
-            tau_b[ixyz]+=conj(v[ixyz])*(mdfft->fft2uv[ixyz+NX*NY] - v[ixyz]*kz*kz)*fbmEn / LZ * weight;
+            tau_b[ixyz]+=creal( conj(v[ixyz])*(mdfft->fft2uv[ixyz+NX*NY] - v[ixyz]*kz*kz)*fbmEn / LZ * weight );
 #endif
             j_b_x[ixyz]-=cimag(conj(v[ixyz])*wfdx)*fbmEn / LZ * weight;
             j_b_y[ixyz]-=cimag(conj(v[ixyz])*wfdy)*fbmEn / LZ * weight;
