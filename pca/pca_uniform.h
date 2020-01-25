@@ -256,13 +256,13 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                     
                     if(md.spinsymmetry>0)
                     {
-                        if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF)
+                        if(ek>0.0) // only positive energy states
                         {
-//                             n_a+=uk*uk*fbeta(ek,beta);
-//                             tau_a+=kk2tau[ixyz]*uk*uk*fbeta(ek,beta);
-                            n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                            tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
-                            nu+=uk*vk*fbeta(-1.0*ek,beta)*2.0;
+                            //n_a+=... will be taken the same as n_b 
+                            //tau_a+=... will be taken the same as tau_b
+                            n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
+                            tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
+                            nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
                             (*nwf)++;
                         }
                     }
@@ -287,13 +287,13 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                     
                     if(md.spinsymmetry>0)
                     {
-                        if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF)
+                        if(ek>0.0) // only positive energy states
                         {
-//                             n_a+=uk*uk*fbeta(ek,beta);
-//                             tau_a+=kk2tau[ixyz]*uk*uk*fbeta(ek,beta);
-                            n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                            tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
-                            nu+=uk*vk*fbeta(-1.0*ek,beta)*2.0;
+                            //n_a+=... will be taken the same as n_b 
+                            //tau_a+=... will be taken the same as tau_b
+                            n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
+                            tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
+                            nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
                             (*nwf)++;
                         }
                     }
@@ -641,7 +641,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
             takeit=0;
             if(md.spinsymmetry>0)
             {
-                if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF) 
+                if(ek>0.0) 
                 {
                     nwf++;
                     if(nwf>=idxfrom && nwf<idxto) takeit=1;
@@ -696,7 +696,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
             takeit=0;
             if(md.spinsymmetry>0)
             {
-                if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF) 
+                if(ek>0.0) 
                 {
                     nwf++;
                     if(nwf>=idxfrom && nwf<idxto) takeit=1;
@@ -1061,7 +1061,24 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     {
         kk2[i]=(kkx[ix]*kkx[ix] + kky[iy]*kky[iy] + kkz[iz]*kkz[iz]);
         i++;
-    }    
+    }  
+    
+    double * kk2tau ; /* kk2 = k^2 */
+    cppmallocl(kk2tau,NXYZ,double);
+    i=0;
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        double _kkx=kkx[ix];
+        double _kky=kky[iy];
+        double _kkz=kkz[iz];
+#ifdef TAU_COMPUTATION_VIA_GRADIENTS       
+        if(ix==NX/2) _kkx=0.0;
+        if(iy==NY/2) _kky=0.0;
+        if(iz==NZ/2) _kkz=0.0;
+#endif
+        kk2tau[i]=_kkx*_kkx + _kky*_kky + _kkz*_kkz;
+        i++;
+    }
     
     
     // Set quantities that depend only on desities
@@ -1094,6 +1111,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     
     if(printout && md.init0debug>0) printf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
     if(printout && md.init0debug>0) printf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
+    if(printout && md.init0debug>0 && md.spinsymmetry>0) printf("# SPIN SYMMETRY MODE!\n");
     
     // auxliary variables
     int maxiter=md.init0maxiter;
@@ -1183,22 +1201,22 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                     
                     if(md.spinsymmetry>0)
                     {
-                        if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF)
+                        if(ek>0.0) // only positive energy states
                         {
-//                             n_a+=uk*uk*fbeta(ek,beta);
-//                             tau_a+=kk2[ixyz]*uk*uk*fbeta(ek,beta);
-                            n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                            tau_b+=kk2[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
-                            nu+=uk*vk*fbeta(-1.0*ek,beta)*2.0;
+                            //n_a+=... will be taken the same as n_b 
+                            //tau_a+=... will be taken the same as tau_b
+                            n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
+                            tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
+                            nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
                             (*nwf)++;
                         }
                     }
                     else
                     {
                         n_a+=uk*uk*fbeta(ek,beta);
-                        tau_a+=kk2[ixyz]*uk*uk*fbeta(ek,beta);
+                        tau_a+=kk2tau[ixyz]*uk*uk*fbeta(ek,beta);
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                        tau_b+=kk2[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
+                        tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
                         (*nwf)++;
                     }
@@ -1214,22 +1232,22 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                     
                     if(md.spinsymmetry>0)
                     {
-                        if(fbeta(-1.0*ek,beta)>SPINSYMMETRY_CUTOFF)
+                        if(ek>0.0) // only positive energy states
                         {
-//                             n_a+=uk*uk*fbeta(ek,beta);
-//                             tau_a+=kk2[ixyz]*uk*uk*fbeta(ek,beta);
-                            n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                            tau_b+=kk2[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
-                            nu+=uk*vk*fbeta(-1.0*ek,beta)*2.0;
+                            //n_a+=... will be taken the same as n_b 
+                            //tau_a+=... will be taken the same as tau_b
+                            n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
+                            tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
+                            nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
                             (*nwf)++;
                         }
                     }
                     else
                     {
                         n_a+=uk*uk*fbeta(ek,beta);
-                        tau_a+=kk2[ixyz]*uk*uk*fbeta(ek,beta);
+                        tau_a+=kk2tau[ixyz]*uk*uk*fbeta(ek,beta);
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
-                        tau_b+=kk2[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
+                        tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
                         (*nwf)++;
                     }
@@ -1308,6 +1326,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     free(kky);
     free(kkz);
     free(kk2);
+    free(kk2tau);
     
     // write data to structure for future use
     __md_pca_uniform.n0_a=n_a;

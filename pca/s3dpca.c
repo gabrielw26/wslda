@@ -11,15 +11,15 @@
 
 
 // Pick-up diagonalization library - pick only ONE!!!
-// #define USE_SCALAPACK_PZHEEVR
-#define USE_SCALAPACK_PZHEEVD
+#define USE_SCALAPACK_PZHEEVR
+// #define USE_SCALAPACK_PZHEEVD
 // #define USE_SCALAPACK_PZHEEV
 
 // #define USE_ELPA
 // #define USE_ELPA_NEV_FRACTION 0.775
 
 // activate this if you know that matrix elements will be real
-#define MATRIX_IS_REAL
+// #define MATRIX_IS_REAL
 
 #ifdef S3DDEBUG
 #define ECHOLINE                                                                                                        \
@@ -44,7 +44,7 @@
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "pca_io.h"
-#include "kzpca_edf.h"
+#include "s2dpca_edf.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
 #include "s3dpca_fft.h"
@@ -254,6 +254,8 @@ int main( int argc , char ** argv )
         if(fabs(aBdG)<1.0e-12) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA [UNITARITY]\n");
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
+    
+    if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
@@ -630,35 +632,7 @@ int main( int argc , char ** argv )
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
     extra_data=NULL;
-    
-    // NOTE: for VR studies only
-    if(iam==0) printf("# !!!EXTRA DATA ACTIVE!!! (see line=%d in file=%s)\n", __LINE__, __FILE__);
-    cppmallocl(extra_data,NXYZ,double);
-    
-    if(iam==0)
-    {
-        sprintf(file_name, "%s_phase.dat", md.inprefix);
-        printf("# READING EXTERNAL PHASE FROM FILE: `%s`\n", file_name);
-        
-        FILE * fout = fopen(file_name, "rb");
-        if (fout==NULL)  
-        {
-            printf("ERROR: cannot open file!\n");
-            ABORT_NOBARRIER;
-        }
-        
-        size_t phase_size = sizeof(double)*NXYZ;
-        size_t test_ele = fread (extra_data , phase_size, 1, fout);
-        if(test_ele!=1) 
-        {
-            printf("ERROR: data not read correctly!\n");
-            ABORT_NOBARRIER;
-        }
-        fclose(fout);
-    }
-    MPI_Bcast(extra_data , NXYZ , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-    
-    //     for(ixyz=0; ixyz<NXYZ; ixyz++) extra_data[ixyz]=carg(delta[ixyz]);
+
     
     // ===================================================================================
     // ================================== FFTW PLANS =====================================
@@ -695,6 +669,10 @@ int main( int argc , char ** argv )
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
 #endif
+    
+    double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
+    double dc_ec_u= 1.0*dc_ec; // upper bound for states exteraction
+    if(md.spinsymmetry>0) dc_ec_l=0.0; // take only positive states
     
     // special case for saving
     if(md.writewf==1 && md.kzmaxiters==1) saving_iteration=1;
@@ -754,8 +732,9 @@ int main( int argc , char ** argv )
     int * iwork;
 
 #ifdef USE_SCALAPACK_PZHEEVR
-    double pzheevr_vl=-1.0*dc_ec;
-    double pzheevr_vu= 1.0*dc_ec;
+    double pzheevr_vl=dc_ec_l;
+    double pzheevr_vu=dc_ec_u;
+
     int pzheevr_il=1;     // not referenced in this context
     int pzheevr_iu=Hsize; // not referenced in this context
     int pzheevr_m=-1;
@@ -843,6 +822,11 @@ int main( int argc , char ** argv )
     while(1) // do until reached self-consitency
     {
         b_t();
+        if((kziter+1)==md.kzmaxiters && md.writewf==1) 
+        {
+            if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
+            saving_iteration=1;
+        }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
         // Make copy of potentials and densities
         for(ixyz=0; ixyz< 4*NXYZ; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
@@ -862,7 +846,6 @@ int main( int argc , char ** argv )
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         process_params(dc_params, kF);
         ECHOLINE;
-        
         
 	/*
         // NOTE: ajusting particle number
@@ -965,8 +948,8 @@ int main( int argc , char ** argv )
         ix=-1; iy=Hsize;
         for(i=0; i<Hsize; i++)
         {
-            if(En[i]<-1.*dc_ec) ix=MAX(i,ix);
-            if(En[i]> 1.*dc_ec) iy=MIN(i,iy);
+            if(En[i]<dc_ec_l) ix=MAX(i,ix);
+            if(En[i]>dc_ec_u) iy=MIN(i,iy);
         }
         ix=ix+1; // shift to next eigenvalue
         nwf=iy-ix;
@@ -1113,23 +1096,27 @@ int main( int argc , char ** argv )
         // --------- DENSITIES ----------
         b_t();
         // compute contribution to the densities
-        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, h_densities_partial, &mdfft) );
+        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, h_densities_partial, &mdfft, md.spinsymmetry) );
         // compute densities as global reduction
         MPI_Allreduce( h_densities_partial, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
-        if(md.spinsymmetry)  for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand symmetry on densities
+        if(md.spinsymmetry==1)  for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand symmetry on densities
         {
-            rho_b[ixyz]=rho_a[ixyz];
-            tau_b[ixyz]=tau_a[ixyz];
-            j_b_x[ixyz]=j_a_x[ixyz];
-            j_b_y[ixyz]=j_a_y[ixyz];
-            j_b_z[ixyz]=j_a_z[ixyz];
+            rho_a[ixyz]=rho_b[ixyz];
+            tau_a[ixyz]=tau_b[ixyz];
+            j_a_x[ixyz]=j_b_x[ixyz];
+            j_a_y[ixyz]=j_b_y[ixyz];
+            j_a_z[ixyz]=j_b_z[ixyz];
         }
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS  
+        // finalize computation of tau
+        cpu_exec( density_caculate_tau(h_densities, &mdfft) );
+#endif
         rt_dens+=e_t(0);
-        
+                
         // free temporary resources
         b_t();
-        free(U_d);
+        free(U_d); 
         free(En_d);
         free(En_d_local);
         Cblacs_gridexit( ictxt_d );
@@ -1147,13 +1134,21 @@ int main( int argc , char ** argv )
             // pass - do not mix
             if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
         }
+        else if(saving_iteration==1) //special case - saving interation
+        {
+            // typically results from this iteration are loded into dynamical code
+            // for clear comparision of read corretness skip mixing here
+            
+            // pass - do not mix
+            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+        }
         else
         {
             for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
         }
         // ------------------ update chemical potentials ------------------
         if(iam==0) printf("# MUCHNAGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
-        if(it>0)
+        if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
@@ -1216,6 +1211,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("  ------------------------------------------------------------------------\n");
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
+        if(iam==0) printf("# MINIMIZATION FUNCTION: E_tot - dc_mu_a*Na - dc_mu_b*Nb - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b = %16.8f\n", E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b);
+        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old));
         if(iam==0)
         {
             #define OUTPUT_ENTRIES 15
@@ -1250,7 +1247,7 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_current_b.dpca", md.outprefix);
             file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
         }
-        
+                
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
@@ -1300,7 +1297,17 @@ int main( int argc , char ** argv )
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY*NZ, V_a, delta) );
             }
             
-            if(iam==0) printf("# EXTRA SAVING ITERATION DONE.\n");
+            // Create check.stamp
+            if(iam==0)
+            {
+                // write check.stamp file
+                sprintf(file_name, "%s_check.stamp", md.outprefix);
+                printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+                file_operation( touch_file(file_name) );
+                file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, 5, energy) );
+            }
+            
+            if(iam==0) printf("# SAVING ITERATION DONE.\n");
             break;
         }
         

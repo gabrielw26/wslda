@@ -1,0 +1,50 @@
+# Input file for test case
+inittype                0      # 0 - create uniform solution;
+                               # 1 - read uniform solution from file `inprefix`_uniform.solution
+                               # 2 - start from checkpoint
+                               # 22- start from interpolated checkpoint
+                               
+# CBLACS grid
+# NOTE: p*q=np
+p                       2
+q                       2
+mb                      32
+nb                      32
+
+outprefix               torm
+inprefix                none
+overwrite               1
+nthreads                24
+batch                   24
+
+# Particle numbers
+Na                      28.  # Requested number of particles a-type
+Nb                      28.  # Requested number of particles b-type
+
+# INIT-0 parameters
+muchange                0.1   # Change rate of chemical potential
+Tstart                  0.2  # Start temperature, in units of eF, default 0.2
+Tstop                   0.2  # Stop temperature, in units of eF, default 0.05
+DeltaT                  0.01  # change of temperature in units of eF, default 0.01
+init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
+init0scmix              0.5  # mixing parameter in self-consitent process, default 0.25
+init0maxiter            20000 # maximum number of iterations, default 100000
+init0debug              1     # debug level, default=0 (no debug info),
+init0save               1     # save solution
+
+# s3d-solver
+kzconveps               1.0e-6   # convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
+kzmixparam              0.5       # mixing parameter for densities, default=0.5
+kzmuchange              0.005     # coefficient for changing chemical potential, default=0.001
+kzmaxiters              3      # maximum number of iterations, default=10000
+kztemp                  0.2    # requested temperature in units of eF
+# referencekF             1.0    # reference kF
+# aBdG                    -0.9   # akF about 0.9
+spinsymmetry            1       # spin symmetric system
+resetit                 1       # start from it=0
+writewf                 1       # no wf writing
+mumaxchange             0.05
+
+
+checkpoint              1       # do checkpoint everytime
+

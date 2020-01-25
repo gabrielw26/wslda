@@ -5,6 +5,9 @@
 // Authors:
 // Gabriel Wlazlowski <gabrielw@if.pw.edu.pl>
 
+// TODO:
+// 4. MATRIX_IS_REAL mode
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -13,18 +16,17 @@
 #include <math.h>
 #include <complex.h>
 #include <mpi.h>
-#include <omp.h>
 
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "pca_io.h"
-#include "kzpca_edf.h"
+#include "s2dpca_edf.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
-#include "kzpca_fft.h"
-#include "kzSLpca_me.h"
-#include "kzSLpca_densities.h"
+#include "s2dpca_fft.h"
+#include "s2dpca_me.h"
+#include "s2dpca_densities.h"
 #include "s3dpca_grid.h"
 
 // Pick-up diagonalization library - pick only ONE!!!
@@ -223,17 +225,13 @@ int main( int argc , char ** argv )
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
     
-//     // NOTE - atomatic number of particles in HO potential, using formulas for 2D case
-//     double mykF=1.0;
-//     double myeF = mykF*mykF / 2.0;
-//     double myomegax=2.*sqrt(2.*myeF*md.params[0]) / LX;
-//     double myomegay=2.*sqrt(2.*myeF*md.params[1]) / LY;
-//     md.Na = (myeF*myeF)/(2.*myomegax*myomegay) * LZ;
-//     md.Nb = md.Na;
-//     if(iam==0) printf("# Setting number of particles to be: %f\n", md.Na);  
-//     md.Na = pow(mykF,3.0)/(6.0*M_PI*M_PI) * LXYZ;
-//     md.Nb=md.Na;
-//     if(iam==0) printf("# Setting number of particles to be (for uniform): %f\n", md.Na);
+    if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
+    
+#ifdef UNIFORM_TEST_MODE
+    md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
+    md.Nb = md.Na;
+    if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: %f\n", md.Na);
+#endif
     
     // ====================================================================================
     // ================================ ALLOCATE CPU BUFFERS ==============================
@@ -429,6 +427,11 @@ int main( int argc , char ** argv )
         {
             if(iam==0) printf("# CREATING UNIFORM SOLUTION...\n");
             
+#ifdef UNIFORM_TEST_MODE
+            // Generate initial state for testing
+            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
+            else                   solve_uniform_problem_bdg(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
+#else
             // Generate initial state for testing
             if(fabs(aBdG)<1.0e-12) 
             {
@@ -441,6 +444,7 @@ int main( int argc , char ** argv )
 //                 double ttNN=380.;
 //                 solve_uniform_problem_bdg(ttNN/LXYZ, ttNN/LXYZ, &nwf, iam==0);
             }
+#endif
                     
             // Save solution
             if(iam==0 && md.init0save)
@@ -496,7 +500,7 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.kzpca", md.inprefix);
+            sprintf(file_name, "%s_checkpoint.s2dpca", md.inprefix);
             printf("# READING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "rb");
             
@@ -564,30 +568,16 @@ int main( int argc , char ** argv )
     // ===================================================================================
     extra_data=NULL;
     
-    // NOTE: for VORETX LATTICE studies only
-    if(iam==0) printf("# !!!EXTRA DATA ACTIVE!!! (see line=%d in file=%s)\n", __LINE__, __FILE__);
-    cppmallocl(extra_data,NX*NY,double);
-    
-//     if(iam==0)
-//     {
-//         FILE * fextra = fopen("./phase.gpe", "rb");
-//         size_t _size = sizeof(double)*NX*NY;
-//         size_t _test_ele = fread (extra_data , _size, 1, fextra);
-//         if(_test_ele!=1) 
-//         {
-//             printf("ERROR: data not read\n");
-//             ABORT_NOBARRIER;
-//         }        
-//         fclose(fextra);
-//     }
-//     MPI_Bcast(extra_data       , NX*NY , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+//     // NOTE: add here your conntent
+//     if(iam==0) printf("# !!!EXTRA DATA ACTIVE!!! (see line=%d in file=%s)\n", __LINE__, __FILE__);
+//     cppmallocl(extra_data,NX*NY,double);
+
     
     // ===================================================================================
     // ================================== FFTW PLANS =====================================
     // ===================================================================================
-    omp_set_num_threads(1);
-//     printf("# PROCESS %d ACTIVATES %d THREADS FOR FFTW, BATCH=%d\n", iam, omp_get_max_threads(), md.batch); fflush(stdout);
-    metadata_kzpca_fft mdfft; // keeps plans and buffers for fftw
+    if(iam==0) { printf("# CREATING FFTW PLANS...\n"); fflush(stdout); }
+    metadata_s2dpca_fft mdfft; // keeps plans and buffers for fftw
     create_fft_plans(&mdfft, md.batch);
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -608,13 +598,15 @@ int main( int argc , char ** argv )
     // Create binary files and add initial measurement
     
     // NOTE settings some variables
+#ifndef UNIFORM_TEST_MODE
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
     Effg = 0.6 * md.Na * eF;
     beta = 1.0 / (md.kztemp * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
- 
+#endif
+     
     if(iam==0)
     {
         // Create empty files with headers - do it once
@@ -649,6 +641,10 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ====================================== WORKSPACE ===================================
     // ====================================================================================    
+    double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
+    double dc_ec_u= 1.0*dc_ec; // upper bound for states exteraction
+    if(md.spinsymmetry>0) dc_ec_l=0.0; // take only positive states
+    
 #if defined(USE_SCALAPACK_PZHEEVD) || defined(USE_SCALAPACK_PZHEEV) || defined(USE_SCALAPACK_PZHEEVR)
     /* Query and allocate the optimal workspace */
 #ifdef USE_SCALAPACK_PZHEEVR
@@ -667,8 +663,8 @@ int main( int argc , char ** argv )
 
     int pzheevr_m=-1;
 #ifdef USE_SCALAPACK_PZHEEVR
-    double pzheevr_vl=-1.0*dc_ec;
-    double pzheevr_vu= 1.0*dc_ec;
+    double pzheevr_vl=dc_ec_l;
+    double pzheevr_vu=dc_ec_u;
     int pzheevr_il=1;     // not referenced in this context
     int pzheevr_iu=Hsize; // not referenced in this context
     int pzheevr_nz=-1;
@@ -717,6 +713,11 @@ int main( int argc , char ** argv )
     while(1) // do until reached self-consitency
     {
         b_t();
+        if((kziter+1)==md.kzmaxiters && md.writewf==1) 
+        {
+            if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
+            saving_iteration=1;
+        }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
         // Make copy of potentials and densities
         for(ixyz=0; ixyz< 4*NX*NY; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
@@ -754,15 +755,6 @@ int main( int argc , char ** argv )
         kF=1.0; // set by hand to 
         */
         
-//         // NOTE plot potential along x and y direction
-//         sprintf(file_name, "%s_potential.txt", md.outprefix);
-//         FILE * fpot = fopen(file_name, "w");
-//         fprintf(fpot, "# ix u_ext(ix,NY/2,it,SPINA) u_ext(ix,NY/2,it,SPINB)\n");
-//         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) if(iy==NY/2) fprintf(fpot, "%8d %16.8g %16.8g\n", ix, u_ext(ix,iy,it,SPINA), u_ext(ix,iy,it,SPINB));
-//         fprintf(fpot, "\n# iy u_ext(NX/2,iy,it,SPINA) u_ext(NX/2,iy,it,SPINB)\n");
-//         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) if(ix==NX/2) fprintf(fpot, "%8d %16.8g %16.8g\n", iy, u_ext(ix,iy,it,SPINA), u_ext(ix,iy,it,SPINB));
-// 
-//         fclose(fpot);
         rt_other+=e_t(0);
         
         // ------------------ diagonalize for each kz ------------------
@@ -811,8 +803,8 @@ int main( int argc , char ** argv )
             ix=-1; iy=Hsize;
             for(i=0; i<Hsize; i++)
             {
-                if(En[i]<-1.*dc_ec) ix=MAX(i,ix);
-                if(En[i]> 1.*dc_ec) iy=MIN(i,iy);
+                if(En[i]<dc_ec_l) ix=MAX(i,ix);
+                if(En[i]>dc_ec_u) iy=MIN(i,iy);
             }
             ix=ix+1; // shift to next eigenvalue
             pzheevr_m=iy-ix;
@@ -826,21 +818,21 @@ int main( int argc , char ** argv )
                 //handle special case - no states - create empty files only
                 if(saving_iteration==1 && gr_iam==0)
                 {
-                    sprintf(file_name, "%s_kzpca.%04d.info", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
                     mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                     file_operation( create_checkpoint_info_pca(file_name, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) ); 
                 
                     // Create empty files
-                    sprintf(file_name, "%s_kzpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_kzpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_kzpca.%04d.kkz", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s_kzpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -908,16 +900,16 @@ int main( int argc , char ** argv )
                 if(gr_iam==0)
                 {                
                     // Create empty files
-                    sprintf(file_name, "%s_kzpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_kzpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_kzpca.%04d.kkz", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s_kzpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -963,7 +955,7 @@ int main( int argc , char ** argv )
                 // finilize I/O
                 MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
                 
-                sprintf(file_name, "%s_kzpca.%04d.info", md.outprefix, ikz);
+                sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
@@ -976,7 +968,7 @@ int main( int argc , char ** argv )
             // --------- DENSITIES ----------
             // compute contribution to the densities
             b_t();
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, h_densities_partial, &mdfft, kkz[ikz]) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, h_densities_partial, &mdfft, kkz[ikz], md.spinsymmetry) );
             rt_dens+=e_t(0);
             
             // free temporary resources
@@ -998,14 +990,19 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/(NXYZ*2));
         rt_dens+=e_t(0);
         
-        if(md.spinsymmetry) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
+        if(md.spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
         {
-            rho_b[ixyz]=rho_a[ixyz];
-            tau_b[ixyz]=tau_a[ixyz];
-            j_b_x[ixyz]=j_a_x[ixyz];
-            j_b_y[ixyz]=j_a_y[ixyz];
-            j_b_z[ixyz]=j_a_z[ixyz];
+            rho_a[ixyz]=rho_b[ixyz];
+            tau_a[ixyz]=tau_b[ixyz];
+            j_a_x[ixyz]=j_b_x[ixyz];
+            j_a_y[ixyz]=j_b_y[ixyz];
+            j_a_z[ixyz]=j_b_z[ixyz];
         }
+        
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS  
+        // finalize computation of tau
+        cpu_exec( density_caculate_tau(h_densities, &mdfft) );
+#endif
         
         // ------------------ mix densities ------------------
         b_t();
@@ -1017,6 +1014,14 @@ int main( int argc , char ** argv )
             
             // pass - do not mix
             if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
+        }
+        else if(saving_iteration==1) //special case - saving interation
+        {
+            // typically results from this iteration are loded into dynamical code
+            // for clear comparision of read corretness skip mixing here
+            
+            // pass - do not mix
+            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
         }
         else
         {
@@ -1091,8 +1096,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("  ------------------------------------------------------------------------\n");
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
-        if(iam==0) printf("# MINIMIZATION FUNCTION: E_tot + dc_Omega_a*Lz_a + dc_Omega_b*Lz_b = %16.8f\n", E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] + dc_Omega_a*Lz_a + dc_Omega_b*Lz_b);
-        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] + dc_Omega_a*Lz_a + dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] + dc_Omega_a*Lz_a_old + dc_Omega_b*Lz_b_old));
+        if(iam==0) printf("# MINIMIZATION FUNCTION: E_tot - dc_mu_a*Na - dc_mu_b*Nb - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b = %16.8f\n", E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b);
+        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old));
         if(iam==0)
         {
             #define OUTPUT_ENTRIES 16
@@ -1132,7 +1137,7 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.kzpca", md.outprefix);
+            sprintf(file_name, "%s_checkpoint.s2dpca", md.outprefix);
             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "wb");
             
@@ -1168,13 +1173,23 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s_kzpca.info", md.outprefix);
+                sprintf(file_name, "%s_s2dpca.info", md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
                 
                 // write potentials
-                sprintf(file_name, "%s_kzpca.pud", md.outprefix);
+                sprintf(file_name, "%s_s2dpca.pud", md.outprefix);
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY, V_a, delta) );
+            }
+            
+            // Create check.stamp
+            if(iam==0)
+            {
+                // write check.stamp file
+                sprintf(file_name, "%s_check.stamp", md.outprefix);
+                printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+                file_operation( touch_file(file_name) );
+                file_operation( check_stamp_entry_coeff(file_name, 12, NX*NY, h_densities, 5, energy, 1.0*NZ) );
             }
             
             if(iam==0) printf("# EXTRA SAVING ITERATION DONE.\n");

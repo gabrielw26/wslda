@@ -9,6 +9,9 @@
 // test run:
 //      mpirun -np 8 ./pca input.test.pca.txt 
 
+// TODO
+// 1. WORK_IN_ROTATING_FRAME is not implemented for BDG functional
+
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -337,195 +340,7 @@ int main( int argc , char ** argv )
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
         Effg = 0.6*__md_pca_uniform.n0_a*eF_a*NXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*NXYZ; 
     }
-    else if(md.inittype==2) // Start from solution of kzsolver for uniform system
-    {
-        // Load data from info file
-        int _nx, _ny, _nz;
-        double _dx, _dy, _dz;
-        sprintf(file_name, "%s_kzsolver.inf", md.inprefix);
-        if(ip==0)
-        {
-            file_operation( read_checkpoint_info(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &time) );
-            mu[1]=mu[0];
-            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=1.0 || _dy!=1.0 || _dz!=1.0)
-            {
-                printf("KZ-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-                printf("SETTINGS  : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, 1.0, 1.0, 1.0);
-                ABORT_NOBARRIER;
-            }
-            printf("KZ-SOLVER: file_name=`%s`\n",file_name);
-            printf("KZ-SOLVER: nwf=%d\n",nwf);
-            printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("KZ-SOLVER: kF=%f, mu=%f, ec=%f, time=%f\n", kF, mu[0], ec, time);
-        }
-        MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
-        MPI_Bcast( &kF , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ; eF=0.5*kF*kF;
-        MPI_Bcast( mu , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
-        MPI_Bcast( &ec , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
-        MPI_Bcast( &time , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  it=0; t0=0.0;      
-        
-        // we have to evolve for positive and negative energies
-        nwf*=2;
-        
-        // divide wf over processes
-        if(ip==0) printf("# INIT2: nwf=%d wave-functions to scatter\n", nwf);
-        if ( np > nwf )
-        {
-            if(ip==0) printf("# INIT2: np[%d] > nwf[%d]!\n", np, nwf);
-            ABORT;
-        }
-        getnwfip( ip , np , nwf , &nwfip ) ;
-        MPI_Gather( &nwfip , 1 , MPI_INT , wf_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
-        MPI_Bcast( wf_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
-        
-        // my range of wf to manage
-        int myuidx=0, mylidx=0;
-        for(i=0; i<=ip; i++)
-            myuidx+=wf_tbl[i];
-        mylidx=myuidx-nwfip;
-        
-        // allocate memory for my wf
-        cppmallocl(h_wavefun, NXYZ*nwfip*2,double complex);
-        cppmallocl(h_fbetaEn, nwfip,double);
-        
-        // Auxliary array for 2D solutions and kz vectors
-        double *wavf2d;
-        cppmallocl(wavf2d,2*NX*NY, double);
-        double kzvec;
-        
-        // Load kz vectors
-        int lastwf=0; // last wave-function
-        int shift;
-        MPI_Status MPIStat;
-                
-        if(ip!=0) // Wait until ip-1 process finish reading file
-            j = MPI_Recv(&lastwf, 1, MPI_INT, ip-1, 99, MPI_COMM_WORLD, &MPIStat);        
-        
-        printf("# INIT2: IP=%d IS LOADING DATA FROM `%s`: %d VECTORS [%d-%d)...\n", ip, file_name, nwfip, mylidx, myuidx);
-        
-        while(1)
-        {
-            if(lastwf%2==0) // positive energy
-            {
-                // read kz value
-                sprintf(file_name, "%s_kzsolver.kkz", md.inprefix);
-                file_operation( read_binary_file(file_name, sizeof(double), (lastwf/2)*sizeof(double), (void *)&kzvec) );
-                
-                // read corresponding u(x,y) function
-                sprintf(file_name, "%s_kzsolver.wfu", md.inprefix);
-                file_operation( read_binary_file(file_name, NX*NY*sizeof(double), (lastwf/2)*NX*NY*sizeof(double), (void *)wavf2d) );
-                // read corresponding v(x,y) function
-                sprintf(file_name, "%s_kzsolver.wfv", md.inprefix);
-                file_operation( read_binary_file(file_name, NX*NY*sizeof(double), (lastwf/2)*NX*NY*sizeof(double), (void *)(wavf2d+NX*NY)) );   
-                
-                // form wave-function - u component
-                ixyz=0;
-                shift=(lastwf-mylidx)*NXYZ;
-                for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-                {
-                    h_wavefun[shift+ixyz]=cexp( I * kzvec * ( double ) iz )*wavf2d[ix*NY + iy]/sqrt(1.*NZ);
-                    ixyz++;
-                }                
-                // form wave-function - v component
-                ixyz=0;
-                shift=nwfip*NXYZ + (lastwf-mylidx)*NXYZ;
-                for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-                {
-                    h_wavefun[shift+ixyz]=cexp( I * kzvec * ( double ) iz )*wavf2d[NX*NY + ix*NY + iy]/sqrt(1.*NZ);
-                    ixyz++;
-                }        
-                
-                // set weight
-                h_fbetaEn[lastwf-mylidx]=0.0;
-                
-//                 printf("# INIT2: [%d]: lastwf=%d, kzvec=%f, P\n", ip, lastwf, kzvec);
-                
-                lastwf++;
-            }
-            if(lastwf>=myuidx) break; // Do I have all my wfs?
-            
-            if(lastwf%2==1) // negative energy
-            {
-                // read kz value
-                sprintf(file_name, "%s_kzsolver.kkz", md.inprefix);
-                file_operation( read_binary_file(file_name, sizeof(double), ((lastwf-1)/2)*sizeof(double), (void *)&kzvec) );
-                
-                // read corresponding u(x,y) function
-                sprintf(file_name, "%s_kzsolver.wfu", md.inprefix);
-                file_operation( read_binary_file(file_name, NX*NY*sizeof(double), ((lastwf-1)/2)*NX*NY*sizeof(double), (void *)wavf2d) );
-                // read corresponding v(x,y) function
-                sprintf(file_name, "%s_kzsolver.wfv", md.inprefix);
-                file_operation( read_binary_file(file_name, NX*NY*sizeof(double), ((lastwf-1)/2)*NX*NY*sizeof(double), (void *)(wavf2d+NX*NY)) );
-                
-                // form wave-function - u component
-                ixyz=0;
-                shift=(lastwf-mylidx)*NXYZ;
-                for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-                {
-                    h_wavefun[shift+ixyz]=cexp( I * kzvec * ( double ) iz )*wavf2d[NX*NY + ix*NY + iy]/sqrt(1.*NZ);
-                    ixyz++;
-                }                
-                // form wave-function - v component
-                ixyz=0;
-                shift=nwfip*NXYZ + (lastwf-mylidx)*NXYZ;
-                for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-                {
-                    h_wavefun[shift+ixyz]=cexp( I * kzvec * ( double ) iz )*wavf2d[ix*NY + iy]*(-1.0)/sqrt(1.*NZ);
-                    ixyz++;
-                }        
-                
-                // set weight
-                h_fbetaEn[lastwf-mylidx]=1.0;
-                
-//                 printf("# INIT2: [%d]: lastwf=%d, kzvec=%f, N\n", ip, lastwf, kzvec);
-                
-                lastwf++;
-            }
-            if(lastwf>=myuidx) break; // Do I have all my wfs?
-        }
-        
-        if(ip!=(np-1)) // File is free, send info to next process
-            j = MPI_Send(&lastwf, 1, MPI_INT, ip+1, 99, MPI_COMM_WORLD); 
-        
-        // load u and delta
-        sprintf(file_name, "%s_kzsolver.pud", md.inprefix);
-        if(ip==0) printf("# INIT2: LOADING POTENTIALS `%s`...\n", file_name);
-        if(ip==0)
-        {
-            file_operation( read_binary_file(file_name, NX*NY*2*sizeof(double), 0, (void *)wavf2d) );
-            // convert 2d format into 3d format
-            ixyz=0;
-            for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-            {
-                V_a[ixyz]  =wavf2d[ix*NY + iy];
-                V_b[ixyz]  =V_a[ixyz];
-                delta[ixyz]=wavf2d[NX*NY + ix*NY + iy]+I*0.0;
-                ixyz++;
-            }            
-        }
-        
-        MPI_Bcast(h_potentials,4*NXYZ,MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;        
-        free(wavf2d);
-        
-        // compute particle number and set Effg;
-        double Ntot=0.0, Nmy=0.0;
-        for(iwf=0; iwf<nwfip; iwf++)
-        {
-            ixyz=0;
-            for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
-            {
-                Nmy+=(pow(creal(h_wavefun[iwf*NXYZ+ixyz]),2)+pow(cimag(h_wavefun[iwf*NXYZ+ixyz]),2))*h_fbetaEn[iwf];
-                Nmy+=(pow(creal(h_wavefun[nwfip*NXYZ+iwf*NXYZ+ixyz]),2)+pow(cimag(h_wavefun[nwfip*NXYZ+iwf*NXYZ+ixyz]),2))*(1.0-h_fbetaEn[iwf]);
-                ixyz++;
-            }  
-        }
-        MPI_Allreduce( &Nmy, &Ntot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT2: TOTAL NUMBER OF PARTICLES=%f\n", Ntot);
-        Effg = 0.6*eF*Ntot; 
-//         ABORT;
-    }
-    else if(md.inittype==3) 
+    else if(md.inittype==2) 
     {
         // allocate memory for my wf
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
@@ -533,41 +348,50 @@ int main( int argc , char ** argv )
         cppmallocl(h_fbetaEn, nwfip,double);
         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
     }        
-    else if(md.inittype==22) // Start from solution of kzpca solver (newer version of kzsolver)
+    else if(md.inittype==3) // Start from solution of s2dpca solver (newer version of kzsolver)
     {
         // Load data from info file
         int _nx, _ny, _nz;
         double _dx, _dy, _dz;
         double beta;
+        int *nwf_per_kz;
+        int nwf_s2dpca;
+        cppmallocl(nwf_per_kz, NZ/2,int);
         time=0.0;
-        sprintf(file_name, "%s_kzpca.info", md.inprefix);
+        sprintf(file_name, "%s_s2dpca.info", md.inprefix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
             if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=1.0 || _dy!=1.0 || _dz!=1.0)
             {
-                printf("KZ-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                printf("S2D-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
                 printf("SETTINGS  : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, 1.0, 1.0, 1.0);
                 ABORT_NOBARRIER;
             }
-            printf("KZ-SOLVER: file_name=`%s`\n",file_name);
-            printf("KZ-SOLVER: nwf=%d\n",nwf);
-            printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("KZ-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            printf("S2D-SOLVER: file_name=`%s`\n",file_name);
+            printf("S2D-SOLVER: nwf=%d\n",nwf);
+            printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            printf("S2D-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
             fflush(stdout);
+            
+            // scan files and determine nwf in each of them
+            nwf_s2dpca=nwf;
+            file_operation( scan_kzpca_info_files(md.inprefix, NZ, &nwf_s2dpca, nwf_per_kz) );
+            printf("S2D-SOLVER: nwf in binary files=%d\n",nwf_s2dpca);
         }
         MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &kF , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ; eF=0.5*kF*kF;
         MPI_Bcast( mu , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &ec , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &beta , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  it=0; t0=0.0;
+        MPI_Bcast( nwf_per_kz , NZ/2 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
         
         // divide wf over processes
-        if(ip==0) printf("# INIT22: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) printf("# INIT3: nwf=%d wave-functions to scatter\n", nwf);
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT22: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) printf("# INIT3: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -592,37 +416,18 @@ int main( int argc , char ** argv )
         double *kzEn;
         cppmallocl(kzEn,nwfip, double);
         
-        // Load kz vectors
-        int lastwf=0; // last wave-function
-        int shift;
-        MPI_Status MPIStat;
+        // read data
+        int _4_max_readers = 32;
+        int _4_nblocks = (int)ceil((float)(np)/_4_max_readers);
+        for(i=0; i<_4_nblocks; i++)
+        {
+            if(ip==0) { printf("# INIT3: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
+            if(ip%_4_nblocks == i) file_operation( read_kzSLpca_wf_with_doubling(md.inprefix, NZ, nwf_per_kz, mylidx, myuidx, wavf2dc, kzEn, kzvec) );
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
                 
-        if(ip!=0) // Wait until ip-1 process finish reading file
-            j = MPI_Recv(&lastwf, 1, MPI_INT, ip-1, 99, MPI_COMM_WORLD, &MPIStat);        
-        
-        printf("# INIT22: IP=%d IS LOADING DATA FROM `%s`: %d VECTORS [%d-%d)... (lastwf=%d)\n", ip, file_name, nwfip, mylidx, myuidx, lastwf);
-
-        // read kz value
-        sprintf(file_name, "%s_kzpca.kkz", md.inprefix);
-        file_operation( read_binary_file(file_name, sizeof(double)*nwfip, lastwf*sizeof(double), (void *)kzvec) );
-        
-        // quasi-particle energies
-        sprintf(file_name, "%s_kzpca.en", md.inprefix);
-        file_operation( read_binary_file(file_name, sizeof(double)*nwfip, lastwf*sizeof(double), (void *)kzEn) );
-            
-        // read corresponding u(x,y) function
-        sprintf(file_name, "%s_kzpca.wfu", md.inprefix);
-        file_operation( read_binary_file(file_name, NX*NY*sizeof(double complex)*nwfip, lastwf*NX*NY*sizeof(double complex), (void *)wavf2dc) );
-        // read corresponding v(x,y) function
-        sprintf(file_name, "%s_kzpca.wfv", md.inprefix);
-        file_operation( read_binary_file(file_name, NX*NY*sizeof(double complex)*nwfip, lastwf*NX*NY*sizeof(double complex), (void *)(wavf2dc+NX*NY*nwfip)) );   
-        
-        lastwf+=nwfip;
-        
-        if(ip!=(np-1)) // File is free, send info to next process
-            j = MPI_Send(&lastwf, 1, MPI_INT, ip+1, 99, MPI_COMM_WORLD); 
-        
         // construct wave functions
+        size_t shift;
         for(i=0; i<nwfip; i++)
         {
             // form wave-function - u component
@@ -649,7 +454,7 @@ int main( int argc , char ** argv )
         // load u and delta
         double *kzpot = (double *)(wavf2dc);
         double complex *kzdelta = (double complex *) (kzpot + 2*NX*NY);
-        sprintf(file_name, "%s_kzpca.pud", md.inprefix);
+        sprintf(file_name, "%s_s2dpca.pud", md.inprefix);
         if(ip==0) printf("# INIT22: LOADING POTENTIALS `%s`...\n", file_name);
         if(ip==0)
         {
@@ -686,7 +491,8 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT22: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
+        if(ip==0) printf("# INIT3: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
+        if(md.spinsymmetry==1) Ntota = Ntota+Ntotb;
         Effg = 0.6 * Ntota * eF;
         fflush(stdout);
         
@@ -788,8 +594,8 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT5: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
-        if(md.spinsymmetry==1) Ntota = Ntotb;
+        if(ip==0) printf("# INIT5: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g TOTAL\n", Ntota, Ntotb, Ntota+Ntotb); 
+        if(md.spinsymmetry==1) Ntota = Ntota+Ntotb;
         Effg = 0.6 * Ntota * eF;
         
         rt=e_t(0);
@@ -839,7 +645,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ==================================== COPY DATA TO GPU ==============================
     // ====================================================================================    
-    if(md.inittype==3){
+    if(md.inittype==2){
         if(ip==0) printf("# LOADING CHECKPOINT\n");
         b_t();
         size_t memsize;
@@ -877,7 +683,7 @@ int main( int argc , char ** argv )
     
     if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
-    if(md.inittype!=3)
+    if(md.inittype!=2)
     { 
         // copy wave-functions
         gpu_exec( memcopy_host2gpu(h_wavefun, d_wf,  (size_t)2*nwfip*NXYZ*sizeof(cufftDoubleComplex)) );   
@@ -950,7 +756,7 @@ int main( int argc , char ** argv )
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
     // potentials
-//     if(md.inittype!=3) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
+//     if(md.inittype!=2) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
     // energy
     gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) );
     
@@ -978,6 +784,15 @@ int main( int argc , char ** argv )
         Lbz=h_energy[8];
         
         printf("# GPU ENERGY      : energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f, energy_CM=%16.12f, energy_uext=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg, energy_CM/Effg, energy_uext/Effg);  
+        
+        // Create check stamp file
+        sprintf(file_name, "%s_check.stamp", md.outprefix);
+        printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+        file_operation( touch_file(file_name) );
+        // Take densities from device
+        gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
+        file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, 5, h_energy) ); 
+        
         printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
         
         // Create run log and add entry
@@ -1049,7 +864,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     int i_meas, i_step;
     
-    if(md.inittype!=3 && md.selfstart==1)
+    if(md.inittype!=2 && md.selfstart==1)
     { 
         // NOTE: I assume that potential is constant during first steps
         // NOTE: I assume there is no quantum friction during the first steps
@@ -1590,41 +1405,46 @@ int main( int argc , char ** argv )
         fflush(stdout); // clear output
     }
     
- time=t0+it*dt;
-//check point
- if (md.checkpoint)
-{
-    b_t(); // start measureing time of writing
-    size_t memsize;
+    time=t0+it*dt;
+    //check point
+    if (md.checkpoint)
+    {
+        b_t(); // start measureing time of writing
+        size_t memsize;
 #if INTEGRATION_SCHEME==AB3AM4
-       save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                d_wf, d_fkm1, d_fkm2, d_fkm3,
-                d_potentials, &time, 
-		nwf, nwfip,
-		h_fbetaEn, mu, &ec, &kF, & eF, &Effg,
-		HowMany);
-       memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
+        save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                    d_wf, d_fkm1, d_fkm2, d_fkm3,
+                    d_potentials, &time, 
+                    nwf, nwfip,
+                    h_fbetaEn, mu, &ec, &kF, & eF, &Effg,
+                    HowMany);
+        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
-       save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                   d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                   d_potentials, &time,
-                   nwf, nwfip,
-                   h_fbetaEn, mu, &ec, &kF, & eF, &Effg,
-                   HowMany);
-       memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+        save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                    d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
+                    d_potentials, &time,
+                    nwf, nwfip,
+                    h_fbetaEn, mu, &ec, &kF, & eF, &Effg,
+                    HowMany);
+        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
 #else
             CHECK PCA_SETTINGS.H
 #endif
-    MPI_Barrier( MPI_COMM_WORLD ) ;
-    rt = e_t(0);
-    if(ip==0)
-    {
-        double memsize_gb = (double)(memsize) / pow(2,30);
-        printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
-        printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
-        printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
-        printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
-    }
+        MPI_Barrier( MPI_COMM_WORLD ) ;
+        rt = e_t(0);
+        if(ip==0)
+        {
+            double memsize_gb = (double)(memsize) / pow(2,30);
+            printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
+            printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
+            printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
+            printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+            sprintf(file_name, "%s_check.stamp", md.outprefix);
+            printf("# CREATING CHECK STAMP: `%s`\n",file_name);
+            // Take densities from device
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
+            file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, 5, h_energy) );            
+        }
 }
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;

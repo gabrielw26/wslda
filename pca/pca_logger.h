@@ -58,9 +58,16 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #else
     fprintf(log,"# WORK_IN_ROTATING_FRAME: NO\n");
 #endif 
+#if FUNCTIONAL==BDG
+    fprintf(log,"# FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA
+    fprintf(log,"# FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA
+    fprintf(log,"# FUNCTIONAL: ASLDA\n");
+#endif
     fprintf(log,"# \n");
     fprintf(log,"# ================== EDF MACRO-VARIABLES ====================\n");
-    if(fabs(md.aBdG)<1.0e-12) fprintf(log, "# ENERGY DENSITY FUNCTIONAL: ASLDA [UNITARITY]\n");
+    if(fabs(md.aBdG)<1.0e-12) fprintf(log, "# ENERGY DENSITY FUNCTIONAL: (A)SLDA [UNITARITY]\n");
     else                      fprintf(log, "# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", md.aBdG);    
 #ifdef BDG_MODE
     fprintf(log,"# BDG_MODE\n");
@@ -74,7 +81,6 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #endif
 #ifdef SPINSYMMETRY_MODE
     fprintf(log,"# SPINSYMMETRY_MODE: YES\n");
-    fprintf(log,"# SPINSYMMETRY_CUTOFF= %g\n", SPINSYMMETRY_CUTOFF);
 #else    
     fprintf(log,"# SPINSYMMETRY_MODE: NO\n");
 #endif

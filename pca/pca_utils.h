@@ -9,10 +9,11 @@ typedef struct
 {
     int inittype;                       // 0 - uniform (set INIT-0 parameters)
                                         // 1 - uniform solution but read it from file `inprefix`_uniform.solution
-                                        // 2 - start from solution of kzsolver for uniform system.
-                                        // 3 - start from checkpoint
-                                        // 22 -start from kzpca (improved kzsolver)
-                                        // 4 - start from dpca files (works in case of s3dpca)
+                                        // 2 - start from checkpoint
+                                        // 23 - start from interpolted checkpoint, supported by s2dpca and s3dpca
+                                        // 3 - start from s2dpca solver solution
+                                        // 4 - start from dpca files (works in case of s3dpca) - deprecated!
+                                        // 5 - start from s3dpca solver
     int measurements;                   // number of measurements
     int timesteps;                      // number of time steps between mesurements
     double dt;                          // time step

@@ -1,0 +1,151 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{polski}
+\usepackage[latin2]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{slashed}
+\usepackage{mathrsfs} 
+\usepackage{bm}
+
+\usepackage{geometry}
+\geometry{verbose,a4paper,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+
+%opening
+\title{Integration scheme for GPE}
+\author{Gabriel Wlaz³owski}
+
+\begin{document}
+
+\maketitle
+
+% \begin{abstract}
+% 
+% \end{abstract}
+
+\section{GPE equation}
+
+\begin{equation}
+(i\alpha - \beta)\frac{\partial\Psi(\vec{r}, t)}{\partial t} =  \left(  -\frac{1}{4}\nabla^2 + 2\frac{\delta\mathcal{E}(n,t)}{\delta n} + 2 V_{ext}(\vec{r}, t)\right) \Psi(\vec{r}, t)
+\end{equation} 
+where $\Psi$ is collective wave function of system, $\mathcal{E}$ is energy density functional and $V_{ext}$ is external potential.\\\\
+Note:
+\begin{enumerate}
+ \item $\alpha=1$ and $\beta=0$ corresponds to real time evolution.
+ \item $\alpha=0$ and $\beta=1$ corresponds to imaginary time evolution. 
+\end{enumerate}
+
+For unitary Fermi gas ($m=\hbar=1$):
+
+\begin{equation}
+\mathcal{E}(n) = 0.37 \dfrac{3}{10}n(3\pi^2 n)^{2/3}
+\end{equation} 
+and
+\begin{equation}
+\frac{\delta\mathcal{E}(n)}{\delta n} = 0.37 \dfrac{1}{2} (3\pi^2 n)^{2/3}
+\end{equation}
+where $n(\vec{r}, t)=2|\Psi(\vec{r}, t)|^{2}$.
+
+Energy is computed as:
+\begin{equation}
+ E = E_{kin} + E_{int} + E_{ext},
+\end{equation} 
+where:
+\begin{equation}
+ E_{kin} = \int \Psi^{*}(\vec{r})\dfrac{1}{4}\nabla^2\Psi(\vec{r})\,d^{3}\vec{r}
+\end{equation} 
+\begin{equation}
+E_{int}=\int\mathcal{E}(n(\vec{r}))\,d^{3}\vec{r}
+\end{equation} 
+\begin{equation}
+E_{ext}=\int V_{ext}(\vec{r})n(\vec{r})\,d^{3}\vec{r}
+\end{equation}
+
+\section{ABM integration algorithm}
+
+Target: solve equation:
+\begin{equation}
+ \dfrac{dy(t)}{dt} = f(y,t).
+\end{equation} 
+
+ABM algorithm:
+\begin{eqnarray}
+ y_k^{(p)} &=& y_{k-1} + \dfrac{23}{12}\Delta t f_{k-1} - \dfrac{16}{12}\Delta t f_{k-2} + \dfrac{5}{12}\Delta t f_{k-3},\\
+ y_k &=& y_{k-1} + \dfrac{9}{24}\Delta t f(y_k^{(p)},k\Delta t) +\dfrac{19}{24}\Delta t f_{k-1}-\dfrac{5}{24}\Delta t f_{k-2}+\dfrac{1}{24}\Delta t f_{k-3}, \label{eqn:ABM_corr}
+\end{eqnarray} 
+where $f_{k}=f(y_k, k\Delta t)$.\\\\
+NOTE: Once can improved integration by adding extra ``iteration'' of Eq.(\ref{eqn:ABM_corr}), i.e. we execute it again with $y_k$ instead of $y_k^{(p)}$.\\\\
+It is possible to use only 4 wave function buffers called: $y_{k-1}$, $f_{k-1}$, $f_{k-2}$ and $f_{k-3}$.
+\\\\
+ALGORITHM: (operations listed within single step have to be executed simultaneously)\\
+\begin{enumerate}
+ \item 
+ \begin{equation}
+  \left\lbrace 
+  \begin{array}{lll}
+   y_{k-1} & \leftarrow & y_{k-1} + \dfrac{23}{12}\Delta t f_{k-1} - \dfrac{16}{12}\Delta t f_{k-2} + \dfrac{5}{12}\Delta t f_{k-3},\\
+   f_{k-3} & \leftarrow & y_{k-1} +\dfrac{19}{24}\Delta t f_{k-1}-\dfrac{5}{24}\Delta t f_{k-2}+\dfrac{1}{24}\Delta t f_{k-3}
+  \end{array}
+  \right. 
+ \end{equation} 
+  \item Compute densities from $y_{k-1}$ and formulate potentials (like $U(\vec{r})$ and $\Delta(\vec{r})$) needed to formulate Hamiltonian. This step requires MPI communication. For densities and potentials use additional buffers, note the are small in comparison to wave function buffers.
+  \item $y_{k-1} \leftarrow f(y_{k-1},k\Delta t)$, this is first application of Hamiltonian, as Hamiltonian use potentials formulated in step 2. This step can be done is batched mode. This is numerically intensive step.
+  \item $y_{k-1} \leftarrow \dfrac{9}{24}\Delta t y_{k-1} + f_{k-3}$, this step can be merged with step 3. Now buffer $y_{k-1}$ holds wave functions for $t=k\Delta t$.
+  \item Compute densities from $y_{k-1}$ and formulate potentials (like $U(\vec{r})$ and $\Delta(\vec{r})$) needed to formulate Hamiltonian. This step requires MPI communication. For densities and potentials use additional buffers, note the are small in comparison to wave function buffers.
+  \item Preparation of buffers for next step:
+ \begin{equation}
+  \left\lbrace 
+  \begin{array}{lll}
+   f_{k-3} & \leftarrow & f_{k-2},\\
+   f_{k-2} & \leftarrow & f_{k-1},\\
+   f_{k-1} & \leftarrow & f(y_{k-1},k\Delta t).
+  \end{array}
+  \right. 
+ \end{equation}   
+ Note, last operation corresponds to second  application of Hamiltonian, as Hamiltonian use potentials formulated in step 5. This step can be done is batched mode. This is numerically intensive step.
+  Finally increase $k$ by one.
+\end{enumerate}
+
+\section{ABM2 integration algorithm}
+
+ABM algorithm:
+\begin{eqnarray}
+ y_k^{(p)} &=& y_{k-1} + \dfrac{55}{24}\Delta t f_{k-1} - \dfrac{59}{24}\Delta t f_{k-2} + \dfrac{37}{24}\Delta t f_{k-3} - \dfrac{9}{24}\Delta t f_{k-4},\\
+ y_k &=& y_{k-1} + \dfrac{251}{720}\Delta t f(y_k^{(p)},k\Delta t) +\dfrac{646}{720}\Delta t f_{k-1}-\dfrac{264}{720}\Delta t f_{k-2}+\dfrac{106}{720}\Delta t f_{k-3} - \dfrac{19}{720}\Delta t f_{k-4}, \label{eqn:ABM2_corr}
+\end{eqnarray} 
+where $f_{k}=f(y_k, k\Delta t)$.\\\\
+It is possible to use only 5 wave function buffers called: $y_{k-1}$, $f_{k-1}$, $f_{k-2}$, $f_{k-3}$, $f_{k-4}$.
+\\\\
+ALGORITHM: (operations listed within single step have to be executed simultaneously)\\
+\begin{enumerate}
+ \item 
+ \begin{equation}
+  \left\lbrace 
+  \begin{array}{lll}
+   y_{k-1} & \leftarrow & y_{k-1} + \dfrac{55}{24}\Delta t f_{k-1} - \dfrac{59}{24}\Delta t f_{k-2} + \dfrac{37}{24}\Delta t f_{k-3} - \dfrac{9}{24}\Delta t f_{k-4},\\
+   f_{k-4} & \leftarrow & y_{k-1} +\dfrac{646}{720}\Delta t f_{k-1}-\dfrac{264}{720}\Delta t f_{k-2}+\dfrac{106}{720}\Delta t f_{k-3} - \dfrac{19}{720}\Delta t f_{k-4}
+  \end{array}
+  \right. 
+ \end{equation} 
+  \item Compute densities from $y_{k-1}$ and formulate potentials (like $U(\vec{r})$ and $\Delta(\vec{r})$) needed to formulate Hamiltonian. This step requires MPI communication. For densities and potentials use additional buffers, note the are small in comparison to wave function buffers.
+  \item $y_{k-1} \leftarrow f(y_{k-1},k\Delta t)$, this is first application of Hamiltonian, as Hamiltonian use potentials formulated in step 2. This step can be done is batched mode. This is numerically intensive step.
+  \item $y_{k-1} \leftarrow \dfrac{251}{720}\Delta t y_{k-1} + f_{k-4}$, this step can be merged with step 3. Now buffer $y_{k-1}$ holds wave functions for $t=k\Delta t$.
+  \item Compute densities from $y_{k-1}$ and formulate potentials (like $U(\vec{r})$ and $\Delta(\vec{r})$) needed to formulate Hamiltonian. This step requires MPI communication. For densities and potentials use additional buffers, note the are small in comparison to wave function buffers.
+  \item Preparation of buffers for next step:
+ \begin{equation}
+  \left\lbrace 
+  \begin{array}{lll}
+   f_{k-4} & \leftarrow & f_{k-3},\\
+   f_{k-3} & \leftarrow & f_{k-2},\\
+   f_{k-2} & \leftarrow & f_{k-1},\\
+   f_{k-1} & \leftarrow & f(y_{k-1},k\Delta t).
+  \end{array}
+  \right. 
+ \end{equation}   
+ Note, last operation corresponds to second  application of Hamiltonian, as Hamiltonian use potentials formulated in step 5. This step can be done is batched mode. This is numerically intensive step.
+  Finally increase $k$ by one.
+\end{enumerate}
+
+\end{document}
+
+

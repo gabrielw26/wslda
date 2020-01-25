@@ -15,8 +15,9 @@ extern double dc_Omega_b;
 #include <stddef.h>
 #include "pca_settings.h"
 #include "pca_macro.h"
-#include "kzpca_fft.h"
-#include "kzpca_uext.h"
+#include "s2dpca_fft.h"
+#include "s2dpca_uext.h"
+#include "s3dpca_grid.h"
 
 // EDF functions
 double polarization_h(double n_a, double n_b);
@@ -75,6 +76,9 @@ double der_p_regularization(double n);
     _ix=ixy/NY;               \
     _iy=ixy-_ix * NY;                   
 
+int indxl2g_(int*, int*, int*, int*, int*);
+
+
 // ==========================================================================
 // ============================== FUNCTIONS =================================
 // ==========================================================================
@@ -87,7 +91,7 @@ double der_p_regularization(double n);
  *                     they are used as initial point for computation of new potentials 
  * @param h_potentials_new recomputed potentials (OUTPUT)
  * */
-int recompute_potentials(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+int recompute_potentials_aslda(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
 {
     // densities - decode 
     double *rho_a = (double *)(h_densities +  0*NX*NY);
@@ -256,7 +260,7 @@ int recompute_potentials(int it, double *h_densities, double *h_potentials, doub
             Vb = UD_MIX_COEFF*Vbnew+(1.0-UD_MIX_COEFF)*Vb;
         }
         
-        if(i==UD_SCITERS) return -1; // error
+//         if(i==UD_SCITERS) return -1; // error
         
         // save results to global memory
         V_a_new[ixyz]=Va;
@@ -281,22 +285,23 @@ int recompute_potentials(int it, double *h_densities, double *h_potentials, doub
  * @param a lattice spacing
  * @return value of matrix element un units fm^-1
  * */
-double k_1D(int k, int l, int N)
+double k_1D(int k, int l, int N, double a)
 {
     if(k==l)
-        return M_PI*M_PI*( 1.0+2.0/(N*N) ) / (6.0);
+        return M_PI*M_PI*( 1.0+2.0/(N*N) ) / (6.0*a*a);
     else
     {
         double pm_one=1.0;
         if(abs(k-l)%2 == 1) pm_one=-1.0;
         double _sinkl = sin(M_PI*(k-l)/N);
         
-        return M_PI*M_PI*pm_one / ( N*N*_sinkl*_sinkl );
+        return M_PI*M_PI*pm_one / ( a*a*N*N*_sinkl*_sinkl );
     }
 }
 
 /**
  * Function computes matrix elemnts of BdG hamiltonian
+ * @param bgrid stores information about the bc matrix distribution
  * @param it iteration number
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials recomputed potentials (INPUT)
@@ -306,7 +311,7 @@ double k_1D(int k, int l, int N)
  * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
  * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
  * */
-int compute_matrix_elements(int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     // densities - decode 
     double *rho_a = (double *)(h_densities +  0*NX*NY);
@@ -338,6 +343,8 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
     int ix2, iy2, ixyz2; // column iterator
     int ix, iy, ixyz; // global iterator
     int ci, ri; // column and row iterator
+    int li, lj, ij; // local indices
+    int ZERO = 0;
     
     // compute gradient of effective mass
     double *laplace_alpha_a;
@@ -345,6 +352,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
     cppmallocl(laplace_alpha_a,NX*NY,double);
     cppmallocl(laplace_alpha_b,NX*NY,double);
     int ierr;
+     if(bgrid->nip*bgrid->niq<NX*NY/2) return -199; // check if enough memory
     double *wrk_dble = (double *)(h); // only for temporary calculations 
     
     ixyz=0;
@@ -367,7 +375,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
     
     
     // Reset matrix elements
-    for(ixyz=0; ixyz<(2*NX*NY)*(2*NX*NY); ixyz++) h[ixyz] = 0.0 + I*0.0;
+    for(ixyz=0; ixyz<bgrid->nip*bgrid->niq; ixyz++) h[ixyz] = 0.0 + I*0.0;
     
     // MATRIX structure
     // |   ha    |   Delta  |
@@ -379,11 +387,15 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
     //                +delta(ix,jx)*k(iy,jy)
     // where k(ix,jx) is matrix element of 1D kinetic energy (see: arxiv.org/abs/1301.7354, Eq.(23))
     
-    for(ci=0; ci<2*NX*NY; ci++) // column-major iteration fashion, for each column do:
+    for(lj=0; lj<bgrid->niq; lj++) // column-major iteration: over local index (column)
     {
-        for(ri=0; ri<=ci; ri++) // Upper triangle of h is stored
+        for(li=0; li<bgrid->nip; li++) // over local index (row)
         {
-            ixyz = ri + 2*NX*NY*ci; // global index
+            ij=li + bgrid->nip * lj; // local index of elemnt
+            ixyz1 = li+1; ixyz2=lj+1; // conversion to fortran standard
+            // find indices in global matrix: row and colummn
+            ri = indxl2g_( &ixyz1, &bgrid->mb, &bgrid->ip, &ZERO, &bgrid->p )-1; // back to C standard
+            ci = indxl2g_( &ixyz2, &bgrid->nb, &bgrid->iq, &ZERO, &bgrid->q )-1; // back to C standard  
             
             if(ci<NX*NY && ri<NX*NY) // part: |   ha    |
             {
@@ -394,7 +406,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 alph_2 = alpha_a(polarization(rho_a[ixyz2], rho_b[ixyz2]));
                 
                 // diagonal part: V_a-mu_a + 0.5*alpha_a*kz^2
-                if(ixyz1==ixyz2) h[ixyz] += V_a[ixyz1] - dc_mu_a + 0.5*alph_1*kz*kz + 0.25*laplace_alpha_a[ixyz1];
+                if(ixyz1==ixyz2) h[ij] += V_a[ixyz1] - dc_mu_a + 0.5*alph_1*kz*kz + 0.25*laplace_alpha_a[ixyz1];
                 
                 // Kinetic termn K_a
                 // docode to cartesian coordinates
@@ -402,9 +414,9 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 ixy2ixiy(ixyz2,ix2,iy2);
                 
                 // k(ix,jx)*delta(iy,jy)
-                if(iy1==iy2) h[ixyz] += 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX);
+                if(iy1==iy2) h[ij] += 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX, DX);
                 // delta(ix,jx)*k(iy,jy)
-                if(ix1==ix2) h[ixyz] += 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY);
+                if(ix1==ix2) h[ij] += 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY, DY);
                 
 #ifdef CURRENT_CORRECTIONS
                 t7 = p_regularization(rho_a[ixyz1]);
@@ -432,16 +444,16 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 }
                 
                 // k(ix,jx)*delta(iy,jy)
-                if(iy1==iy2) h[ixyz] += me_d_dx[ix1 + ix2*NX] * (Fx1 + Fx2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                if(iy1==iy2) h[ij] += me_d_dx[ix1 + ix2*NX] * (Fx1 + Fx2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 // delta(ix,jx)*k(iy,jy)
-                if(ix1==ix2) h[ixyz] += me_d_dy[iy1 + iy2*NY] * (Fy1 + Fy2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                if(ix1==ix2) h[ij] += me_d_dy[iy1 + iy2*NY] * (Fy1 + Fy2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
 #endif
 
                 // rotating frame
                 if(dc_Omega_a!=0.0)
                 {
-                    if(ix1==ix2) h[ixyz] += me_d_dy[iy1 + iy2*NY]*dc_Omega_a*(double)(ix1-NX/2)         ; 
-                    if(iy1==iy2) h[ixyz] += me_d_dx[ix1 + ix2*NX]*dc_Omega_a*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] -= me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
+                    if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
                 
             }
@@ -451,7 +463,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 ixyz2 = ci-NX*NY;             
                 
                 // diagonal part: Delta(r)
-                if(ixyz1==ixyz2) h[ixyz] += delta[ixyz1];
+                if(ixyz1==ixyz2) h[ij] += delta[ixyz1];
             }
             else if(ci<NX*NY && ri>=NX*NY) // part: | Delta^* |
             {
@@ -459,7 +471,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 ixyz2 = ci;          
                 
                 // diagonal part: (Delta(r))^*
-                if(ixyz1==ixyz2) h[ixyz] += conj(delta[ixyz1]);
+                if(ixyz1==ixyz2) h[ij] += conj(delta[ixyz1]);
             }
             else // part: |   -hb^*  |
             {
@@ -470,7 +482,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 alph_2 = alpha_b(polarization(rho_a[ixyz2], rho_b[ixyz2]));
                 
                 // diagonal part: V_b-mu_b + 0.5*alpha_b*kz^2
-                if(ixyz1==ixyz2) h[ixyz] -= V_b[ixyz1] - dc_mu_b + 0.5*alph_1*kz*kz + 0.25*laplace_alpha_b[ixyz1]; // NOTE -= operator has minus!
+                if(ixyz1==ixyz2) h[ij] -= V_b[ixyz1] - dc_mu_b + 0.5*alph_1*kz*kz + 0.25*laplace_alpha_b[ixyz1]; // NOTE -= operator has minus!
                 
                 // Kinetic termn -K_b
                 // docode to cartesian coordinates
@@ -478,9 +490,9 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 ixy2ixiy(ixyz2,ix2,iy2);
                 
                 // k(ix,jx)*delta(iy,jy)
-                if(iy1==iy2) h[ixyz] -= 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX); // NOTE -= operator has minus!
+                if(iy1==iy2) h[ij] -= 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX, DX); // NOTE -= operator has minus!
                 // delta(ix,jx)*k(iy,jy)
-                if(ix1==ix2) h[ixyz] -= 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY); // NOTE -= operator has minus!
+                if(ix1==ix2) h[ij] -= 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY, DY); // NOTE -= operator has minus!
                 
 #ifdef CURRENT_CORRECTIONS
                 t7 = p_regularization(rho_b[ixyz1]);
@@ -508,25 +520,22 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
                 } 
                 
                 // k(ix,jx)*delta(iy,jy)
-                if(iy1==iy2) h[ixyz] -= conj(me_d_dx[ix1 + ix2*NX]) * (Fx1 + Fx2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                if(iy1==iy2) h[ij] -= conj(me_d_dx[ix1 + ix2*NX]) * (Fx1 + Fx2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 // delta(ix,jx)*k(iy,jy)
-                if(ix1==ix2) h[ixyz] -= conj(me_d_dy[iy1 + iy2*NY]) * (Fy1 + Fy2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                if(ix1==ix2) h[ij] -= conj(me_d_dy[iy1 + iy2*NY]) * (Fy1 + Fy2) * (-1.0); // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
 #endif
 
                 // rotating frame
                 if(dc_Omega_b!=0.0)
                 {
-                    if(ix1==ix2) h[ixyz] -= conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*(double)(ix1-NX/2)         ;
-                    if(iy1==iy2) h[ixyz] -= conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                    if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
+                    if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
             }
             
-            // go to next row in column
-            ixyz++;
-            
-        } // for(ri=0; ri<2*NX*NY; ri++)
+        } // for(li=0; li<bgrid->nip; li++)
 //         printf("ci=%d\n", ci); fflush(stdout);
-    } // for(ci=0; ci<2*NX*NY; ci++)
+    } // for(lj=0; lj<bgrid->niq; lj++)
     
     // clear memory
     free(laplace_alpha_a);
@@ -543,7 +552,7 @@ int compute_matrix_elements(int it, double *h_densities, double *h_potentials, m
  * @param energy array with contributions to the energy (OUTPUT)
  * @param npart array with contributions to the particle number (OUTPUT)
  * */
-int compute_energy(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+int compute_energy_aslda(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
 {
     // Set pointers for to simplify notation
     // densities 
@@ -637,9 +646,9 @@ int compute_energy(int it, double *h_densities, double *h_potentials, double *en
     }
     
     // take into account uniformity in the "z" direction
-    for(i=0; i<5; i++) energy[i]*=NZ;
-    npart[SPINA]*=NZ;
-    npart[SPINB]*=NZ;
+    for(i=0; i<5; i++) energy[i]*=DX*DY*DZ*NZ;
+    npart[SPINA]*=DX*DY*DZ*NZ;
+    npart[SPINB]*=DX*DY*DZ*NZ;
     
     return 0;
 }
@@ -647,10 +656,11 @@ int compute_energy(int it, double *h_densities, double *h_potentials, double *en
 /**
  * Function that computes matrix elements of -i*d/dx operator
  * @param nx lattice size (INPUT)
+ * @param dx lattice constant
  * @param h matrix of size [nx*nx] with computed matrix elements (OUTPUT)
  *          <x1| -id/dx |x2> is given in matrix element h[x1 + nx*x2]
  * */
-int compute_matrix_elements_of_momentum_operator(int nx, double complex *me)
+int compute_matrix_elements_of_momentum_operator(int nx, double dx, double complex *me)
 {
     int ix, ci, ri; // iterator
     double kx;
@@ -673,15 +683,15 @@ int compute_matrix_elements_of_momentum_operator(int nx, double complex *me)
     for(ci=0; ci<nx; ci++) // column-major iteration fashion, for each column do:
     {
         for(ix=0; ix<nx; ix++) fft1[ix]=0.0+I*0.0;
-        fft1[ci] = 1.0/nx; // normalization factor already included 
+        fft1[ci] = 1.0/(dx*nx); // normalization factor already included 
         fftw_execute(plan_f_1d); // to momentum space
         
         // multiply by momentum
         for(ix=0; ix<nx; ix++)
         {
             // extract momentum
-            if(ix<nx/2) kx=2.*M_PI/( double )nx * ( double )(ix   );
-            else        kx=2.*M_PI/( double )nx * ( double )(ix-nx);
+            if(ix<nx/2) kx=2.*M_PI/( ( double )nx * dx ) * ( double )(ix   );
+            else        kx=2.*M_PI/( ( double )nx * dx ) * ( double )(ix-nx);
             
             if(ix==nx/2) kx=0.0;
             
@@ -737,10 +747,10 @@ int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz)
     
     for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++)
     {
-        _x = (double)(ix-NX/2);
-        _y = (double)(iy-NY/2);
+        _x = DX*(double)(ix-NX/2);
+        _y = DY*(double)(iy-NY/2);
         
-        Lz[0] += (_x*jy[ixyz] - _y*jx[ixyz])*NZ;
+        Lz[0] += (_x*jy[ixyz] - _y*jx[ixyz])*LZ*DX*DY;
         
         ixyz++; // gp to next point
     }
@@ -749,111 +759,392 @@ int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz)
     return 0;
 }
 
-// /**
-//  * Function tests correctnes of matrix elements for operation: d^2/dx^2[alpha(x)*u(x)]
-//  * */
-// int test_me(int nx)
-// {
-//     int ix, ci, ri; // iterator
-//     double kx;
-//     
-//     // allocate memory 
-//     double complex *fft1;
-//     cppmallocl(fft1, nx, double complex); // for working area of plan
-//         
-//     double *alpha;
-//     double complex *u;
-//     cppmallocl(alpha, nx, double);
-//     cppmallocl(u, nx, double complex);
-//     double _sigma=3.0;
-//     for(ix=0; ix<nx; ix++) 
-//     {
-//         alpha[ix] = 1.0 + 0.1*exp(-1./(2.*pow(_sigma,2)) * pow(1.*(ix+1-nx/2),2));
-//         u[ix] =    (0.2 + 0.12*exp(-1./(2.*pow(_sigma*1.1,2)) * pow(1.*(ix-1-nx/2),2)))
-//                 +I*(0.1 + 0.13*exp(-1./(2.*pow(_sigma*0.8,2)) * pow(1.*(ix-2-nx/2),2)));
-//     }
-//     
-//     for(ix=0; ix<nx; ix++) printf("ALPHA %6d %16.8g %16.8g %16.8g\n", ix, alpha[ix], creal(u[ix]), cimag(u[ix]));
-//     
-//     
-//     double complex *me; // metrix alements accroding formula
-//     cppmallocl(me, nx*nx, double complex);
-//     
-//     ix=0;
-//     for(ri=0; ri<nx; ri++) for(ci=0; ci<nx; ci++)
-//     {
-//         me[ix] = k_1D(ri, ci, nx) * alpha[ci];
-//         ix++;
-//     }
-//     
-//     // matrix vector multiplication
-//     double complex *ur1;
-//     cppmallocl(ur1, nx, double complex);
-//     ix=0;
-//     for(ri=0; ri<nx; ri++) 
-//     {
-//         ur1[ri]=0.0 + I*0.0;
-//         for(ci=0; ci<nx; ci++) 
-//         {
-//             ur1[ri] += u[ci]*me[ix];
-//             
-//             ix++;
-//         }
-//     }    
-//     
-//     double complex *ur2;
-//     cppmallocl(ur2, nx, double complex);
-//     // fftw plan
-//     fftw_plan plan_f_1d;
-//     fftw_plan plan_b_1d;
-//     
-//     plan_f_1d = fftw_plan_dft_1d(nx, fft1, fft1, FFTW_FORWARD, USE_FFTW_PLANNER);
-//     plan_b_1d = fftw_plan_dft_1d(nx, fft1, fft1, FFTW_BACKWARD, USE_FFTW_PLANNER);     
-//     
-//     for(ix=0; ix<nx; ix++) fft1[ix]=u[ix]*alpha[ix]/nx;
-//     
-//     fftw_execute(plan_f_1d); // to momentum space
-//     
-//     // multiply by momentum
-//     for(ix=0; ix<nx; ix++)
-//     {
-//         // extract momentum
-//         if(ix<nx/2) kx=2.*M_PI/( double )nx * ( double )(ix   );
-//         else        kx=2.*M_PI/( double )nx * ( double )(ix-nx);
-//         
-//         
-//         fft1[ix]*=0.5*kx*kx; // -i*(i*kx) = kx
-//     }
-//     
-//     fftw_execute(plan_b_1d); // to coordinate space
-//     for(ix=0; ix<nx; ix++) ur2[ix]=fft1[ix];    
-//         
-//     for(ix=0; ix<nx; ix++) 
-//     {
-//         if( fabs(creal(ur1[ix])-creal(ur2[ix]))>1.0e-14 || fabs(cimag(ur1[ix])-cimag(ur2[ix]))>1.0e-14)
-//             
-//             printf("TEST %6d (%16.8g,%16.8g) (%16.8g,%16.8g)\n", ix, creal(ur1[ix]), cimag(ur1[ix]), creal(ur2[ix]), cimag(ur2[ix]));
-//     }
-//     
-// //     // TODO - remove - only for tests
-// //     ix=0;
-// //     double r;
-// //     for(ci=0; ci<nx; ci++)
-// //     {
-// //         for(ri=0; ri<nx; ri++)
-// //         {
-// //             r = k_1D(ri, ci, nx);
-// //             if(fabs(creal(me[ix])-r)>1.0e-14 || fabs(cimag(me[ix])-0.0)>1.0e-14)
-// //                 printf("ERROR: [%6d,%6d]: (%16.8g, %16.8g) <=> (%16.8g, %16.8g)\n", ci, ri, creal(me[ix]), cimag(me[ix]), r, 0.0);
-// //             ix++;
-// //         }
-// //     }
-// //     // TODO - remove - only for tests
-//     
-//     // clear
-//     free(fft1);
-//     fftw_destroy_plan(plan_f_1d);
-//     fftw_destroy_plan(plan_b_1d);
-//     
-//     return 0;
-// }
+double fbeta(double E, double beta);
+int test_density(metadata_s3dpca_grid *bgrid, double *En, int ne, double beta, double complex *U, double *rho_a, double *rho_b)
+{
+    int lj, li, ij;
+    int ixyz1, ixyz2;
+    double fbEn, fbmEn;
+    int ri, ci;
+    int ZERO = 0;
+    for(lj=0; lj<bgrid->niq; lj++) // column-major iteration: over local index (column)
+    {
+        for(li=0; li<bgrid->nip; li++) // over local index (row)
+        {
+            ij=li + bgrid->nip * lj; // local index of elemnt
+            ixyz1 = li+1; ixyz2=lj+1; // conversion to fortran standard
+            // find indices in global matrix: row and colummn
+            ri = indxl2g_( &ixyz1, &bgrid->mb, &bgrid->ip, &ZERO, &bgrid->p )-1; // back to C standard
+            ci = indxl2g_( &ixyz2, &bgrid->nb, &bgrid->iq, &ZERO, &bgrid->q )-1; // back to C standard  
+            if(ci>=ne) continue;
+            
+            // weight
+            #define DENS_FACTOR_M 1.
+            #define Complex(a,b) (a + I*b)
+            #define cnorm(a) (creal(a)*creal(a) + cimag(a)*cimag(a))
+            
+            fbEn=fbeta(En[ci], beta)*DENS_FACTOR_M;
+            fbmEn = DENS_FACTOR_M - fbEn;
+            
+            if(ri<NX*NY) *rho_a+=cnorm(U[ij])*fbEn;
+            else         *rho_b+=cnorm(U[ij])*fbmEn;
+        }
+    }
+    return 0;
+}
+
+
+
+// --------------------------------------------------------------------------------------------------
+// -------------------------------------- BdG variants ----------------------------------------------
+// --------------------------------------------------------------------------------------------------
+extern double aBdG; // scattering length
+/**
+ * Function recomputes potentials
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials from PREVIOUS iteration, (INPUT) 
+ *                     they are used as initial point for computation of new potentials 
+ * @param h_potentials_new recomputed potentials (OUTPUT)
+ * */
+int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+{
+    // densities - decode 
+    double *rho_a = (double *)(h_densities +  0*NX*NY);
+    double *rho_b = (double *)(h_densities +  1*NX*NY);
+    double *tau_a = (double *)(h_densities +  2*NX*NY);
+    double *tau_b = (double *)(h_densities +  3*NX*NY);
+    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
+    double *j_a_x = (double *)(h_densities +  6*NX*NY);
+    double *j_a_y = (double *)(h_densities +  7*NX*NY);
+    double *j_a_z = (double *)(h_densities +  8*NX*NY);
+    double *j_b_x = (double *)(h_densities +  9*NX*NY);
+    double *j_b_y = (double *)(h_densities + 10*NX*NY);
+    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    
+    // pontentials - decode
+    double *V_a = (double *)(h_potentials +  0*NX*NY);
+    double *V_b = (double *)(h_potentials +  1*NX*NY);
+    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    
+    // pontentials - decode
+    double *V_a_new = (double *)(h_potentials_new +  0*NX*NY);
+    double *V_b_new = (double *)(h_potentials_new +  1*NX*NY);
+    double complex *delta_new = (double complex *)(h_potentials_new +  2*NX*NY);    
+    
+    // Code is equivivalent to the code implemented in pca_kernels.cu
+    
+    int ix, iy, ixyz;
+    int i;
+    int isconverged;
+    
+    // registers
+    double na, nb;
+    double t1, t2, t3, t4, t5, t6, t7; // working buffers
+    
+    double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
+    double complex p0, kc, wz_0, Zone, lnu, ldelta;
+    
+    ixyz=0;
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) // for all points
+    {
+        Va_const=u_ext(ix,iy,it,SPINA);
+        Vb_const=u_ext(ix,iy,it,SPINB);     
+        
+        // densities, and correct them
+        na=rho_a[ixyz];
+        nb=rho_b[ixyz];
+
+        t5 = 1.0/ (4.0*M_PI*aBdG);
+        Va = Va_const; // initial values
+        Vb = Vb_const; // initial values
+        lnu = nu[ixyz];
+        Zone = Complex(1.0, 0.0);
+        
+
+        // pairing
+        t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
+        p0 = csqrt( Complex(2.0*t7, 0.0) );
+        if(cimag(p0)<0.) p0 *= -1. ;
+        kc = csqrt( Complex(2.0*(dc_ec+t7), 0.0) );
+        if(cimag(kc)<0.) kc *= -1. ;
+        
+        wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
+        if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
+        wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+        wz_0 = Zone / (Zone*t5 - wz_0);
+        // g_eff = wz_0.real(); 
+        ldelta = lnu*(-1.0*creal(wz_0));
+            
+        // save results to global memory
+        V_a_new[ixyz]=Va;
+        V_b_new[ixyz]=Vb;
+        delta_new[ixyz]=ldelta;       
+        
+        ixyz++; // go to next point
+        
+    } // for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++)
+    
+    
+    return 0;
+}
+
+/**
+ * Function computes matrix elemnts of BdG hamiltonian
+ * @param bgrid stores information about the bc matrix distribution
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials recomputed potentials (INPUT)
+ * @param mdfft metadata for ffts plans execution
+ * @param h hamitonian matrix of size [2*NX*NY,2*NX*NY] (OUTPUT)
+ * @param kz value of kz vector (INPUT)
+ * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
+ * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
+ * */
+int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+{
+    // densities - decode 
+    double *rho_a = (double *)(h_densities +  0*NX*NY);
+    double *rho_b = (double *)(h_densities +  1*NX*NY);
+    double *tau_a = (double *)(h_densities +  2*NX*NY);
+    double *tau_b = (double *)(h_densities +  3*NX*NY);
+    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
+    double *j_a_x = (double *)(h_densities +  6*NX*NY);
+    double *j_a_y = (double *)(h_densities +  7*NX*NY);
+    double *j_a_z = (double *)(h_densities +  8*NX*NY);
+    double *j_b_x = (double *)(h_densities +  9*NX*NY);
+    double *j_b_y = (double *)(h_densities + 10*NX*NY);
+    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    
+    // pontentials - decode
+    double *V_a = (double *)(h_potentials +  0*NX*NY);
+    double *V_b = (double *)(h_potentials +  1*NX*NY);
+    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    
+    double p, alph_1, alph_2;
+    
+    // iterate over all matrix elemnts
+    
+    int ix1, iy1, ixyz1; // row iterator
+    int ix2, iy2, ixyz2; // column iterator
+    int ix, iy, ixyz; // global iterator
+    int ci, ri; // column and row iterator
+    int li, lj, ij; // local indices
+    int ZERO = 0;
+    
+    
+    // Reset matrix elements
+    for(ixyz=0; ixyz<bgrid->nip*bgrid->niq; ixyz++) h[ixyz] = 0.0 + I*0.0;
+    
+    // MATRIX structure
+    // |   ha    |   Delta  |
+    // ----------------------
+    // | Delta^* |   -hb^*  |
+    
+    // kinetic part
+    // K(ixiy,jxjy) =  k(ix,jx)*delta(iy,jy)
+    //                +delta(ix,jx)*k(iy,jy)
+    // where k(ix,jx) is matrix element of 1D kinetic energy (see: arxiv.org/abs/1301.7354, Eq.(23))
+    
+    for(lj=0; lj<bgrid->niq; lj++) // column-major iteration: over local index (column)
+    {
+        for(li=0; li<bgrid->nip; li++) // over local index (row)
+        {
+            ij=li + bgrid->nip * lj; // local index of elemnt
+            ixyz1 = li+1; ixyz2=lj+1; // conversion to fortran standard
+            // find indices in global matrix: row and colummn
+            ri = indxl2g_( &ixyz1, &bgrid->mb, &bgrid->ip, &ZERO, &bgrid->p )-1; // back to C standard
+            ci = indxl2g_( &ixyz2, &bgrid->nb, &bgrid->iq, &ZERO, &bgrid->q )-1; // back to C standard  
+            
+            if(ci<NX*NY && ri<NX*NY) // part: |   ha    |
+            {
+                ixyz1 = ri;
+                ixyz2 = ci;
+                
+                alph_1 = 1.0; // const effective mass
+                alph_2 = 1.0; // const effective mass
+                
+                // diagonal part: V_a-mu_a + 0.5*alpha_a*kz^2
+                if(ixyz1==ixyz2) h[ij] += V_a[ixyz1] - dc_mu_a + 0.5*alph_1*kz*kz;
+                
+                // Kinetic termn K_a
+                // docode to cartesian coordinates
+                ixy2ixiy(ixyz1,ix1,iy1);
+                ixy2ixiy(ixyz2,ix2,iy2);
+                
+                // k(ix,jx)*delta(iy,jy)
+                if(iy1==iy2) h[ij] += 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX, DX);
+                // delta(ix,jx)*k(iy,jy)
+                if(ix1==ix2) h[ij] += 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY, DY);
+
+                // rotating frame
+                if(dc_Omega_a!=0.0)
+                {
+                    if(ix1==ix2) h[ij] -= me_d_dy[iy1 + iy2*NY]*dc_Omega_a*DX*(double)(ix1-NX/2)         ; 
+                    if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                }
+                
+            }
+            else if(ci>=NX*NY && ri<NX*NY) // part: |   Delta  |
+            {
+                ixyz1 = ri;
+                ixyz2 = ci-NX*NY;             
+                
+                // diagonal part: Delta(r)
+                if(ixyz1==ixyz2) h[ij] += delta[ixyz1];
+            }
+            else if(ci<NX*NY && ri>=NX*NY) // part: | Delta^* |
+            {
+                ixyz1 = ri-NX*NY;
+                ixyz2 = ci;          
+                
+                // diagonal part: (Delta(r))^*
+                if(ixyz1==ixyz2) h[ij] += conj(delta[ixyz1]);
+            }
+            else // part: |   -hb^*  |
+            {
+                ixyz1 = ri-NX*NY;
+                ixyz2 = ci-NX*NY;
+                
+                alph_1 = 1.0; // const effective mass
+                alph_2 = 1.0; // const effective mass
+                
+                // diagonal part: V_b-mu_b + 0.5*alpha_b*kz^2
+                if(ixyz1==ixyz2) h[ij] -= V_b[ixyz1] - dc_mu_b + 0.5*alph_1*kz*kz; // NOTE -= operator has minus!
+                
+                // Kinetic termn -K_b
+                // docode to cartesian coordinates
+                ixy2ixiy(ixyz1,ix1,iy1);
+                ixy2ixiy(ixyz2,ix2,iy2);
+                
+                // k(ix,jx)*delta(iy,jy)
+                if(iy1==iy2) h[ij] -= 0.5*(alph_1+alph_2)*k_1D(ix1, ix2, NX, DX); // NOTE -= operator has minus!
+                // delta(ix,jx)*k(iy,jy)
+                if(ix1==ix2) h[ij] -= 0.5*(alph_1+alph_2)*k_1D(iy1, iy2, NY, DY); // NOTE -= operator has minus!
+                
+                // rotating frame
+                if(dc_Omega_b!=0.0)
+                {
+                    if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
+                    if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
+                }
+            }
+            
+        } // for(li=0; li<bgrid->nip; li++)
+//         printf("ci=%d\n", ci); fflush(stdout);
+    } // for(lj=0; lj<bgrid->niq; lj++)
+        
+    return 0;
+}
+
+/**
+ * Function that computes energy of the system
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * */
+int compute_energy_bdg(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+{
+    // Set pointers for to simplify notation
+    // densities 
+    // densities - decode 
+    double *rho_a = (double *)(h_densities +  0*NX*NY);
+    double *rho_b = (double *)(h_densities +  1*NX*NY);
+    double *tau_a = (double *)(h_densities +  2*NX*NY);
+    double *tau_b = (double *)(h_densities +  3*NX*NY);
+    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
+    double *j_a_x = (double *)(h_densities +  6*NX*NY);
+    double *j_a_y = (double *)(h_densities +  7*NX*NY);
+    double *j_a_z = (double *)(h_densities +  8*NX*NY);
+    double *j_b_x = (double *)(h_densities +  9*NX*NY);
+    double *j_b_y = (double *)(h_densities + 10*NX*NY);
+    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    // pontentials
+    // pontentials - decode
+//     double *V_a = (double *)(h_potentials +  0*NX*NY);
+//     double *V_b = (double *)(h_potentials +  1*NX*NY);
+    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    
+    // buffers for energies
+    double *E_kin = (double *)(energy +  0);
+    double *E_pot = (double *)(energy +  1);
+    double *E_pair= (double *)(energy +  2);
+    double *E_CM  = (double *)(energy +  3);
+    double *E_ext = (double *)(energy +  4);
+    
+    // reset buffers
+    int i;
+    for(i=0; i<5; i++) energy[i]=0.0;
+    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    
+    double na, nb;
+    double p;
+    double taua, taub;
+    
+    int ix, iy;
+    int ixyz=0;
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++)
+    {
+
+        // densities, and correct them
+        na=rho_a[ixyz];
+        nb=rho_b[ixyz];
+        
+        // particle number
+        npart[SPINA]+=na;
+        npart[SPINB]+=nb;
+        
+        // External potential energy
+        E_ext[0]+=na*u_ext(ix,iy,it,SPINA) + nb*u_ext(ix,iy,it,SPINB);
+        
+        // kinetic energy
+        p=polarization(na, nb);
+        taua=tau_a[ixyz]; // tau_a
+        taub=tau_b[ixyz]; // tau_b    
+        
+        // current corrections
+
+        E_kin[0]+=0.5*(taua + taub);
+        
+        // potential energy
+        E_pot[0]+=0.0;
+        
+        // pairing energy
+        E_pair[0]+=creal(delta[ixyz]*conj(nu[ixyz]))*(-1.0);
+        
+        // center of mass motion energy
+        E_CM[0]+=0.0;
+
+        ixyz++;
+    }
+    
+    // take into account uniformity in the "z" direction
+    for(i=0; i<5; i++) energy[i]*=DX*DY*DZ*NZ;
+    npart[SPINA]*=DX*DY*DZ*NZ;
+    npart[SPINB]*=DX*DY*DZ*NZ;
+    
+    return 0;
+}
+
+// ==========================================================================
+// ============================== WRAPPER ===================================
+// ==========================================================================
+int recompute_potentials(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+{
+    if(fabs(aBdG)<1.0e-12) return recompute_potentials_aslda(it, h_densities, h_potentials, h_potentials_new);
+    else                   return recompute_potentials_bdg  (it, h_densities, h_potentials, h_potentials_new);
+}
+
+int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+{
+    if(fabs(aBdG)<1.0e-12) return compute_matrix_elements_aslda(bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);
+    else                   return compute_matrix_elements_bdg  (bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);
+}
+
+int compute_energy(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+{
+    if(fabs(aBdG)<1.0e-12) return compute_energy_aslda(it, h_densities, h_potentials, energy, npart);
+    else                   return compute_energy_bdg  (it, h_densities, h_potentials, energy, npart);
+}

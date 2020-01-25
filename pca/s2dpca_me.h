@@ -8,7 +8,7 @@
 
 void process_params(double *params, double kF);
 int recompute_potentials(int it, double *h_densities, double *h_potentials, double *h_potentials_new);
-int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
+int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
 int compute_energy(int it, double *h_densities, double *h_potentials, double *energy, double *npart);
 int compute_matrix_elements_of_momentum_operator(int nx, double dx, double complex *me);
 int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz);
@@ -16,12 +16,12 @@ int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz);
 
 // ASLDA variants
 int recompute_potentials_aslda(int it, double *h_densities, double *h_potentials, double *h_potentials_new);
-int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
+int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
 int compute_energy_aslda(int it, double *h_densities, double *h_potentials, double *energy, double *npart);
 
 // BdG variants
 int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, double *h_potentials_new);
-int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_kzpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
+int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy);
 int compute_energy_bgd(int it, double *h_densities, double *h_potentials, double *energy, double *npart);
 
 #endif

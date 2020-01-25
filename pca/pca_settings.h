@@ -21,6 +21,10 @@
 #define DY 1.0                                                                                                                                       
 #define DZ 1.0
 
+#define FUNCTIONAL SLDA
+// #define FUNCTIONAL ASLDA
+// #define FUNCTIONAL BDG
+
 #define DXYZ (DX*DY*DZ)
 
 // Volume settings
@@ -57,10 +61,7 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-// #define SPINSYMMETRY_MODE
-
-// if spin-symmetric system is assumed (spinsymmetry==1) then only states where fbeta(ek,beta)>SPINSYMMETRY_CUTOFF are considered
-#define SPINSYMMETRY_CUTOFF 1.0e-18
+#define SPINSYMMETRY_MODE
 
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
@@ -90,21 +91,35 @@
 // =========================== PARAMETERS OF EDF =====================================
 // ===================================================================================
 
-// if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
-// #define BDG_MODE
+#define SLDA 111
+#define ASLDA 112
+#define BDG 113
 
+// if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
+#if FUNCTIONAL==BDG
+#define BDG_MODE
+#define FAST_CONST_EFFECTIVE_MASS_MODE
+#define A0 1.000
+#define A1 0.0
+#define A2 0.0
+#endif
+
+#if FUNCTIONAL==ASLDA
 // effective mass - not 1.0 then current corrections are needed!
 #define CURRENT_CORRECTIONS
 #define A0 1.094
 #define A1 0.156
 #define A2 -0.532
+#endif
 
-// // effective mass - equal 1.0 then no current corrections
-// // activate this flag to skip computation of gradients of wf - significant spped up
-// #define FAST_CONST_EFFECTIVE_MASS_MODE
-// #define A0 1.000
-// #define A1 0.0
-// #define A2 0.0
+#if FUNCTIONAL==SLDA
+// effective mass - equal 1.0 then no current corrections
+// activate this flag to skip computation of gradients of wf - significant spped up
+#define FAST_CONST_EFFECTIVE_MASS_MODE
+#define A0 1.000
+#define A1 0.0
+#define A2 0.0
+#endif
 
 // normal part
 #define G0 0.357

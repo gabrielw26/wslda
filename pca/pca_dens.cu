@@ -6,158 +6,6 @@ typedef thrust::complex<double> Complex;
 #include "pca_settings.h"
 
 
-// GW - it is so compilcated...
-
-__global__ void density_one_GPU (int N, int batch, int Nbatch,
-			thrust::complex<double>* y, 
-			thrust::complex<double>* dx, thrust::complex<double>* dy, thrust::complex<double>* dz,	//=Psi
-	                double* nab, double* tauab, thrust::complex<double>* v,
-			double* j_a_x, double* j_a_y, double* j_a_z,
-                        double* j_b_x, double* j_b_y, double* j_b_z,
-			double* betaE
-			)
-/*
- * INPUT:
- * 	N - liczba wezlow siatki
- *	batch - liczba funkcji falowych
- *	Nband = N * band
- *	y - funkcja falowa
- *	dy - pochodna funkcji falowej
- */
-{
- int s = threadIdx.x + blockIdx.x * blockDim.x;
-// int krok = gridDim.x * blockDim.x;
- int tt = threadIdx.x;
- int t = 2*tt;
- int i;
- thrust::complex<double>* A;
- __shared__ double A_p[blockSize_d*2];
- A = (thrust::complex<double>*) A_p;
-
- thrust::complex<double>* psi;
- __shared__ double psi_p[blockSize_d*2 * 2];
- psi = (thrust::complex<double>*) psi_p;
-
- __shared__ double bE[blockSize_d]; 
-
- const thrust::complex<double> I2 = thrust::complex<double>(0., 0.5);
-
-//Jakas redukcja?
- if (s<N){
-//*
-//	psi[t  ] = y[s+(batch-1)*N];
-//	psi[t+1] = y[s+Nbatch];
-//	bE[tt] = betaE[0];
-	nab[s] = 0;//psi[t].real();//bE[tt] * thrust::norm(psi[t]);
-	v[s] = 0;//.5*(1-2*bE[tt]) * psi[t] * thrust::conj(psi[t+1]);
-        nab[s+N] = 0;//(1-bE[tt]) * thrust::norm(psi[t+1]);
-//*/
-	for (i=0; i<batch; i++){
-	        psi[t  ] = y[s+i*N];
-        	psi[t+1] = y[s+i*N+Nbatch];
-	        bE[tt] = betaE[i];
-                nab[s] += bE[tt] * thrust::norm(psi[t]) * 10000.;
-                v[s] += .5*(1.-2.*bE[tt]) * psi[t] * thrust::conj(psi[t+1]) * 10000.;
-                nab[s+N] += (1.-bE[tt]) * thrust::norm(psi[t+1]) * 10000.;
-	}
-nab[s] = nab[s] / 10000.;
-v[s] = v[s]  / 10000.;
-nab[s+N] = nab[s+N] / 10000.;
-
- }
-
- if (s < N){
-//	for (j=0; j<3; j++){
-//*
-//        psi[t  ] = thrust::norm(dx[s      ]) + thrust::norm(dy[s      ]) + thrust::norm(dz[s      ]);
-//        psi[t+1] = thrust::norm(dx[s+Nbatch]) + thrust::norm(dy[s+Nbatch]) + thrust::norm(dz[s+Nbatch]);
-//        bE[tt] = betaE[0];
-	tauab[s    ] = 0;//bE[tt] * psi[t].real() * 10000;
-	tauab[s + N] = 0;//(1-bE[tt]) * psi[t+1].real() * 10000;
-
-//*/
- 	for (i=0; i<batch; i++){
-		psi[t  ] = thrust::norm(dx[s       +i*N]) + thrust::norm(dy[s       +i*N]) + thrust::norm(dz[s       +i*N]);
-		psi[t+1] = thrust::norm(dx[s+Nbatch+i*N]) + thrust::norm(dy[s+Nbatch+i*N]) + thrust::norm(dz[s+Nbatch+i*N]);
-	        bE[tt] = betaE[i];
-		tauab[s    ] += bE[tt] * psi[t].real() * 10000.;
-	        tauab[s + N] += (1.-bE[tt]) * psi[t+1].real() * 10000.;
-	}
-tauab[s  ] = tauab[s  ] / 10000.;
-tauab[s+N] = tauab[s+N] / 10000.;
- }
- if (s<N){
-//	bE[tt] = betaE[0];
-//	psi[t  ] = y[s];
-	j_a_x[s] = 0;
-	j_a_y[s] = 0;
-	j_a_z[s] = 0;
-	for (i=0; i<batch; i++){
-		bE[tt] = betaE[i]     ;
-		psi[tt  ] =  y[s+i*N];
-//	        A[tt] = thrust::conj(psi[tt]) * dx[s+i*N];
-//	        j_a_x[s] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_x[s] -= bE[tt] * (thrust::conj(psi[tt]) * dx[s+i*N]).imag() * 10000;
-//	        A[tt] = thrust::conj(psi[tt]) * dy[s+i*N];
-//	        j_a_y[s] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_y[s] -= bE[tt] * (thrust::conj(psi[tt]) * dy[s+i*N]).imag() * 10000;
-//        	A[tt] = thrust::conj(psi[tt]) * dz[s+i*N];
-//	        j_a_z[s] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_z[s] -= bE[tt] * (thrust::conj(psi[tt]) * dz[s+i*N]).imag() * 10000;
-
-	}
-        j_a_x[s] = j_a_x[s] / 10000.;
-        j_a_y[s] = j_a_y[s] / 10000.;
-        j_a_z[s] = j_a_z[s] / 10000.;
-        j_b_x[s] = 0;
-        j_b_y[s] = 0;
-        j_b_z[s] = 0;
-        for (i=0; i<batch; i++){
-                bE[tt] = (1.-betaE[i])     ;
-                psi[tt  ] = y[s+i*N+Nbatch];
-//                A[tt] = thrust::conj(psi[tt]) * dx[s+i*N+Nbatch];
-//                j_b_x[s+N] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_x[s] -= bE[tt] * (thrust::conj(psi[tt]) * dx[s+i*N+Nbatch]).imag() * 10000;
-//                A[tt] = thrust::conj(psi[tt]) * dy[s+i*N+Nbatch];
-//                j_b_y[s+N] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_y[s] -= bE[tt] * (thrust::conj(psi[tt]) * dy[s+i*N+Nbatch]).imag() * 10000;
-//                A[tt] = thrust::conj(psi[tt]) * dz[s+i*N+Nbatch];
-//                j_b_z[s+N] += bE[tt] * (I2*(A[tt] - thrust::conj(A[tt]))).real() * 10000;
-j_a_z[s] -= bE[tt] * (thrust::conj(psi[tt]) * dz[s+i*N+Nbatch]).imag() * 10000;
-        }
-        j_b_x[s] = j_b_x[s] / 10000.;
-        j_b_y[s] = j_b_y[s] / 10000.;
-        j_b_z[s] = j_b_z[s] / 10000.;
- }
-
-}
-
-int calc_dens (int N, int batch, int Nbatch,
-                        double* psi, 
-                        double* dpsiX, double* dpsiY, double* dpsiZ,
-                        double* nab, double* tauab, double* v,
-                        double* jaX, double* jaY, double* jaZ,
-                        double* jbX, double* jbY, double* jbZ,
-                        double* betaE)
-{
-//dPSI
-    
- int nblocks = (int)ceil((float)Nbatch/blockSize_d);
- density_one_GPU <<< nblocks, blockSize_d >>> 
-                        (N, batch, Nbatch, 
-                                (thrust::complex<double>*) psi, 
-                                (thrust::complex<double>*) dpsiX, 
-                                (thrust::complex<double>*) dpsiY, 
-                                (thrust::complex<double>*) dpsiZ, 
-                                nab, tauab, (thrust::complex<double>*) v, 
-                                jaX, jaY, jaZ,
-                                jbX, jbY, jbZ,
-                                betaE);
-
-//  density_all (N, nab, nab_l); 
-    return 0;
-}
-
 // ================================================================================================
 // ========================================= calculate_densities ==================================
 // ================================================================================================
@@ -198,35 +46,52 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             v=wf[n*NXYZ+iwf*NXYZ+ixyz];
             
             // form na, nb, nu
+
+#ifdef SPINSYMMETRY_MODE
+            // na+=... will be taken later as nb
+            nb+=(thrust::norm(v)*fbmEn + thrust::norm(u)*fbEn);
+            _nu+=u*thrust::conj(v)*(fbmEn-fbEn);
+#else
             na+=thrust::norm(u)*fbEn;
             nb+=thrust::norm(v)*fbmEn;
-#ifdef SPINSYMMETRY_MODE
-            _nu+=u*thrust::conj(v)*fbmEn;
-#else
             _nu+=u*thrust::conj(v)*(fbmEn-fbEn)/2.0;
 #endif
             
             // read derivatives from u 
             wfdx=wf_d_dx[       iwf*NXYZ+ixyz];
             wfdy=wf_d_dy[       iwf*NXYZ+ixyz];
-            wfdz=wf_d_dz[       iwf*NXYZ+ixyz];
+            wfdz=wf_d_dz[       iwf*NXYZ+ixyz];  
             
             // form taua and j_a
-#ifdef TAU_COMPUTATION_VIA_GRADIENTS
-            taua+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn;
+#ifdef SPINSYMMETRY_MODE
+            // do not compute taua and j_a - will taken from taub and j_b
+            // compute only contributions to taub and j_b comming from derivatives of u
+    #ifdef TAU_COMPUTATION_VIA_GRADIENTS
+            taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn;
+    #else
+            taub+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn; 
+    #endif
+            jbx+=(thrust::conj(u)*wfdx).imag()*fbEn;
+            jby+=(thrust::conj(u)*wfdy).imag()*fbEn;
+            jbz+=(thrust::conj(u)*wfdz).imag()*fbEn;
 #else
+          
+    #ifdef TAU_COMPUTATION_VIA_GRADIENTS
+            taua+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn;
+    #else
             taua+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn; 
-#endif
+    #endif
             jax+=(thrust::conj(u)*wfdx).imag()*fbEn;
             jay+=(thrust::conj(u)*wfdy).imag()*fbEn;
             jaz+=(thrust::conj(u)*wfdz).imag()*fbEn;
+#endif
             
             // read derivatives from v 
             wfdx=wf_d_dx[n*NXYZ+iwf*NXYZ+ixyz];
             wfdy=wf_d_dy[n*NXYZ+iwf*NXYZ+ixyz];
             wfdz=wf_d_dz[n*NXYZ+iwf*NXYZ+ixyz];
             
-            // form taua and j_a
+            // form taub and j_b
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbmEn;
 #else
@@ -285,11 +150,13 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf,
             v=wf[n*NXYZ+iwf*NXYZ+ixyz];
             
             // form na, nb, nu
+#ifdef SPINSYMMETRY_MODE
+            // na+=... will be taken later as nb
+            nb+=(thrust::norm(v)*fbmEn + thrust::norm(u)*fbEn);
+            _nu+=u*thrust::conj(v)*(fbmEn-fbEn);
+#else
             na+=thrust::norm(u)*fbEn;
             nb+=thrust::norm(v)*fbmEn;
-#ifdef SPINSYMMETRY_MODE
-            _nu+=u*thrust::conj(v)*fbmEn;
-#else
             _nu+=u*thrust::conj(v)*(fbmEn-fbEn)/2.0;
 #endif
         }

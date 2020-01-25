@@ -1,0 +1,20 @@
+MPICC = mpicc 
+SRC_DIR = ./ 
+INCLUDECC = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h s2dpca_me.h s2dpca_fft.h s2dpca_uext.h
+# For SCALAPACK library
+CCLIB =  -lfftw3 -L/usr/lib64/atlas/ -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack
+# For ELPA Library
+# CCLIB =  -lfftw3 -lm -L/usr/lib64/openmpi/lib -lscalapack -I/usr/local/include/elpa-2018.11.001 -L/usr/local/lib/ -lelpa
+CCFLAGS = -O3
+OBJmpi =  s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o
+
+
+all: $(OBJmpi)
+	$(MPICC) $(CCFLAGS) $(OBJmpi) -o s2dpca -O3 $(PARAMS) $(CCLIB)
+
+$(OBJmpi): %.o: %.c $(INCLUDECC)
+	$(MPICC) $(CCFLAGS) $(CCLIB)  -c $< 
+	
+clean: 	
+	rm *.o s2dpca
+
