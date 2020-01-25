@@ -8,6 +8,9 @@
 // compile:
 // mpicc cpca.c -o cpca -lm
 
+// TODO:
+// 1. SPINSYMMETRY_MODE
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -160,6 +163,12 @@ int main( int argc , char ** argv )
     dt= md.dt ;
     double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
     dt/=Emax; // time step
+    
+#ifdef UNIFORM_TEST_MODE
+    md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
+    md.Nb = md.Na;
+    if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
+#endif
     
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================

@@ -377,9 +377,9 @@ __global__ void kernel_compute_potentials(int it,
         // prepare other variables for self-consistent process
         t1=dalphp_dna/alph_plus; 
         t2=dalphp_dnb/alph_plus;
-        t3=der_tildeC__der_na(na, nb) / alph_plus; // dtildeC_dna / alph_plus
-        t4=der_tildeC__der_nb(na, nb) / alph_plus; // dtildeC_dnb / alph_plus
-        t5 = tildeC(na, nb); // tC
+        t3=der_tildeC__der_na(na, nb, 1.0) / alph_plus; // dtildeC_dna / alph_plus
+        t4=der_tildeC__der_nb(na, nb, 1.0) / alph_plus; // dtildeC_dnb / alph_plus
+        t5 = tildeC(na, nb, 1.0); // tC
         Va = V_a[ixyz]; // initial values
         Vb = V_b[ixyz]; // initial values
         lnu = nu[ixyz];
@@ -1149,28 +1149,13 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     
-    // TODO: Ad hoc
     int ix, iy; 
     double coeff=0.0, r;
-    // TODO: end of Ad hoc
     if(ixyz<NXY)
     {
-        // TODO: Ad hoc
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        r = sqrt((double)(ix-NX/2)*(ix-NX/2) + (double)(iy-NY/2)*(iy-NY/2));
-        #define ADHOC_R1 75. 
-        #define ADHOC_R2 81.
-        if(r>ADHOC_R2) coeff=1.0;
-        else if(r>ADHOC_R1) coeff=switch_function(r-ADHOC_R1, ADHOC_R2-ADHOC_R1, 1.0);
-       
         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
-        V_a[ixyz]-=coeff*qfalpha*(djax_dx[ixyz]+djay_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        V_b[ixyz]-=coeff*qfalpha*(djbx_dx[ixyz]+djby_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        // TODO: end of Ad hoc
-        
-//         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
-//         V_a[ixyz]-=qfalpha*(djax_dx[ixyz]+djay_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-//         V_b[ixyz]-=qfalpha*(djbx_dx[ixyz]+djby_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_a[ixyz]-=qfalpha*(djax_dx[ixyz]+djay_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_b[ixyz]-=qfalpha*(djbx_dx[ixyz]+djby_dy[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
     }
 }
 

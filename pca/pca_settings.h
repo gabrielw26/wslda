@@ -61,7 +61,7 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
+// #define SPINSYMMETRY_MODE
 
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
