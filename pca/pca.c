@@ -9,9 +9,6 @@
 // test run:
 //      mpirun -np 8 ./pca input.test.pca.txt 
 
-// TODO
-// 1. WORK_IN_ROTATING_FRAME is not implemented for BDG functional
-
 
 #include <stdlib.h>
 #include <stddef.h>

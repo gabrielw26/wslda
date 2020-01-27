@@ -1,5 +1,12 @@
 # Polarized cold atoms - simulation toolkit
 
+### Implemented functionalities
+* Solvers: static equations and time dependent equations
+* Dimensionality: 3D and 2D
+* Functionals: BdG, (A)SLDA
+* Zero temperature and finite temperature
+* Spin balanced and spin imbalanced systems
+
 ### Codes
 * **pca** - code for solving time-dependent density functional equations in 3D Cartesian mesh. (status: **up to date**)
 * **cpca** - code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_ direction. (status: **needs maintenance**)
