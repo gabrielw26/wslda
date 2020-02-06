@@ -460,14 +460,14 @@ double h_smooth_step(double t, double step_start, double step_stop, double T, do
 
 void symmetrize_densities(double *h_densities)
 {
-    double *rho_a = (double *)(h_densities +  0*NXYZ);
-    double *rho_b = (double *)(h_densities +  1*NXYZ);
-    double *tau_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_b = (double *)(h_densities +  3*NXYZ);
-    double complex *nu   =(double complex *)(h_densities +  4*NXYZ);
-    double *j_a_x = (double *)(h_densities +  6*NXYZ);
-    double *j_a_y = (double *)(h_densities +  7*NXYZ);
-    double *j_a_z = (double *)(h_densities +  8*NXYZ);
+    double complex *nu = (double complex *)(h_densities +  0*NXYZ);
+    double *rho_a = (double *)(h_densities +  2*NXYZ);
+    double *tau_a = (double *)(h_densities +  3*NXYZ);
+    double *j_a_x = (double *)(h_densities +  4*NXYZ);
+    double *j_a_y = (double *)(h_densities +  5*NXYZ);
+    double *j_a_z = (double *)(h_densities +  6*NXYZ);    
+    double *rho_b = (double *)(h_densities +  7*NXYZ);
+    double *tau_b = (double *)(h_densities +  8*NXYZ);
     double *j_b_x = (double *)(h_densities +  9*NXYZ);
     double *j_b_y = (double *)(h_densities + 10*NXYZ);
     double *j_b_z = (double *)(h_densities + 11*NXYZ);

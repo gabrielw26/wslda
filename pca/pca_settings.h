@@ -21,8 +21,8 @@
 #define DY 1.0                                                                                                                                       
 #define DZ 1.0
 
-#define FUNCTIONAL SLDA
-// #define FUNCTIONAL ASLDA
+// #define FUNCTIONAL SLDA
+#define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
 
 #define DXYZ (DX*DY*DZ)
@@ -173,6 +173,33 @@
 #ifdef WORK_IN_ROTATING_FRAME
 #define CURRENT_CORRECTIONS
 #undef FAST_CONST_EFFECTIVE_MASS_MODE
+#endif
+
+// Package size
+#ifdef SPINSYMMETRY_MODE
+
+    #if FUNCTIONAL==ASLDA
+    #define EXCHANGE_SIZE   7
+    #endif
+    #if FUNCTIONAL==SLDA
+    #define EXCHANGE_SIZE   3
+    #endif
+    #if FUNCTIONAL==BDG
+    #define EXCHANGE_SIZE   2
+    #endif
+    
+#else
+
+    #if FUNCTIONAL==ASLDA
+    #define EXCHANGE_SIZE   12
+    #endif
+    #if FUNCTIONAL==SLDA
+    #define EXCHANGE_SIZE   8
+    #endif
+    #if FUNCTIONAL==BDG
+    #define EXCHANGE_SIZE   2
+    #endif
+    
 #endif
 
 #endif
