@@ -58,3 +58,5 @@ pca/*.kkz
 pca/*.stamp
 pca/tkpca_3dcheckint
 pca/*.kzpca
+
+data/
