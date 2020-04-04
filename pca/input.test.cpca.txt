@@ -41,7 +41,7 @@ iogroups                32      # number of IO groups in s3dpca code
 Na                      28. # will be ingnored for UNIFORM_TEST_MODE
 Nb                      28. # will be ingnored for UNIFORM_TEST_MODE
 muchange                0.1   # Change rate of chemical potential
-Tstart                  0.005  # Start temperature, in units of eF, default 0.2
+Tstart                  0.105  # Start temperature, in units of eF, default 0.2
 Tstop                   0.005  # Stop temperature, in units of eF, default 0.05
 DeltaT                  0.005  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-12 # epsilon for convergence, default 1.0e-6

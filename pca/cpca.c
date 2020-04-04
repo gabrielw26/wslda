@@ -79,9 +79,6 @@ int main( int argc , char ** argv )
     cufftDoubleComplex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
     cufftDoubleComplex *d_tmp_ptr;
     double *h_qpe_nwfip, *h_qpe_nwf; // buffers for quasiparticle energies
-    
-    cudaStream_t streams[streams_d];
-    creat_streams (streams);
 
     // other technical variables
     int *wf_tbl, *wf_idx_tbl; // table of size np, keeps number of managed wf by each process
@@ -166,7 +163,7 @@ int main( int argc , char ** argv )
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
-    md.Nb = md.Na;
+    md.Nb = md.Na+1;
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
     
@@ -609,7 +606,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     if(ip==0) printf("# INITIAL MEASUREMENT\n");
     // normalize wf 
-    gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );      
+    gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
@@ -815,7 +812,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );
+                                    md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
@@ -847,13 +844,13 @@ int main( int argc , char ** argv )
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
-                                        md.nthreads, streams) );
+                                        md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
             }
             
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_fkm3, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_fkm3, md.nthreads) );
             
             // NOTE: d_fkm3 keeps prediction of wave-function for midpoint
             
@@ -912,7 +909,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );
+                                    md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
@@ -941,13 +938,13 @@ int main( int argc , char ** argv )
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
-                                        md.nthreads, streams) );
+                                        md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, dt, nwfip, d_fkm1, d_wf, d_fkm2, md.nthreads) );
             }
             
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             
             // NOTE: d_wf keeps wave-function for t+dt
             if(ip==0) { printf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
@@ -1062,7 +1059,7 @@ int main( int argc , char ** argv )
             CHECK PCA_SETTINGS.H
 #endif
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
@@ -1092,7 +1089,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) ); 
+                                    md.nthreads) ); 
             
             // ----------------------------- corrector -----------------------------------
             // compute value of quantum friction coefficient  and current corrections coeff
@@ -1108,7 +1105,7 @@ int main( int argc , char ** argv )
             CHECK PCA_SETTINGS.H
 #endif
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0 || i_step==md.timesteps-1) gradients_computed=1; else gradients_computed=0;
@@ -1154,7 +1151,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, 
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );            
+                                    md.nthreads) );            
             
             it++; // update global time counter
         }

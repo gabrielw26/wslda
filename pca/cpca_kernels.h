@@ -1,7 +1,7 @@
 // List of functions from pca_kernels.cu
 
-#ifndef __PCA_KERNELS__
-#define __PCA_KERNELS__
+#ifndef __CPCA_KERNELS__
+#define __CPCA_KERNELS__
 
 // EDF functions
 double polarization_h(double n_a, double n_b);
@@ -69,7 +69,7 @@ int compute_energy(int it, double *d_densities, double *d_potentials, double *d_
 int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
-                            int nthreads, cudaStream_t* streams);
+                            int nthreads);
 int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
                               double *workarea, int nthreads);
 int amb_step1(int n, cufftDoubleComplex *ykm1, 
@@ -84,11 +84,10 @@ int amb45_step1(int n, cufftDoubleComplex *ykm1,
 int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
                          cufftDoubleComplex *fkm4, 
                          int nthreads);
-int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads, cudaStream_t* streams);
+int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads);
 int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, double *d_densities, int nthreads);
 int taylor_expansion_contribution(int it, double dt, int n, cufftDoubleComplex *wf_hpsi, 
                                              cufftDoubleComplex *wf_update, cufftDoubleComplex *wf_contr, int nthreads);
 
-int creat_streams (cudaStream_t* streams);
 #endif
 

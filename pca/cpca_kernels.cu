@@ -12,8 +12,6 @@ typedef thrust::complex<double> Complex;
 #include "pca_macro.h"
 #include "pca_edf.h"
 
-#include "reduce_suffle.h"
-
 #include "omp.h"
 // ===========================================================================
 // ============================ CONSTANTS ====================================
@@ -252,19 +250,6 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
     
     return 0;
 }
-
-extern "C" int local_reductionR_MANY(double *array, int size, double *partial_sums, int threads, int mode, int M, double* work)
-{
-        deviceReduce_suffle_MANY(array, partial_sums, size, threads_red_d, M, work);
-        return 0;
-}
-extern "C" int local_reductionR_MANY_st(double *array, int size, double *partial_sums, int threads, int mode, int M, double* work,
-                                        cudaStream_t streams)
-{
-        deviceReduce_suffle_MANY_st(array, partial_sums, size, threads_red_d, streams, M, work);
-        return 0;
-}
-
 
 // =======================================================================================
 // ================================ compute_potentials ===================================
@@ -1170,18 +1155,6 @@ __global__ void kernel_compute_qpe(Complex *wf1_u, Complex *wf2_u, Complex *wf1_
     }
 }
 
-__global__ void kernel_compute_qpe_MANY(Complex *wf1_u, Complex *wf2_u, Complex *wf1_v, Complex *wf2_v, double *re, int M)
-{
- size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
- Complex p;
- if(ixyz<NXY)
-   for (int m=0; m<M; m++)
-   {
-        p=thrust::conj(wf1_u[ixyz+m*NXY])*wf2_u[ixyz+m*NXY] + thrust::conj(wf1_v[ixyz+m*NXY])*wf2_v[ixyz+m*NXY];
-        re[ixyz+m*NXY]=p.real();//(thrust::conj(wf1_u[ixyz])*wf2_u[ixyz] + thrust::conj(wf1_v[ixyz])*wf2_v[ixyz]).real();
-   }
-}
-
 
 __global__ void kernel_compute_qpe_norm(Complex *wf1_u, Complex *wf2_u, Complex *wf1_v, Complex *wf2_v, double *qpe_re, double *norm_re)
 {
@@ -1278,7 +1251,7 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
 extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
-                            int nthreads, cudaStream_t* streams)
+                            int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXY/nthreads);
@@ -1380,39 +1353,18 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
         size_t shift=0;
         int iwf;
         
-	int HowMany = HOWMANY;
-	if (HowMany>n) 
-		HowMany = n;
-	int rest_n = n % HowMany;
-	int local_n = n - rest_n;
-	int stream_nr;
-	int stream_max = streams_d;
-	if (streams_d * HowMany > n - 1) 
-		stream_max = (n-1) / HowMany;
-    double *work_reduction = (double*) pca_cufft_work_area + n + HowMany * NXY * stream_max;
-
         // compute quasi-particle energy for each wave-function
-#pragma omp parallel for private (stream_nr, ierr) lastprivate(shift, iwf)
-        for(iwf=0; iwf<local_n; iwf+=HowMany) // for each wave-function
+        for(iwf=0; iwf<n; iwf++) // for each wave-function
         {
-
-            shift = iwf * NXY;
-            stream_nr = (iwf / HowMany) % stream_max;
-            kernel_compute_qpe_MANY<<<nblocks, nthreads, 0, streams[stream_nr]>>>(
-                                                        (Complex *)wf_in+shift,        (Complex *)wf_out+shift,
-                                                        (Complex *)wf_in+shift+n*NXY, (Complex *)wf_out+shift+n*NXY,
-                                                         gpe+n + stream_nr * HowMany * NXY, HowMany);            
-	    local_reductionR_MANY_st(gpe+n + stream_nr * HowMany * NXY, NXY, gpe+iwf, nthreads, 0, HowMany,
-                                        work_reduction + stream_nr * HowMany * NXY, streams[stream_nr]);
+            kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift, 
+                                                    (Complex *)wf_in+shift+n*NXY, (Complex *)wf_out+shift+n*NXY, 
+                                                    gpe+iwf);
+            
+            ierr = local_reductionR(gpe+iwf, NXY, gpe+iwf, nthreads, 0);
+            if(ierr!=0) return ierr;    
+            
+            shift+=NXY; // move pointer to next wf
         }
-	shift+=NXY*HowMany;
-	if (rest_n>0){
-           HowMany = rest_n;
-           kernel_compute_qpe_MANY<<<nblocks, nthreads>>>( (Complex *)wf_in+shift,        (Complex *)wf_out+shift,
-                                                	   (Complex *)wf_in+shift+n*NXY, (Complex *)wf_out+shift+n*NXY,
-                                                 	    gpe+n, HowMany);
-           local_reductionR_MANY(gpe+n, NXY, gpe+iwf, nthreads, 0, HowMany, work_reduction);
-	}
 
     }
     else // use given values
@@ -1676,17 +1628,6 @@ __global__ void kernel_compute_norm(Complex *wf_u, Complex *wf_v, double *norm)
     }
 }
 
-__global__ void kernel_compute_norm_MANY(Complex *wf_u, Complex *wf_v, double *norm, int M)
-{
- size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
- if(ixyz<NXY)
-   for (int m=0; m<M; m++)
-   {
-        norm[ixyz+m*NXY]=thrust::norm(wf_u[ixyz+m*NXY])+thrust::norm(wf_v[ixyz+m*NXY]);
-   }
-}
-
-
 __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -1706,78 +1647,13 @@ __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
 }
 
 
-#ifdef PCA_REDUCE_MANY
 /**
  * Function normalizes wave-functions
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf pointer to wave-functions
  * @return 0 - OK, otherwise ERROR 
  * */
-extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads, cudaStream_t* streams)
-{
-    return 1; // NOT IMPLMENTED IN CPCA VERSION - CONTACT GW
-    
-    // number of blocks
-    int nblocks = (int)ceil((float)NXY/nthreads);
-    int ierr;
-    
-    double * norm  = (double *)pca_cufft_work_area; // Use here work area of cuFFT as working buffer
-
-    size_t shift=0;
-    int iwf;
-    int HowMany = HOWMANY;
-    if (HowMany>n) HowMany = n;
-    int rest_n = n % HowMany;
-    int local_n = n - rest_n;
-    int stream_nr;
-    int stream_max = streams_d;
-    if (streams_d*HowMany>n-1) 
-	stream_max = (n-1) / HowMany;
-
-    double *work_reduction = (double*) pca_cufft_work_area+n+HowMany*NXY*stream_max;
-
-    
-    // compute norm for each wave-function
-#pragma omp parallel for private (stream_nr, ierr) lastprivate(shift, iwf)
-    for(iwf=0; iwf<local_n; iwf+=HowMany) // for each wave-function
-    {
-
-        shift = iwf*NXY;
-
-        stream_nr = (iwf / HowMany) % stream_max;
-        
-
-        kernel_compute_norm_MANY<<<nblocks, nthreads, 0, streams[stream_nr]>>>
-                                                ((Complex *)wf+shift, (Complex *)wf+shift+n*NXY,
-                                                 norm + n + stream_nr * HowMany * NXY, HowMany);        
-        local_reductionR_MANY_st(norm + n + stream_nr * HowMany * NXY, NXY, norm+iwf,
-                                 nthreads, 0, HowMany, work_reduction+ stream_nr * HowMany * NXY,
-                                 streams[stream_nr]);
-    }
-    shift+=NXY*HowMany;
-    if (rest_n>0) {
-        HowMany = rest_n;
-        kernel_compute_norm_MANY<<<nblocks, nthreads>>>((Complex *)wf+shift, (Complex *)wf+shift+n*NXY, norm+n, HowMany);
-
-        local_reductionR_MANY(norm+n, NXY, norm+iwf, nthreads, 0, HowMany, work_reduction);
-    }
-    
-    // normalize wf
-    kernel_normalize_wf<<<nblocks, nthreads>>>(n, (Complex *)wf, norm); 
-
-    return 0;
-    
-}
-
-#else
-
-/**
- * Function normalizes wave-functions
- * @param n  number of wave-functions (u,v pairs) to process
- * @param wf pointer to wave-functions
- * @return 0 - OK, otherwise ERROR 
- * */
-extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads, cudaStream_t* streams)
+extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXY/nthreads);
@@ -1811,7 +1687,6 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads, cudaStr
     return 0;
     
 }
-#endif
 
 // =======================================================================================
 // ============================== multiply_wf_by_alpha ===================================
@@ -1943,10 +1818,4 @@ extern "C" int taylor_expansion_contribution(int it, double dt, int n, cufftDoub
     return 0;
 }
 
-extern "C" int creat_streams (cudaStream_t* streams){
- int i;
- for (i=0; i<streams_d; i++)
-        cudaStreamCreate(&streams[i]);
- return 0;
-}
 

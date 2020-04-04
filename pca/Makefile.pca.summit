@@ -9,7 +9,7 @@ CCFLAGS = -I$(OMPI_DIR)/include
 CCLIB =  -L$(OMPI_DIR)/lib -L$(CUDA_DIR)/targets/ppc64le-linux/lib/stubs -lmpi_ibm -lnvidia-ml -L$(CUDA_DIR)/lib64 -lcudart -lcufft -lm
 CCFLAGS = -O3 -DTARGET_MACHINE=TITAN
 NVCCFLAGS = -O3 -arch=sm_60  
-OBJ = pca_derivative.o pca_kernels.o pca_dens.o reduce_suffle.o
+OBJ = pca_derivative.o pca_kernels.o pca_dens.o
 OBJmpi =  pca.o pca_checkpoint.o
 
 all: $(OBJ) $(OBJmpi)

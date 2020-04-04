@@ -78,15 +78,6 @@
 // NOTE: the systems rotates along z-axis
 // #define WORK_IN_ROTATING_FRAME
 
-// activate parallel method for local reductions
-// #define PCA_REDUCE_MANY
-// if yes fill correctly these values
-#define blockSize_d 256
-#define threads_red_d 1024
-
-#define HOWMANY 16
-#define streams_d 8
-
 // ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
 // ===================================================================================
