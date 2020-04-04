@@ -58,7 +58,7 @@ int create_measurement_file_with_header(const char * file_name,
     }
     
     int fd ; /* file descriptor for handling the file or device */
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_CREAT | O_RDWR  , fd_mode ) ) == -1 ) return -2;
     
     long int bytes_written ;
@@ -105,7 +105,7 @@ int read_measurement_file_header(const char * file_name,
 {
     
     int fd ; /* file descriptor for handling the file or device */
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -1;
     
     int werr=0;
@@ -144,7 +144,7 @@ int add_measurement_entry(const char * file_name, void * array, size_t size)
     int nr_rec;
     long int bytes_rw ;
         
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_RDWR  , fd_mode ) ) == -1 ) return -1;
   
     // Update counter 
@@ -175,8 +175,8 @@ int read_measurement_entry(const char * file_name, int entry_number, void * arra
     int nr_rec;
     long int bytes_rw ;
         
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
-    if ( ( fd = open( file_name , O_RDWR  , fd_mode ) ) == -1 ) return -1;
+    mode_t fd_mode = S_IRUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -1;
   
     // get counter 
     long int shift=MIO_CNT_INTS*sizeof(int) + MIO_CNT_double*sizeof(double);
@@ -210,7 +210,7 @@ int create_checkpoint_info(const char * file_name,
     }
     
     int fd ; /* file descriptor for handling the file or device */
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_CREAT | O_RDWR  , fd_mode ) ) == -1 ) return -2; 
         
     long int bytes_written ;
@@ -248,7 +248,7 @@ int read_checkpoint_info(const char * file_name,
                           )
 {
     int fd ; /* file descriptor for handling the file or device */
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -1;
     
     int werr=0;
@@ -287,7 +287,7 @@ int touch_file(const char * file_name)
     }
     
     int fd ; /* file descriptor for handling the file or device */
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_CREAT | O_RDWR  , fd_mode ) ) == -1 ) return -2; 
     
     // Close file
@@ -308,7 +308,7 @@ int checkpoint_save_u_and_delta(const char * file_name, int nxyz, double *u, dou
     int werr=0;
     long int bytes_rw ;
     
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_CREAT | O_RDWR  , fd_mode ) ) == -1 ) return -2; 
     
     if (werr==0 && ( bytes_rw = write( fd , ( const void * ) u , nxyz*sizeof( double ) ) ) != nxyz*sizeof( double ) ) werr=-3;
@@ -326,7 +326,7 @@ int checkpoint_read_u_and_delta(const char * file_name, int nxyz, double *u, dou
     int werr=0;
     long int bytes_rw ;
     
-    mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
+    mode_t fd_mode = S_IRUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
     if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -2; 
     
     if (werr==0 && ( bytes_rw = read( fd , ( void * ) u , nxyz*sizeof( double ) ) ) != nxyz*sizeof( double ) ) werr=-3;
@@ -340,17 +340,6 @@ int checkpoint_read_u_and_delta(const char * file_name, int nxyz, double *u, dou
 
 int read_binary_file(const char * file_name, unsigned long int size, unsigned long int bshift, void * data)
 {     
-// //     NOTE - read function has problem if file is bigger than 20GB !!!
-//     int fd ; /* file descriptor for handling the file or device */
-//     long int bytes_rw ;
-//     
-//     mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
-//     if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -1; 
-//     if( lseek( fd, bshift, 0 )!= bshift ) return -2;
-//     if (( bytes_rw = read( fd , ( void * ) data , size ) ) != size ) return -3;
-// 
-//     // Close file
-//     close( fd );
     
     FILE *pFile;
     
@@ -369,19 +358,6 @@ int read_binary_file(const char * file_name, unsigned long int size, unsigned lo
 
 int append_to_binary_file(const char * file_name, size_t size, void * data)
 {     
-    // NOTE - write function has problem if file is bigger than 20GB !!!
-//     int fd ; /* file descriptor for handling the file or device */
-//     long int bytes_rw ;
-//     
-//     mode_t fd_mode = S_IRUSR | S_IWUSR | S_IRGRP; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
-//     if ( ( fd = open( file_name , O_APPEND | O_WRONLY , fd_mode ) ) == -1 ) return -1; 
-//     if (( bytes_rw = write( fd , ( const void * ) data , size ) ) != size ) return -3;
-// 
-//     // Close file
-//     close( fd );
-    
-    // use std writing routines
-//     printf("Adding to file `%s` data of size %ldB...\n", file_name, size);
     
     FILE *pFile;
     

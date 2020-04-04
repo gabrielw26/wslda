@@ -160,7 +160,11 @@ int main( int argc , char ** argv )
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
+#ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
+#else
+    md.Nb = md.Na+1;
+#endif
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
     
