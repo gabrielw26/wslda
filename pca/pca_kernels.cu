@@ -915,8 +915,8 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
         
         // read gradient corrections
 #ifdef CURRENT_CORRECTIONS
-        cja=0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]+j_corr_a_z[ixyz]);
-        cjb=0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]+j_corr_b_z[ixyz]);
+        cja=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]+j_corr_a_z[ixyz]);
+        cjb=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]+j_corr_b_z[ixyz]);
         
 //         p=na+nb;
 //         fr =p_regularization(p );
@@ -933,13 +933,13 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
         {
             // x-coordinate
             ja=j_a_x[ixyz];
-            gax=Complex(0.0,      fra*(1.-aa)*ja/na); 
+            gax=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
             // y-coordinate
             ja=j_a_y[ixyz];
-            gay=Complex(0.0,      fra*(1.-aa)*ja/na); 
+            gay=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
             // z-coordinate
             ja=j_a_z[ixyz];
-            gaz=Complex(0.0,      fra*(1.-aa)*ja/na); 
+            gaz=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
         }
         
         // Spin b component
@@ -954,13 +954,13 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
         {
             // x-coordinate
             jb=j_b_x[ixyz];
-            gbx=Complex(0.0,  -1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
+            gbx=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
             // y-coordinate
             jb=j_b_y[ixyz];
-            gby=Complex(0.0,  -1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
+            gby=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
             // z-coordinate
             jb=j_b_z[ixyz];
-            gbz=Complex(0.0,  -1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
+            gbz=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
         }
 #else       
         cja=0.0;
