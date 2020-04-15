@@ -1091,6 +1091,11 @@ int main( int argc , char ** argv )
                 if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange;
                 else                 kzmuchange_a=-1.0*md.mumaxchange;
             }
+            if(fabs(kzmuchange_b)>md.mumaxchange)
+            {
+                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange;
+                else                 kzmuchange_b=-1.0*md.mumaxchange;
+            }
             dc_mu_a -= kzmuchange_a;
             dc_mu_b -= kzmuchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
