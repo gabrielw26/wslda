@@ -5,9 +5,6 @@
 // Authors:
 // Gabriel Wlazlowski <gabrielw@if.pw.edu.pl>
 
-// TODO:
-// 4. MATRIX_IS_REAL mode
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -34,11 +31,17 @@
 // #define USE_SCALAPACK_PZHEEVD
 // #define USE_SCALAPACK_PZHEEV
 
+// activate this if you know that matrix elements will be real
+// #define MATRIX_IS_REAL
+
 #ifdef USE_SCALAPACK_PZHEEVR
 /* PZHEEVR prototype */
 extern void pzheevr_(char* jobz, char* range, char* uplo, int* n, double complex* a, int* ia, int* ja, int* desca, 
                     double* vl, double* vu, int* il, int* iu, int* m, int* nz, double* w, double complex* z, int* iz, int* jz, int* descz, 
                     double complex* work, int* lwork, double* rwork, int* lrwork, int* iwork, int* liwork, int* info);
+extern void pdsyevr_(char* jobz, char* range, char* uplo, int* n, double*         a, int* ia, int* ja, int* desca, 
+                    double* vl, double* vu, int* il, int* iu, int* m, int* nz, double* w, double*         z, int* iz, int* jz, int* descz, 
+                    double*         work, int* lwork,                             int* iwork, int* liwork, int* info);
 #endif
 #ifdef USE_SCALAPACK_PZHEEVD
 /* PZHEEVD prototype */
@@ -46,6 +49,10 @@ extern void pzheevd_ (char *jobz , char *uplo , int *n , double complex *a , int
              double *w , double complex *z , int *iz , int *jz , int *descz , 
              double complex *work , int *lwork , double *rwork , int *lrwork , 
              int *iwork, int *liwork, int *info );
+extern void pdsyevd_ (char *jobz , char *uplo , int *n , double         *a , int *ia , int *ja , int *desca , 
+             double *w , double         *z , int *iz , int *jz , int *descz , 
+             double         *work , int *lwork , 
+             int *iwork , int *liwork , int *info );
 #endif
 #ifdef USE_SCALAPACK_PZHEEV
 /* PZHEEVD prototype */
@@ -366,6 +373,11 @@ int main( int argc , char ** argv )
     double * En; 
     cppmallocl(En, 2*NXYZ,double); // allocate space for the whole vector
     
+#ifdef MATRIX_IS_REAL
+    double *hR = (double *)h;
+    double *UR = (double *)U;
+#endif
+    
     // ====================================================================================
     // ================================ CREATE WAVE VECTORS ===============================
     // ====================================================================================
@@ -656,6 +668,9 @@ int main( int argc , char ** argv )
 #ifdef USE_SCALAPACK_PZHEEV
     if(iam==0) printf("# PREPARING WORKING BUFFERS FOR: `pzheev`\n");
 #endif    
+#ifdef MATRIX_IS_REAL
+    if(iam==0) printf("# MATRIX IS ASSUMED TO BE REAL! SWITCHING TO pdsyev* VERSION!\n");
+#endif
     double complex * work , tw[ 2 ] ;
     double * rwork , tw_[2] ;
     int lwork = -1, lrwork = -1, liwork = 7 * Hsize + 8 * q + 2 ; 
@@ -669,15 +684,24 @@ int main( int argc , char ** argv )
     int pzheevr_iu=Hsize; // not referenced in this context
     int pzheevr_nz=-1;
     cppmallocl(iwork, liwork, int);
+#ifdef MATRIX_IS_REAL
+    pdsyevr_( "V", "V", "U", &Hsize,hR, &ONE , &ONE , DESCA, &pzheevr_vl, &pzheevr_vu, &pzheevr_il, &pzheevr_iu, &pzheevr_m, &pzheevr_nz,
+              En,UR, &ONE , &ONE, DESCA            , tw_, &lrwork, iwork, &liwork, &info );
+#else
     pzheevr_( "V", "V", "U", &Hsize, h, &ONE , &ONE , DESCA, &pzheevr_vl, &pzheevr_vu, &pzheevr_il, &pzheevr_iu, &pzheevr_m, &pzheevr_nz,
               En, U, &ONE , &ONE, DESCA, tw, &lwork, tw_, &lrwork, iwork, &liwork, &info );
+#endif
     liwork = iwork[ 0 ] ;
     free( iwork ) ;
     cppmallocl(iwork, liwork, int);
 #endif
 #ifdef USE_SCALAPACK_PZHEEVD
     cppmallocl(iwork, liwork, int);
+#ifdef MATRIX_IS_REAL
+    pdsyevd_( "V", "U", &Hsize,hR, &ONE , &ONE , DESCA, En,UR, &ONE , &ONE, DESCA            , tw_, &lrwork, iwork, &liwork, &info );
+#else
     pzheevd_( "V", "U", &Hsize, h, &ONE , &ONE , DESCA, En, U, &ONE , &ONE, DESCA, tw, &lwork, tw_, &lrwork, iwork, &liwork, &info );
+#endif
     liwork = iwork[ 0 ] ;
     free( iwork ) ;
     cppmallocl(iwork, liwork, int);
@@ -769,17 +793,35 @@ int main( int argc , char ** argv )
             // diagonalize
             b_t();
             if(gr_iam==0) printf("# DIAGONALIZATION %d %d...\n", it, ikz); fflush(stdout);
+#ifdef MATRIX_IS_REAL
+        // convert matrix to real version
+//         for(ixyz=0; ixyz<nip*niq; ixyz++) if(fabs(cimag(h[ixyz]))>1.0e-12) {printf("# ERROR: matrix has imginary components!\n"); ABORT_NOBARRIER;}
+        for(ixyz=0; ixyz<nip*niq; ixyz++) hR[ixyz] = creal(h[ixyz]);
+#endif
 #ifdef USE_SCALAPACK_PZHEEVR
             pzheevr_m=-1;
             pzheevr_nz=-1;
+#ifdef MATRIX_IS_REAL
+            pdsyevr_( "V", "V", "U", &Hsize,hR, &ONE , &ONE , DESCA, &pzheevr_vl, &pzheevr_vu, &pzheevr_il, &pzheevr_iu, &pzheevr_m, &pzheevr_nz,
+                    En,UR, &ONE , &ONE, DESCA              , rwork, &lrwork, iwork, &liwork, &info );
+#else
             pzheevr_( "V", "V", "U", &Hsize, h, &ONE , &ONE , DESCA, &pzheevr_vl, &pzheevr_vu, &pzheevr_il, &pzheevr_iu, &pzheevr_m, &pzheevr_nz,
                     En, U, &ONE , &ONE, DESCA, work, &lwork, rwork, &lrwork, iwork, &liwork, &info );
 #endif
+#endif
 #ifdef USE_SCALAPACK_PZHEEVD
+#ifdef MATRIX_IS_REAL
+            pdsyevd_( "V", "U", &Hsize,hR, &ONE , &ONE , DESCA, En,UR, &ONE , &ONE, DESCA              , rwork, &lrwork, iwork, &liwork, &info );
+#else
             pzheevd_( "V", "U", &Hsize, h, &ONE , &ONE , DESCA, En, U, &ONE , &ONE, DESCA, work, &lwork, rwork, &lrwork, iwork, &liwork, &info );
 #endif
+#endif
 #ifdef USE_SCALAPACK_PZHEEV
+#ifdef MATRIX_IS_REAL
+            NOT IMPLEMENTED!
+#else
             pzheev_( "V", "U", &Hsize, h, &ONE , &ONE , DESCA, En, U, &ONE , &ONE, DESCA, work, &lwork, rwork, &lrwork, &info );
+#endif
 #endif
 #if defined(USE_SCALAPACK_PZHEEVD) || defined(USE_SCALAPACK_PZHEEV) || defined(USE_SCALAPACK_PZHEEVR)
             /* Check for convergence */
@@ -788,6 +830,11 @@ int main( int argc , char ** argv )
                 printf( "The algorithm failed to compute eigenvalues!\n" );
                 ABORT_NOBARRIER;
             }
+#endif
+
+#ifdef MATRIX_IS_REAL
+        // convert result back to complex
+        for(ixyz=nip*niq-1; ixyz>=0; ixyz--) U[ixyz] = UR[ixyz] + I*0.0;
 #endif
             
 #ifdef USE_SCALAPACK_PZHEEVR
