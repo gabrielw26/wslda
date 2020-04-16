@@ -1163,7 +1163,7 @@ int main( int argc , char ** argv )
                 energy[2]/Effg, // 8
                 energy[3]/Effg, // 9
                 energy[4]/Effg, //10
-                E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] + dc_Omega_a*Lz_a + dc_Omega_b*Lz_b, // 11
+                E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b, // 11
                 dc_mu_a, //12
                 dc_mu_b, //13
                 beta, // 14

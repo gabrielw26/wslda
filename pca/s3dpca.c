@@ -1220,23 +1220,24 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old));
         if(iam==0)
         {
-            #define OUTPUT_ENTRIES 15
+            #define OUTPUT_ENTRIES 16
             double line_items[OUTPUT_ENTRIES]={     
-                npart[SPINA], // 1
-                npart[SPINB], // 2
-                npart[SPINA]+npart[SPINB], // 3
-                E_tot/Effg, // 4
-                energy[0]/Effg, // 5
-                energy[1]/Effg, // 6
-                energy[2]/Effg, // 7
-                energy[3]/Effg, // 8
-                energy[4]/Effg, //9
-                dc_mu_a, //10
-                dc_mu_b, //11
-                beta, // 12
-                Lz_a/npart[SPINA], // 13
-                Lz_b/npart[SPINB], // 14
-                Lz/(npart[SPINA]+npart[SPINB]) ,  // 15
+                npart[SPINA], // 2
+                npart[SPINB], // 3
+                npart[SPINA]+npart[SPINB], // 4
+                E_tot/Effg, // 5
+                energy[0]/Effg, // 6
+                energy[1]/Effg, // 7
+                energy[2]/Effg, // 8
+                energy[3]/Effg, // 9
+                energy[4]/Effg, //10
+                E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b, // 11
+                dc_mu_a, //12
+                dc_mu_b, //13
+                beta, // 14
+                Lz_a/npart[SPINA], // 15
+                Lz_b/npart[SPINB], // 16
+                Lz/(npart[SPINA]+npart[SPINB]) ,  // 17
             };
             cpu_exec( add_line_to_file(it, rt_tot, OUTPUT_ENTRIES, line_items) );
             
