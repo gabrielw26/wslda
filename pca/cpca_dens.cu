@@ -51,20 +51,47 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             v=wf[n*NXY +iwf*NXY+ixyz];
             
             // form na, nb, nu
+#ifdef SPINSYMMETRY_MODE
+            // na+=... will be taken later as nb
+            nb+=(thrust::norm(v)*fbmEn + thrust::norm(u)*fbEn)*wcnt;
+            _nu+=u*thrust::conj(v)*(fbmEn-fbEn)*wcnt;
+#else
             na+=thrust::norm(u)*fbEn *wcnt;
             nb+=thrust::norm(v)*fbmEn*wcnt;
             _nu+=u*thrust::conj(v)*(fbmEn-fbEn)/2.0 *wcnt;
+#endif
             
+
             // read derivatives from u 
             wfdx=wf_d_dx[       iwf*NXY+ixyz];
             wfdy=wf_d_dy[       iwf*NXY+ixyz];
             wfdz=Complex(0.0,kz)*u; // i*kz*u(x,y)
             
             // form taua and j_a
+#ifdef SPINSYMMETRY_MODE
+            // do not compute taua and j_a - will taken from taub and j_b
+            // compute only contributions to taub and j_b comming from derivatives of u
+    #ifdef TAU_COMPUTATION_VIA_GRADIENTS
+            taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn*wcnt;
+    #else
+//             taub+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn*wcnt; 
+            TODO
+    #endif
+            jbx+=(thrust::conj(u)*wfdx).imag()*fbEn*wcnt;
+            jby+=(thrust::conj(u)*wfdy).imag()*fbEn*wcnt;
+            // jbz+=(thrust::conj(u)*wfdz).imag()*fbEn*wcnt; // no currents along z direction
+#else
+          
+    #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taua+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn*wcnt;
+    #else
+//             taua+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn*wcnt; 
+            TODO
+    #endif
             jax+=(thrust::conj(u)*wfdx).imag()*fbEn*wcnt;
             jay+=(thrust::conj(u)*wfdy).imag()*fbEn*wcnt;
             // jaz+=(thrust::conj(u)*wfdz).imag()*fbEn*wcnt; // no currents along z direction
+#endif
             
             // read derivatives from v 
             wfdx=wf_d_dx[n*NXY+iwf*NXY+ixyz];
@@ -72,11 +99,24 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             wfdz=Complex(0.0,kz)*v; // i*kz*v(x,y)
             
             // form taua and j_a
+#ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbmEn*wcnt;
+#else
+//             taub+=(thrust::conj(v)*d_wf_laplace[n*NXYZ+iwf*NXYZ+ixyz]).real()*fbmEn*wcnt; 
+            TODO
+#endif
             jbx-=(thrust::conj(v)*wfdx).imag()*fbmEn*wcnt;
             jby-=(thrust::conj(v)*wfdy).imag()*fbmEn*wcnt;
             // jbz-=(thrust::conj(v)*wfdz).imag()*fbmEn*wcnt; // no currents along z direction
         }
+        
+#ifdef SPINSYMMETRY_MODE
+        na=nb;
+        taua=taub;
+        jax=jbx;
+        jay=jby;
+        jaz=jbz; 
+#endif
         
         // save result to global memory and add missing NZ factor from 1/sqrt(NZ) * exp(i*kz*z)
         rho_a[ixyz]=na/DENS_FACTOR_M/(double)NZ;

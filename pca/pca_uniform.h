@@ -1425,15 +1425,30 @@ int get_nwf_to_evolve_2d(int *nwf)
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
         if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative kz values 
-            *nwf+=2; // thera are two soloutions for each momentum
+            if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
+            else *nwf+=2; // thera are two soloutions for each momentum
             
         // make test for correctness
-        if(kk2[ixyz]<kc2)
+        if(md.spinsymmetry==1)
         {
-            if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-            else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
-            
-            total_nwf2+=2;
+            if(kk2[ixyz]<kc2) 
+            {
+                // take only positive energy states
+                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+                
+                total_nwf2+=1;
+            }
+        }
+        else
+        {
+            if(kk2[ixyz]<kc2)
+            {
+                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+                
+                total_nwf2+=2;
+            }
         }
              
 //         printf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
@@ -1527,16 +1542,30 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     ixyz=0;
     int nwf=0;
     int total_nwf=0;
+    int takeit;
+    
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere
-            nwf+=2; // thera are two soloutions for each momentum
+        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // only positive energy state
+            if(md.spinsymmetry==1) nwf+=1; // thera are two soloutions for each momentum
+            else nwf+=2; // thera are two soloutions for each momentum
             
         // make test for correctness
-        if(kk2[ixyz]<kc2)
+        if(md.spinsymmetry==1)
         {
-            if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-            else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+            if(kk2[ixyz]<kc2)
+            {
+                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+            }
+        }
+        else 
+        {
+            if(kk2[ixyz]<kc2)
+            {
+                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+            }
         }
         
         ixyz++;
@@ -1563,7 +1592,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
 
     if(printout) printf("# UNIFORM CREATE WF: Creating wave-functions.\n");
     ixyz=0;
-    nwf=0;
+    nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
         if(kk2[ixyz]<kc2 && kkz[iz]>=0.0) // take only from sphere
@@ -1576,9 +1605,24 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
             vk = delta*delta / ( pow(0.5*(eta_a+eta_b)+0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta);
             uk = 1.0 - vk;
             vk = sqrt(vk); uk=sqrt(uk);
-            if(eta_b+ek<0.0) vk=-1.0*vk;    
+            if(eta_b+ek<0.0) vk=-1.0*vk;  
             
-            if(nwf>=idxfrom && nwf<idxto) // this is my wave-function
+            takeit=0;
+            if(md.spinsymmetry>0)
+            {
+                if(ek>0.0) 
+                {
+                    nwf++;
+                    if(nwf>=idxfrom && nwf<idxto) takeit=1;
+                }
+            }
+            else
+            {
+                nwf++;
+                if(nwf>=idxfrom && nwf<idxto) takeit=1;
+            }
+            
+            if(takeit) // this is my wave-function
             {
                 // u-components
                 shift=NXY*(nwf-idxfrom); // local index
@@ -1612,7 +1656,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
 //                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
-            nwf++; 
+            
             
             // solution 2
             ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
@@ -1621,7 +1665,22 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
             vk = sqrt(vk); uk=sqrt(uk);
             if(eta_b+ek<0.0) vk=-1.0*vk;   
             
-            if(nwf>=idxfrom && nwf<idxto) // this is my wave-function
+            takeit=0;
+            if(md.spinsymmetry>0)
+            {
+                if(ek>0.0) 
+                {
+                    nwf++;
+                    if(nwf>=idxfrom && nwf<idxto) takeit=1;
+                }
+            }
+            else
+            {
+                nwf++;
+                if(nwf>=idxfrom && nwf<idxto) takeit=1;
+            }
+            
+            if(takeit) // this is my wave-function
             {
                 // u-components
                 shift=NXY*(nwf-idxfrom); // local index
@@ -1655,7 +1714,6 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
 //                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
-            nwf++; 
         }
         ixyz++;
     }    

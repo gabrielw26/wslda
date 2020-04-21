@@ -6,10 +6,10 @@
 // Gabriel Wlazlowski <gabrielw@if.pw.edu.pl>
 
 // compile:
-// mpicc cpca.c -o cpca -lm
+//      make -f Makefile.cpca.(machine)
 
-// TODO:
-// 1. SPINSYMMETRY_MODE
+// test run:
+//      mpirun -np 8 ./pca input.test.cpca.txt 
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -101,14 +101,6 @@ int main( int argc , char ** argv )
     // current corrections
     double cccoeff=0.0;
     
-//     // TODO - ad hoc section
-//     double *h_weight_andreev, *d_weight_andreev;
-//     double *h_densities_andreev; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
-//     double *d_densities_andreev; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
-//     gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_andreev) );
-//     gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_andreev) );
-//     // TODO - end of section
-    
     /* start main */
     wt_b_t(); // tag init time
     
@@ -161,12 +153,20 @@ int main( int argc , char ** argv )
     double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
     dt/=Emax; // time step
     
+#ifdef SPINSYMMETRY_MODE
+    if(ip==0) printf("# IMPOSING: spinsymmetry=1\n");
+    md.spinsymmetry=1;
+#else
+    if(ip==0 && md.spinsymmetry==1) printf("RECOMPILE CODE WITH ACTIVE SPINSYMMETRY_MODE MODE!!!\n");
+    if(md.spinsymmetry==1) ABORT;
+#endif
+    
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
 #ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
 #else
-    md.Nb = md.Na+1;
+    md.Nb = md.Na; // +1;
 #endif
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
@@ -412,22 +412,6 @@ int main( int argc , char ** argv )
             if(ip%_4_nblocks == i) file_operation( read_kzSLpca_wf(md.inprefix, NZ, nwf_per_kz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkz) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
-            
-//         // TODO - ad hoc section - creates weights that select only Andreev states
-//         cppmallocl(h_weight_andreev, nwfip, double);
-//         #define ANDREEV_MAX_EN_CUTOFF 0.4
-//         for(i=0; i<nwfip; i++) 
-//             if(fabs(h_fbetaEn[i]/eF)<ANDREEV_MAX_EN_CUTOFF) h_weight_andreev[i]=1.0; 
-//             else                                            h_weight_andreev[i]=0.0;
-//             
-//         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_andreev) );
-//         gpu_exec( memcopy_host2gpu(h_weight_andreev, d_weight_andreev,  (size_t)nwfip*sizeof(double)) ); 
-//         
-//         double andreev_states=0.0, andreev_states_t=0.0;
-//         for(i=0; i<nwfip; i++) andreev_states+=h_weight_andreev[i];
-//         MPI_Allreduce( &andreev_states, &andreev_states_t, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//         if(ip==0) printf("# ANDREEV # number of states=%.1f\n", andreev_states_t);
-//         // TODO - end of ad hoc section
         
         for(i=0; i<nwfip; i++) h_fbetaEn[i]=fbeta(h_fbetaEn[i],beta); // convert quasiparticle energies into weights
         
@@ -712,41 +696,6 @@ int main( int argc , char ** argv )
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );   
     }
-
-//     // TODO - ad hoc section
-//     if(ip==0)
-//     {
-//         // Create empty files with headers - do it once
-//         sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-//         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
-//         sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-//         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
-//     }
-//     
-//     // densities - for andreev states only
-//     gpu_exec( calculate_densities_weighted(nwfip, d_wf, d_kkz, d_fbetaEn, d_weight_andreev, d_densities_andreev, md.nthreads) );
-//     // densities - global reduction
-//     gpu_exec( memcopy_gpu2host(d_densities_andreev, h_densities_andreev,  (size_t)12*NXY*sizeof(double)) ); 
-//     MPI_Allreduce( MPI_IN_PLACE, h_densities_andreev, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//     
-//     double andreev_particles[2], andreev_particles_total[2];
-//     if(ip==0)
-//     {
-//         // for each measurement add data to file
-//         sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-//         file_operation( add_measurement_entry(file_name, h_densities_andreev+0*NXY, sizeof(double)*NXY) );
-//         sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-//         file_operation( add_measurement_entry(file_name, h_densities_andreev+1*NXY, sizeof(double)*NXY) );
-//         
-//         for(j=0; j<2; j++) // spin up and down
-//         {
-//             andreev_particles[j]=0.0;
-//             for(ixyz=0; ixyz<NXY; ixyz++) andreev_particles[j]+=h_densities_andreev[j*NXY + ixyz];
-//         }
-//         
-//         printf("# ANDREEV %12.4f %12.8f %12.8f\n", time*eF, andreev_particles[0], andreev_particles[1]);
-//     }
-//     // TODO - end of ad hoc section
     
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
@@ -1236,61 +1185,6 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_current_b.dpca", md.outprefix);
             file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXY*3) );
         }
-        
-//         // TODO ad hoc section
-//         // densities - for andreev states only
-//         gpu_exec( calculate_densities_weighted(nwfip, d_wf, d_kkz, d_fbetaEn, d_weight_andreev, d_densities_andreev, md.nthreads) );
-//         // densities - global reduction
-//         gpu_exec( memcopy_gpu2host(d_densities_andreev, h_densities_andreev,  (size_t)12*NXY*sizeof(double)) ); 
-//         MPI_Allreduce( MPI_IN_PLACE, h_densities_andreev, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//         
-//         if(ip==0)
-//         {
-//             // for each measurement add data to file
-//             sprintf(file_name, "%s_density_andreev_a.dpca", md.outprefix);
-//             file_operation( add_measurement_entry(file_name, h_densities_andreev+0*NXY, sizeof(double)*NXY) );
-//             sprintf(file_name, "%s_density_andreev_b.dpca", md.outprefix);
-//             file_operation( add_measurement_entry(file_name, h_densities_andreev+1*NXY, sizeof(double)*NXY) );
-//             
-//             for(j=0; j<2; j++) // spin up and down
-//             {
-//                 andreev_particles[j]=0.0;
-//                 for(ixyz=0; ixyz<NXY; ixyz++) andreev_particles[j]+=h_densities_andreev[j*NXY + ixyz];
-//             }
-//             
-//             printf("# ANDREEV %12.4f %12.8f %12.8f\n", time*eF, andreev_particles[0], andreev_particles[1]);
-//         }
-//         // TODO end of ad hoc section
-
-        // TODO ad hoc section
-        if(ip==0)
-        {
-            sprintf(file_name, "%s_checkpoint.kzpca", md.outprefix);
-//             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "wb");
-            double npart[2];
-            npart[SPINA]=Na;
-            npart[SPINB]=Nb;
-            beta=1./(0.01*eF); // set by hand
-            
-            // write all nescesary data to file
-            i=0;
-            fwrite(&i           , sizeof(int)         , 1 , pFile); // iteration number
-            fwrite(&mu[SPINA]   , sizeof(double)      , 1 , pFile); 
-            fwrite(&mu[SPINB]   , sizeof(double)      , 1 , pFile); 
-            fwrite(&ec          , sizeof(double)      , 1 , pFile); 
-            fwrite(&beta        , sizeof(double)      , 1 , pFile); 
-            fwrite(&eF          , sizeof(double)      , 1 , pFile); 
-            fwrite(&kF          , sizeof(double)      , 1 , pFile);
-            fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-            fwrite(h_potentials , sizeof(double)*NX*NY, 4 , pFile);
-            fwrite(h_densities  , sizeof(double)*NX*NY, 12, pFile);
-            fwrite(h_energy     , sizeof(double)      , 5 , pFile);
-            fwrite(npart        , sizeof(double)      , 2 , pFile);
-                  
-            fclose(pFile);
-        }
-        // TODO end of ad hoc section
         
         if(ip==0) 
         {
