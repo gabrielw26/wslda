@@ -167,12 +167,22 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
             // read u and v
             u=wf[       iwf*NXY+ixyz];
             v=wf[n*NXY+iwf*NXY+ixyz];
-            
+                        
             // form na, nb, nu
+#ifdef SPINSYMMETRY_MODE
+            // na+=... will be taken later as nb
+            nb+=(thrust::norm(v)*fbmEn + thrust::norm(u)*fbEn)*wcnt;
+            _nu+=u*thrust::conj(v)*(fbmEn-fbEn)*wcnt;
+#else
             na+=thrust::norm(u)*fbEn *wcnt;
             nb+=thrust::norm(v)*fbmEn*wcnt;
             _nu+=u*thrust::conj(v)*(fbmEn-fbEn)/2.0 *wcnt;
+#endif
         }
+        
+#ifdef SPINSYMMETRY_MODE
+        na=nb;
+#endif
         
         // save result to global memory
         rho_a[ixyz]=na/DENS_FACTOR_M/(double)NZ;
@@ -265,6 +275,9 @@ __global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, doubl
                                          double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z
                                         )
 {
+    // TODO: kernel_calculate_densities_weighted does not support SPINSYMMETRY_MODE
+    // See: issue #5
+    
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
 
     double na=0.0, nb=0.0;
