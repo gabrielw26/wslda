@@ -11,7 +11,7 @@ typedef thrust::complex<double> Complex;
 // ========================================= calculate_densities ==================================
 // ================================================================================================
 __global__ void kernel_calculate_densities(size_t n, Complex *wf, 
-                                         Complex *wf_d_dx, Complex *wf_d_dy, double *kkz, 
+                                         Complex *wf_d_dx, Complex *wf_d_dy, Complex *d_wf_laplace, double *kkz, 
                                          double *fbetaEn,
                                          double *rho_a, double *rho_b,
                                          double *tau_a, double *tau_b,
@@ -30,6 +30,10 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
     Complex u, v, wfdx, wfdy, wfdz;
     double fbEn, fbmEn, kz, wcnt;
     #define DENS_FACTOR_M 10000.
+
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+    double kz2;
+#endif
     
     size_t iwf;
     
@@ -42,6 +46,9 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             fbEn=fbetaEn[iwf]*DENS_FACTOR_M;
             fbmEn = DENS_FACTOR_M - fbEn;
             kz = kkz[iwf];
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+            kz2=kz*kz; // do not kill N/2 component in case of laplace
+#endif
             wcnt = 2.0; // take into account +kz and -kz
             if(fabs(kz)<1.0e-12) wcnt = 1.0; // except for kz=0.0
             if(fabs(kz+M_PI)<1.0e-12) kz = 0.0; // momentum for which I should kill contribution for gradients
@@ -74,8 +81,7 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
     #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn*wcnt;
     #else
-//             taub+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn*wcnt; 
-            TODO
+            taub+=(thrust::conj(u)*( d_wf_laplace[       iwf*NXY+ixyz] - u*kz2 )).real()*fbEn*wcnt; 
     #endif
             jbx+=(thrust::conj(u)*wfdx).imag()*fbEn*wcnt;
             jby+=(thrust::conj(u)*wfdy).imag()*fbEn*wcnt;
@@ -85,8 +91,7 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
     #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taua+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbEn*wcnt;
     #else
-//             taua+=(thrust::conj(u)*d_wf_laplace[       iwf*NXYZ+ixyz]).real()*fbEn*wcnt; 
-            TODO
+            taua+=(thrust::conj(u)*( d_wf_laplace[       iwf*NXY+ixyz] - u*kz2 )).real()*fbEn*wcnt; 
     #endif
             jax+=(thrust::conj(u)*wfdx).imag()*fbEn*wcnt;
             jay+=(thrust::conj(u)*wfdy).imag()*fbEn*wcnt;
@@ -102,8 +107,7 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
 #ifdef TAU_COMPUTATION_VIA_GRADIENTS
             taub+=(thrust::norm(wfdx)+thrust::norm(wfdy)+thrust::norm(wfdz))*fbmEn*wcnt;
 #else
-//             taub+=(thrust::conj(v)*d_wf_laplace[n*NXYZ+iwf*NXYZ+ixyz]).real()*fbmEn*wcnt; 
-            TODO
+            taub+=(thrust::conj(v)*( d_wf_laplace[n*NXY+iwf*NXY+ixyz] - v*kz2 )).real()*fbmEn*wcnt; 
 #endif
             jbx-=(thrust::conj(v)*wfdx).imag()*fbmEn*wcnt;
             jby-=(thrust::conj(v)*wfdy).imag()*fbmEn*wcnt;
@@ -218,7 +222,8 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
  * @return 0 - OK, otherwise ERROR 
  * */
 extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
-                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *kkz, 
+                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, 
+                            cufftDoubleComplex *d_wf_laplace, double *kkz, 
                             double *d_fbetaEn, 
                             double *d_densities,
                             int gradients_computed, int nthreads)
@@ -244,7 +249,7 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     if(gradients_computed) // computation of all densities
     {
         kernel_calculate_densities<<<nblocks, nthreads>>>(n, (Complex *)wf, 
-                                            (Complex *)wf_d_dx, (Complex *)wf_d_dy, kkz, 
+                                            (Complex *)wf_d_dx, (Complex *)wf_d_dy, (Complex *)d_wf_laplace, kkz, 
                                             d_fbetaEn,
                                             rho_a, rho_b,
                                             tau_a, tau_b,

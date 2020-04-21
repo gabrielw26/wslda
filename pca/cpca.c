@@ -167,7 +167,7 @@ int main( int argc , char ** argv )
 #ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
 #else
-    md.Nb = md.Na; // +1; // TODO
+    md.Nb = md.Na +1; 
 #endif
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
@@ -600,7 +600,7 @@ int main( int argc , char ** argv )
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
-    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -752,7 +752,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -838,7 +838,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_fkm3, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -938,7 +938,7 @@ int main( int argc , char ** argv )
         gradients_computed=1;
         gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
         // densities - local reduction
-        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1044,7 +1044,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) ); 
@@ -1095,7 +1095,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) ); 
