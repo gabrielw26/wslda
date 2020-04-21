@@ -83,6 +83,7 @@ int main( int argc , char ** argv )
     // other technical variables
     int *wf_tbl, *wf_idx_tbl; // table of size np, keeps number of managed wf by each process
     size_t  workarea_size=(size_t)5*NXY*sizeof(double); // minimal size of workarea 
+    int mpipackagesize;
     
     // for reporting
     double eF_a, eF_b, eF, Effg;
@@ -166,10 +167,12 @@ int main( int argc , char ** argv )
 #ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
 #else
-    md.Nb = md.Na; // +1;
+    md.Nb = md.Na; // +1; // TODO
 #endif
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
+    
+    if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NXY*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
     
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================
@@ -243,14 +246,14 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     // densities 
-    double *rho_a = (double *)(h_densities +  0*NXY);
-    double *rho_b = (double *)(h_densities +  1*NXY);
-    double *tau_a = (double *)(h_densities +  2*NXY);
-    double *tau_b = (double *)(h_densities +  3*NXY);
-    double complex *nu = (double complex *)(h_densities +  4*NXY);
-    double *j_a_x = (double *)(h_densities +  6*NXY);
-    double *j_a_y = (double *)(h_densities +  7*NXY);
-    double *j_a_z = (double *)(h_densities +  8*NXY);
+    double complex *nu = (double complex *)(h_densities +  0*NXY);
+    double *rho_a = (double *)(h_densities +  2*NXY);
+    double *tau_a = (double *)(h_densities +  3*NXY);
+    double *j_a_x = (double *)(h_densities +  4*NXY);
+    double *j_a_y = (double *)(h_densities +  5*NXY);
+    double *j_a_z = (double *)(h_densities +  6*NXY);    
+    double *rho_b = (double *)(h_densities +  7*NXY);
+    double *tau_b = (double *)(h_densities +  8*NXY);
     double *j_b_x = (double *)(h_densities +  9*NXY);
     double *j_b_y = (double *)(h_densities + 10*NXY);
     double *j_b_z = (double *)(h_densities + 11*NXY);
@@ -338,7 +341,7 @@ int main( int argc , char ** argv )
     {
         // allocate memory for my wf
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
-        cppmallocl(h_wavefun, NXYZ*nwfip*2,double complex);
+        cppmallocl(h_wavefun, NXY*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkz, nwfip,double);
         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
@@ -602,6 +605,10 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) ); 
+    if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+    if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
     // potentials
 //     if(md.inittype!=3) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
     // energy
@@ -750,6 +757,10 @@ int main( int argc , char ** argv )
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+            if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
@@ -832,6 +843,10 @@ int main( int argc , char ** argv )
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+            if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_densities, md.nthreads) );
@@ -928,6 +943,10 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) ); 
+        if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+        if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
         // potentials
         gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
         // energy
@@ -1027,9 +1046,14 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
-            MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) ); 
+            mpipackagesize = EXCHANGE_SIZE;
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) ); 
+            MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+            if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
@@ -1073,9 +1097,14 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) ); 
-            MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXY*sizeof(double)) ); 
+            if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) ); 
+            MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXY, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXY*sizeof(double)) ); 
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
+#ifndef TAU_COMPUTATION_VIA_GRADIENTS
+            if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );

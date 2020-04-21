@@ -228,14 +228,14 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-    double *tau_a = (double *)(d_densities +  2*NXY);
-    double *tau_b = (double *)(d_densities +  3*NXY);
-    Complex *nu   =(Complex *)(d_densities +  4*NXY);
-    double *j_a_x = (double *)(d_densities +  6*NXY);
-    double *j_a_y = (double *)(d_densities +  7*NXY);
-    double *j_a_z = (double *)(d_densities +  8*NXY);
+    Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+    double *tau_a = (double *)(d_densities +  3*NXY);
+    double *j_a_x = (double *)(d_densities +  4*NXY);
+    double *j_a_y = (double *)(d_densities +  5*NXY);
+    double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+    double *tau_b = (double *)(d_densities +  8*NXY);
     double *j_b_x = (double *)(d_densities +  9*NXY);
     double *j_b_y = (double *)(d_densities + 10*NXY);
     double *j_b_z = (double *)(d_densities + 11*NXY);
@@ -355,14 +355,14 @@ extern "C" int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-    double *tau_a = (double *)(d_densities +  2*NXY);
-    double *tau_b = (double *)(d_densities +  3*NXY);
-    Complex *nu   =(Complex *)(d_densities +  4*NXY);
-    double *j_a_x = (double *)(d_densities +  6*NXY);
-    double *j_a_y = (double *)(d_densities +  7*NXY);
-    double *j_a_z = (double *)(d_densities +  8*NXY);
+    Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+    double *tau_a = (double *)(d_densities +  3*NXY);
+    double *j_a_x = (double *)(d_densities +  4*NXY);
+    double *j_a_y = (double *)(d_densities +  5*NXY);
+    double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+    double *tau_b = (double *)(d_densities +  8*NXY);
     double *j_b_x = (double *)(d_densities +  9*NXY);
     double *j_b_y = (double *)(d_densities + 10*NXY);
     double *j_b_z = (double *)(d_densities + 11*NXY);
@@ -376,5 +376,98 @@ extern "C" int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
                                         j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z);        
 
 
+    return 0;
+}
+
+// ----------------------------------------------------------------------------------------
+// ----------------------------------density_caculate_tau ---------------------------------
+// ----------------------------------------------------------------------------------------
+extern "C" void *pca_cufft_work_area;
+extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
+
+__global__ void kernel_density_caculate_tau(double *laplace_rho, double *tau)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    double _tau;
+    
+    if(ixyz<NXY)
+    {
+        _tau = 0.5*laplace_rho[ixyz] - tau[ixyz];
+        
+        // tau cannot be negative
+        if(_tau<0.0) _tau=0.0;
+        
+        // save value
+        tau[ixyz]=_tau;
+    }
+}
+
+/**
+ * Function computes tau according formula:
+ * tau = (1/2)laplace(rho) - Re( sum_n Psi_n^* laplapce (Psi_n) )
+ * See Eq.(28) in PHYSICAL REVIEW C 95, 044302 (2017)
+ * @param d_densities array with densities (INPUT: `tau` array keeps only  Re( sum_n Psi_n^* laplapce (Psi_n) ), OUTPUT: kinetic energy density)
+ * @param nthreads number of threads per block
+ * @return 0 - OK, otherwise ERROR 
+ */
+extern "C" int density_caculate_tau(double *d_densities, int nthreads)
+{
+    // number of blocks
+    int nblocks = (int)ceil((float)NXY/nthreads);
+    int ierr;
+    
+    // Set pointers for to simplify notation
+    // densities 
+//     Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+    double *tau_a = (double *)(d_densities +  3*NXY);
+//     double *j_a_x = (double *)(d_densities +  4*NXY);
+//     double *j_a_y = (double *)(d_densities +  5*NXY);
+//     double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+    double *tau_b = (double *)(d_densities +  8*NXY);
+//     double *j_b_x = (double *)(d_densities +  9*NXY);
+//     double *j_b_y = (double *)(d_densities + 10*NXY);
+//     double *j_b_z = (double *)(d_densities + 11*NXY);
+    
+    // I can use pca_cufft_work_area as working buffer for computation 
+    double *laplace_rho=(double *)pca_cufft_work_area;
+    
+    // ------------- for b component -------------
+    ierr = compute_laplace_real_f(rho_b, laplace_rho, nthreads);
+    if(ierr!=0) return ierr - 101;
+    kernel_density_caculate_tau<<<nblocks, nthreads>>>(laplace_rho,tau_b);
+    
+    // ------------- for a component ------------- 
+#ifdef SPINSYMMETRY_MODE
+    if( cudaMemcpy( tau_a , tau_b, sizeof(double)*NXY, cudaMemcpyDeviceToDevice )!= cudaSuccess ) return 100;
+#else
+    ierr = compute_laplace_real_f(rho_a, laplace_rho, nthreads);
+    if(ierr!=0) return ierr - 102;
+    kernel_density_caculate_tau<<<nblocks, nthreads>>>(laplace_rho,tau_a);
+#endif
+    
+    return 0;
+}
+
+/**
+ * Function sets the same values for densities "b" and for densities "a"
+ * */
+extern "C" int symmetrize_densities_device(double *d_densities)
+{    
+    // Set pointers for to simplify notation
+    // densities 
+//     Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+//     double *tau_a = (double *)(d_densities +  3*NXY);
+//     double *j_a_x = (double *)(d_densities +  4*NXY);
+//     double *j_a_y = (double *)(d_densities +  5*NXY);
+//     double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+//     double *tau_b = (double *)(d_densities +  8*NXY);
+//     double *j_b_x = (double *)(d_densities +  9*NXY);
+//     double *j_b_y = (double *)(d_densities + 10*NXY);
+//     double *j_b_z = (double *)(d_densities + 11*NXY);
+    if( cudaMemcpy( rho_b , rho_a, sizeof(double)*NXY*5, cudaMemcpyDeviceToDevice )!= cudaSuccess ) return 100;
     return 0;
 }

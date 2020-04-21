@@ -448,7 +448,7 @@ extern "C" int symmetrize_densities_device(double *d_densities)
 //     double *tau_a = (double *)(d_densities +  3*NXYZ);
 //     double *j_a_x = (double *)(d_densities +  4*NXYZ);
 //     double *j_a_y = (double *)(d_densities +  5*NXYZ);
-//     double *j_a_z = (double *)(d_densities +  6*NXYZ);s
+//     double *j_a_z = (double *)(d_densities +  6*NXYZ);
     double *rho_b = (double *)(d_densities +  7*NXYZ);
 //     double *tau_b = (double *)(d_densities +  8*NXYZ);
 //     double *j_b_x = (double *)(d_densities +  9*NXYZ);

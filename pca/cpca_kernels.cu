@@ -486,14 +486,14 @@ extern "C" int compute_potentials(int it, double *d_densities, double *d_potenti
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-    double *tau_a = (double *)(d_densities +  2*NXY);
-    double *tau_b = (double *)(d_densities +  3*NXY);
-    Complex *nu   =(Complex *)(d_densities +  4*NXY);
-    double *j_a_x = (double *)(d_densities +  6*NXY);
-    double *j_a_y = (double *)(d_densities +  7*NXY);
-    double *j_a_z = (double *)(d_densities +  8*NXY);
+    Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+    double *tau_a = (double *)(d_densities +  3*NXY);
+    double *j_a_x = (double *)(d_densities +  4*NXY);
+    double *j_a_y = (double *)(d_densities +  5*NXY);
+    double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+    double *tau_b = (double *)(d_densities +  8*NXY);
     double *j_b_x = (double *)(d_densities +  9*NXY);
     double *j_b_y = (double *)(d_densities + 10*NXY);
     double *j_b_z = (double *)(d_densities + 11*NXY);
@@ -700,14 +700,14 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-    double *tau_a = (double *)(d_densities +  2*NXY);
-    double *tau_b = (double *)(d_densities +  3*NXY);
-    Complex *nu   =(Complex *)(d_densities +  4*NXY);
-    double *j_a_x = (double *)(d_densities +  6*NXY);
-    double *j_a_y = (double *)(d_densities +  7*NXY);
-    double *j_a_z = (double *)(d_densities +  8*NXY);
+    Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+    double *tau_a = (double *)(d_densities +  3*NXY);
+    double *j_a_x = (double *)(d_densities +  4*NXY);
+    double *j_a_y = (double *)(d_densities +  5*NXY);
+    double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+    double *tau_b = (double *)(d_densities +  8*NXY);
     double *j_b_x = (double *)(d_densities +  9*NXY);
     double *j_b_y = (double *)(d_densities + 10*NXY);
     double *j_b_z = (double *)(d_densities + 11*NXY);
@@ -1259,17 +1259,18 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-//     double *tau_a = (double *)(d_densities +  2*NXY);
-//     double *tau_b = (double *)(d_densities +  3*NXY);
-//     Complex *nu   =(Complex *)(d_densities +  4*NXY);
-    double *j_a_x = (double *)(d_densities +  6*NXY);
-    double *j_a_y = (double *)(d_densities +  7*NXY);
-    double *j_a_z = (double *)(d_densities +  8*NXY);
+//     Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+//     double *tau_a = (double *)(d_densities +  3*NXY);
+    double *j_a_x = (double *)(d_densities +  4*NXY);
+    double *j_a_y = (double *)(d_densities +  5*NXY);
+    double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+//     double *tau_b = (double *)(d_densities +  8*NXY);
     double *j_b_x = (double *)(d_densities +  9*NXY);
     double *j_b_y = (double *)(d_densities + 10*NXY);
     double *j_b_z = (double *)(d_densities + 11*NXY);
+    
     // pontentials
     double *V_a = (double *)(d_potentials +  0*NXY);
     double *V_b = (double *)(d_potentials +  1*NXY);
@@ -1741,18 +1742,17 @@ extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubl
     
     // Set pointers for to simplify notation
     // densities 
-    double *rho_a = (double *)(d_densities +  0*NXY);
-    double *rho_b = (double *)(d_densities +  1*NXY);
-//     double *tau_a = (double *)(d_densities +  2*NXY);
-//     double *tau_b = (double *)(d_densities +  3*NXY);
-//     Complex *nu   =(Complex *)(d_densities +  4*NXY);
-//     double *j_a_x = (double *)(d_densities +  6*NXY);
-//     double *j_a_y = (double *)(d_densities +  7*NXY);
-//     double *j_a_z = (double *)(d_densities +  8*NXY);
+    Complex *nu   =(Complex *)(d_densities +  0*NXY);
+    double *rho_a = (double *)(d_densities +  2*NXY);
+//     double *tau_a = (double *)(d_densities +  3*NXY);
+//     double *j_a_x = (double *)(d_densities +  4*NXY);
+//     double *j_a_y = (double *)(d_densities +  5*NXY);
+//     double *j_a_z = (double *)(d_densities +  6*NXY);
+    double *rho_b = (double *)(d_densities +  7*NXY);
+//     double *tau_b = (double *)(d_densities +  8*NXY);
 //     double *j_b_x = (double *)(d_densities +  9*NXY);
 //     double *j_b_y = (double *)(d_densities + 10*NXY);
 //     double *j_b_z = (double *)(d_densities + 11*NXY);
-   
     
     kernel_multiply_wf_by_alpha<<<nblocks, nthreads>>>(n, rho_a, rho_b, (Complex *)wf_in, (Complex *)wf_out);
     
