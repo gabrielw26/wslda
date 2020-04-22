@@ -641,6 +641,15 @@ int main( int argc , char ** argv )
         Lbz=h_energy[8];
         
         printf("# GPU ENERGY      : energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f, energy_CM=%16.12f, energy_uext=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg, energy_CM/Effg, energy_uext/Effg);  
+        
+        // Create check stamp file
+        sprintf(file_name, "%s_check.stamp", md.outprefix);
+        printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+        file_operation( touch_file(file_name) );
+        // Take densities from device
+        gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
+        file_operation( check_stamp_entry(file_name, 12, NXY, h_densities, 5, h_energy) ); 
+        
         printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
         
         // Create run log and add entry
@@ -1246,42 +1255,47 @@ int main( int argc , char ** argv )
 
         fflush(stdout); // clear output
     }
- time=t0+it*dt;
-//check point
- if (md.checkpoint)
-{
-    b_t(); // start measureing time of writing
-    size_t memsize;
+    time=t0+it*dt;
+    //check point
+    if (md.checkpoint)
+    {
+        b_t(); // start measureing time of writing
+        size_t memsize;
 #if INTEGRATION_SCHEME==AB3AM4
-       save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                d_wf, d_fkm1, d_fkm2, d_fkm3,
-                d_potentials, &time, 
-		nwf, nwfip,
-		h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
-		HowMany);
-       memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
+        save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                    d_wf, d_fkm1, d_fkm2, d_fkm3,
+                    d_potentials, &time, 
+            nwf, nwfip,
+            h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
+            HowMany);
+        memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
-       save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                   d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                   d_potentials, &time,
-                   nwf, nwfip,
-                   h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
-                   HowMany);
-       memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+        save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                    d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
+                    d_potentials, &time,
+                    nwf, nwfip,
+                    h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
+                    HowMany);
+        memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #else
             CHECK PCA_SETTINGS.H
 #endif
-    MPI_Barrier( MPI_COMM_WORLD ) ;
-    rt = e_t(0);
-    if(ip==0)
-    {
-        double memsize_gb = (double)(memsize) / pow(2,30);
-        printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
-        printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
-        printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
-        printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+        MPI_Barrier( MPI_COMM_WORLD ) ;
+        rt = e_t(0);
+        if(ip==0)
+        {
+            double memsize_gb = (double)(memsize) / pow(2,30);
+            printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
+            printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
+            printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
+            printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+            sprintf(file_name, "%s_check.stamp", md.outprefix);
+            printf("# CREATING CHECK STAMP: `%s`\n",file_name);
+            // Take densities from device
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
+            file_operation( check_stamp_entry(file_name, 12, NXY, h_densities, 5, h_energy) );   
+        }
     }
-}
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;
