@@ -205,6 +205,7 @@ int main( int argc , char ** argv )
     int ompi_ppn=4;
     if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
+    if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     MPI_Allgather(&ompi_ppn,1,MPI_INT,ompi_local_rank,1,MPI_INT,MPI_COMM_WORLD);
     int ompi_i=0, ompi_j;
     while(ompi_i<np)
@@ -347,35 +348,37 @@ int main( int argc , char ** argv )
         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
-    else if(md.inittype==4) // Start from solution of kzSLpca solver 
+    else if(md.inittype==3) // Start from solution of kzSLpca solver 
     {
         // Load data from info file
         int _nx, _ny, _nz;
         double _dx, _dy, _dz;
         int *nwf_per_kz;
+        int nwf_s2dpca;
         cppmallocl(nwf_per_kz, NZ/2,int);
-        
         time=0.0;
-        sprintf(file_name, "%s_kzpca.info", md.inprefix);
+        sprintf(file_name, "%s_s2dpca.info", md.inprefix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
             if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=1.0 || _dy!=1.0 || _dz!=1.0)
             {
-                printf("KZ-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                printf("S2D-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
                 printf("SETTINGS  : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, 1.0, 1.0, 1.0);
                 ABORT;
             }
-            printf("KZ-SOLVER: file_name=`%s`\n",file_name);
-            printf("KZ-SOLVER: nwf(including -kz's)=%d\n",nwf);
-            printf("KZ-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("KZ-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            printf("S2D-SOLVER: file_name=`%s`\n",file_name);
+            printf("S2D-SOLVER: nwf (with -kz's)=%d\n",nwf);
+            printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            printf("S2D-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
             fflush(stdout);
             
             // scan files and determine nwf in each of them
-            file_operation( scan_kzpca_info_files(md.inprefix, NZ, &nwf, nwf_per_kz) );
-            printf("KZ-SOLVER: nwf(to evolve)=%d\n",nwf);
+            nwf_s2dpca=nwf;
+            file_operation( scan_kzpca_info_files(md.inprefix, NZ, &nwf_s2dpca, nwf_per_kz) );
+            printf("S2D-SOLVER: nwf in binary files=%d\n",nwf_s2dpca);
+            nwf=nwf_s2dpca;
         }
         MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &kF , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ; eF=0.5*kF*kF;
@@ -385,10 +388,10 @@ int main( int argc , char ** argv )
         MPI_Bcast( nwf_per_kz , NZ/2 , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
                 
         // divide wf over processes
-        if(ip==0) printf("# INIT4: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) printf("# INIT3: nwf=%d wave-functions to scatter\n", nwf);
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT4: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) printf("# INIT3: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -411,7 +414,7 @@ int main( int argc , char ** argv )
         int _4_nblocks = (int)ceil((float)(np)/_4_max_readers);
         for(i=0; i<_4_nblocks; i++)
         {
-            if(ip==0) { printf("# INIT4: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
+            if(ip==0) { printf("# INIT3: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
             if(ip%_4_nblocks == i) file_operation( read_kzSLpca_wf(md.inprefix, NZ, nwf_per_kz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkz) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
@@ -423,8 +426,8 @@ int main( int argc , char ** argv )
         // load u and delta
         if(ip==0)
         {
-            sprintf(file_name, "%s_kzpca.pud", md.inprefix);
-            printf("# INIT4: LOADING POTENTIALS `%s`...\n", file_name);
+            sprintf(file_name, "%s_s2dpca.pud", md.inprefix);
+            printf("# INIT3: LOADING POTENTIALS `%s`...\n", file_name);
             file_operation( read_binary_file(file_name, NXY*4*sizeof(double), 0, h_potentials) );           
         }
         
@@ -447,7 +450,7 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT4: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
+        if(ip==0) printf("# INIT3: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
         Effg = 0.6 * Ntota * eF;
         fflush(stdout);
     }
