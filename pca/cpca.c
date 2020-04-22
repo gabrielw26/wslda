@@ -648,7 +648,7 @@ int main( int argc , char ** argv )
         file_operation( touch_file(file_name) );
         // Take densities from device
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
-        file_operation( check_stamp_entry(file_name, 12, NXY, h_densities, 5, h_energy) ); 
+        file_operation( check_stamp_entry_coeff(file_name, 12, NXY, h_densities, 5, h_energy, 1.0*NZ) ); 
         
         printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
         
@@ -1293,7 +1293,7 @@ int main( int argc , char ** argv )
             printf("# CREATING CHECK STAMP: `%s`\n",file_name);
             // Take densities from device
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
-            file_operation( check_stamp_entry(file_name, 12, NXY, h_densities, 5, h_energy) );   
+            file_operation( check_stamp_entry_coeff(file_name, 12, NXY, h_densities, 5, h_energy, 1.0*NZ) );   
         }
     }
     /* messy exit here */
