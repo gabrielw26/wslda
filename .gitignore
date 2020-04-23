@@ -57,3 +57,7 @@ pca/*.s2dpca
 pca/*.kkz
 pca/*.stamp
 pca/tkpca_3dcheckint
+pca/*.kzpca
+pca/torm*
+
+data/
