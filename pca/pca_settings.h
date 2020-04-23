@@ -21,8 +21,8 @@
 #define DY 1.0                                                                                                                                       
 #define DZ 1.0
 
-#define FUNCTIONAL SLDA
-// #define FUNCTIONAL ASLDA
+// #define FUNCTIONAL SLDA
+#define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
 
 #define DXYZ (DX*DY*DZ)
@@ -61,7 +61,7 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
+// #define SPINSYMMETRY_MODE
 
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
@@ -77,15 +77,6 @@
 // NOTE: in rotating frame the code uses constant variables dc_Omega_a and dc_Omega_b
 // NOTE: the systems rotates along z-axis
 // #define WORK_IN_ROTATING_FRAME
-
-// activate parallel method for local reductions
-// #define PCA_REDUCE_MANY
-// if yes fill correctly these values
-#define blockSize_d 256
-#define threads_red_d 1024
-
-#define HOWMANY 16
-#define streams_d 8
 
 // ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
@@ -173,6 +164,33 @@
 #ifdef WORK_IN_ROTATING_FRAME
 #define CURRENT_CORRECTIONS
 #undef FAST_CONST_EFFECTIVE_MASS_MODE
+#endif
+
+// Package size
+#ifdef SPINSYMMETRY_MODE
+
+    #if FUNCTIONAL==ASLDA
+    #define EXCHANGE_SIZE   7
+    #endif
+    #if FUNCTIONAL==SLDA
+    #define EXCHANGE_SIZE   3
+    #endif
+    #if FUNCTIONAL==BDG
+    #define EXCHANGE_SIZE   2
+    #endif
+    
+#else
+
+    #if FUNCTIONAL==ASLDA
+    #define EXCHANGE_SIZE   12
+    #endif
+    #if FUNCTIONAL==SLDA
+    #define EXCHANGE_SIZE   8
+    #endif
+    #if FUNCTIONAL==BDG
+    #define EXCHANGE_SIZE   2
+    #endif
+    
 #endif
 
 #endif

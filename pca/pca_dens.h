@@ -11,3 +11,4 @@ int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
                             double *d_densities,
                             int nthreads);
 int density_caculate_tau(double *d_densities, int nthreads);
+int symmetrize_densities_device(double *d_densities);

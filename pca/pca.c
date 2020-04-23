@@ -9,10 +9,6 @@
 // test run:
 //      mpirun -np 8 ./pca input.test.pca.txt 
 
-// TODO
-// 1. WORK_IN_ROTATING_FRAME is not implemented for BDG functional
-
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -79,13 +75,11 @@ int main( int argc , char ** argv )
     cufftDoubleComplex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
     cufftDoubleComplex *d_tmp_ptr;
     double *h_qpe_nwfip, *h_qpe_nwf; // buffers for quasiparticle energies
-    
-    cudaStream_t streams[streams_d];
-    creat_streams (streams);
 
     // other technical variables
     int *wf_tbl, *wf_idx_tbl; // table of size np, keeps number of managed wf by each process
     size_t  workarea_size=(size_t)5*NXYZ*sizeof(double); // minimal size of workarea
+    int mpipackagesize;
     
     // for reporting
     double eF_a, eF_b, eF, Effg;
@@ -166,9 +160,15 @@ int main( int argc , char ** argv )
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
+#ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
+#else
+    md.Nb = md.Na+1;
+#endif
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
 #endif
+    
+    if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NXYZ*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
     
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================
@@ -250,18 +250,18 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     // densities 
-    double *rho_a = (double *)(h_densities +  0*NXYZ);
-    double *rho_b = (double *)(h_densities +  1*NXYZ);
-    double *tau_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_b = (double *)(h_densities +  3*NXYZ);
-    double complex *nu = (double complex *)(h_densities +  4*NXYZ);
-    double *j_a_x = (double *)(h_densities +  6*NXYZ);
-    double *j_a_y = (double *)(h_densities +  7*NXYZ);
-    double *j_a_z = (double *)(h_densities +  8*NXYZ);
+    double complex *nu = (double complex *)(h_densities +  0*NXYZ);
+    double *rho_a = (double *)(h_densities +  2*NXYZ);
+    double *tau_a = (double *)(h_densities +  3*NXYZ);
+    double *j_a_x = (double *)(h_densities +  4*NXYZ);
+    double *j_a_y = (double *)(h_densities +  5*NXYZ);
+    double *j_a_z = (double *)(h_densities +  6*NXYZ);    
+    double *rho_b = (double *)(h_densities +  7*NXYZ);
+    double *tau_b = (double *)(h_densities +  8*NXYZ);
     double *j_b_x = (double *)(h_densities +  9*NXYZ);
     double *j_b_y = (double *)(h_densities + 10*NXYZ);
     double *j_b_z = (double *)(h_densities + 11*NXYZ);
-    
+        
     // pontentials
     double *V_a = (double *)(h_potentials +  0*NXYZ);
     double *V_b = (double *)(h_potentials +  1*NXYZ);
@@ -742,7 +742,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     if(ip==0) printf("# INITIAL MEASUREMENT\n");
     // normalize wf 
-    gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );  
+    gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );  
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
@@ -750,8 +750,8 @@ int main( int argc , char ** argv )
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
-    gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
+    gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+    if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -911,8 +911,8 @@ int main( int argc , char ** argv )
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -930,7 +930,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );
+                                    md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
@@ -962,13 +962,13 @@ int main( int argc , char ** argv )
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
-                                        md.nthreads, streams) );
+                                        md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
             }
             
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_fkm3, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_fkm3, md.nthreads) );
             
             // NOTE: d_fkm3 keeps prediction of wave-function for midpoint
             
@@ -997,8 +997,8 @@ int main( int argc , char ** argv )
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -1031,7 +1031,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );
+                                    md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
@@ -1060,13 +1060,13 @@ int main( int argc , char ** argv )
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
-                                        md.nthreads, streams) );
+                                        md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, dt, nwfip, d_fkm1, d_wf, d_fkm2, md.nthreads) );
             }
             
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             
             // NOTE: d_wf keeps wave-function for t+dt
             if(ip==0) { printf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
@@ -1097,8 +1097,8 @@ int main( int argc , char ** argv )
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
-        gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
+        gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+        if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
         if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -1188,7 +1188,7 @@ int main( int argc , char ** argv )
             CHECK PCA_SETTINGS.H
 #endif
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
@@ -1204,10 +1204,11 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
-            MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
-            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+            mpipackagesize = EXCHANGE_SIZE;
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
+            MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) );
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -1222,7 +1223,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );
+                                    md.nthreads) );
             
             // ----------------------------- corrector -----------------------------------
             // compute value of quantum friction coefficient  and current corrections coeff
@@ -1238,7 +1239,7 @@ int main( int argc , char ** argv )
             CHECK PCA_SETTINGS.H
 #endif
             // normalize wf 
-            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads, streams) );
+            gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0 || i_step==md.timesteps-1) gradients_computed=1; else gradients_computed=0;
@@ -1254,10 +1255,11 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
-            MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            if(md.spinsymmetry>0) symmetrize_densities(h_densities); // special calse: spin-symmetric system
-            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
+            if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
+            MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
+            if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
@@ -1288,7 +1290,7 @@ int main( int argc , char ** argv )
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, 
                                     d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
-                                    md.nthreads, streams) );            
+                                    md.nthreads) );            
             
             it++; // update global time counter
         }

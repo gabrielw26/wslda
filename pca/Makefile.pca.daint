@@ -6,8 +6,8 @@ MPICC = cc
 NVCC = nvcc 
 SRC_DIR = ./ 
 INCLUDECC = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h \
-pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h reduce_suffle.h pca_checkpoint.h
-INCLUDENVCC = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h reduce_suffle.h
+pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h pca_checkpoint.h
+INCLUDENVCC = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h 
 
 # for Daint
 CCFLAGS = 
@@ -15,7 +15,7 @@ CCLIB = -lcudart -lcufft -lm
 CCFLAGS = -O3 -DTARGET_MACHINE=TITAN
 NVCCFLAGS = -arch sm_60 -O3
 
-OBJ = pca_derivative.o pca_kernels.o pca_dens.o reduce_suffle.o
+OBJ = pca_derivative.o pca_kernels.o pca_dens.o
 OBJmpi =  pca.o pca_checkpoint.o
 
 all: $(OBJ) $(OBJmpi)
