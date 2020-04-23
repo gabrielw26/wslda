@@ -61,3 +61,5 @@ pca/*.kzpca
 pca/torm*
 
 data/
+
+pca/ccpca

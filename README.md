@@ -9,9 +9,11 @@
 
 ### Codes
 * **pca** - code for solving time-dependent density functional equations in 3D Cartesian mesh. (status: **up to date**)
-* **cpca** - code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_ direction. (status: **up to date**)
+* **cpca** - constrained-pca code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_ direction (status: **up to date**)
+* **ccpca** - constrained-constrained-pca code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_  and _y_ directions. (status: **under construction**)
 * **s3dpca** - code for solving static density functional equations in 3D Cartesian mesh, generator of initial states for _pca_ code. (status: **up to date**)
 * **s2dpca** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ direction, generator of initial states for _pca_ and _cpca_ codes. (status: **up to date**)
+* **s1dpca** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ and _y_ directions, generator of initial states for _pca_ and _cpca_ and _ccpca_ codes. (status: **under construction**)
 
 ### Project structure 
 
@@ -30,3 +32,7 @@ make -f Makefile.pca.summit
 
 ### Wiki
 For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/home)
+
+### Authors
+* Gabriel Wlazłowski, Warsaw University of Technology<br/> Main developer
+* Maciej Marchwiany, Interdisciplinary Centre for Mathematical and Computational Modelling (ICM), <br/> contribution to _pca_ code (2016-2018)
