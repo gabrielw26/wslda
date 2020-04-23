@@ -1,5 +1,5 @@
 // Author: Gabriel Wlazlowski
-// Date: 15-09-2016
+// Date: 23-04-2020
 
 // This file implements all functions needed for numerical computation of derivatives
 
@@ -144,30 +144,25 @@ extern "C" int set_workspace_for_cufftPlan(void *workArea)
 __global__ void kernel_compute_derivatives(int nwf, cufftDoubleComplex *in, cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy, i;
-    double kx, ky, k2;
+    int ix, i;
+    double kx, k2;
     size_t shift;
     cufftDoubleComplex z, zz;
 
     if(ixyz<NX)
     {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates // TODO
+        ix = ixyz; // decode cartesian coordinates
         
         // extract momentum
         if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
         else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   );
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY); // TODO
         
-        
-        k2 = -1.0*(kx*kx + ky*ky)/NX; // note: normalization factor is included
+        k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
         kx/=NX; // note: normalization factor is included
-        ky/=NX; // note: normalization factor is included
         
         // corrections for gradient computation
-        if(ix==NX/2) kx=0.0;
-        if(iy==NY/2) ky=0.0;    
+        if(ix==NX/2) kx=0.0;    
         
         // for each wave-function
         shift = ixyz;
@@ -182,11 +177,6 @@ __global__ void kernel_compute_derivatives(int nwf, cufftDoubleComplex *in, cuff
             zz.x=-1.0*kx*z.y;
             zz.y=     kx*z.x;
             wf_d_dx[shift]=zz;
-            
-            // dy 
-            zz.x=-1.0*ky*z.y;
-            zz.y=     ky*z.x;
-            wf_d_dy[shift]=zz;
                         
             // laplace
             zz.x=k2*z.x;
@@ -203,7 +193,7 @@ __global__ void kernel_compute_derivatives(int nwf, cufftDoubleComplex *in, cuff
  * @param n  number of wave-functions to process, where n=2*nwfip
  * @param wf array with wave-functions (INPUT)
  * @param wf_d_dx derivative with respect to dx (OUTPUT)
- * @param wf_d_dy derivative with respect to dy (OUTPUT)
+ * @param wf_d_dy derivative with respect to dy (OUTPUT) --- NOT USED !!!!
  * @param wf_d_dz derivative with respect to dz (OUTPUT) --- NOT USED !!!!
  * @param wf_d_laplace laplace of wave-functions (OUTPUT)
  * @return 0-OK, otherwise PROBLEM
@@ -237,7 +227,7 @@ extern "C" int compute_derivatives(int n, cufftDoubleComplex *wf, cufftDoubleCom
     }
         
     // Step 2: Multiply by momentum 
-    kernel_compute_derivatives<<<nblocks, nthreads>>>(n, wf_laplace, wf_d_dx, wf_d_dy, NULL, wf_laplace);
+    kernel_compute_derivatives<<<nblocks, nthreads>>>(n, wf_laplace, wf_d_dx, NULL, NULL, wf_laplace);
         
     // Step 3: Go back to coordinate space
     shift=0;
@@ -247,8 +237,6 @@ extern "C" int compute_derivatives(int n, cufftDoubleComplex *wf, cufftDoubleCom
         if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
         cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_BATCH], wf_d_dx+shift, wf_d_dx+shift, CUFFT_INVERSE);
         if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
-        cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_BATCH], wf_d_dy+shift, wf_d_dy+shift, CUFFT_INVERSE);
-        if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
         shift+=(size_t)__md_pca_cufftplans.batch_size*NX; // shift pointer by batch number of functions
     }
     for(i=0; i<iters2; i++) // remaining one by one
@@ -256,8 +244,6 @@ extern "C" int compute_derivatives(int n, cufftDoubleComplex *wf, cufftDoubleCom
         cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], wf_laplace+shift, wf_laplace+shift, CUFFT_INVERSE);
         if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
         cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], wf_d_dx+shift, wf_d_dx+shift, CUFFT_INVERSE);
-        if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
-        cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], wf_d_dy+shift, wf_d_dy+shift, CUFFT_INVERSE);
         if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
         shift+=(size_t)NX; // shift pointer by one function
     }
@@ -272,23 +258,20 @@ extern "C" int compute_derivatives(int n, cufftDoubleComplex *wf, cufftDoubleCom
 __global__ void kernel_compute_laplace(int nwf, cufftDoubleComplex *inout)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy, i;
-    double kx, ky, k2;
+    int ix, i;
+    double kx, k2;
     size_t shift;
     cufftDoubleComplex z, zz;
 
     if(ixyz<NX)
     {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates // TODO
+        ix = ixyz; // decode cartesian coordinates
         
         // extract momentum
         if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
         else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   ); // TODO
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY);
-        
-        k2 = -1.0*(kx*kx + ky*ky)/NX; // note: normalization factor is included
+        k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
         
         // for each wave-function
         shift = ixyz;
@@ -370,20 +353,17 @@ extern "C" int compute_laplace(int n, cufftDoubleComplex *wf, cufftDoubleComplex
 __global__ void kernel_compute_gradient_real_f(cufftDoubleComplex *in, cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    double kx, ky/*, k2*/;
+    int ix;
+    double kx/*, k2*/;
     cufftDoubleComplex z, zz;
 
     if(ixyz<(NX/2+1))
     {
-        ixy2ixiy2dD2Z(ixyz,ix,iy); // decode cartesian coordinates // TODO
+        ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
         if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix   ); // note: normalization factor is included
         else        kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
-        
-        if(iy<NY/2) ky=2.*M_PI/( double )NY/( double )NX * ( double )(iy   ); // note: normalization factor is included // TODO
-        else        ky=2.*M_PI/( double )NY/( double )NX * ( double )(iy-NY); // note: normalization factor is included
         
         /*k2 = -1.0*(kx*kx + ky*ky)/NX; // note: normalization factor is included */
         
@@ -399,12 +379,6 @@ __global__ void kernel_compute_gradient_real_f(cufftDoubleComplex *in, cufftDoub
         zz.y=     kx*z.x;
         wf_d_dx[ixyz]=zz;
             
-        // dy
-        if(iy==NY/2) ky=0.0; 
-        zz.x=-1.0*ky*z.y;
-        zz.y=     ky*z.x;
-        wf_d_dy[ixyz]=zz;
-                        
         /*
         // laplace
         zz.x=k2*z.x;
@@ -418,7 +392,7 @@ __global__ void kernel_compute_gradient_real_f(cufftDoubleComplex *in, cufftDoub
  * Function computes gradient of real function
  * @param f pointer to real function (INPUT)
  * @param df_dx derivative with respect to dx (OUTPUT)
- * @param df_dy derivative with respect to dy (OUTPUT)
+ * @param df_dy derivative with respect to dy (OUTPUT) --- NOT USED !!!!
  * @param df_dz derivative with respect to dz (OUTPUT) --- NOT USED !!!!
  * @return 0-OK, otherwise PROBLEM
  * */
@@ -432,20 +406,17 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
     // get pointer to workspace
     cufftDoubleComplex * p_df_dx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
     p_df_dx+=PCA_WORKSPACE_SHIFT*NX;
-    cufftDoubleComplex * p_df_dy = p_df_dx+(NX/2+1);
     
     // Step 1: go to momentum space
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], f, p_df_dx);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
         
     // Step 2: Multiply by momentum
-    kernel_compute_gradient_real_f<<<nblocks, nthreads>>>(p_df_dx, p_df_dx, p_df_dy, NULL);
+    kernel_compute_gradient_real_f<<<nblocks, nthreads>>>(p_df_dx, p_df_dx, NULL, NULL);
 
     // Step 3: go back to coordinate space
     cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_df_dx, df_dx);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result; 
-    cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_df_dy, df_dy);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;   
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
     
     return 0;
 }
@@ -456,20 +427,17 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
 __global__ void kernel_compute_derivative_real_vector_f(cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    double kx, ky/*, k2*/;
+    int ix;
+    double kx/*, k2*/;
     cufftDoubleComplex z, zz;
 
     if(ixyz<(NX/2+1))
     {
-        ixy2ixiy2dD2Z(ixyz,ix,iy); // decode cartesian coordinates // TODO
+        ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
         if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix   ); // note: normalization factor is included
         else        kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
-        
-        if(iy<NY/2) ky=2.*M_PI/( double )NY/( double )NX * ( double )(iy   ); // note: normalization factor is included // TODO
-        else        ky=2.*M_PI/( double )NY/( double )NX * ( double )(iy-NY); // note: normalization factor is included
         
         /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NX; // note: normalization factor is included */
                                 
@@ -480,23 +448,16 @@ __global__ void kernel_compute_derivative_real_vector_f(cufftDoubleComplex *wf_d
         zz.y=     kx*z.x;
         wf_d_dx[ixyz]=zz;
             
-        // dy
-        if(iy==NY/2) ky=0.0; 
-        z=wf_d_dy[ixyz];
-        zz.x=-1.0*ky*z.y;
-        zz.y=     ky*z.x;
-        wf_d_dy[ixyz]=zz;
-                                 
     }
 }
 
 /**
  * Function computes derivatives of real vector function: dfx/dx,  dfy/dy , dfz/dz
  * @param fx pointer to real function, x coordinate (INPUT)
- * @param fy pointer to real function, y coordinate (INPUT)
+ * @param fy pointer to real function, y coordinate (INPUT) --- NOT USED !!!!
  * @param fz pointer to real function, z coordinate (INPUT) --- NOT USED !!!!
  * @param dfx_dx derivative dfx/dx, can be the same as fx (OUTPUT)
- * @param dfy_dy derivative dfy/dy, can be the same as fy (OUTPUT)
+ * @param dfy_dy derivative dfy/dy, can be the same as fy (OUTPUT) --- NOT USED !!!!
  * @param dfz_dz derivative dfz/dz, can be the same as fz (OUTPUT) --- NOT USED !!!!
  * @return 0-OK, otherwise PROBLEM
  * */
@@ -512,22 +473,17 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
     // get pointer to workspace
     cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
     p_fx+=PCA_WORKSPACE_SHIFT*NX;
-    cufftDoubleComplex * p_fy = p_fx+(NX/2+1);
     
     // Step 1: go to momentum space
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fx, p_fx);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
-    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fy, p_fy);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;   
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
         
     // Step 2: Multiply by momentum
-    kernel_compute_derivative_real_vector_f<<<nblocks, nthreads>>>(p_fx, p_fy, NULL);
+    kernel_compute_derivative_real_vector_f<<<nblocks, nthreads>>>(p_fx, NULL, NULL);
 
     // Step 3: go back to coordinate space
     cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_fx, dfx_dx);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result; 
-    cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_fy, dfy_dy);
-    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;   
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
     
     return 0;
 }
@@ -538,23 +494,19 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
 __global__ void kernel_compute_laplace_real_f(cufftDoubleComplex *wf_d)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    double kx, ky, k2;
+    int ix;
+    double kx, k2;
     cufftDoubleComplex z, zz;
 
     if(ixyz<(NX/2+1))
     {
-        ixy2ixiy2dD2Z(ixyz,ix,iy); // decode cartesian coordinates // TODO
+        ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
         if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
         else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   ); // TODO
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY);
-        
-        
-        k2 = -1.0*(kx*kx + ky*ky)/NX; // note: normalization factor is included
+        k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
                                 
         // laplace
         z=wf_d[ixyz];

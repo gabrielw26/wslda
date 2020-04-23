@@ -1,5 +1,5 @@
 // Author: Gabriel Wlazlowski
-// Date: 09-09-2016
+// Date: 23-04-2016
 
 #include <cuda.h>
 #include <cuda_runtime.h>
