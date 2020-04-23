@@ -511,7 +511,7 @@ int main( int argc , char ** argv )
                   &nwf, &nwfip,
                   h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,		  
 		  HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
+        memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
         load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
@@ -519,7 +519,7 @@ int main( int argc , char ** argv )
                      &nwf, &nwfip,
                      h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,
                      HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+        memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #else
         CHECK PCA_SETTINGS.H
 #endif

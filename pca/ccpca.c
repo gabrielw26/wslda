@@ -11,6 +11,8 @@
 // test run:
 //      mpirun -np 8 ./ccpca input.test.cpca.txt 
 
+// TODO: add flag for writing QPE - in pca_settings and apply it in all pca codes
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -57,8 +59,8 @@ int main( int argc , char ** argv )
     double complex *h_wavefun; // pointer to wave-functions on host (cpu) side 
     double *h_fbetaEn; // pointer to weights of wave-functions on host (cpu) side
     double *d_fbetaEn; // pointer to weights of wave-functions on device (gpu) side
-    double *h_kkz; // pointer to kz wave-vector values on host (cpu) side
-    double *d_kkz; // pointer to kz wave-vector values on device (gpu) side
+    double *h_kkyz; // pointer to ky and kz wave-vector values on host (cpu) side
+    double *d_kkyz; // pointer to ky and kz wave-vector values on device (gpu) side
     double *h_En; // pointer to eigen-values of wave-functions on host (cpu) side
     double *h_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *d_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
@@ -279,7 +281,7 @@ int main( int argc , char ** argv )
 #else
             cpu_exec( solve_uniform_problem(md.Na/NXYZ, md.Nb/NXYZ, &nwf, ip==0) );
 #endif
-            cpu_exec( get_nwf_to_evolve_2d(&nwf) ); // correct number of states to evolve
+            cpu_exec( get_nwf_to_evolve_1d(&nwf) ); // correct number of states to evolve
             
             // Save solution
             if(ip==0 && md.init0save)
@@ -317,11 +319,11 @@ int main( int argc , char ** argv )
         // allocate memory for my wf
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
-        cppmallocl(h_kkz, nwfip,double);
+        cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
         cppmallocl(h_En, nwfip,double);
         
         // initialize wf
-        cpu_exec( create_uniform_wf_2d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkz, h_En, ip==0) );
+        cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_En, ip==0) ); // TODO
         
         // initialize potentials
         for(ixyz=0; ixyz<NX; ixyz++)
@@ -344,7 +346,7 @@ int main( int argc , char ** argv )
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
-        cppmallocl(h_kkz, nwfip,double);
+        cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
@@ -484,7 +486,7 @@ int main( int argc , char ** argv )
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_alphawf_laplace) );
 #endif
     gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_fbetaEn) );
-    gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_kkz) );
+    gpu_exec( gpu_malloc(nwfip*2*sizeof(double), (void **)&d_kkyz) ); // 2 accounts for ky and kz
     gpu_exec( host_malloc_pl(nwfip*sizeof(double), (void **)&h_qpe_nwfip) );
     cppmallocl(h_qpe_nwf, nwf,double);
     // aditional data needed for saving qpe
@@ -509,17 +511,17 @@ int main( int argc , char ** argv )
                   d_wf, d_fkm1, d_fkm2, d_fkm3, 
 		  d_potentials, &t0, 
                   &nwf, &nwfip,
-                  h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,		  
+                  h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg,	// TODO	  - check size of k_kkyz
 		  HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
+        memsize = (size_t)(nwf)*(NX)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
         load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
                      d_potentials, &t0,
                      &nwf, &nwfip,
-                     h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,
+                     h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, // TODO - check size of k_kkyz
                      HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+        memsize = (size_t)(nwf)*(NX)*2*5*16;
 #else
         CHECK PCA_SETTINGS.H
 #endif
@@ -556,8 +558,8 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_host2gpu(h_potentials, d_potentials,  (size_t)4*NX*sizeof(double)) );  
     }
     // copy weights
-    gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip*sizeof(double)) ); 
-    gpu_exec( memcopy_host2gpu(h_kkz    , d_kkz    ,  (size_t)nwfip*sizeof(double)) );
+    gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
+    gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
     
     // Set constants
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
@@ -598,13 +600,14 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================= INITIAL MEASUREMENT ==============================
     // ====================================================================================
+    ABORT;
     if(ip==0) printf("# INITIAL MEASUREMENT\n");
     // normalize wf 
     gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
-    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -688,17 +691,17 @@ int main( int argc , char ** argv )
     {
         // Create empty files with headers - do it once
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); // TODO
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
         sprintf(file_name, "%s_density_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
         sprintf(file_name, "%s_delta.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );    
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );    
         sprintf(file_name, "%s_current_a.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
         sprintf(file_name, "%s_current_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );   
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );   
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
+        file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
         
         // for each measurement add data to file
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
@@ -765,7 +768,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -786,7 +789,7 @@ int main( int argc , char ** argv )
             // H*psi - first execution, d_fkm3 as working buffer
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) );
             gpu_exec( apply_hamiltonian(nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
             // Make copy of qpe
@@ -818,7 +821,7 @@ int main( int argc , char ** argv )
             
                 // H*psi
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
-                                        d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
+                                        d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
@@ -851,7 +854,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_fkm3, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -887,7 +890,7 @@ int main( int argc , char ** argv )
             // executing exp[-i*H(t+dt/2)*dt]*psi
             // H*psi - first execution
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
             // Make copy of qpe
@@ -916,7 +919,7 @@ int main( int argc , char ** argv )
            
                 // H*psi
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
-                                        d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
+                                        d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
@@ -951,7 +954,7 @@ int main( int argc , char ** argv )
         gradients_computed=1;
         gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
         // densities - local reduction
-        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1057,7 +1060,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1076,7 +1079,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
             // H*psi
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) ); 
             
@@ -1108,7 +1111,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1143,7 +1146,7 @@ int main( int argc , char ** argv )
 #endif
             // H*psi
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, 
-                                    d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace, 
+                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );            
             
@@ -1267,7 +1270,7 @@ int main( int argc , char ** argv )
                     d_wf, d_fkm1, d_fkm2, d_fkm3,
                     d_potentials, &time, 
             nwf, nwfip,
-            h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
+            h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, // TODO
             HowMany);
         memsize = (size_t)(nwf)*(NX)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
@@ -1275,7 +1278,7 @@ int main( int argc , char ** argv )
                     d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
                     d_potentials, &time,
                     nwf, nwfip,
-                    h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg,
+                    h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, // TODO
                     HowMany);
         memsize = (size_t)(nwf)*(NX)*2*5*16;
 #else
