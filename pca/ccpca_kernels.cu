@@ -1170,7 +1170,7 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
  * @return 0 - OK, otherwise ERROR 
  * */
 extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
-                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
+                            cufftDoubleComplex *wf_d_dx, double *d_kkyz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
                             int nthreads)
 {
@@ -1197,6 +1197,8 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     double *V_b = (double *)(d_potentials +  1*NX);
     Complex *delta = (Complex *)(d_potentials +  2*NX);  
     
+    double *d_kky = d_kkyz;
+    double *d_kkz = d_kkyz+n;
     
     double * grad_alpha_a  = (double *)pca_cufft_work_area; // Use here work area of cuFFT
     double * grad_alpha_b  = grad_alpha_a + NX*3;
@@ -1226,8 +1228,8 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>( 
                                             V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
-                                            (Complex *)wf_d_dx, d_kkz, d_kkz, (Complex *)wf_laplace
-                                                   ); // TODO - handle d_kkz
+                                            (Complex *)wf_d_dx, d_kky, d_kkz, (Complex *)wf_laplace
+                                                   ); 
 #else
     // Step 2: Prepare data neded for current corrections and effective mass handling
     kernel_form_alpha_j_corr<<<nblocks, nthreads>>>(rho_a, rho_b,
@@ -1259,9 +1261,9 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
                                             grad_j_corr_a, NULL, NULL, grad_j_corr_b, NULL, NULL, 
                                             V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
-                                            (Complex *)wf_d_dx, d_kkz, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
+                                            (Complex *)wf_d_dx, d_kky, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
                                             cccoeff
-                                                   );    // TODO - handle d_kkz
+                                                   ); 
 #endif
     
     // Step 4: to increas stability - subtruct <H>*wf, where <H> is quasi particle energy

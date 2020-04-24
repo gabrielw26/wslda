@@ -25,7 +25,7 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "cpca_derivative.h"
-#include "cpca_kernels.h"
+#include "ccpca_kernels.h"
 #include "ccpca_dens.h"
 #include "pca_utils.h"
 #include "pca_io.h"
@@ -76,7 +76,6 @@ int main( int argc , char ** argv )
     cufftDoubleComplex *d_fkm4; // pointer to f_k-3 (GPU)
 #endif
     cufftDoubleComplex *d_wf_d_dx; // pointer to derivative of wave-function d/dx (GPU)
-    cufftDoubleComplex *d_wf_d_dy; // pointer to derivative of wave-function d/dy (GPU)
     cufftDoubleComplex *d_wf_laplace; // pointer to laplace of wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
     cufftDoubleComplex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
     cufftDoubleComplex *d_tmp_ptr;
@@ -323,7 +322,7 @@ int main( int argc , char ** argv )
         cppmallocl(h_En, nwfip,double);
         
         // initialize wf
-        cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_En, ip==0) ); // TODO
+        cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_En, ip==0) );
         
         // initialize potentials
         for(ixyz=0; ixyz<NX; ixyz++)
@@ -480,7 +479,6 @@ int main( int argc , char ** argv )
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_fkm4) );
 #endif
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf_d_dx) );
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf_d_dy) );
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf_laplace) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_alphawf_laplace) );
@@ -657,35 +655,31 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-#ifdef WORK_IN_ROTATING_FRAME
-        #define OUTPUT_ENTRIES 16
-#else
-        #define OUTPUT_ENTRIES 14
-#endif
+
+        #define OUTPUT_ENTRIES 15
         double line_items[OUTPUT_ENTRIES]={     
-            time*eF, // 1
-            Na, // 2
-            Nb, // 3
-            Na+Nb, // 4
-            energy_tot/Effg, // 5
-            energy_kin/Effg, // 6
-            energy_pot/Effg, // 7
-            energy_pair/Effg, // 8
-            energy_CM/Effg, // 9
-            energy_uext/Effg, //10
-            qfalpha, //11
-            Laz/Na, // 12
-            Lbz/Nb, // 13
-            (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-            Omega_a, // 15
-            Omega_b, // 16
-#endif
+            // line id (added automatically): 1
+            time*eF, // 2
+            Na, // 3
+            Nb, // 4
+            Na+Nb, // 5
+            energy_tot/Effg, // 6
+            energy_kin/Effg, // 7
+            energy_pot/Effg, // 8
+            energy_pair/Effg, // 9
+            energy_CM/Effg, // 10
+            energy_uext/Effg, //11
+            cabs(delta[NX/2]), // 12
+            rho_a[NX/2], // 13
+            rho_b[NX/2], // 14
+            qfalpha, //15
+            cccoeff // 16
+            // time per measurment (added automatically)
+            // date & time of adding enetry
         };
         cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
     }    
 
-    ABORT; // TODO
     // Create binary files and add initial measurement
     if(ip==0)
     {
@@ -789,7 +783,7 @@ int main( int argc , char ** argv )
             // H*psi - first execution, d_fkm3 as working buffer
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) );
             gpu_exec( apply_hamiltonian(nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
             // Make copy of qpe
@@ -821,7 +815,7 @@ int main( int argc , char ** argv )
             
                 // H*psi
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
-                                        d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
+                                        d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
@@ -890,7 +884,7 @@ int main( int argc , char ** argv )
             // executing exp[-i*H(t+dt/2)*dt]*psi
             // H*psi - first execution
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
             // Make copy of qpe
@@ -919,7 +913,7 @@ int main( int argc , char ** argv )
            
                 // H*psi
                 gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
-                                        d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
+                                        d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
@@ -997,24 +991,24 @@ int main( int argc , char ** argv )
             cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
 
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
-                Laz/Na, // 12
-                Lbz/Nb, // 13
-                (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
+                cabs(delta[NX/2]), // 12
+                rho_a[NX/2], // 13
+                rho_b[NX/2], // 14
+                qfalpha, //15
+                cccoeff // 16
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
         }    
@@ -1079,7 +1073,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
             // H*psi
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
-                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace,
+                                    d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) ); 
             
@@ -1146,7 +1140,7 @@ int main( int argc , char ** argv )
 #endif
             // H*psi
             gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, 
-                                    d_wf_d_dx, d_wf_d_dy, d_kkyz, d_wf_laplace, d_alphawf_laplace, 
+                                    d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );            
             
@@ -1193,24 +1187,24 @@ int main( int argc , char ** argv )
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
             
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
-                Laz/Na, // 12
-                Lbz/Nb, // 13
-                (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
+                cabs(delta[NX/2]), // 12
+                rho_a[NX/2], // 13
+                rho_b[NX/2], // 14
+                qfalpha, //15
+                cccoeff // 16
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(i_meas+1, rt, OUTPUT_ENTRIES, line_items) );
         } 

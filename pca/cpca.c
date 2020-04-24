@@ -655,30 +655,29 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-#ifdef WORK_IN_ROTATING_FRAME
-        #define OUTPUT_ENTRIES 16
-#else
-        #define OUTPUT_ENTRIES 14
-#endif
+        #define OUTPUT_ENTRIES 18
         double line_items[OUTPUT_ENTRIES]={     
-            time*eF, // 1
-            Na, // 2
-            Nb, // 3
-            Na+Nb, // 4
-            energy_tot/Effg, // 5
-            energy_kin/Effg, // 6
-            energy_pot/Effg, // 7
-            energy_pair/Effg, // 8
-            energy_CM/Effg, // 9
-            energy_uext/Effg, //10
-            qfalpha, //11
+            // line id (added automatically): 1
+            time*eF, // 2
+            Na, // 3
+            Nb, // 4
+            Na+Nb, // 5
+            energy_tot/Effg, // 6
+            energy_kin/Effg, // 7
+            energy_pot/Effg, // 8
+            energy_pair/Effg, // 9
+            energy_CM/Effg, // 10
+            energy_uext/Effg, //11
             Laz/Na, // 12
             Lbz/Nb, // 13
             (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-            Omega_a, // 15
-            Omega_b, // 16
-#endif
+            cabs(delta[NY/2 + NY*NX/2]), // 15
+            rho_a[NY/2 + NY*NX/2], // 16
+            rho_b[NY/2 + NY*NX/2], // 17
+            qfalpha, //18
+            cccoeff // 19
+            // time per measurment (added automatically)
+            // date & time of adding enetry
         };
         cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
     }    
@@ -994,24 +993,27 @@ int main( int argc , char ** argv )
             cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
 
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                cabs(delta[NY/2 + NY*NX/2]), // 15
+                rho_a[NY/2 + NY*NX/2], // 16
+                rho_b[NY/2 + NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
         }    
@@ -1190,24 +1192,27 @@ int main( int argc , char ** argv )
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
             
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                cabs(delta[NY/2 + NY*NX/2]), // 15
+                rho_a[NY/2 + NY*NX/2], // 16
+                rho_b[NY/2 + NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(i_meas+1, rt, OUTPUT_ENTRIES, line_items) );
         } 
