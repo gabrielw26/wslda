@@ -290,7 +290,7 @@ int main( int argc , char ** argv )
         else 
         {
             if(ip==0) printf("# READING UNIFORM SOLUTION...\n");
-            if(ip==0) { cpu_exec( read_uniform(&nwf, ip==0) ); cpu_exec( get_nwf_to_evolve_2d(&nwf) ); }
+            if(ip==0) { cpu_exec( read_uniform(&nwf, ip==0) ); cpu_exec( get_nwf_to_evolve_1d(&nwf) ); }
             MPI_Bcast( &__md_pca_uniform , sizeof(metadata_pca_uniform_t), MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
             MPI_Bcast( &nwf , 1, MPI_INT , 0 , MPI_COMM_WORLD ) ;
         }
