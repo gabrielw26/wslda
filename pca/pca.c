@@ -838,9 +838,11 @@ int main( int argc , char ** argv )
         sprintf(file_name, "%s_current_a.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
         sprintf(file_name, "%s_current_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );   
+        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
+#ifdef STORE_QPE
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
+#endif
         
         // for each measurement add data to file
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
@@ -853,10 +855,12 @@ int main( int argc , char ** argv )
         file_operation( add_measurement_entry(file_name, j_a_x, sizeof(double)*NXYZ*3) );
         sprintf(file_name, "%s_current_b.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
+#ifdef STORE_QPE
         // save zeros for qpe for initial measurement - to avoid expensive computation of qpe
         for(i=0; i<nwf; i++) h_qpe_nwf[i]=0.0;
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );   
+#endif
     }
     
     // ====================================================================================
@@ -1296,6 +1300,7 @@ int main( int argc , char ** argv )
         }
         
         // ----------------------------- measurement -------------------------------------
+#ifdef STORE_QPE
         // Save quasiparticle energies - computation of energy will destroy them
         gpu_exec( memcopy_gpu2host(d_workarea, h_qpe_nwfip,  (size_t)nwfip*sizeof(double)) );
         MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -1304,6 +1309,7 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_qpe.dpca", md.outprefix);
             file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) ); 
         }
+#endif
         
         // energy
         gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) );

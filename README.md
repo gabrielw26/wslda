@@ -6,11 +6,13 @@
 * Functionals: BdG, (A)SLDA
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
+* Computation in lab frame or rotating frame
+* Integration with VisIt application
 
 ### Codes
 * **pca** - code for solving time-dependent density functional equations in 3D Cartesian mesh. (status: **up to date**)
 * **cpca** - constrained-pca code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_ direction (status: **up to date**)
-* **ccpca** - constrained-constrained-pca code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_  and _y_ directions. (status: **under construction**)
+* **ccpca** - constrained-constrained-pca code for solving time-dependent density functional equations in 3D Cartesian mesh with imposed constraint that system is uniform in _z_  and _y_ directions. (status: **up to date**)
 * **s3dpca** - code for solving static density functional equations in 3D Cartesian mesh, generator of initial states for _pca_ code. (status: **up to date**)
 * **s2dpca** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ direction, generator of initial states for _pca_ and _cpca_ codes. (status: **up to date**)
 * **s1dpca** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ and _y_ directions, generator of initial states for _pca_ and _cpca_ and _ccpca_ codes. (status: **under construction**)
