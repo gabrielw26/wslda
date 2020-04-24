@@ -604,9 +604,9 @@ int main( int argc , char ** argv )
     // normalize wf 
     gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
-    gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) );     ABORT; 
+    gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
-    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -638,8 +638,8 @@ int main( int argc , char ** argv )
         energy_CM = h_energy[3];
         energy_uext = h_energy[4];
         energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-        Na=h_energy[5]*NZ;
-        Nb=h_energy[6]*NZ;
+        Na=h_energy[5]*(NY*NZ);
+        Nb=h_energy[6]*(NY*NZ);
         Laz=h_energy[7];
         Lbz=h_energy[8];
         
@@ -651,7 +651,7 @@ int main( int argc , char ** argv )
         file_operation( touch_file(file_name) );
         // Take densities from device
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
-        file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*NZ) ); 
+        file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*(NY*NZ)) ); 
         
         printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
         
@@ -685,6 +685,7 @@ int main( int argc , char ** argv )
         cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
     }    
 
+    ABORT; // TODO
     // Create binary files and add initial measurement
     if(ip==0)
     {
@@ -760,14 +761,14 @@ int main( int argc , char ** argv )
 #endif
             if(gradients_computed)
             {
-                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
             }
             else
             {
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -806,7 +807,7 @@ int main( int argc , char ** argv )
                 // derivatives
                 if(gradients_computed)
                 {
-                    gpu_exec( compute_derivatives(2*nwfip, d_fkm2, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                    gpu_exec( compute_derivatives(2*nwfip, d_fkm2, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
                 }
                 else
                 {
@@ -846,14 +847,14 @@ int main( int argc , char ** argv )
 #endif
             if(gradients_computed)
             {
-                gpu_exec( compute_derivatives(2*nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                gpu_exec( compute_derivatives(2*nwfip, d_fkm3, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
             }
             else
             {
                 gpu_exec( compute_laplace(2*nwfip, d_fkm3, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -874,7 +875,7 @@ int main( int argc , char ** argv )
             // recompute derivatives for d_wf
             if(gradients_computed)
             {
-                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
             }
             else
             {
@@ -904,7 +905,7 @@ int main( int argc , char ** argv )
                 // derivatives
                 if(gradients_computed)
                 {
-                    gpu_exec( compute_derivatives(2*nwfip, d_fkm2, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                    gpu_exec( compute_derivatives(2*nwfip, d_fkm2, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
                 }
                 else
                 {
@@ -951,9 +952,9 @@ int main( int argc , char ** argv )
          
         // derivatives
         gradients_computed=1;
-        gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+        gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
         // densities - local reduction
-        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -984,8 +985,8 @@ int main( int argc , char ** argv )
             energy_CM = h_energy[3];
             energy_uext = h_energy[4];
             energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-            Na=h_energy[5]*NZ;
-            Nb=h_energy[6]*NZ;
+            Na=h_energy[5]*(NY*NZ);
+            Nb=h_energy[6]*(NY*NZ);
             Laz=h_energy[7];
             Lbz=h_energy[8];
             
@@ -1052,14 +1053,14 @@ int main( int argc , char ** argv )
 #endif
             if(gradients_computed)
             {
-                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
             }
             else
             {
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1103,14 +1104,14 @@ int main( int argc , char ** argv )
 #endif
             if(gradients_computed)
             {
-                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+                gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
             }
             else
             {
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1184,8 +1185,8 @@ int main( int argc , char ** argv )
             energy_CM = h_energy[3];
             energy_uext = h_energy[4];
             energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-            Na=h_energy[5]*NZ;
-            Nb=h_energy[6]*NZ;
+            Na=h_energy[5]*(NY*NZ);
+            Nb=h_energy[6]*(NY*NZ);
             Laz=h_energy[7];
             Lbz=h_energy[8];
             
@@ -1296,7 +1297,7 @@ int main( int argc , char ** argv )
             printf("# CREATING CHECK STAMP: `%s`\n",file_name);
             // Take densities from device
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
-            file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*NZ) );   
+            file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*(NY*NZ)) );   
         }
     }
     /* messy exit here */

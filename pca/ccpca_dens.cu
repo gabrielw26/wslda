@@ -214,8 +214,7 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf array with wave-functions (INPUT)
  * @param wf_d_dx derivative with respect to dx (INPUT)
- * @param wf_d_dy derivative with respect to dy (INPUT)
- * @param kkz value of kz (INPUT)
+ * @param kkyz value of ky and kz (INPUT)
  * @param fbetaEn weight of wave-function (INPUT)
  * @param d_densites (OUTPUT)
  *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
@@ -229,7 +228,7 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
  * */
 extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
                             cufftDoubleComplex *wf_d_dx,
-                            cufftDoubleComplex *d_wf_laplace, double *kky, double *kkz, 
+                            cufftDoubleComplex *d_wf_laplace, double *kkyz,
                             double *d_fbetaEn, 
                             double *d_densities,
                             int gradients_computed, int nthreads)
@@ -251,6 +250,8 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     double *j_b_y = (double *)(d_densities + 10*NX);
     double *j_b_z = (double *)(d_densities + 11*NX);
     
+    double *kky = kkyz;
+    double *kkz = kkyz+n;
     
     if(gradients_computed) // computation of all densities
     {
@@ -344,7 +345,7 @@ __global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, doubl
  * Function computes density.
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf array with wave-functions (INPUT)
- * @param kkz value of kz (INPUT)
+ * @param kkyz values of ky and kz (INPUT)
  * @param fbetaEn weight of wave-function (INPUT)
  * @param weights for density computation (INPUT)
  * @param d_densites (OUTPUT)
@@ -357,7 +358,7 @@ __global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, doubl
  * @return 0 - OK, otherwise ERROR 
  * */
 extern "C" int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
-                            double *kky, double *kkz, 
+                            double *kkyz, 
                             double *d_fbetaEn, 
                             double *d_weights, 
                             double *d_densities,
@@ -380,6 +381,8 @@ extern "C" int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
     double *j_b_y = (double *)(d_densities + 10*NX);
     double *j_b_z = (double *)(d_densities + 11*NX);
     
+    double *kky = kkyz;
+    double *kkz = kkyz+n;
 
     kernel_calculate_densities_weighted<<<nblocks, nthreads>>>(n, (Complex *)wf, kky, kkz,
                                         d_fbetaEn, d_weights, 
