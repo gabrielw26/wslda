@@ -600,12 +600,11 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================= INITIAL MEASUREMENT ==============================
     // ====================================================================================
-    ABORT;
     if(ip==0) printf("# INITIAL MEASUREMENT\n");
     // normalize wf 
     gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
-    gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, NULL, d_wf_laplace, md.nthreads) ); 
+    gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) );     ABORT; 
     // densities - local reduction
     gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction

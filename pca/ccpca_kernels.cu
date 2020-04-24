@@ -24,11 +24,6 @@ __constant__ double dc_kF; // reference kF
 __constant__ double dc_eF; // reference eF (=kF^2/2)
 __constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2)) 
 
-#ifdef WORK_IN_ROTATING_FRAME
-__constant__ double dc_Omega_a;
-__constant__ double dc_Omega_b;
-#endif
-
 #ifdef BDG_MODE
 __constant__ double dc_gBdG;
 #endif
@@ -63,19 +58,6 @@ extern "C" int memcopy_const_params(double *params)
     
     return 0;
 }
-
-#ifdef WORK_IN_ROTATING_FRAME
-/**
- * This function copies rotating frame velocity
- * */
-extern "C" int memcopy_const_Omega(double Omega_a, double Omega_b)
-{
-    if( cudaMemcpyToSymbol(dc_Omega_a, &Omega_a, sizeof(double))!= cudaSuccess ) return 1;
-    if( cudaMemcpyToSymbol(dc_Omega_b, &Omega_b, sizeof(double))!= cudaSuccess ) return 2;
-    
-    return 0;
-}
-#endif
 
 #ifdef BDG_MODE
 /**
@@ -938,7 +920,7 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
         na=0.25*laplace_alpha_a[ixyz];
         nb=0.25*laplace_alpha_b[ixyz];
 #endif
-        // TODO - no working in WORK_IN_ROTATING_FRAME        
+    
         // apply to each wave-function
         for(iwf=0; iwf<n; iwf++)
         {
@@ -1228,9 +1210,9 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     {
 //         printf("QUANTUM FRICTION ACTIVE! qfalpha=%f\n", qfalpha);
         // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
-        ierr=compute_derivative_real_vector_f(j_a_x, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads); // TODO
+        ierr=compute_derivative_real_vector_f(j_a_x, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads);
         if(ierr!=0) return ierr;
-        ierr=compute_derivative_real_vector_f(j_b_x, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads); // TODO
+        ierr=compute_derivative_real_vector_f(j_b_x, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads);
         if(ierr!=0) return ierr;  
         
         // update mean field potential by friction term
@@ -1257,16 +1239,16 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
     // and compute gradient and laplace of effective mass
-    ierr=compute_laplace_real_f(grad_alpha_a, laplace_alpha_a, nthreads); // TODO
+    ierr=compute_laplace_real_f(grad_alpha_a, laplace_alpha_a, nthreads);
     if(ierr!=0) return ierr;
-    ierr=compute_laplace_real_f(grad_alpha_b, laplace_alpha_b, nthreads); // TODO
+    ierr=compute_laplace_real_f(grad_alpha_b, laplace_alpha_b, nthreads);
     if(ierr!=0) return ierr;
 #endif
     
 #ifdef CURRENT_CORRECTIONS
-    ierr=compute_derivative_real_vector_f(grad_j_corr_a, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads); // TODO
+    ierr=compute_derivative_real_vector_f(grad_j_corr_a, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads);
     if(ierr!=0) return ierr;
-    ierr=compute_derivative_real_vector_f(grad_j_corr_b, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads); // TODO
+    ierr=compute_derivative_real_vector_f(grad_j_corr_b, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads);
     if(ierr!=0) return ierr;  
 #endif
     
