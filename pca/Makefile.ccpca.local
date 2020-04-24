@@ -12,7 +12,7 @@ CCLIB =  -L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lm
 CCFLAGS = -O3 -DTARGET_MACHINE=TITAN
 NVCCFLAGS = -arch sm_30 -O3 
 
-OBJ = ccpca_derivative.o ccpca_kernels.o cpca_dens.o
+OBJ = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o
 OBJmpi =  ccpca.o cpca_checkpoint.o
 
 all: $(OBJ) $(OBJmpi)

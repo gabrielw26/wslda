@@ -26,7 +26,7 @@
 #include "pca_macro.h"
 #include "cpca_derivative.h"
 #include "cpca_kernels.h"
-#include "cpca_dens.h"
+#include "ccpca_dens.h"
 #include "pca_utils.h"
 #include "pca_io.h"
 #include "pca_uniform.h"
