@@ -12,7 +12,7 @@ INCLUDENVCC = pca_macro.h pca_settings.h pca_uext.h cpca_derivative.h pca_edf.h
 CCFLAGS = -I/usr/local/cuda-9.0/include/
 CCLIB =  -L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -I/usr/local/cuda-9.0/include/ -lm
 #CCFLAGS = -O3 -DTARGET_MACHINE=DWARF_ONE_NODE
-CCFLAGS = -O3 -DTARGET_MACHINE=DWARF
+CCFLAGS = -O3 -DCODEDIM=2 -DTARGET_MACHINE=DWARF
 NVCCFLAGS = -arch sm_35 -O3 
 
 OBJ = cpca_derivative.o cpca_kernels.o cpca_dens.o

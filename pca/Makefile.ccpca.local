@@ -9,7 +9,7 @@ INCLUDENVCC = pca_macro.h pca_settings.h pca_uext.h cpca_derivative.h pca_edf.h
 # for gw laptop
 CCFLAGS = -I/usr/local/cuda/include/ 
 CCLIB =  -L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lm
-CCFLAGS = -O3 -DTARGET_MACHINE=TITAN
+CCFLAGS = -O3 -DCODEDIM=1 -DTARGET_MACHINE=TITAN
 NVCCFLAGS = -arch sm_30 -O3 
 
 OBJ = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o
