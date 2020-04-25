@@ -1595,7 +1595,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>=0.0) // take only from sphere
+        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere
         {
             eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
             eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
@@ -1705,6 +1705,394 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
                 
                 // kkz value
                 kkzvals[nwf-idxfrom]=kkz[iz];
+                
+                // eigen energy
+                En[nwf-idxfrom]=ek;
+                
+//                 // only for tests:
+//                 if(nwf==idxfrom)
+//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+            }
+            
+        }
+        ixyz++;
+    }    
+    
+    // Clear memory
+    free(kkx);
+    free(kky);
+    free(kkz);
+    free(kk2);
+    
+    return 0;
+}
+
+/**
+ * Function resturns number of wave-functions that need to be evolved
+ * It takes into accout that hamilonian for values kz and -kz and ky and -ky is the same. 
+ * @param nwf number of wave-functions (OUTPUT)
+ * @return 0 - OK, otherwise error
+ * */
+int get_nwf_to_evolve_1d(int *nwf)
+{
+    int i,j;
+    int ix, iy, iz, ixyz; 
+    
+    // Allocate memory - Double values
+    // momentum on the lattice
+    double * kkx , * kky , * kkz ; /* values */
+    cppmallocl(kkx,NX,double);
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    /* NOTE : nx , ny , nz = 2j forall j integers (e.g. even numbers for the lattice dimensions) */
+    // Initialize lattice in momentum space (first Brullion zone)
+    /* initialize the k-space lattice */    
+    for ( i = 0 ; i <= NX / 2 - 1 ; i++ ) {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) i ; }
+    j = - i ;
+    for ( i = NX / 2 ; i < NX ; i++ ) 
+    {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NY / 2 - 1 ; i++ ) {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) i ; }
+    j = - i ;
+    for ( i = NY / 2 ; i < NY ; i++ ) 
+    {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NZ / 2 - 1 ; i++ ) {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) i ; }
+    j = - i ;
+    for ( i = NZ / 2 ; i < NZ ; i++ ) 
+    {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) j ; 
+        j++ ;
+    }    
+    
+    double * kk2 ; /* kk2 = k^2/2m */
+    cppmallocl(kk2,NXYZ,double);
+    i=0;
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        kk2[i]=(kkx[ix]*kkx[ix] + kky[iy]*kky[iy] + kkz[iz]*kkz[iz]);
+        i++;
+    }   
+    
+    // extract number of wave-functions
+    ixyz=0;
+    *nwf=0;
+//     double kc=__md_pca_uniform.kc;
+    double kc=0.999999*M_PI/DX;
+    double kc2=kc*kc;
+    int total_nwf=0;
+    int total_nwf2=0;
+    for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
+    {
+            
+        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        {
+            if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
+            else *nwf+=2; // thera are two solutions for each momentum
+        }
+            
+        // make test for correctness
+        if(md.spinsymmetry==1)
+        {
+            if(kk2[ixyz]<kc2) 
+            {
+                // take only positive energy states
+                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
+                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
+                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
+                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
+                                
+                total_nwf2+=1;
+            }
+        }
+        else
+        {
+            if(kk2[ixyz]<kc2)
+            {
+                // take only positive energy states
+                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
+                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
+                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
+                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
+                
+                total_nwf2+=2;
+            }
+        }
+             
+//         printf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
+        
+        ixyz++;
+    }
+    
+    // Clear memory
+    free(kkx);
+    free(kky);
+    free(kkz);
+    free(kk2);
+    
+    if(total_nwf!=__md_pca_uniform.nwf)
+    {
+        printf("# ERROR: get_nwf_to_evolve_1d: total_nwf[%d]!=__md_pca_uniform.nwf[%d], total_nwf2[%d]\n", total_nwf, __md_pca_uniform.nwf, total_nwf2);
+        fflush(stdout);
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @param idxfrom extract only wf with indices [idxfrom, idxto) (INPUT)
+ * @param idxto extract only wf with indices [idxfrom, idxto) (INPUT)
+ * @param wf pointer to array for wf of size nx*ny*nz*2*(idxto-idxfrom)*sizeof(double complex)
+ * @param mu_a chemical potential for population "a" (OUTPUT)
+ * @param mu_b chemical potential for population "b" (OUTPUT)
+ * @param ec energy cut-off for the solution (OUTPUT)
+ * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param printout, function prints on output info if printout is true
+ * @return 0 - OK, otherwise error
+ * */
+int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_a, double *mu_b, double *ec, double *fEn, double *kkyzvals, double *En, int printout)
+{
+    int i,j;
+    int ix, iy, iz, ixyz; 
+    int ix2, iy2, iz2, ixyz2; 
+    
+    // Allocate memory - Double values
+    // momentum on the lattice
+    double * kkx , * kky , * kkz ; /* values */
+    cppmallocl(kkx,NX,double);
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    /* NOTE : nx , ny , nz = 2j forall j integers (e.g. even numbers for the lattice dimensions) */
+    // Initialize lattice in momentum space (first Brullion zone)
+    /* initialize the k-space lattice */    
+    for ( i = 0 ; i <= NX / 2 - 1 ; i++ ) {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) i ; }
+    j = - i ;
+    for ( i = NX / 2 ; i < NX ; i++ ) 
+    {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NY / 2 - 1 ; i++ ) {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) i ; }
+    j = - i ;
+    for ( i = NY / 2 ; i < NY ; i++ ) 
+    {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NZ / 2 - 1 ; i++ ) {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) i ; }
+    j = - i ;
+    for ( i = NZ / 2 ; i < NZ ; i++ ) 
+    {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) j ; 
+        j++ ;
+    }    
+    
+    double * kk2 ; /* kk2 = k^2/2m */
+    cppmallocl(kk2,NXYZ,double);
+    i=0;
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        kk2[i]=(kkx[ix]*kkx[ix] + kky[iy]*kky[iy] + kkz[iz]*kkz[iz]);
+        i++;
+    } 
+    
+    // extract number of wave-functions and check consistency
+    double kc=0.999999*M_PI/DX;
+    double kc2=kc*kc;
+    ixyz=0;
+    int nwf=0;
+    int total_nwf=0;
+    int takeit;
+    
+    for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
+    {
+        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        {
+            if(md.spinsymmetry==1) nwf+=1; // only positive energy state
+            else nwf+=2; // thera are two solutions for each momentum
+        }
+        
+        // make test for correctness
+        if(md.spinsymmetry==1)
+        {
+            if(kk2[ixyz]<kc2)
+            {
+                // take only positive energy states
+                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
+                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
+                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
+                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
+            }
+        }
+        else 
+        {
+            if(kk2[ixyz]<kc2)
+            {
+                // take only positive energy states
+                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
+                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
+                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
+                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
+            }
+        }
+        
+        ixyz++;
+    }
+    if(total_nwf!=__md_pca_uniform.nwf) return 1;
+    if(idxfrom>=nwf) return 2;
+    if(idxto>nwf) return 3;
+    if(idxfrom>=idxto)return 4;
+    
+    // Create wf
+    size_t shift;
+    double V_a=__md_pca_uniform.V_a;
+    double V_b=__md_pca_uniform.V_b;
+    double eta_a, eta_b;
+    double alph_a=__md_pca_uniform.alph_a;
+    double alph_b=__md_pca_uniform.alph_b;
+    *mu_a=__md_pca_uniform.mu_a;
+    *mu_b=__md_pca_uniform.mu_b;
+    double uk, vk, ek;
+    double delta=__md_pca_uniform.delta;
+    double sqrt_volume=sqrt((double) (LX));
+    *ec=__md_pca_uniform.ec;
+    double beta=__md_pca_uniform.beta;
+
+    if(printout) printf("# UNIFORM CREATE WF: Creating wave-functions.\n");
+    ixyz=0;
+    nwf=-1;
+    for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
+    {
+        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere
+        {
+            eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
+            eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
+            
+            // solution 1
+            ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
+            vk = delta*delta / ( pow(0.5*(eta_a+eta_b)+0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta);
+            uk = 1.0 - vk;
+            vk = sqrt(vk); uk=sqrt(uk);
+            if(eta_b+ek<0.0) vk=-1.0*vk;  
+            
+            takeit=0;
+            if(md.spinsymmetry>0)
+            {
+                if(ek>0.0) 
+                {
+                    nwf++;
+                    if(nwf>=idxfrom && nwf<idxto) takeit=1;
+                }
+            }
+            else
+            {
+                nwf++;
+                if(nwf>=idxfrom && nwf<idxto) takeit=1;
+            }
+            
+            if(takeit) // this is my wave-function
+            {
+                // u-components
+                shift=NX*(nwf-idxfrom); // local index
+                ixyz2=0;
+                for ( ix2 = 0 ; ix2 < NX ; ix2++ )
+                {
+                    wf[shift+ixyz2]=cexp( I * ( ( double ) ix2 * DX * kkx[ix] ) ) * uk /  sqrt_volume;
+                    ixyz2++;
+                }
+                
+                // v-components
+                shift=NX*(idxto-idxfrom) + NX*(nwf-idxfrom); // local index
+                ixyz2=0;
+                for ( ix2 = 0 ; ix2 < NX ; ix2++ )
+                {
+                    wf[shift+ixyz2]=cexp( I * ( ( double ) ix2 * DX * kkx[ix] ) ) * vk /  sqrt_volume;
+                    ixyz2++;
+                }
+                
+                // weight
+                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                
+                // kkz value
+                kkyzvals[                  nwf-idxfrom]=kky[iy];
+                kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
+                
+                // eigen energy
+                En[nwf-idxfrom]=ek;
+                
+//                 // only for tests:
+//                 if(nwf==idxfrom)
+//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+            }
+            
+            
+            
+            // solution 2
+            ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
+            vk = delta*delta / ( pow(0.5*(eta_a+eta_b)-0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta) ;
+            uk = 1.0 - vk;
+            vk = sqrt(vk); uk=sqrt(uk);
+            if(eta_b+ek<0.0) vk=-1.0*vk;   
+            
+            takeit=0;
+            if(md.spinsymmetry>0)
+            {
+                if(ek>0.0) 
+                {
+                    nwf++;
+                    if(nwf>=idxfrom && nwf<idxto) takeit=1;
+                }
+            }
+            else
+            {
+                nwf++;
+                if(nwf>=idxfrom && nwf<idxto) takeit=1;
+            }
+            
+            if(takeit) // this is my wave-function
+            {
+                // u-components
+                shift=NX*(nwf-idxfrom); // local index
+                ixyz2=0;
+                for ( ix2 = 0 ; ix2 < NX ; ix2++ )
+                {
+                    wf[shift+ixyz2]=cexp( I * ( ( double ) ix2 * DX * kkx[ix] ) ) * uk /  sqrt_volume;
+                    ixyz2++;
+                }
+                
+                // v-components
+                shift=NX*(idxto-idxfrom) + NX*(nwf-idxfrom); // local index
+                ixyz2=0;
+                for ( ix2 = 0 ; ix2 < NX ; ix2++ ) 
+                {
+                    wf[shift+ixyz2]=cexp( I * ( ( double ) ix2 * DX * kkx[ix] ) ) * vk /  sqrt_volume;
+                    ixyz2++;
+                }
+                
+                // weight
+                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                
+                // kkz value
+                kkyzvals[                  nwf-idxfrom]=kky[iy];
+                kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
                 
                 // eigen energy
                 En[nwf-idxfrom]=ek;

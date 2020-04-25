@@ -58,6 +58,16 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #else
     fprintf(log,"# WORK_IN_ROTATING_FRAME: NO\n");
 #endif 
+#ifdef STORE_QPE
+    fprintf(log,"# STORE_QPE: YES\n");
+#else
+    fprintf(log,"# STORE_QPE: NO\n");
+#endif
+#ifdef ENABLE_DELTA_EXT
+    fprintf(log,"# ENABLE_DELTA_EXT: YES\n");
+#else
+    fprintf(log,"# ENABLE_DELTA_EXT: NO\n");
+#endif
 #if FUNCTIONAL==BDG
     fprintf(log,"# FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA

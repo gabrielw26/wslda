@@ -9,7 +9,7 @@
 //      make -f Makefile.cpca.(machine)
 
 // test run:
-//      mpirun -np 8 ./pca input.test.cpca.txt 
+//      mpirun -np 8 ./cpca input.test.cpca.txt 
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -348,7 +348,7 @@ int main( int argc , char ** argv )
         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
-    else if(md.inittype==3) // Start from solution of kzSLpca solver 
+    else if(md.inittype==3) // Start from solution of s2dpca solver 
     {
         // Load data from info file
         int _nx, _ny, _nz;
@@ -511,7 +511,7 @@ int main( int argc , char ** argv )
                   &nwf, &nwfip,
                   h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,		  
 		  HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
+        memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
         load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
@@ -519,7 +519,7 @@ int main( int argc , char ** argv )
                      &nwf, &nwfip,
                      h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,
                      HowMany);
-        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+        memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #else
         CHECK PCA_SETTINGS.H
 #endif
@@ -655,30 +655,29 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-#ifdef WORK_IN_ROTATING_FRAME
-        #define OUTPUT_ENTRIES 16
-#else
-        #define OUTPUT_ENTRIES 14
-#endif
+        #define OUTPUT_ENTRIES 18
         double line_items[OUTPUT_ENTRIES]={     
-            time*eF, // 1
-            Na, // 2
-            Nb, // 3
-            Na+Nb, // 4
-            energy_tot/Effg, // 5
-            energy_kin/Effg, // 6
-            energy_pot/Effg, // 7
-            energy_pair/Effg, // 8
-            energy_CM/Effg, // 9
-            energy_uext/Effg, //10
-            qfalpha, //11
+            // line id (added automatically): 1
+            time*eF, // 2
+            Na, // 3
+            Nb, // 4
+            Na+Nb, // 5
+            energy_tot/Effg, // 6
+            energy_kin/Effg, // 7
+            energy_pot/Effg, // 8
+            energy_pair/Effg, // 9
+            energy_CM/Effg, // 10
+            energy_uext/Effg, //11
             Laz/Na, // 12
             Lbz/Nb, // 13
             (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-            Omega_a, // 15
-            Omega_b, // 16
-#endif
+            cabs(delta[NY/2 + NY*NX/2]), // 15
+            rho_a[NY/2 + NY*NX/2], // 16
+            rho_b[NY/2 + NY*NX/2], // 17
+            qfalpha, //18
+            cccoeff // 19
+            // time per measurment (added automatically)
+            // date & time of adding enetry
         };
         cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
     }    
@@ -697,8 +696,10 @@ int main( int argc , char ** argv )
         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
         sprintf(file_name, "%s_current_b.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );   
+#ifdef STORE_QPE
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
+#endif
         
         // for each measurement add data to file
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
@@ -711,10 +712,12 @@ int main( int argc , char ** argv )
         file_operation( add_measurement_entry(file_name, j_a_x, sizeof(double)*NXY*3) );
         sprintf(file_name, "%s_current_b.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXY*3) );
+#ifdef STORE_QPE
         // save zeros for qpe for initial measurement - to avoid expensive computation of qpe
         for(i=0; i<nwf; i++) h_qpe_nwf[i]=0.0;
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );   
+#endif
     }
     
     // ====================================================================================
@@ -994,24 +997,27 @@ int main( int argc , char ** argv )
             cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
 
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                cabs(delta[NY/2 + NY*NX/2]), // 15
+                rho_a[NY/2 + NY*NX/2], // 16
+                rho_b[NY/2 + NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
         }    
@@ -1151,6 +1157,7 @@ int main( int argc , char ** argv )
         }
         
         // ----------------------------- measurement -------------------------------------
+#ifdef STORE_QPE
         // Save quasiparticle energies - computation of energy will destroy them
         gpu_exec( memcopy_gpu2host(d_workarea, h_qpe_nwfip,  (size_t)nwfip*sizeof(double)) );
         MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -1159,6 +1166,7 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_qpe.dpca", md.outprefix);
             file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) ); 
         }
+#endif
         
         // energy
         gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) );
@@ -1190,24 +1198,27 @@ int main( int argc , char ** argv )
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
             
             double line_items[OUTPUT_ENTRIES]={     
-                time*eF, // 1
-                Na, // 2
-                Nb, // 3
-                Na+Nb, // 4
-                energy_tot/Effg, // 5
-                energy_kin/Effg, // 6
-                energy_pot/Effg, // 7
-                energy_pair/Effg, // 8
-                energy_CM/Effg, // 9
-                energy_uext/Effg, //10
-                qfalpha, //11
+                // line id (added automatically): 1
+                time*eF, // 2
+                Na, // 3
+                Nb, // 4
+                Na+Nb, // 5
+                energy_tot/Effg, // 6
+                energy_kin/Effg, // 7
+                energy_pot/Effg, // 8
+                energy_pair/Effg, // 9
+                energy_CM/Effg, // 10
+                energy_uext/Effg, //11
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-#ifdef WORK_IN_ROTATING_FRAME
-                Omega_a, // 15
-                Omega_b, // 16
-#endif
+                cabs(delta[NY/2 + NY*NX/2]), // 15
+                rho_a[NY/2 + NY*NX/2], // 16
+                rho_b[NY/2 + NY*NX/2], // 17
+                qfalpha, //18
+                cccoeff // 19
+                // time per measurment (added automatically)
+                // date & time of adding enetry
             };
             cpu_exec( add_line_to_file(i_meas+1, rt, OUTPUT_ENTRIES, line_items) );
         } 
