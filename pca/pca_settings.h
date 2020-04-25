@@ -61,12 +61,16 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-// #define SPINSYMMETRY_MODE
+#define SPINSYMMETRY_MODE
 
 // active this flag in order to store quasi-particle energies for each measurment
 // note that in case of 1d or 2d codes this can require much more space than measurments itself
 // meaningful only for dynamic codes
 // #define STORE_QPE
+
+// Enable computation with extarnal delta field
+// If this flag is active, you must provide body of delta_ext(...) function in pca_uext.h file
+#define ENABLE_DELTA_EXT
 
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF

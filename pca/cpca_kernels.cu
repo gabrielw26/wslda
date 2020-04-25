@@ -400,8 +400,10 @@ __global__ void kernel_compute_potentials(int it,
         // save results to global memory
         V_a[ixyz]=Va;
         V_b[ixyz]=Vb;
+#ifdef ENABLE_DELTA_EXT   
+        ldelta += delta_ext(ix, iy, 0, it, ldelta);
+#endif
         delta[ixyz]=ldelta;
- 
     }
 }
 
@@ -451,8 +453,10 @@ __global__ void kernel_compute_potentials_bdg(int it,
         // save results to global memory
         V_a[ixyz]=Va;
         V_b[ixyz]=Vb;
+#ifdef ENABLE_DELTA_EXT   
+        ldelta += delta_ext(ix, iy, 0, it, ldelta);
+#endif
         delta[ixyz]=ldelta;
- 
     }
 }
 #endif 
