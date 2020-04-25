@@ -7,6 +7,7 @@
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
 * Computation in lab frame or rotating frame
+* Quantum friction
 * Integration with VisIt application
 
 ### Codes
