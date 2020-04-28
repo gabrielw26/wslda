@@ -2,7 +2,7 @@
 
 ### Implemented functionalities
 * Solvers: static equations and time dependent equations
-* Dimensionality: 3D and 2D
+* Dimensionality: 3D and 2D and 1D
 * Functionals: BdG, (A)SLDA
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
