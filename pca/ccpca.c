@@ -189,7 +189,7 @@ int main( int argc , char ** argv )
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    int deviceId=ip / md.tsubamenodes;
+    int deviceId = ip % 4;
     printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
