@@ -265,6 +265,7 @@ int recompute_potentials_aslda(int it, double *h_densities, double *h_potentials
         // save results to global memory
         V_a_new[ixyz]=Va;
         V_b_new[ixyz]=Vb;
+        ldelta += delta_ext(ix, iy, it, ldelta); // add external field
         delta_new[ixyz]=ldelta;       
         
         ixyz++; // go to next point
@@ -879,6 +880,7 @@ int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, 
         // save results to global memory
         V_a_new[ixyz]=Va;
         V_b_new[ixyz]=Vb;
+        ldelta += delta_ext(ix, iy, it, ldelta); // add external field
         delta_new[ixyz]=ldelta;       
         
         ixyz++; // go to next point

@@ -11,8 +11,6 @@
 #define VERSION "1.10"
 
 // Lattice
-
-// Lattice
 #define NX 8
 #define NY 10
 #define NZ 12
@@ -24,23 +22,6 @@
 // #define FUNCTIONAL SLDA
 #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
-
-#define DXYZ (DX*DY*DZ)
-
-// Volume settings
-#define LX (DX*NX)
-#define LY (DY*NY)
-#define LZ (DZ*NZ)
-#define LXYZ (LX*LY*LZ)
-
-#define NXYZ (NX*NY*NZ)
- 
-// Settings for 2D calculations
-#define NXY (NX*NY)
-#define LXY (LX*LY)
-
-#define SPINA 0
-#define SPINB 1
 
 // Integration scheme AB - predictor, AM - correctior, number specify order
 // #define ITEGRATION_SCHEME AB3AM4
@@ -141,6 +122,28 @@
 // ===================================================================================
 // =================================== TECHNICAL =====================================
 // ===================================================================================
+
+#define DXYZ (DX*DY*DZ)
+
+// Volume settings
+#define LX (DX*NX)
+#define LY (DY*NY)
+#define LZ (DZ*NZ)
+#define LXYZ (LX*LY*LZ)
+
+#define NXYZ (NX*NY*NZ)
+ 
+// Settings for 2D calculations
+#define NXY (NX*NY)
+#define LXY (LX*LY)
+
+#define SPINA 0
+#define SPINB 1
+
+// coordiates
+#define XAXIS 0
+#define YAXIS 1
+#define ZAXIS 2
 
 // cufft plans
 #define CUFFT_NUMBER_OF_PLANS 4
