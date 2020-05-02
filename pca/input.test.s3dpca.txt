@@ -6,8 +6,8 @@ inittype                0      # 0 - create uniform solution;
                                
 # CBLACS grid
 # NOTE: p*q=np
-p                       5
-q                       4
+p                       2
+q                       2
 mb                      32
 nb                      32
 

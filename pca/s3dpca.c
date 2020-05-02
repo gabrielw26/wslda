@@ -867,7 +867,7 @@ int main( int argc , char ** argv )
         
         // matrix elements
         b_t();
-        cpu_exec( compute_matrix_elements(&bgrid, h_densities, h_potentials, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
+        cpu_exec( compute_matrix_elements(&bgrid, it, h_densities, h_potentials, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
         rt_me+=e_t(0);
         ECHOLINE;
         

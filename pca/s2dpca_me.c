@@ -265,7 +265,9 @@ int recompute_potentials_aslda(int it, double *h_densities, double *h_potentials
         // save results to global memory
         V_a_new[ixyz]=Va;
         V_b_new[ixyz]=Vb;
+#ifdef ENABLE_DELTA_EXT
         ldelta += delta_ext(ix, iy, it, ldelta); // add external field
+#endif
         delta_new[ixyz]=ldelta;       
         
         ixyz++; // go to next point
@@ -334,7 +336,7 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
     
     double p, alph_1, alph_2;
     
-#ifdef CURRENT_CORRECTIONS
+#if defined (CURRENT_CORRECTIONS) || defined (ENABLE_VELOCITY_EXT)
       double Fx1, Fx2, Fy1, Fy2, t7;          
 #endif
     
@@ -457,6 +459,19 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
                     if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
                 
+#ifdef ENABLE_VELOCITY_EXT
+                // contribution from v_ext: 
+                // -(1/2) {v_vext, p} = -(1/2)[v_ext*p + p*v_ext]
+                
+                Fx1 = vector_vext(ix1, iy1, it, SPINA, XAXIS);
+                Fx2 = vector_vext(ix2, iy2, it, SPINA, XAXIS);
+                if(iy1==iy2) h[ij] += me_d_dx[ix1 + ix2*NX] * (Fx1 + Fx2) * ( -0.5); // (note me_d_dx keeps matrix elements of (-i d/dx)
+                
+                Fy1 = vector_vext(ix1, iy1, it, SPINA, YAXIS);
+                Fy2 = vector_vext(ix2, iy2, it, SPINA, YAXIS);
+                if(ix1==ix2) h[ij] += me_d_dy[iy1 + iy2*NY] * (Fy1 + Fy2) * ( -0.5); // note because me_d_dx keeps matrix elements of (-i d/dx)                
+#endif
+                
             }
             else if(ci>=NX*NY && ri<NX*NY) // part: |   Delta  |
             {
@@ -532,6 +547,19 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
                     if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
                     if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
+                
+#ifdef ENABLE_VELOCITY_EXT
+                // contribution from v_ext: 
+                // -(1/2) {v_vext, p} = -(1/2)[v_ext*p + p*v_ext]
+                
+                Fx1 = vector_vext(ix1, iy1, it, SPINB, XAXIS);
+                Fx2 = vector_vext(ix2, iy2, it, SPINB, XAXIS);
+                if(iy1==iy2) h[ij] -= conj(me_d_dx[ix1 + ix2*NX]) * (Fx1 + Fx2) * ( -0.5); // (note me_d_dx keeps matrix elements of (-i d/dx)
+                
+                Fy1 = vector_vext(ix1, iy1, it, SPINB, YAXIS);
+                Fy2 = vector_vext(ix2, iy2, it, SPINB, YAXIS);
+                if(ix1==ix2) h[ij] -= conj(me_d_dy[iy1 + iy2*NY]) * (Fy1 + Fy2) * ( -0.5); // note because me_d_dx keeps matrix elements of (-i d/dx)                
+#endif
             }
             
         } // for(li=0; li<bgrid->nip; li++)
@@ -880,7 +908,9 @@ int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, 
         // save results to global memory
         V_a_new[ixyz]=Va;
         V_b_new[ixyz]=Vb;
+#ifdef ENABLE_DELTA_EXT
         ldelta += delta_ext(ix, iy, it, ldelta); // add external field
+#endif
         delta_new[ixyz]=ldelta;       
         
         ixyz++; // go to next point
@@ -934,6 +964,10 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
     int li, lj, ij; // local indices
     int ZERO = 0;
     
+#ifdef ENABLE_VELOCITY_EXT
+    double Fx1, Fx2, Fy1, Fy2;
+#endif
+    
     
     // Reset matrix elements
     for(ixyz=0; ixyz<bgrid->nip*bgrid->niq; ixyz++) h[ixyz] = 0.0 + I*0.0;
@@ -986,6 +1020,19 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
                     if(iy1==iy2) h[ij] -= me_d_dx[ix1 + ix2*NX]*dc_Omega_a*DY*(double)(iy1-NY/2)* (-1.0) ; // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
                 
+#ifdef ENABLE_VELOCITY_EXT
+                // contribution from v_ext: 
+                // -(1/2) {v_vext, p} = -(1/2)[v_ext*p + p*v_ext]
+                
+                Fx1 = vector_vext(ix1, iy1, it, SPINA, XAXIS);
+                Fx2 = vector_vext(ix2, iy2, it, SPINA, XAXIS);
+                if(iy1==iy2) h[ij] += me_d_dx[ix1 + ix2*NX] * (Fx1 + Fx2) * ( -0.5); // (note me_d_dx keeps matrix elements of (-i d/dx)
+                
+                Fy1 = vector_vext(ix1, iy1, it, SPINA, YAXIS);
+                Fy2 = vector_vext(ix2, iy2, it, SPINA, YAXIS);
+                if(ix1==ix2) h[ij] += me_d_dy[iy1 + iy2*NY] * (Fy1 + Fy2) * ( -0.5); // note because me_d_dx keeps matrix elements of (-i d/dx)                
+#endif
+                
             }
             else if(ci>=NX*NY && ri<NX*NY) // part: |   Delta  |
             {
@@ -1030,6 +1077,19 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
                     if(ix1==ix2) h[ij] += conj(me_d_dy[iy1 + iy2*NY])*dc_Omega_b*DX*(double)(ix1-NX/2)         ;
                     if(iy1==iy2) h[ij] += conj(me_d_dx[ix1 + ix2*NX])*dc_Omega_b*DY*(double)(iy1-NY/2)* (-1.0) ;  // (-1.0) because me_d_dx keeps matrix elements of (-i d/dx)
                 }
+                
+#ifdef ENABLE_VELOCITY_EXT
+                // contribution from v_ext: 
+                // -(1/2) {v_vext, p} = -(1/2)[v_ext*p + p*v_ext]
+                
+                Fx1 = vector_vext(ix1, iy1, it, SPINB, XAXIS);
+                Fx2 = vector_vext(ix2, iy2, it, SPINB, XAXIS);
+                if(iy1==iy2) h[ij] -= conj(me_d_dx[ix1 + ix2*NX]) * (Fx1 + Fx2) * ( -0.5); // (note me_d_dx keeps matrix elements of (-i d/dx)
+                
+                Fy1 = vector_vext(ix1, iy1, it, SPINB, YAXIS);
+                Fy2 = vector_vext(ix2, iy2, it, SPINB, YAXIS);
+                if(ix1==ix2) h[ij] -= conj(me_d_dy[iy1 + iy2*NY]) * (Fy1 + Fy2) * ( -0.5); // note because me_d_dx keeps matrix elements of (-i d/dx)                
+#endif
             }
             
         } // for(li=0; li<bgrid->nip; li++)

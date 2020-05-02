@@ -53,6 +53,10 @@
 // If this flag is active, you must provide body of delta_ext(...) function in pca_uext.h file
 #define ENABLE_DELTA_EXT
 
+// Enable computation with extarnal velocity field
+// If this flag is active, you must provide body of vector_vext(...) function in pca_uext.h file
+#define ENABLE_VELOCITY_EXT
+
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
 
