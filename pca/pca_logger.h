@@ -68,6 +68,11 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
 #else
     fprintf(log,"# ENABLE_DELTA_EXT: NO\n");
 #endif
+#ifdef ENABLE_VELOCITY_EXT
+    fprintf(log,"# ENABLE_VELOCITY_EXT: YES\n");
+#else
+    fprintf(log,"# ENABLE_VELOCITY_EXT: NO\n");
+#endif
 #if FUNCTIONAL==BDG
     fprintf(log,"# FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA

@@ -10,16 +10,17 @@
 // #define S3DDEBUG
 
 
-// Pick-up diagonalization library - pick only ONE!!!
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
-// #define USE_SCALAPACK_PZHEEVD
-// #define USE_SCALAPACK_PZHEEV
+#elif DIAGONALIZATION_ROUTINE==PZHEEVD
+#define USE_SCALAPACK_PZHEEVD
+#else
+    select DIAGONALIZATION ROUTINE in pca_settings
+    // #define USE_SCALAPACK_PZHEEV
+#endif
 
 // #define USE_ELPA
 // #define USE_ELPA_NEV_FRACTION 0.775
-
-// activate this if you know that matrix elements will be real
-// #define MATRIX_IS_REAL
 
 #ifdef S3DDEBUG
 #define ECHOLINE                                                                                                        \
@@ -249,6 +250,14 @@ int main( int argc , char ** argv )
 #endif
     
     aBdG = md.aBdG; // copy to global momeory
+    if ( fabs(aBdG)<1.0e-12 )
+    {
+        ierr = -1 ;
+        printf("SET aBdG IN INPUT FILE `%s`!\n" , argv[ i ] ) ;
+        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
+        return( EXIT_FAILURE ) ;      
+    }
+    
     if(iam==0)
     {
         if(fabs(aBdG)<1.0e-12) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA [UNITARITY]\n");
@@ -867,7 +876,7 @@ int main( int argc , char ** argv )
         
         // matrix elements
         b_t();
-        cpu_exec( compute_matrix_elements(&bgrid, h_densities, h_potentials, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
+        cpu_exec( compute_matrix_elements(&bgrid, it, h_densities, h_potentials, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
         rt_me+=e_t(0);
         ECHOLINE;
         

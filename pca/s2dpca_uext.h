@@ -602,7 +602,7 @@ void imprint_vortex_u_ext_QT_tube(int it, double *h_densities, double *h_potenti
 // **************************** FUNCTIONS CALLED BY THE CODE *********************************
 // *******************************************************************************************
 /** 
- * THIS FUNCTION IS CALLED BY KERLNELS FROM 'pca_kernels.cu'
+ * THIS FUNCTION IS CALLED BY KERLNELS FROM 's2dpca.c'
  * */
 double u_ext(int ix, int iy, int it, int spin)
 {
@@ -622,7 +622,7 @@ double u_ext(int ix, int iy, int it, int spin)
 }
 
 /** 
- * THIS FUNCTION IS CALLED FROM 'pca.c'
+ * THIS FUNCTION IS CALLED FROM 's2dpca.c'
  * AFTER LOADING params ARRAY FROM INPUT FILES.
  * AFTER PROCESSING THE params ARE LOADED TO CONST MEMORY ON GPU.
  * THE PARAMS ARE VISIBLE IN dc_params
@@ -667,6 +667,47 @@ void modify_potentials(int it, double *h_densities, double *h_potentials, double
 //         modify_potentials_u_ext_vortex_imprint(it, h_densities, h_potentials);
 //      }
 #endif
+}
+
+
+/** 
+ * THIS FUNCTION IS CALLED BY KERLNELS FROM 'sXdpca_kernels.cu'
+ * @param ix - coordinate x,  in range [0,NX)
+ * @param iy - coordinate y,  in range [0,NY)
+ * @param it - index if time step, time is computed as time = dc_t0 + dc_dt*it
+ * @param delta - value of delta computed self-consitently for given point in time. Note that simulation will conserve particle number only if arg[delta] = arg[Delta_{ext}], otherwise the particle number conervation will be violated. 
+ * @return value of exterrnal pairing potential Delta_{ext}(x,y,z,t)
+ * */
+double complex delta_ext(int ix, int iy, int it, double complex delta)
+{
+#ifdef UNIFORM_TEST_MODE
+    return 0.0 + I*0.0; // no external potential
+#endif
+
+    // ADD HERE YOUR CODE
+    
+    return 0.0 + I*0.0;
+}
+
+/** 
+ * THIS FUNCTION IS CALLED BY KERLNELS FROM 'sXdpca_kernels.cu'
+ * @param ix - coordinate x,  in range [0,NX)
+ * @param iy - coordinate y,  in range [0,NY)
+ * @param it - index if time step, time is computed as time = dc_t0 + dc_dt*it
+ * @param spin - spin coordinate, one from {SPINA, SPINB}
+ * @param coordinate - coordinate of external velocity field that should be computed, one of {XAXIS, YAXIS, ZAXIS}
+ * @return value of exterrnal pairing potential Delta_{ext}(x,y,z,t)
+ * */
+
+double vector_vext(int ix, int iy, int it, int spin, int coordinate)
+{
+#ifdef UNIFORM_TEST_MODE
+    return 0.0; // no external velocity field
+#endif 
+
+    // ADD HERE YOUR CODE
+    
+    return 0.0;
 }
 #endif
 
