@@ -57,6 +57,16 @@
 // If this flag is active, you must provide body of vector_vext(...) function in pca_uext.h file
 #define ENABLE_VELOCITY_EXT
 
+// activate this if you know that HFB matrix is real
+// the code will utilize it in roder to speed-up the calculations
+// meaningful only for static codes
+// #define MATRIX_IS_REAL
+
+// select diagonalization routine
+// it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
+#define DIAGONALIZATION_ROUTINE PZHEEVR
+// #define DIAGONALIZATION_ROUTINE PZHEEVD
+
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
 
@@ -208,5 +218,8 @@
     #endif
     
 #endif
+
+#define PZHEEVR 1
+#define PZHEEVD 2
 
 #endif

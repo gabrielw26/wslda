@@ -10,16 +10,17 @@
 // #define S3DDEBUG
 
 
-// Pick-up diagonalization library - pick only ONE!!!
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
-// #define USE_SCALAPACK_PZHEEVD
-// #define USE_SCALAPACK_PZHEEV
+#elif DIAGONALIZATION_ROUTINE==PZHEEVD
+#define USE_SCALAPACK_PZHEEVD
+#else
+    select DIAGONALIZATION ROUTINE in pca_settings
+    // #define USE_SCALAPACK_PZHEEV
+#endif
 
 // #define USE_ELPA
 // #define USE_ELPA_NEV_FRACTION 0.775
-
-// activate this if you know that matrix elements will be real
-// #define MATRIX_IS_REAL
 
 #ifdef S3DDEBUG
 #define ECHOLINE                                                                                                        \

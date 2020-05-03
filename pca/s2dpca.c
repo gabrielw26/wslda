@@ -26,13 +26,16 @@
 #include "s2dpca_densities.h"
 #include "s3dpca_grid.h"
 
-// Pick-up diagonalization library - pick only ONE!!!
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
-// #define USE_SCALAPACK_PZHEEVD
-// #define USE_SCALAPACK_PZHEEV
+#elif DIAGONALIZATION_ROUTINE==PZHEEVD
+#define USE_SCALAPACK_PZHEEVD
+#else
+    select DIAGONALIZATION ROUTINE in pca_settings
+    // #define USE_SCALAPACK_PZHEEV
+#endif
 
-// activate this if you know that matrix elements will be real
-// #define MATRIX_IS_REAL
+
 
 #ifdef USE_SCALAPACK_PZHEEVR
 /* PZHEEVR prototype */
