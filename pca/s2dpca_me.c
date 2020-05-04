@@ -788,6 +788,36 @@ int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz)
     return 0;
 }
 
+/**
+ * Function computes angular momentum along z-direction
+ * @param it iteration number
+ * @param spin - spin idicator (INPUT)
+ * @param jx current, x-component (INPUT)
+ * @param jy current, y-component (INPUT)
+ * @param vext_dot_j integrated v_ext(r)*j(r) (OUTPUT)
+ * */
+int compute_vext_dot_j(int it, int spin, double *jx, double *jy, double *vext_dot_j)
+{
+    int ix, iy, ixyz=0;
+    
+    vext_dot_j[0] = 0.0; // reset
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++)
+    {
+            
+        vext_dot_j[0] += (
+                             vector_vext(ix, iy, it, spin, XAXIS)*jx[ixyz] 
+                           + vector_vext(ix, iy, it, spin, YAXIS)*jy[ixyz]
+                         )*LZ*DX*DY;
+        
+        ixyz++; // gp to next point
+    }
+    
+    
+    return 0;
+}
+
+
+
 double fbeta(double E, double beta);
 int test_density(metadata_s3dpca_grid *bgrid, double *En, int ne, double beta, double complex *U, double *rho_a, double *rho_b)
 {

@@ -12,6 +12,7 @@ int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densi
 int compute_energy(int it, double *h_densities, double *h_potentials, double *energy, double *npart);
 int compute_matrix_elements_of_momentum_operator(int nx, double dx, double complex *me);
 int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz);
+int compute_vext_dot_j(int it, int spin, double *jx, double *jy, double *vext_dot_j);
 // int test_me(int nx);
 
 // ASLDA variants
