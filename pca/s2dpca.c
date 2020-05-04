@@ -140,6 +140,7 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
+    double vextja=0.0, vextjb=0.0,  vextja_old=0.0, vextjb_old=0.0;
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -228,14 +229,16 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# USING SCALAPACK WITH PZHEEV.\n");
 #endif
     
+#if FUNCTIONAL==BDG
     aBdG = md.aBdG; // copy to global momeory
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        printf("SET aBdG IN INPUT FILE `%s`!\n" , argv[ i ] ) ;
+        if(iam==0) printf("SET aBdG IN INPUT FILE!") ;
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
+#endif
         
     if(iam==0)
     {
@@ -306,12 +309,18 @@ int main( int argc , char ** argv )
     if(gr_iam==0) printf("# GROUP %d WITH %d PROCESSES HAS BEEN SUCCESSFULLY CREATED.\n", idgroup, gr_np);
 
     // assing number of kz values taken by each group
-    if ( kzgroups > NZ/2  )
+    int NZ_HALF = NZ/2;
+    if(NZ_HALF<1) 
+    {
+        if(iam==0) printf("# STRICT 2D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
+        NZ_HALF=1;
+    }
+    if ( kzgroups > NZ_HALF  )
     {
         if(iam==0) printf("ERROR: TOO MUCH RESOURCES! (%d>%d)\n", kzgroups, NZ);
         ABORT;
     }
-    getnwfip( idgroup , kzgroups , NZ/2 , &nwfip ) ;
+    getnwfip( idgroup , kzgroups , NZ_HALF , &nwfip ) ;
     MPI_Gather( &nwfip , 1 , MPI_INT , wf_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     MPI_Bcast( wf_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
     
@@ -761,6 +770,7 @@ int main( int argc , char ** argv )
         for(i=0; i< 5; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
+        vextja_old=vextja; vextjb_old=vextjb; 
         
         // take density in the center and use it for definition of the kF (for SPINA)
         if(md.referencekF>0.0) kF = md.referencekF;
@@ -1135,6 +1145,15 @@ int main( int argc , char ** argv )
             "LZ", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
         if(iam==0) printf("dc_Omega_a=%16.8g  dc_Omega_b=%16.8g\n",dc_Omega_a, dc_Omega_b);
         
+        // ------------------ external velocity ------------------
+        cpu_exec( compute_vext_dot_j(it, SPINA, j_a_x, j_a_y, &vextja) );
+        cpu_exec( compute_vext_dot_j(it, SPINB, j_a_x, j_a_y, &vextjb) );  
+        if(iam==0) printf("# EXTERNAL VELOCITY: it=%d\n", it);
+        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "VEXT_A*J", vextja, vextja_old, (vextja-vextja_old));    
+        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "VEXT_B*J", vextjb, vextjb_old, (vextjb-vextjb_old));
+        
         // ------------------ check convergence ------------------
         cpu_exec( compute_energy(it, h_densities, h_potentials, energy, npart) );
         if(iam==0) printf("# PARTICLE NUMBER: it=%d\n", it);
@@ -1159,11 +1178,13 @@ int main( int argc , char ** argv )
         if(iam==0) printf("  ------------------------------------------------------------------------\n");
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
-        if(iam==0) printf("# MINIMIZATION FUNCTION: E_tot - dc_mu_a*Na - dc_mu_b*Nb - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b = %16.8f\n", E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b);
-        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", (E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b) - (E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old));
+        double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b - vextja - vextjb;
+        double minF_old = E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
+        if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
+        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0)
         {
-            #define OUTPUT_ENTRIES 16
+            #define OUTPUT_ENTRIES 18
             double line_items[OUTPUT_ENTRIES]={     
                 npart[SPINA], // 2
                 npart[SPINB], // 3
@@ -1174,13 +1195,15 @@ int main( int argc , char ** argv )
                 energy[2]/Effg, // 8
                 energy[3]/Effg, // 9
                 energy[4]/Effg, //10
-                E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b, // 11
+                minF_new, // 11
                 dc_mu_a, //12
                 dc_mu_b, //13
                 beta, // 14
                 Lz_a/npart[SPINA], // 15
                 Lz_b/npart[SPINB], // 16
                 Lz/(npart[SPINA]+npart[SPINB]) ,  // 17
+                vextja, // 18
+                vextjb, // 19
             };
             cpu_exec( add_line_to_file(it, rt_tot, OUTPUT_ENTRIES, line_items) );
             

@@ -865,6 +865,36 @@ int compute_angular_momentum_Lz(double *jx, double *jy, double *Lz)
 }
 
 /**
+ * Function computes angular momentum along z-direction
+ * @param it iteration number
+ * @param spin - spin idicator (INPUT)
+ * @param jx current, x-component (INPUT)
+ * @param jy current, y-component (INPUT)
+ * @param jz current, z-component (INPUT)
+ * @param vext_dot_j integrated v_ext(r)*j(r) (OUTPUT)
+ * */
+int compute_vext_dot_j(int it, int spin, double *jx, double *jy, double *jz, double *vext_dot_j)
+{
+    int ix, iy, iz, ixyz=0;
+    
+    vext_dot_j[0] = 0.0; // reset
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+            
+        vext_dot_j[0] += (
+                             vector_vext(ix, iy, iz, it, spin, XAXIS)*jx[ixyz] 
+                           + vector_vext(ix, iy, iz, it, spin, YAXIS)*jy[ixyz]
+                           + vector_vext(ix, iy, iz, it, spin, ZAXIS)*jz[ixyz]
+                         )*DX*DY*DZ;
+        
+        ixyz++; // gp to next point
+    }
+    
+    
+    return 0;
+}
+
+/**
  * Function that computes energy of the system
  * @param it iteration number
  * @param h_densities array with all densities (INPUT)
