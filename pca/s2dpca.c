@@ -80,7 +80,7 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
         }
 }
 double u_ext(int ix, int iy, int it, int spin);
-void process_params(double *params, double kF);
+void process_params(double *params, double kF, double *mu);
 void modify_potentials(int it, double *h_densities, double *h_potentials, double * extra_data);
 
 /* Matrix Redistribution function prototype */
@@ -780,7 +780,8 @@ int main( int argc , char ** argv )
         beta = 1.0 / (md.kztemp * eF);
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
-        process_params(dc_params, kF);
+        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+        process_params(dc_params, kF, mu);
         
         /*
         // ajusting particle number
