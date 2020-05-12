@@ -166,8 +166,9 @@ __device__  Complex delta_ext(int ix, int iy, int iz, int it, Complex delta)
  * THE PARAMS ARE VISIBLE IN dc_params
  * @param params array of size MAX_USER_PARAMS with parameters
  * @param kF typical Fermi momentum of the problem
+ * @param mu chemical potentials, mu[SPINA] and mu[SPINB]
  * */
-extern "C" void process_params(double *params, double kF)
+extern "C" void process_params(double *params, double kF, double *mu)
 {
 #ifndef UNIFORM_TEST_MODE
     process_u_sin(params,kF);

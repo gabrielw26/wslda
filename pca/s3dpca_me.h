@@ -11,7 +11,6 @@
 #include "s3dpca_fft.h"
 #include "s3dpca_grid.h"
 
-// void process_params(double *params, double kF);
 int recompute_potentials(int it, double *h_densities, double *h_potentials, double *h_potentials_new);
 int recompute_potentials_meanfield_only(int it, double *h_densities, double *h_potentials, double *h_potentials_new);
 int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s3dpca_fft *mdfft, double complex *h, double complex * me_d_dx, double complex * me_d_dy, double complex * me_d_dz);

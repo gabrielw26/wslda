@@ -281,8 +281,9 @@ double u_ext(int ix, int iy, int iz, int it, int spin)
  * THE PARAMS ARE VISIBLE IN dc_params
  * @param params array of size MAX_USER_PARAMS with parameters
  * @param kF typical Fermi momentum of the problem
+ * @param mu chemical potentials, mu[SPINA] and mu[SPINB]
  * */
-void process_params(double *params, double kF)
+void process_params(double *params, double kF, double *mu)
 {
 #ifndef UNIFORM_TEST_MODE
     // no processing

@@ -25,7 +25,7 @@ double der_tildeC__der_na_h(double n_a, double n_b);
 double der_tildeC__der_nb_h(double n_a, double n_b);
 
 // params handling
-void process_params(double *params, double kF);
+void process_params(double *params, double kF, double *mu);
 int memcopy_const_params(double *params);
 
 #ifdef WORK_IN_ROTATING_FRAME

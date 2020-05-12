@@ -561,7 +561,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
     
     // Process params and copy them to gpu;
-    process_params(md.params, kF);
+    process_params(md.params, kF, mu);
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef WORK_IN_ROTATING_FRAME
