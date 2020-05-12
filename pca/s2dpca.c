@@ -350,7 +350,11 @@ int main( int argc , char ** argv )
     int Hsize = NX*NY*2; // size of hamiltonian matrix
     
     if(iam==0) printf("# HAMILTONIAN SIZE: %d x %d\n", Hsize, Hsize);
+#ifdef MATRIX_IS_REAL
+    if(iam==0) printf("# HAMILTONIAN TOTAL STORAGE: %.2fMB\n", 1.0*sizeof(double)*Hsize*Hsize/1024/1024);
+#else
     if(iam==0) printf("# HAMILTONIAN TOTAL STORAGE: %.2fMB\n", 1.0*sizeof(double complex)*Hsize*Hsize/1024/1024);
+#endif    
     
     /* initialize the BLACS grid for hamiltonian diagonalizaion- a virtual rectangular grid */
     if(iam==0) printf("# CREATING CBLACS GRIDs OF SIZE (pzheev): [%d x %d]\n", md.p, md.q);
@@ -388,14 +392,19 @@ int main( int argc , char ** argv )
     cppmallocl(h, nip*niq,double complex); // allocate only local fraction of the hamiltonian matrix
     // eigen-vectors
     double complex *U;
+#ifdef MATRIX_IS_REAL
+    U = h; // in place working mode
+#else
     cppmallocl(U, nip*niq,double complex); // allocate only local fraction of the matrix
+#endif
     // eigen-values
     double * En; 
     cppmallocl(En, 2*NXYZ,double); // allocate space for the whole vector
     
 #ifdef MATRIX_IS_REAL
+    // use only h matrix as working area
     double *hR = (double *)h;
-    double *UR = (double *)U;
+    double *UR = hR + nip*niq;
 #endif
     
     // ====================================================================================
@@ -855,8 +864,9 @@ int main( int argc , char ** argv )
 #endif
 
 #ifdef MATRIX_IS_REAL
-        // convert result back to complex
-        for(ixyz=nip*niq-1; ixyz>=0; ixyz--) U[ixyz] = UR[ixyz] + I*0.0;
+            // convert result back to complex
+            for(ixyz=0; ixyz<nip*niq; ixyz++) hR[ixyz] = UR[ixyz]; // back to hR matrix
+            for(ixyz=nip*niq-1; ixyz>=0; ixyz--) U[ixyz] = hR[ixyz] + I*0.0;
 #endif
             
 #ifdef USE_SCALAPACK_PZHEEVR
