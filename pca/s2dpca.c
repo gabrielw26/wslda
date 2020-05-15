@@ -173,12 +173,9 @@ int main( int argc , char ** argv )
     dc_Omega_b=0.0;
     
     // parameters for Broyden method
-    // TODO - promte some of these parameters as input file parameters
-	int M = 5;				// number of previous iterations taken into account
-	double omega_0 = 0.01;	// weight assigned to the error in the inverse Jacobian
-	double omega_n = 1.;	// weight associated with each previous iteration
-	double omega_k = 1.;	// 		---//---
-	int broyden = 0;		// 0 - linear mixing, 1 - update densities with Broyden
+	double omega_0 = md.omega0broyden;	// weight assigned to the error in the inverse Jacobian
+	double omega_n = md.omeganbroyden;	// weight associated with each previous iteration
+	double omega_k = md.omegakbroyden;	// 		---//---
     double **dens_in;		// pointer to array of arrays of densities
     double **dens_out;		// 		---//---
     
@@ -297,9 +294,9 @@ int main( int argc , char ** argv )
     double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
     
     // For Broyden method
-    cppmallocl(dens_in, (M + 1), double*);
-    cppmallocl(dens_out, (M + 1), double*);
-    for (i = 0; i < (M + 1); i++){
+    cppmallocl(dens_in, (md.Mbroyden + 1), double*);
+    cppmallocl(dens_out, (md.Mbroyden + 1), double*);
+    for (i = 0; i < (md.Mbroyden + 1); i++){
         cppmallocl(dens_in[i], 12*NX*NY + 2, double);
         cppmallocl(dens_out[i], 12*NX*NY + 2, double);
     }
@@ -1113,18 +1110,18 @@ int main( int argc , char ** argv )
         if(it>0) 
         {       
             // TODO: switch to relative particle number
-            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na);
-            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb);
+            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
+            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
             
-            if(fabs(kzmuchange_a)>md.mumaxchange)
+            if(fabs(kzmuchange_a)>md.mumaxchange*eF)
             {
-                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange;
-                else                 kzmuchange_a=-1.0*md.mumaxchange;
+                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange*eF;
+                else                 kzmuchange_a=-1.0*md.mumaxchange*eF;
             }
-            if(fabs(kzmuchange_b)>md.mumaxchange)
+            if(fabs(kzmuchange_b)>md.mumaxchange*eF)
             {
-                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange;
-                else                 kzmuchange_b=-1.0*md.mumaxchange;
+                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange*eF;
+                else                 kzmuchange_b=-1.0*md.mumaxchange*eF;
             }
             dc_mu_a -= kzmuchange_a;
             dc_mu_b -= kzmuchange_b;  
@@ -1143,7 +1140,7 @@ int main( int argc , char ** argv )
             // what matters is only E_kin+E_pair which is well defined
             
             // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
         }
         else if(saving_iteration==1) //special case - saving interation
         {
@@ -1151,39 +1148,32 @@ int main( int argc , char ** argv )
             // for clear comparision of read corretness skip mixing here
             
             // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
         }
-        else if (kziter == 0) {
-        	for(ixyz=0; ixyz<12*NX*NY; ixyz++) {
-				dens_in[kziter][ixyz] = h_densities_old[ixyz];
-				dens_out[kziter][ixyz] = h_densities[ixyz];
-				h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
-        	}
-			dens_in[kziter][ixyz+1] = dc_mu_a_old;
-			dens_out[kziter][ixyz+1] = dc_mu_a;
-			dens_in[kziter][ixyz+2] = dc_mu_b_old;
-			dens_out[kziter][ixyz+2] = dc_mu_b;
-        }
-        else if ((kziter > 0) && (kziter < (M + 1)))
+        else if (((kziter-md.startbroyden) >= 0) && ((kziter-md.startbroyden) < (md.Mbroyden + 1)))
         {
+            int rkziter=kziter-md.startbroyden;
             for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) {
-				dens_in[kziter][ixyz] = h_densities_old[ixyz];
-				dens_out[kziter][ixyz] = h_densities[ixyz];
+				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
+				dens_out[rkziter][ixyz] = h_densities[ixyz];
             	h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0 - md.kzmixparam) * h_densities_old[ixyz];
             }
-			dens_in[kziter][ixyz+1] = dc_mu_a_old;
-			dens_out[kziter][ixyz+1] = dc_mu_a;
-			dens_in[kziter][ixyz+2] = dc_mu_b_old;
-			dens_out[kziter][ixyz+2] = dc_mu_b;
+			dens_in[rkziter][ixyz+1] = dc_mu_a_old;
+			dens_out[rkziter][ixyz+1] = dc_mu_a;
+			dens_in[rkziter][ixyz+2] = dc_mu_b_old;
+			dens_out[rkziter][ixyz+2] = dc_mu_b;
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
         }
-        else if ((kziter >= (M+1)) && (broyden == 1))
+        else if (((kziter-md.startbroyden) >= (md.Mbroyden+1)) && (md.broyden == 1) && (kziter-md.stopbroyden)<=0)
         {
-        	update_mu(dens_in, dens_out, h_densities_old, h_densities, M, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
-        	Broyden_mu(h_densities, dens_in, dens_out, M, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
+        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
         {
         	for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
+            if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
         }
         
         // impose by hand nonegativity of densities

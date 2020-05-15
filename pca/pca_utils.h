@@ -66,11 +66,20 @@ typedef struct
     double kztemp; // temperature in units of eF_a, default=0.01
     double referencekF; // value of reference kF used in calculations, if 0.0 then not set (default)
     int spinsymmetry; // impose spin symmetry, default 0 - no
-    double mumaxchange; // maximal change of chemical potential per iteraation, default 0.1
+    double mumaxchange; // maximal change of chemical potential per iteration, in units of Fermi energy, default 0.1
     int resetit; // if 1 set it=0, otherwise continue from value read from checkpoint file, default resetit=1
     int writewf; // if 1 the code will write wave-functions on exit, default writewf=0
     double writeecut; // only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
+    
+    // broyden mixing parameters
+    int broyden; // 0 - linear mixing, 1 - update densities with Broyden, default=1
+    int Mbroyden; // number of previous iterations taken into account, default=5
+    int startbroyden; // firts iteration for broyden activavtion, default=0
+    int stopbroyden; // last iteration for broyden activavtion, default=999999
+	double omega0broyden;	// weight assigned to the error in the inverse Jacobian, default=0.01
+	double omeganbroyden;	  // weight associated with each previous iteration, default=1.0
+	double omegakbroyden;	   // weight associated with each previous iteration, default=1.0
     
     // walltime
     double walltime; // after this time in hours the energency checkpoint will be executed, default=1000 
@@ -136,6 +145,13 @@ metadata_t md =
 0, // writewf
 1.0e12, // writeecut
 0.0, // aBdG
+1, // broyden
+5, // Mbroyden
+0, // startbroyden
+999999, // stopbroyden
+0.01, //	omega0broyden
+1.,	// omeganbroyden
+1.,	// omegakbroyden
 10000.0, // walltime
 -10.0, // ccstart; 
 99999.0, // ccstop;
@@ -270,6 +286,21 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.writeecut);
         else if (strcmp (tag,"aBdG") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
+        // broyden
+        else if (strcmp (tag,"broyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.broyden);      
+        else if (strcmp (tag,"Mbroyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.Mbroyden); 
+        else if (strcmp (tag,"startbroyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.startbroyden); 
+        else if (strcmp (tag,"stopbroyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.stopbroyden); 
+        else if (strcmp (tag,"omega0broyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.omega0broyden);     
+        else if (strcmp (tag,"omegakbroyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.omegakbroyden);   
+        else if (strcmp (tag,"omeganbroyden") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.omeganbroyden);   
         // technical
         else if (strcmp (tag,"walltime") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.walltime);
