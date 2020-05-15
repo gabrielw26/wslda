@@ -1150,7 +1150,7 @@ int main( int argc , char ** argv )
             // pass - do not mix
             if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
         }
-        else if (((kziter-md.startbroyden) >= 0) && ((kziter-md.startbroyden) < (md.Mbroyden + 1)))
+        else if (((kziter-md.startbroyden) >= 0) && ((kziter-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
         {
             int rkziter=kziter-md.startbroyden;
             for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) {
@@ -1164,7 +1164,7 @@ int main( int argc , char ** argv )
 			dens_out[rkziter][ixyz+2] = dc_mu_b;
             if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
         }
-        else if (((kziter-md.startbroyden) >= (md.Mbroyden+1)) && (md.broyden == 1) && (kziter-md.stopbroyden)<=0)
+        else if (((kziter-md.startbroyden) >= (md.Mbroyden+1)) && (kziter-md.stopbroyden)<=0 && (md.broyden == 1))
         {
         	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
         	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
