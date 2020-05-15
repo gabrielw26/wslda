@@ -248,6 +248,8 @@ int main( int argc , char ** argv )
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
+#else
+    aBdG = 0.0; // deactivate BdG functional
 #endif
         
     if(iam==0)

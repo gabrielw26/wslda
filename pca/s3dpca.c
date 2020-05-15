@@ -250,14 +250,18 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# USING ELPA.\n");
 #endif
     
+#if FUNCTIONAL==BDG
     aBdG = md.aBdG; // copy to global momeory
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        printf("SET aBdG IN INPUT FILE `%s`!\n" , argv[ i ] ) ;
+        if(iam==0) printf("SET aBdG IN INPUT FILE!") ;
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
+#else
+    aBdG = 0.0; // deactivate BdG functional
+#endif
     
     if(iam==0)
     {
