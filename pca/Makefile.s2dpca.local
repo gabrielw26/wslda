@@ -1,6 +1,6 @@
 MPICC = mpicc 
 SRC_DIR = ./ 
-INCLUDECC = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h s2dpca_me.h s2dpca_fft.h s2dpca_uext.h
+INCLUDECC = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h
 # For SCALAPACK library
 CCLIB =  -lfftw3 -lm -L/usr/lib64/openmpi/lib -lscalapack 
 # For ELPA Library
