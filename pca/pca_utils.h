@@ -61,7 +61,7 @@ typedef struct
     // kz-solver parameters
     double kzconveps; // convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
     double kzmixparam; // mixing parameter for densities, default=0.5
-    double kzmuchange; // coefficient for changing chemical potential, default=0.001
+    double kzmuchange; // coefficient for changing chemical potential, default=0.5
     int kzmaxiters; // maximum number of iterations, default=10000
     double kztemp; // temperature in units of eF_a, default=0.01
     double referencekF; // value of reference kF used in calculations, if 0.0 then not set (default)
@@ -135,7 +135,7 @@ metadata_t md =
 0, // tsubamenodes
 1.0e-6, // kzconveps
 0.5, // kzmixparam
-0.001, // kzmuchange
+0.5, // kzmuchange
 10000, // kzmaxiters
 0.01, // kztemp
 0.0, // referencekF
