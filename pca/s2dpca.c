@@ -258,6 +258,9 @@ int main( int argc , char ** argv )
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
     
+#ifdef SPINSYMMETRY_MODE
+    md.spinsymmetry=1; // force spin symmetry mode
+#endif
     if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
     
 #ifdef UNIFORM_TEST_MODE
