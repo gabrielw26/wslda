@@ -691,7 +691,7 @@ int main( int argc , char ** argv )
 #ifndef UNIFORM_TEST_MODE
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * md.Na * eF;
+    Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.kztemp * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);

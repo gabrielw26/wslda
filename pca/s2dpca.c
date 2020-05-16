@@ -304,6 +304,10 @@ int main( int argc , char ** argv )
     for (i = 0; i < (md.Mbroyden + 1); i++){
         cppmallocl(dens_in[i], 12*NX*NY + 2, double);
         cppmallocl(dens_out[i], 12*NX*NY + 2, double);
+        
+        // reset values
+        for(j=0; j<12*NX*NY + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<12*NX*NY + 2; j++) dens_out[i][j]=0.0;
     }
     
         
@@ -581,6 +585,10 @@ int main( int argc , char ** argv )
             fread(h_densities  , sizeof(double)*NX*NY, 12, pFile);
             fread(energy       , sizeof(double)      , 5 , pFile);
             fread(npart        , sizeof(double)      , 2 , pFile);
+            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , 12*NX*NY + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , 12*NX*NY + 2 , pFile);
                   
             fclose(pFile);
             
@@ -620,6 +628,10 @@ int main( int argc , char ** argv )
         MPI_Bcast(h_densities  , 12*NX*NY, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(energy       , 5 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
+        MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , 12*NX*NY + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], 12*NX*NY + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else
     {
@@ -665,7 +677,7 @@ int main( int argc , char ** argv )
 #ifndef UNIFORM_TEST_MODE
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * md.Na * eF;
+    Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.kztemp * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
@@ -1114,7 +1126,6 @@ int main( int argc , char ** argv )
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
         if(it>0) 
         {       
-            // TODO: switch to relative particle number
             double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
             double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
             
@@ -1155,9 +1166,9 @@ int main( int argc , char ** argv )
             // pass - do not mix
             if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
         }
-        else if (((kziter-md.startbroyden) >= 0) && ((kziter-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
+        else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
         {
-            int rkziter=kziter-md.startbroyden;
+            int rkziter=it-md.startbroyden;
             for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) {
 				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
 				dens_out[rkziter][ixyz] = h_densities[ixyz];
@@ -1169,7 +1180,7 @@ int main( int argc , char ** argv )
 			dens_out[rkziter][ixyz+2] = dc_mu_b;
             if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
         }
-        else if (((kziter-md.startbroyden) >= (md.Mbroyden+1)) && (kziter-md.stopbroyden)<=0 && (md.broyden == 1))
+        else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
         {
         	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
         	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
@@ -1307,6 +1318,10 @@ int main( int argc , char ** argv )
             fwrite(h_densities  , sizeof(double)*NX*NY, 12, pFile);
             fwrite(energy       , sizeof(double)      , 5 , pFile);
             fwrite(npart        , sizeof(double)      , 2 , pFile);
+            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , 12*NX*NY + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , 12*NX*NY + 2 , pFile);
                   
             fclose(pFile);
         }
@@ -1356,8 +1371,8 @@ int main( int argc , char ** argv )
             else saving_iteration=1;
         }
         
-        it++; // go to next iteration
-        kziter++;
+        it++; // go to next iteration - global counter
+        kziter++; // go to next iteration - this run counter
         if(kziter==md.kzmaxiters)
         {
             if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);
