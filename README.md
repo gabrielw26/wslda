@@ -6,7 +6,8 @@
 * Functionals: BdG, (A)SLDA
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
-* Computation in lab frame or rotating frame
+* User defined external potential, external pairing potential, external velocity field
+* Broyden mixing
 * Quantum friction
 * Integration with VisIt application
 
@@ -39,3 +40,4 @@ For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms
 ### Authors
 * Gabriel Wlazłowski, Warsaw University of Technology<br/> Main developer
 * Maciej Marchwiany, Interdisciplinary Centre for Mathematical and Computational Modelling (ICM), <br/> contribution to _pca_ code (2016-2018)
+* Wojciech Pudełko, Warsaw University of Technology<br/> Implmentation of Broyden algorithm (engineer thesis, 2020)
