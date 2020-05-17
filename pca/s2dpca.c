@@ -25,6 +25,7 @@
 #include "s2dpca_me.h"
 #include "s2dpca_densities.h"
 #include "s3dpca_grid.h"
+#include "sxdpca_broyden.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -108,6 +109,8 @@ int indxl2g_(int*, int*, int*, int*, int*);
 double *dc_params; /* Declaration of the variable */
 double dc_mu_a;
 double dc_mu_b;
+double dc_mu_a_old;		// for Broyden
+double dc_mu_b_old;		// for Broyden
 double dc_ec;
 
 // rotating frame
@@ -168,6 +171,13 @@ int main( int argc , char ** argv )
     int saving_iteration=0;
     dc_Omega_a=0.0;
     dc_Omega_b=0.0;
+    
+    // parameters for Broyden method
+	double omega_0 = md.omega0broyden;	// weight assigned to the error in the inverse Jacobian
+	double omega_n = md.omeganbroyden;	// weight associated with each previous iteration
+	double omega_k = md.omegakbroyden;	// 		---//---
+    double **dens_in;		// pointer to array of arrays of densities
+    double **dens_out;		// 		---//---
     
     char file_name[256];
     
@@ -238,6 +248,8 @@ int main( int argc , char ** argv )
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
+#else
+    aBdG = 0.0; // deactivate BdG functional
 #endif
         
     if(iam==0)
@@ -246,6 +258,9 @@ int main( int argc , char ** argv )
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
     
+#ifdef SPINSYMMETRY_MODE
+    md.spinsymmetry=1; // force spin symmetry mode
+#endif
     if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
     
 #ifdef UNIFORM_TEST_MODE
@@ -282,6 +297,18 @@ int main( int argc , char ** argv )
     double *V_a = (double *)(h_potentials +  0*NX*NY);
     double *V_b = (double *)(h_potentials +  1*NX*NY);
     double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    
+    // For Broyden method
+    cppmallocl(dens_in, (md.Mbroyden + 1), double*);
+    cppmallocl(dens_out, (md.Mbroyden + 1), double*);
+    for (i = 0; i < (md.Mbroyden + 1); i++){
+        cppmallocl(dens_in[i], 12*NX*NY + 2, double);
+        cppmallocl(dens_out[i], 12*NX*NY + 2, double);
+        
+        // reset values
+        for(j=0; j<12*NX*NY + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<12*NX*NY + 2; j++) dens_out[i][j]=0.0;
+    }
     
         
     // ===================================================================================
@@ -558,6 +585,10 @@ int main( int argc , char ** argv )
             fread(h_densities  , sizeof(double)*NX*NY, 12, pFile);
             fread(energy       , sizeof(double)      , 5 , pFile);
             fread(npart        , sizeof(double)      , 2 , pFile);
+            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , 12*NX*NY + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , 12*NX*NY + 2 , pFile);
                   
             fclose(pFile);
             
@@ -597,6 +628,10 @@ int main( int argc , char ** argv )
         MPI_Bcast(h_densities  , 12*NX*NY, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(energy       , 5 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
+        MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , 12*NX*NY + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], 12*NX*NY + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else
     {
@@ -642,7 +677,7 @@ int main( int argc , char ** argv )
 #ifndef UNIFORM_TEST_MODE
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * md.Na * eF;
+    Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.kztemp * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
@@ -780,6 +815,7 @@ int main( int argc , char ** argv )
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
         vextja_old=vextja; vextjb_old=vextjb; 
+        dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         // take density in the center and use it for definition of the kF (for SPINA)
         if(md.referencekF>0.0) kF = md.referencekF;
@@ -1083,6 +1119,34 @@ int main( int argc , char ** argv )
         cpu_exec( density_caculate_tau(h_densities, &mdfft) );
 #endif
         
+        // ------------------ update chemical potentials ------------------
+        if(iam==0) printf("# MUCHNAGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        npart[SPINA]=0.0; npart[SPINB]=0.0;
+        for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
+        npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
+        if(it>0) 
+        {       
+            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
+            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
+            
+            if(fabs(kzmuchange_a)>md.mumaxchange*eF)
+            {
+                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange*eF;
+                else                 kzmuchange_a=-1.0*md.mumaxchange*eF;
+            }
+            if(fabs(kzmuchange_b)>md.mumaxchange*eF)
+            {
+                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange*eF;
+                else                 kzmuchange_b=-1.0*md.mumaxchange*eF;
+            }
+            dc_mu_a -= kzmuchange_a;
+            dc_mu_b -= kzmuchange_b;  
+            if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
+                        
+        }
+        if(iam==0) printf("# MUCHNAGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        rt_other+=e_t(0);
+        
         // ------------------ mix densities ------------------
         b_t();
         if(md.inittype==22 && kziter==0) //special case - started from interpolated checkpoint
@@ -1092,7 +1156,7 @@ int main( int argc , char ** argv )
             // what matters is only E_kin+E_pair which is well defined
             
             // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
         }
         else if(saving_iteration==1) //special case - saving interation
         {
@@ -1100,41 +1164,43 @@ int main( int argc , char ** argv )
             // for clear comparision of read corretness skip mixing here
             
             // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+        }
+        else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
+        {
+            int rkziter=it-md.startbroyden;
+            for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) {
+				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
+				dens_out[rkziter][ixyz] = h_densities[ixyz];
+            	h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0 - md.kzmixparam) * h_densities_old[ixyz];
+            }
+			dens_in[rkziter][ixyz+1] = dc_mu_a_old;
+			dens_out[rkziter][ixyz+1] = dc_mu_a;
+			dens_in[rkziter][ixyz+2] = dc_mu_b_old;
+			dens_out[rkziter][ixyz+2] = dc_mu_b;
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
+        }
+        else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
+        {
+        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
         {
-            for(ixyz=0; ixyz<12*NX*NY; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
+        	for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
+            if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
         }
-        // ------------------ update chemical potentials ------------------
-        if(iam==0) printf("# MUCHNAGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
-        npart[SPINA]=0.0; npart[SPINB]=0.0;
-        for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
-        npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
-        if(it>0) 
-        {       
-            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na);
-            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb);
-            // double leF_a = pow(6.*M_PI*M_PI*rho_a[NY/2 + NX/2*NY],2./3.) / 2.0;
-            // double leF_b = pow(6.*M_PI*M_PI*rho_b[NY/2 + NX/2*NY],2./3.) / 2.0;
-            
-            if(fabs(kzmuchange_a)>md.mumaxchange)
-            {
-                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange;
-                else                 kzmuchange_a=-1.0*md.mumaxchange;
-            }
-            if(fabs(kzmuchange_b)>md.mumaxchange)
-            {
-                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange;
-                else                 kzmuchange_b=-1.0*md.mumaxchange;
-            }
-            dc_mu_a -= kzmuchange_a;
-            dc_mu_b -= kzmuchange_b;  
-            if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
-                        
+        
+        // impose by hand nonegativity of densities
+        double dens_min = 1.0e-14;
+        for (ixyz = 0; ixyz < NX*NY; ixyz++)
+        {
+        	if (rho_a[ixyz] < 0.) rho_a[ixyz] = dens_min;
+        	if (rho_b[ixyz] < 0.) rho_b[ixyz] = dens_min;
+        	if (tau_a[ixyz] < 0.) tau_a[ixyz] = dens_min;
+        	if (tau_b[ixyz] < 0.) tau_b[ixyz] = dens_min;
         }
-        if(iam==0) printf("# MUCHNAGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
-        rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------
         b_t();
@@ -1190,7 +1256,7 @@ int main( int argc , char ** argv )
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b - vextja - vextjb;
-        double minF_old = E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
+        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0)
@@ -1252,6 +1318,10 @@ int main( int argc , char ** argv )
             fwrite(h_densities  , sizeof(double)*NX*NY, 12, pFile);
             fwrite(energy       , sizeof(double)      , 5 , pFile);
             fwrite(npart        , sizeof(double)      , 2 , pFile);
+            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , 12*NX*NY + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , 12*NX*NY + 2 , pFile);
                   
             fclose(pFile);
         }
@@ -1301,8 +1371,8 @@ int main( int argc , char ** argv )
             else saving_iteration=1;
         }
         
-        it++; // go to next iteration
-        kziter++;
+        it++; // go to next iteration - global counter
+        kziter++; // go to next iteration - this run counter
         if(kziter==md.kzmaxiters)
         {
             if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);

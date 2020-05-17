@@ -128,6 +128,8 @@ void modify_potentials(int it, double *h_densities, double *h_potentials, double
 double *dc_params; /* Declaration of the variable */
 double dc_mu_a;
 double dc_mu_b;
+double dc_mu_a_old;		// for Broyden
+double dc_mu_b_old;		// for Broyden
 double dc_ec;
 
 // rotating frame
@@ -250,14 +252,18 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# USING ELPA.\n");
 #endif
     
+#if FUNCTIONAL==BDG
     aBdG = md.aBdG; // copy to global momeory
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        printf("SET aBdG IN INPUT FILE `%s`!\n" , argv[ i ] ) ;
+        if(iam==0) printf("SET aBdG IN INPUT FILE!") ;
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
+#else
+    aBdG = 0.0; // deactivate BdG functional
+#endif
     
     if(iam==0)
     {
@@ -265,6 +271,9 @@ int main( int argc , char ** argv )
         else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
     }
     
+#ifdef SPINSYMMETRY_MODE
+    md.spinsymmetry=1; // force spin symmetry mode
+#endif
     if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
     
 #ifdef UNIFORM_TEST_MODE
@@ -531,6 +540,8 @@ int main( int argc , char ** argv )
             fread(h_densities  , sizeof(double)*NXYZ , 12, pFile);
             fread(energy       , sizeof(double)      , 5 , pFile);
             fread(npart        , sizeof(double)      , 2 , pFile);
+            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
                   
             fclose(pFile);
             
@@ -570,6 +581,8 @@ int main( int argc , char ** argv )
         MPI_Bcast(h_densities  , 12*NXYZ, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(energy       , 5 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
+        MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else if(md.inittype==4) // start from cuGPE initial solutions
     {
@@ -684,7 +697,7 @@ int main( int argc , char ** argv )
 #ifndef UNIFORM_TEST_MODE
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * md.Na * eF;
+    Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.kztemp * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
@@ -856,6 +869,7 @@ int main( int argc , char ** argv )
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
         vextja_old=vextja; vextjb_old=vextjb; 
+        dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         if(md.referencekF>0.0) kF = md.referencekF;
         else                   kF = pow(6.*M_PI*M_PI*rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2],1./3.); 
@@ -1176,17 +1190,17 @@ int main( int argc , char ** argv )
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
             npart[SPINA]*=DXYZ; npart[SPINB]*=DXYZ; 
-            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na);
-            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb);
-            if(fabs(kzmuchange_a)>md.mumaxchange)
+            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
+            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
+            if(fabs(kzmuchange_a)>md.mumaxchange*eF)
             {
-                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange;
-                else                 kzmuchange_a=-1.0*md.mumaxchange;
+                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange*eF;
+                else                 kzmuchange_a=-1.0*md.mumaxchange*eF;
             }
-            if(fabs(kzmuchange_b)>md.mumaxchange)
+            if(fabs(kzmuchange_b)>md.mumaxchange*eF)
             {
-                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange;
-                else                 kzmuchange_b=-1.0*md.mumaxchange;
+                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange*eF;
+                else                 kzmuchange_b=-1.0*md.mumaxchange*eF;
             }
             dc_mu_a -= kzmuchange_a;
             dc_mu_b -= kzmuchange_b;  
@@ -1250,7 +1264,7 @@ int main( int argc , char ** argv )
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
         
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b - vextja - vextjb;
-        double minF_old = E_tot_old - dc_mu_a*npart_old[SPINA] - dc_mu_b*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
+        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0)
@@ -1312,6 +1326,8 @@ int main( int argc , char ** argv )
             fwrite(h_densities  , sizeof(double)*NXYZ , 12, pFile);
             fwrite(energy       , sizeof(double)      , 5 , pFile);
             fwrite(npart        , sizeof(double)      , 2 , pFile);
+            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
                   
             fclose(pFile);
         }
