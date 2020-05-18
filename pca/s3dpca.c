@@ -275,6 +275,7 @@ int main( int argc , char ** argv )
     md.spinsymmetry=1; // force spin symmetry mode
 #endif
     if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
+    if(md.nocurrents>0 && iam==0)  printf("# CODE IMPOSES NO CURRENTS FOR THE SOLUTION.\n");
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
