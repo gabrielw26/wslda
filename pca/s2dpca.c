@@ -807,6 +807,7 @@ int main( int argc , char ** argv )
             saving_iteration=1;
         }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
+        b_t();
         // Make copy of potentials and densities
         for(ixyz=0; ixyz< 4*NX*NY; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
         for(ixyz=0; ixyz<12*NX*NY; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
@@ -1105,6 +1106,7 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/(NXYZ*2));
         rt_dens+=e_t(0);
         
+        b_t();
         if(md.spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
         {
             rho_a[ixyz]=rho_b[ixyz];
