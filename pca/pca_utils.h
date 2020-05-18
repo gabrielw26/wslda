@@ -71,6 +71,7 @@ typedef struct
     int writewf; // if 1 the code will write wave-functions on exit, default writewf=0
     double writeecut; // only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
+    int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0
     
     // broyden mixing parameters
     int broyden; // 0 - linear mixing, 1 - update densities with Broyden, default=1
@@ -145,6 +146,7 @@ metadata_t md =
 0, // writewf
 1.0e12, // writeecut
 0.0, // aBdG
+0, // nocurrents
 1, // broyden
 5, // Mbroyden
 0, // startbroyden
@@ -286,6 +288,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.writeecut);
         else if (strcmp (tag,"aBdG") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
+        else if (strcmp (tag,"nocurrents") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.nocurrents);
         // broyden
         else if (strcmp (tag,"broyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.broyden);      

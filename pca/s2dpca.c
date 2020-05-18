@@ -1115,6 +1115,12 @@ int main( int argc , char ** argv )
             j_a_y[ixyz]=j_b_y[ixyz];
             j_a_z[ixyz]=j_b_z[ixyz];
         }
+        if(md.nocurrents) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand no currents
+        {
+            j_a_x[ixyz]=0.0; j_b_x[ixyz]=0.0;
+            j_a_y[ixyz]=0.0; j_b_y[ixyz]=0.0;
+            j_a_z[ixyz]=0.0; j_b_z[ixyz]=0.0;
+        }
         
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS  
         // finalize computation of tau
