@@ -275,6 +275,7 @@ int main( int argc , char ** argv )
     md.spinsymmetry=1; // force spin symmetry mode
 #endif
     if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
+    if(md.nocurrents>0 && iam==0)  printf("# CODE IMPOSES NO CURRENTS FOR THE SOLUTION.\n");
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
@@ -1146,6 +1147,13 @@ int main( int argc , char ** argv )
             j_a_y[ixyz]=j_b_y[ixyz];
             j_a_z[ixyz]=j_b_z[ixyz];
         }
+        if(md.nocurrents) for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand no currents
+        {
+            j_a_x[ixyz]=0.0; j_b_x[ixyz]=0.0;
+            j_a_y[ixyz]=0.0; j_b_y[ixyz]=0.0;
+            j_a_z[ixyz]=0.0; j_b_z[ixyz]=0.0;
+        }
+        
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS  
         // finalize computation of tau
         cpu_exec( density_caculate_tau(h_densities, &mdfft) );
