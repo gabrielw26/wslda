@@ -1106,6 +1106,7 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/(NXYZ*2));
         rt_dens+=e_t(0);
         
+        b_t();
         if(md.spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
         {
             rho_a[ixyz]=rho_b[ixyz];
