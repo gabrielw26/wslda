@@ -280,6 +280,8 @@ int main( int argc , char ** argv )
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
     md.Nb = md.Na;
+    md.init0Na = md.Na;
+    md.init0Nb = md.Nb;
     if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: %f\n", md.Na);
 #endif
     
@@ -449,27 +451,11 @@ int main( int argc , char ** argv )
         if(md.inittype==0)
         {
             if(iam==0) printf("# CREATING UNIFORM SOLUTION...\n");
-#ifdef UNIFORM_TEST_MODE
-            // Generate initial state for testing
-            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-            else                   solve_uniform_problem_bdg(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-#else
-            // Generate initial state for testing
-            if(fabs(aBdG)<1.0e-12) 
-            {
-//                 solve_uniform_problem(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-                // NOTE - ad hoc modification
-                if(iam==0) printf("# REQUESTED NUMBER OF PARTICLES md.params[30]=%f\n", md.params[30]);
-                solve_uniform_problem(md.params[30]/LXYZ, md.params[30]/LXYZ, &nwf, iam==0);
-            }
-            else
-            {
-//                 solve_uniform_problem_bdg(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-                // NOTE - ad hoc modification
-                if(iam==0) printf("# REQUESTED NUMBER OF PARTICLES md.params[30]=%f\n", md.params[30]);
-                solve_uniform_problem_bdg(md.params[30]/LXYZ, md.params[30]/LXYZ, &nwf, iam==0);
-            }
-#endif            
+
+            // Generate uniform initial 
+            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+            else                   solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+           
             // Save solution
             if(iam==0 && md.init0save)
             {
