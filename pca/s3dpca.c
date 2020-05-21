@@ -289,6 +289,15 @@ int main( int argc , char ** argv )
     // ==================================== BLACS GRID ====================================
     // ====================================================================================
     
+    if(md.p==0 || md.q==0)
+    { 
+        if(iam==0) printf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
+        int dims[2] = {0,0};
+        MPI_Dims_create(np, 2, dims); // however, you can also set nprow and npcol by hand, keeping constraing nprow*npcol=np
+        md.p = dims[0]; // cartesian direction 0
+        md.q = dims[1]; // cartesian direction 1        
+    }
+    
     // for hamiltonian diagonalization
     int iam_blacs, nprocs_blacs, ictxt;
     char * b_order ;

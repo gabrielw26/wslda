@@ -54,10 +54,10 @@ typedef struct
     int init0save;             // save solution to file?, default=0, if 1 then solution is in file 'outprefix'_uniform.solution
     
     // SCLAPACK additional parameters
-    int p;                              // CBLACS grid
-    int q;                              // CBLACS grid
-    int mb;                             // CBLACS grid
-    int nb;                             // CBLACS grid
+    int p;                              // CBLACS grid, defalt p=0 (atomatic assignment of the value)
+    int q;                              // CBLACS grid, defalt q=0 (atomatic assignment of the value)
+    int mb;                             // CBLACS grid, default mb=32
+    int nb;                             // CBLACS grid, default nb=32
     
     // TSUBAME parameter
     int tsubamenodes; // number of nodes used in calculations on tsubame computer
@@ -135,10 +135,10 @@ metadata_t md =
 100000, // init0maxiter;
 0, // init0debug
 0, // init0save
-2, // p;                    
-2, // q;                    
-20, // mb;                   
-20, // nb;    
+0, // p;                    
+0, // q;                    
+32, // mb;                   
+32, // nb;    
 0, // tsubamenodes
 1.0e-6, // kzconveps
 0.5, // kzmixparam
