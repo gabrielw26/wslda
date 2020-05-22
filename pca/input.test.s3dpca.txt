@@ -6,8 +6,8 @@ inittype                0      # 0 - create uniform solution;
                                
 # CBLACS grid
 # NOTE: p*q=np
-p                       2
-q                       2
+p                       0
+q                       0
 mb                      32
 nb                      32
 
@@ -42,7 +42,7 @@ kztemp                  0.2    # requested temperature in units of eF
 # aBdG                    -0.9   # akF about 0.9
 spinsymmetry            1       # spin symmetric system
 resetit                 1       # start from it=0
-writewf                 1       # no wf writing
+writewf                 0       # no wf writing
 mumaxchange             0.05
 
 

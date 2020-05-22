@@ -10,7 +10,7 @@ typedef struct
     int inittype;                       // 0 - uniform (set INIT-0 parameters)
                                         // 1 - uniform solution but read it from file `inprefix`_uniform.solution
                                         // 2 - start from checkpoint
-                                        // 23 - start from interpolted checkpoint, supported by s2dpca and s3dpca
+                                        // 22 - start from interpolated checkpoint, supported by s2dpca and s3dpca
                                         // 3 - start from s2dpca solver solution
                                         // 4 - start from dpca files (works in case of s3dpca) - deprecated!
                                         // 5 - start from s3dpca solver
@@ -36,9 +36,13 @@ typedef struct
     double qfstop;                      // stop time for evolving with quantum friction, in units of eF
     double qfswitch;                    // time for switch function
     
+    // PARTICLE NUMBER
+    double Na;                 // Requested number of particles a-type
+    double Nb;                 // Requested number of particles b-type
+    
     // INIT-0 parameters
-    double Na;                 // Requested number of  particles a-type
-    double Nb;                 // Requested number of  particles b-type
+    double init0Na;            // Requested number of particles a-type - uniform solution
+    double init0Nb;            // Requested number of particles b-type - uniform solution
     double muchange;           // Change rate of chemical potential
     double Tstart;             // Start temperature, in units of eF, default 0.2
     double Tstop;              // Stop temperature, in units of eF, default 0.05
@@ -50,10 +54,10 @@ typedef struct
     int init0save;             // save solution to file?, default=0, if 1 then solution is in file 'outprefix'_uniform.solution
     
     // SCLAPACK additional parameters
-    int p;                              // CBLACS grid
-    int q;                              // CBLACS grid
-    int mb;                             // CBLACS grid
-    int nb;                             // CBLACS grid
+    int p;                              // CBLACS grid, defalt p=0 (atomatic assignment of the value)
+    int q;                              // CBLACS grid, defalt q=0 (atomatic assignment of the value)
+    int mb;                             // CBLACS grid, default mb=32
+    int nb;                             // CBLACS grid, default nb=32
     
     // TSUBAME parameter
     int tsubamenodes; // number of nodes used in calculations on tsubame computer
@@ -119,7 +123,9 @@ metadata_t md =
 0.0, // qfstop;            
 0.0, // qfswitch;          
 100.0, // Na;                
-100.0, // Nb;                
+100.0, // Nb;         
+100.0, // init0Na;                
+100.0, // init0Nb; 
 1.0e-4, // muchange;   
 0.2, // Tstart;
 0.05, // Tstop;
@@ -129,10 +135,10 @@ metadata_t md =
 100000, // init0maxiter;
 0, // init0debug
 0, // init0save
-2, // p;                    
-2, // q;                    
-20, // mb;                   
-20, // nb;    
+0, // p;                    
+0, // q;                    
+32, // mb;                   
+32, // nb;    
 0, // tsubamenodes
 1.0e-6, // kzconveps
 0.5, // kzmixparam
@@ -229,11 +235,16 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.qfstop);
         else if (strcmp (tag,"qfswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfswitch);
-        // INIT-0 parameters
+        // PARTICLE NUMBER
         else if (strcmp (tag,"Na") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Na);
         else if (strcmp (tag,"Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Nb);
+        // INIT-0 parameters
+        else if (strcmp (tag,"init0Na") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0Na);
+        else if (strcmp (tag,"init0Nb") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0Nb);
         else if (strcmp (tag,"muchange") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.muchange);
         else if (strcmp (tag,"Tstart") == 0)
@@ -300,11 +311,11 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"stopbroyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.stopbroyden); 
         else if (strcmp (tag,"omega0broyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omega0broyden);     
+            sscanf (s,"%s %lf %*s",tag,&md.omega0broyden);     
         else if (strcmp (tag,"omegakbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omegakbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);   
         else if (strcmp (tag,"omeganbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omeganbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);   
         // technical
         else if (strcmp (tag,"walltime") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.walltime);

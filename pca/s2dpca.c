@@ -267,6 +267,8 @@ int main( int argc , char ** argv )
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
     md.Nb = md.Na;
+    md.init0Na = md.Na;
+    md.init0Nb = md.Nb;
     if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: %f\n", md.Na);
 #endif
     
@@ -315,11 +317,28 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // =============================== WORK DIVISION =====================================
     // ===================================================================================
+    int NZ_HALF = NZ/2;
+    if(NZ_HALF<1) 
+    {
+        if(iam==0) printf("# STRICT 2D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
+        NZ_HALF=1;
+    }
+    
+    if(md.p==0 || md.q==0)
+    { 
+        if(iam==0) printf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
+        int tnp;
+        for(iz=NZ_HALF; iz>=1; iz--) { tnp=np/iz; if(tnp>=1) break; }
+        int dims[2] = {0,0};
+        MPI_Dims_create(tnp, 2, dims); // however, you can also set nprow and npcol by hand, keeping constraing nprow*npcol=np
+        md.p = dims[0]; // cartesian direction 0
+        md.q = dims[1]; // cartesian direction 1        
+    }
+    
     int kzgroups = np / (md.p*md.q);
     int idgroup; // identifier of the group
     MPI_Comm mpi_comm_group;
     int gr_iam, gr_np;
-
     
     // check if input parameters are ok
     if(kzgroups*md.p*md.q!=np) 
@@ -337,12 +356,6 @@ int main( int argc , char ** argv )
     if(gr_iam==0) printf("# GROUP %d WITH %d PROCESSES HAS BEEN SUCCESSFULLY CREATED.\n", idgroup, gr_np);
 
     // assing number of kz values taken by each group
-    int NZ_HALF = NZ/2;
-    if(NZ_HALF<1) 
-    {
-        if(iam==0) printf("# STRICT 2D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
-        NZ_HALF=1;
-    }
     if ( kzgroups > NZ_HALF  )
     {
         if(iam==0) printf("ERROR: TOO MUCH RESOURCES! (%d>%d)\n", kzgroups, NZ);
@@ -496,24 +509,9 @@ int main( int argc , char ** argv )
         {
             if(iam==0) printf("# CREATING UNIFORM SOLUTION...\n");
             
-#ifdef UNIFORM_TEST_MODE
-            // Generate initial state for testing
-            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-            else                   solve_uniform_problem_bdg(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0);
-#else
-            // Generate initial state for testing
-            if(fabs(aBdG)<1.0e-12) 
-            {
-                cpu_exec( solve_uniform_problem(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0) ); // NOTE
-//                 solve_uniform_problem(ttNN/LXYZ, ttNN/LXYZ, &nwf, iam==0);
-            }
-            else
-            {
-                cpu_exec( solve_uniform_problem_bdg(md.Na/LXYZ, md.Nb/LXYZ, &nwf, iam==0) );
-//                 double ttNN=380.;
-//                 solve_uniform_problem_bdg(ttNN/LXYZ, ttNN/LXYZ, &nwf, iam==0);
-            }
-#endif
+            // Generate uniform initial 
+            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+            else                   solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
                     
             // Save solution
             if(iam==0 && md.init0save)
