@@ -311,11 +311,11 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"stopbroyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.stopbroyden); 
         else if (strcmp (tag,"omega0broyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omega0broyden);     
+            sscanf (s,"%s %lf %*s",tag,&md.omega0broyden);     
         else if (strcmp (tag,"omegakbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omegakbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);   
         else if (strcmp (tag,"omeganbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.omeganbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);   
         // technical
         else if (strcmp (tag,"walltime") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.walltime);
