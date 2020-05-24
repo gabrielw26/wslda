@@ -1185,10 +1185,10 @@ int main( int argc , char ** argv )
         }
         else
         {
-            for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
+            for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
         }
         // ------------------ update chemical potentials ------------------
-        if(iam==0) printf("# MUCHNAGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
@@ -1210,7 +1210,7 @@ int main( int argc , char ** argv )
             dc_mu_b -= kzmuchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
         }
-        if(iam==0) printf("# MUCHNAGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) printf("# MUCHANGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------

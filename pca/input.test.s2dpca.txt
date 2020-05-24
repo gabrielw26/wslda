@@ -23,8 +23,8 @@ Nb                      28.  # Requested number of particles b-type
 
 # INIT-0 parameters
 muchange                0.1   # Change rate of chemical potential
-Tstart                  0.2  # Start temperature, in units of eF, default 0.2
-Tstop                   0.2  # Stop temperature, in units of eF, default 0.05
+Tstart                  0.1  # Start temperature, in units of eF, default 0.2
+Tstop                   0.1  # Stop temperature, in units of eF, default 0.05
 DeltaT                  0.01  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
 init0scmix              0.5  # mixing parameter in self-consitent process, default 0.25
@@ -32,12 +32,12 @@ init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
 
-# s3d-solver
+# s2d-solver
 kzconveps               1.0e-6   # convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
-kzmixparam              0.75       # mixing parameter for densities, default=0.5
+linearmixing            0.5       # mixing parameter for densities, default=0.5
 kzmuchange              0.5     # coefficient for changing chemical potential, default=0.5
 kzmaxiters              1000      # maximum number of iterations, default=10000
-kztemp                  0.2    # requested temperature in units of eF
+kztemp                  0.1    # requested temperature in units of eF
 # referencekF             1.0    # reference kF
 # aBdG                    -0.9   # akF about 0.9
 spinsymmetry            1       # spin symmetric system
@@ -46,10 +46,11 @@ writewf                 0       # no wf writing
 mumaxchange             0.05 # in units of fermi energy
 
 # broyden
-broyden 1
-Mbroyden 5
-#startbroyden 3
-#stopbroyden 10
+broyden                 1
+Mbroyden                5
+broydenmixing           0.75
+# startbroyden            3
+# stopbroyden             10
 
 
 checkpoint              1       # do checkpoint everytime

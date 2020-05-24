@@ -104,10 +104,10 @@ void update_mu(double **dens_in, double **dens_out, double *Vin, double *Vout, i
 		dens_in[M][i] = Vin[i];
 		dens_out[M][i] = Vout[i];
 	}
-	dens_in[M][i+1] = mu_a_old;
-	dens_out[M][i+1] = mu_a;
-	dens_in[M][i+2] = mu_b_old;
-	dens_out[M][i+2] = mu_b;
+	dens_in[M][i+0] = mu_a_old;
+	dens_out[M][i+0] = mu_a;
+	dens_in[M][i+1] = mu_b_old;
+	dens_out[M][i+1] = mu_b;
 }
 
 int Broyden(double *h_dens, double **dens_in, double **dens_out, int M, int dim, double omega_0, double omega_n, double omega_k, double alpha){
@@ -226,12 +226,34 @@ int Broyden(double *h_dens, double **dens_in, double **dens_out, int M, int dim,
 	for (ixyz = 0; ixyz < dim; ixyz++){
 		h_dens[ixyz] = alpha * dens_out[M][ixyz] + (1. -  alpha) * dens_in[M][ixyz] - sum[ixyz];
 	}
+	
+    // clear memory
+	for (i = 0; i < M; i++){
+		free(a[i]);
+		free(beta[i]);
+	}
+	for(i = 0; i < dim; i++){
+		free(tmp[i]);
+	}
+	free(u);
+	free(delta_Vn);
+	free(delta_Vk);
+	free(delta_Fn);
+	free(delta_Fk);
+	free(Fn);
+	free(Fn1);
+	free(Fk);
+	free(Fk1);
+	free(sum);
+	free(beta);
+	free(a);
+	free(tmp);
 
 	return 1;
 }
 
 int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int dim, double omega_0, double omega_n, double omega_k, double alpha,
-		double mu_a, double mu_b){
+		double *mu_a, double *mu_b){
 
 	int ixyz, i, j, k, n;
 	double ckm;
@@ -278,7 +300,7 @@ int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int d
 			beta[i][j] = 0.;
 		}
 	}
-
+	
 	for (n = 0; n < M; n++){
 		calculate_F(Fn, dens_in[n], dens_out[n], dim); 							// F(n) for delta F(n) fraction
 		calculate_F(Fn1, dens_in[n+1], dens_out[n+1], dim);						// F(n+1) for delta F(n) fraction
@@ -305,7 +327,7 @@ int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int d
 			}
 		}
 	}
-
+	
 	// inversion to beta
 	det = determinant(a, M);
 	inverse(a, beta, M, det);
@@ -347,8 +369,30 @@ int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int d
 	for (ixyz = 0; ixyz < (dim-2); ixyz++){
 		h_dens[ixyz] = alpha * dens_out[M][ixyz] + (1. -  alpha) * dens_in[M][ixyz] - sum[ixyz];
 	}
-	mu_a = alpha * dens_out[M][dim-2] + (1. -  alpha) * dens_in[M][dim-2] - sum[dim-2];
-	mu_b = alpha * dens_out[M][dim-1] + (1. -  alpha) * dens_in[M][dim-1] - sum[dim-1];
+	*mu_a = alpha * dens_out[M][dim-2] + (1. -  alpha) * dens_in[M][dim-2] - sum[dim-2];
+	*mu_b = alpha * dens_out[M][dim-1] + (1. -  alpha) * dens_in[M][dim-1] - sum[dim-1];
 
+    // clear memory
+	for (i = 0; i < M; i++){
+		free(a[i]);
+		free(beta[i]);
+	}
+	for(i = 0; i < dim; i++){
+		free(tmp[i]);
+	}
+	free(u);
+	free(delta_Vn);
+	free(delta_Vk);
+	free(delta_Fn);
+	free(delta_Fk);
+	free(Fn);
+	free(Fn1);
+	free(Fk);
+	free(Fk1);
+	free(sum);
+	free(beta);
+	free(a);
+	free(tmp);
+    
 	return 1;
 }

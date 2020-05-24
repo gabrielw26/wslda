@@ -66,6 +66,12 @@ double determinant(double **a, int M){
 			else sum += a[0][i] * -1. * determinant(b, (M - 1));	// read function	// sum = determinte matrix
 		}
 	}
+	
+	for (i = 0; i < M; i++){
+		free(b[i]);
+	}
+	free(b);
+	
 	return sum;
 } // end function
 
@@ -122,6 +128,18 @@ int cofactor(double **a, double **d, int M, double det){
 		}
 	}
 	transpose(c, d, M, det);	// read function
+    
+	
+	for (i = 0; i < M; i++){
+		free(b[i]);
+	}
+	free(b);
+
+	for (i = 0; i < M; i++){
+		free(c[i]);
+	}
+	free(c);	
+    
 	return 1;
 } // end function
 
