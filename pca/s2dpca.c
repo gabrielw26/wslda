@@ -1127,7 +1127,7 @@ int main( int argc , char ** argv )
 #endif
         
         // ------------------ update chemical potentials ------------------
-        if(iam==0) printf("# MUCHNAGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
         for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
@@ -1151,7 +1151,7 @@ int main( int argc , char ** argv )
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
                         
         }
-        if(iam==0) printf("# MUCHNAGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) printf("# MUCHANGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
@@ -1179,23 +1179,24 @@ int main( int argc , char ** argv )
             for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) {
 				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
 				dens_out[rkziter][ixyz] = h_densities[ixyz];
-            	h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0 - md.kzmixparam) * h_densities_old[ixyz];
+            	h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0 - md.linearmixing) * h_densities_old[ixyz];
             }
-			dens_in[rkziter][ixyz+1] = dc_mu_a_old;
-			dens_out[rkziter][ixyz+1] = dc_mu_a;
-			dens_in[rkziter][ixyz+2] = dc_mu_b_old;
-			dens_out[rkziter][ixyz+2] = dc_mu_b;
+			dens_in[rkziter][ixyz+0] = dc_mu_a_old;
+			dens_out[rkziter][ixyz+0] = dc_mu_a;
+			dens_in[rkziter][ixyz+1] = dc_mu_b_old;
+			dens_out[rkziter][ixyz+1] = dc_mu_b;
             if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
         }
         else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
         {
         	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
-        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.kzmixparam, dc_mu_a, dc_mu_b);
+        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+            if(iam==0) printf("# MUCHANGE BROY: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
             if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
         {
-        	for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) h_densities[ixyz] = md.kzmixparam * h_densities[ixyz] + (1.0-md.kzmixparam) * h_densities_old[ixyz];
+        	for(ixyz = 0; ixyz < 12*NX*NY; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
             if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
         }
         

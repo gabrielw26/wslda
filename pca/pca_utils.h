@@ -64,7 +64,7 @@ typedef struct
     
     // kz-solver parameters
     double kzconveps; // convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
-    double kzmixparam; // mixing parameter for densities, default=0.5
+    double linearmixing; // mixing parameter for linear algorithm, default=0.5
     double kzmuchange; // coefficient for changing chemical potential, default=0.5
     int kzmaxiters; // maximum number of iterations, default=10000
     double kztemp; // temperature in units of eF_a, default=0.01
@@ -82,6 +82,7 @@ typedef struct
     int Mbroyden; // number of previous iterations taken into account, default=5
     int startbroyden; // firts iteration for broyden activavtion, default=0
     int stopbroyden; // last iteration for broyden activavtion, default=999999
+    double broydenmixing; // mixing parameter for Broyden algorithm, default=0.75
 	double omega0broyden;	// weight assigned to the error in the inverse Jacobian, default=0.01
 	double omeganbroyden;	  // weight associated with each previous iteration, default=1.0
 	double omegakbroyden;	   // weight associated with each previous iteration, default=1.0
@@ -141,7 +142,7 @@ metadata_t md =
 32, // nb;    
 0, // tsubamenodes
 1.0e-6, // kzconveps
-0.5, // kzmixparam
+0.5, // linearmixing
 0.5, // kzmuchange
 10000, // kzmaxiters
 0.01, // kztemp
@@ -157,6 +158,7 @@ metadata_t md =
 5, // Mbroyden
 0, // startbroyden
 999999, // stopbroyden
+0.75, // broydenmixing
 0.01, //	omega0broyden
 1.,	// omeganbroyden
 1.,	// omegakbroyden
@@ -277,8 +279,8 @@ int parse_input_file(char * file_name)
         // kz-solver
         else if (strcmp (tag,"kzconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.kzconveps);
-        else if (strcmp (tag,"kzmixparam") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.kzmixparam);
+        else if (strcmp (tag,"linearmixing") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.linearmixing);
         else if (strcmp (tag,"kzmuchange") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.kzmuchange);
         else if (strcmp (tag,"kzmaxiters") == 0)
@@ -310,6 +312,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.startbroyden); 
         else if (strcmp (tag,"stopbroyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.stopbroyden); 
+        else if (strcmp (tag,"broydenmixing") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.broydenmixing);  
         else if (strcmp (tag,"omega0broyden") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.omega0broyden);     
         else if (strcmp (tag,"omegakbroyden") == 0)

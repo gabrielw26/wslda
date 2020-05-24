@@ -34,7 +34,7 @@ init0save               1     # save solution
 
 # s3d-solver
 kzconveps               1.0e-6   # convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
-kzmixparam              0.5       # mixing parameter for densities, default=0.5
+linearmixing            0.5       # mixing parameter for densities, default=0.5
 kzmuchange              0.005     # coefficient for changing chemical potential, default=0.001
 kzmaxiters              1000      # maximum number of iterations, default=10000
 kztemp                  0.2    # requested temperature in units of eF
@@ -44,6 +44,13 @@ spinsymmetry            1       # spin symmetric system
 resetit                 1       # start from it=0
 writewf                 0       # no wf writing
 mumaxchange             0.05
+
+# broyden
+broyden                 1
+Mbroyden                5
+broydenmixing           0.75
+# startbroyden            3
+# stopbroyden             10
 
 
 checkpoint              1       # do checkpoint everytime
