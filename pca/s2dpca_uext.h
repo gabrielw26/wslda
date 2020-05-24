@@ -648,11 +648,11 @@ void process_params(double *params, double kF, double *mu)
  * */
 void modify_potentials(int it, double *h_densities, double *h_potentials, double *extra_data)
 {
-    if(it==0) 
-    {
-        printf("modify_potentials_phase_random\n");
-        modify_potentials_phase_random(it, h_densities, h_potentials); // TODO
-    }
+//     if(it==0) 
+//     {
+//         printf("modify_potentials_phase_random\n");
+//         modify_potentials_phase_random(it, h_densities, h_potentials); // TODO
+//     }
 #ifndef UNIFORM_TEST_MODE
 //     if(it<dc_params[5]) modify_potentials_imprint_ferron(it, h_densities, h_potentials, extra_data);
     
