@@ -185,8 +185,9 @@ int main( int argc , char ** argv )
     energy_labels[3] = "E_CM";
     energy_labels[4] = "E_ext";
     double E_tot, E_tot_old;
-    double npart[2], npart_old[2];
-    int is_converged;
+    double npart[2], npart_old[2], nparttest;
+    char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
+    int is_converged, is_converged_local;
     int saving_iteration=0;
     dc_Omega_a=0.0;
     dc_Omega_b=0.0;
@@ -279,10 +280,11 @@ int main( int argc , char ** argv )
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
-    md.Nb = md.Na;
+    md.Nb = md.Na+1;
+    if(md.spinsymmetry==1) md.Nb = md.Na;
     md.init0Na = md.Na;
     md.init0Nb = md.Nb;
-    if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: %f\n", md.Na);
+    if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
     
     // ====================================================================================
@@ -1243,29 +1245,35 @@ int main( int argc , char ** argv )
             "VEXT_B*J", vextjb, vextjb_old, (vextjb-vextjb_old));
         
         // ------------------ check convergence ------------------
-        cpu_exec( compute_energy(it, h_densities, h_potentials, energy, npart) );
-        if(iam==0) printf("# PARTICLE NUMBER: it=%d\n", it);
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]));
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]));
-            
         is_converged=1;
-        if(iam==0) printf("# CONVERGENCE REPORT: it=%d\n", it);
+        cpu_exec( compute_energy(it, h_densities, h_potentials, energy, npart) );
+        if(iam==0) printf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
+        nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
+        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+            "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]), convstatus[is_converged_local], nparttest);
+        nparttest=fabs(npart[SPINB]-md.Nb)/(md.Na+md.Nb);
+        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+            "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
+            
+        if(iam==0) printf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
         E_tot=0.0; E_tot_old=0.0;
         for(i=0; i<5; i++)
         {
             E_tot+=energy[i]; 
             E_tot_old+=energy_old[i];
             
-            if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-                energy_labels[i], energy[i]/Effg, energy_old[i]/Effg, (energy[i]-energy_old[i])/Effg);
+            if(fabs((energy[i]-energy_old[i])/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
             
-            if(fabs((energy[i]-energy_old[i])/Effg)>md.kzconveps) is_converged=0;
+            if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+                energy_labels[i], energy[i]/Effg, energy_old[i]/Effg, (energy[i]-energy_old[i])/Effg, convstatus[is_converged_local]);
+            
         }
         if(iam==0) printf("  ------------------------------------------------------------------------\n");
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-                "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg);
+        if(fabs((E_tot-E_tot_old)/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+                "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
         
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b - vextja - vextjb;
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;

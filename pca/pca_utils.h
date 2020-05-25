@@ -63,7 +63,8 @@ typedef struct
     int tsubamenodes; // number of nodes used in calculations on tsubame computer
     
     // kz-solver parameters
-    double kzconveps; // convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
+    double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
+    double npartconveps; // convergence epsilon for particle number- fraction of N_tot=(Na+Nb) needed to get convergence, default=1.0e-6
     double linearmixing; // mixing parameter for linear algorithm, default=0.5
     double kzmuchange; // coefficient for changing chemical potential, default=0.5
     int kzmaxiters; // maximum number of iterations, default=10000
@@ -141,7 +142,8 @@ metadata_t md =
 32, // mb;                   
 32, // nb;    
 0, // tsubamenodes
-1.0e-6, // kzconveps
+1.0e-6, // energyconveps
+1.0e-6, // npartconveps
 0.5, // linearmixing
 0.5, // kzmuchange
 10000, // kzmaxiters
@@ -277,8 +279,10 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"tsubamenodes") == 0)
             sscanf (s,"%s %d %*s",tag,&md.tsubamenodes);
         // kz-solver
-        else if (strcmp (tag,"kzconveps") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.kzconveps);
+        else if (strcmp (tag,"energyconveps") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
+        else if (strcmp (tag,"npartconveps") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.npartconveps);
         else if (strcmp (tag,"linearmixing") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.linearmixing);
         else if (strcmp (tag,"kzmuchange") == 0)
