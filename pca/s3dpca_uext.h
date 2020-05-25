@@ -252,6 +252,43 @@ void process_params_u_ext_smooth_HO(double *params, double kF)
 #undef zs
 #undef HO
 
+void modify_potentials_phase_random(int it, double *h_densities, double *h_potentials)
+{
+    // densities - decode 
+    double *rho_a = (double *)(h_densities +  0*NX*NY);
+    double *rho_b = (double *)(h_densities +  1*NX*NY);
+    double *tau_a = (double *)(h_densities +  2*NX*NY);
+    double *tau_b = (double *)(h_densities +  3*NX*NY);
+    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
+    double *j_a_x = (double *)(h_densities +  6*NX*NY);
+    double *j_a_y = (double *)(h_densities +  7*NX*NY);
+    double *j_a_z = (double *)(h_densities +  8*NX*NY);
+    double *j_b_x = (double *)(h_densities +  9*NX*NY);
+    double *j_b_y = (double *)(h_densities + 10*NX*NY);
+    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    
+    // pontentials - decode
+    double *V_a = (double *)(h_potentials +  0*NX*NY);
+    double *V_b = (double *)(h_potentials +  1*NX*NY);
+    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    
+    int ix, iy, ixyz=0;
+    double _x, _y, _r;
+    double arg, abs_delta;
+    srand(123);
+    for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++)
+    {
+        abs_delta = cabs(delta[ixyz]);
+        arg = (double)rand() / (double)RAND_MAX;
+        arg = (2.0*arg-1.0)*M_PI;
+
+        // phase imprint
+        delta[ixyz]=abs_delta*cos(arg) + I*abs_delta*sin(arg);         
+        
+        ixyz++;
+    }
+}
+
 
 // *******************************************************************************************
 // **************************** FUNCTIONS CALLED BY THE CODE *********************************
@@ -304,6 +341,10 @@ void process_params(double *params, double kF, double *mu)
  * */
 void modify_potentials(int it, double *h_densities, double *h_potentials, double *extra_data)
 {
+#ifdef UNIFORM_TEST_MODE
+    if(dc_params[31]>0.5 && it<=1) modify_potentials_phase_random(it, h_densities, h_potentials); 
+#endif 
+    
 #ifndef UNIFORM_TEST_MODE
     // no modify
     

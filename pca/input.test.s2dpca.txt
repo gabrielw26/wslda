@@ -3,7 +3,9 @@ inittype                0      # 0 - create uniform solution;
                                # 1 - read uniform solution from file `inprefix`_uniform.solution
                                # 2 - start from checkpoint
                                # 22- start from interpolated checkpoint
-                               
+
+params31            1.0 # add noise
+
 # CBLACS grid
 # NOTE: p*q=np
 # p                       2
@@ -40,7 +42,7 @@ kzmaxiters              1000      # maximum number of iterations, default=10000
 kztemp                  0.1    # requested temperature in units of eF
 # referencekF             1.0    # reference kF
 # aBdG                    -0.9   # akF about 0.9
-spinsymmetry            1       # spin symmetric system
+spinsymmetry            0       # spin symmetric system
 resetit                 1       # start from it=0
 writewf                 0       # no wf writing
 mumaxchange             0.05 # in units of fermi energy
