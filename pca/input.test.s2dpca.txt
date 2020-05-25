@@ -4,7 +4,7 @@ inittype                0      # 0 - create uniform solution;
                                # 2 - start from checkpoint
                                # 22- start from interpolated checkpoint
 
-# params31            1.0 # add noise
+params31            1.0 # add noise
 
 # CBLACS grid
 # NOTE: p*q=np

@@ -8,7 +8,7 @@ CCLIB =  -lfftw3
 # For ELPA Library
 # CCLIB =  -lfftw3 ...
 CCFLAGS = -O3
-OBJmpi =  s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o sxdpca_broyden.o sxdpca_inversematrix.o
+OBJmpi =  s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o sxdpca_broyden.o
 
 
 all: $(OBJmpi)

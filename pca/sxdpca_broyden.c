@@ -3,6 +3,8 @@
  *
  *  Created on: Oct 9, 2019
  *      Author: kaskadermike
+ * 
+ *  Modified by: Gabriel Wlazlowski, May 2020
  */
 
 
@@ -35,14 +37,56 @@ void calculate_F(double *F, double *Vin, double *Vout, int dim);
 void update(double **dens_in, double **dens_out, double *Vin, double *Vout, int M, int dim);
 void update_mu(double **dens_in, double **dens_out, double *Vin, double *Vout, int M, int dim, double mu_a, double mu_b, double mu_a_old, double mu_b_old);
 
-// this functions are prvided in sxdpca_inversematrix.c
-void calculate_minor(double **b, double **a, int i, int M);
-double determinant(double **a, int M);
-void transpose(double **c, double **d, int M, double det);
-int cofactor(double **a, double **d, int M, double det);
-void inverse(double **a, double **d, int M, double det);
+// LAPACK ROUTINES FOR INVERSION
+// call dgetrf( m, n, a, lda, ipiv, info )
+extern void dgetrf_(int *m, int *n,  double *a, int *lda, int *ipiv, int *info );
 
+// call dgetri( n, a, lda, ipiv, work, lwork, info )
+extern void dgetri_(int *n, double *a, int *lda, int *ipiv, double *work, int *lwork, int *info );
 
+/**
+ * Functions inverts square matrix a (NxN) and stores result into matrix b
+ * */
+int lapack_inversion(int M, double **a, double **b)
+{
+    int i,j; 
+	double *A;
+	cppmallocl(A, M*M, double);
+	for(i=0; i<M; i++) for(j=0; j<M; j++) A[j*M +i]=a[i][j]; // copy to column-major format (Fortran style)
+	
+    // invert matrix
+    // needed storage for ipiv matrix
+    int *ipiv;
+    cppmallocl(ipiv,M,int);
+    
+    int info;
+    int lwork=-1;
+    double testwork[1];
+    
+    // call for optimal workspace for _dgetri
+    dgetri_(&M, A, &M, ipiv, testwork, &lwork, &info );
+    if(info!=0) { printf("Error: memory query: _dgetri=%d\n", info); return 1;}
+    lwork=(int)testwork[0];
+//     printf("dgetri: request for memory: %d\n", lwork);
+    double *work;
+    cppmallocl(work,lwork,double);
+
+    dgetrf_(&M, &M, A, &M, ipiv, &info );
+    if(info!=0) { printf("Error: dgetrf_=%d\n", info); return info;}
+    
+    dgetri_(&M, A, &M, ipiv, work, &lwork, &info );
+    if(info!=0) { printf("Error: dgetri_=%d\n", info); return info;}
+    
+	for(i=0; i<M; i++) for(j=0; j<M; j++) b[i][j] = A[j*M +i]; // copy to result table
+	
+	free(A);
+    free(ipiv);
+    free(work);
+    
+    return 0;
+}
+    
+    
 int ran(int min, int max) {
     int tmp;
     if (max >= min)
@@ -115,7 +159,6 @@ int Broyden(double *h_dens, double **dens_in, double **dens_out, int M, int dim,
 	int ixyz, i, j, k, n;
 	double ckm;
 	double gamma_mn;
-	double det;
 
 	double *u;
 	double *delta_Vn;
@@ -186,8 +229,8 @@ int Broyden(double *h_dens, double **dens_in, double **dens_out, int M, int dim,
 	}
 
 	// inversion to beta
-	det = determinant(a, M);
-	inverse(a, beta, M, det);
+	lapack_inversion(M, a, beta);
+    
 
 	for (n = 0; n < M; n++){
 		ckm = 0.;
@@ -258,7 +301,6 @@ int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int d
 	int ixyz, i, j, k, n;
 	double ckm;
 	double gamma_mn;
-	double det;
 
 	double *u;
 	double *delta_Vn;
@@ -328,9 +370,9 @@ int Broyden_mu(double *h_dens, double **dens_in, double **dens_out, int M, int d
 		}
 	}
 	
+	
 	// inversion to beta
-	det = determinant(a, M);
-	inverse(a, beta, M, det);
+	lapack_inversion(M, a, beta);
 
 	for (n = 0; n < M; n++){
 		ckm = 0.;

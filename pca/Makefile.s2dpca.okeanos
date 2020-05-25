@@ -10,7 +10,7 @@ CCLIB =  -lfftw3  -I${MKLROOT}/include ${MKLROOT}/lib/intel64/libmkl_scalapack_l
 # For ELPA Library
 # CCLIB =  -lfftw3 -lm -L/usr/lib64/openmpi/lib -lscalapack -I/usr/local/include/elpa-2018.11.001 -L/usr/local/lib/ -lelpa
 CCFLAGS = -O3
-OBJmpi =  s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o sxdpca_broyden.o sxdpca_inversematrix.o
+OBJmpi =  s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o sxdpca_broyden.o
 
 
 all: $(OBJmpi)
