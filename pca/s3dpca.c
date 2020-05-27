@@ -116,8 +116,8 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
 double u_ext(int ix, int iy, int iz, int it, int spin);
 void process_params(double *params, double kF, double *mu);
 void modify_potentials(int it, double *h_densities, double *h_potentials, void * extra_data);
-size_t get_extra_data_size();
-int load_extra_data(size_t size, void *extra_data);
+size_t get_extra_data_size(double *params);
+int load_extra_data(size_t size, void *extra_data, double *params);
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -666,7 +666,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
-    if(iam==0) extra_data_size = get_extra_data_size();
+    if(iam==0) extra_data_size = get_extra_data_size(md.params);
     MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(extra_data_size>0)
     {
@@ -681,7 +681,7 @@ int main( int argc , char ** argv )
             return( EXIT_FAILURE ) ; 
         }
         
-        if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data) );
+        if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     }
 

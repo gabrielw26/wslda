@@ -402,8 +402,9 @@ double vector_vext(int ix, int iy, int iz, int it, int spin, int coordinate)
 /**
  * This function provides size of extra_data array, in bytes.
  * The extra_data of specified size will be allocated by the main process.
+ * @param array with input file parameters. NOTE: the array contains bare input file values, not processed by process_params()!
  * */
-size_t get_extra_data_size()
+size_t get_extra_data_size(double *params)
 {
     return 0;
 }
@@ -412,10 +413,11 @@ size_t get_extra_data_size()
  * This function loads data into extra_data array.extra_data
  * This function is thread-safe.
  * @param size size of array compute using function get_extra_data_size()
- * @param extra_data pointer to array
+ * @param extra_data pointer to array that shoule be filled with data
+ * @param array with input file parameters. NOTE: the array contains bare input file values, not processed by process_params()!
  * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code terminates.
  * */
-int load_extra_data(size_t size, void *extra_data)
+int load_extra_data(size_t size, void *extra_data, double *params)
 {
     return 0;
 }
