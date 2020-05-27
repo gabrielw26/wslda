@@ -4,7 +4,7 @@ inittype                0      # 0 - create uniform solution;
                                # 2 - start from checkpoint
                                # 22- start from interpolated checkpoint
 
-params31            1.0 # add noise
+params31            0.0 # add noise
 
 # CBLACS grid
 # NOTE: p*q=np
@@ -35,7 +35,8 @@ init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
 
 # s2d-solver
-kzconveps               1.0e-6   # convergence epsilon - fraction of Effg needed to get convergence, default=1.0e-6
+energyconveps           1.0e-6   # energy convergence epsilon
+npartconveps            1.0e-6   # number of particles convergence epsilon
 linearmixing            0.5       # mixing parameter for densities, default=0.5
 kzmuchange              0.5     # coefficient for changing chemical potential, default=0.5
 kzmaxiters              1000      # maximum number of iterations, default=10000
