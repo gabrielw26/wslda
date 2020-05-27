@@ -339,7 +339,7 @@ void process_params(double *params, double kF, double *mu)
 /**
  * THIS FUNCTIONS IS CALLED AFTER EACH EXECUTION `recompute_potentials`
  * */
-void modify_potentials(int it, double *h_densities, double *h_potentials, double *extra_data)
+void modify_potentials(int it, double *h_densities, double *h_potentials, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     if(dc_params[31]>0.5 && it<=1) modify_potentials_phase_random(it, h_densities, h_potentials); 
@@ -397,6 +397,27 @@ double vector_vext(int ix, int iy, int iz, int it, int spin, int coordinate)
     // ADD HERE YOUR CODE
     
     return 0.0;
+}
+
+/**
+ * This function provides size of extra_data array, in bytes.
+ * The extra_data of specified size will be allocated by the main process.
+ * */
+size_t get_extra_data_size()
+{
+    return 0;
+}
+
+/**
+ * This function loads data into extra_data array.extra_data
+ * This function is thread-safe.
+ * @param size size of array compute using function get_extra_data_size()
+ * @param extra_data pointer to array
+ * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code terminates.
+ * */
+int load_extra_data(size_t size, void *extra_data)
+{
+    return 0;
 }
 #endif
 

@@ -42,7 +42,7 @@
 #define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
-// #define SPINSYMMETRY_MODE
+#define SPINSYMMETRY_MODE
 
 // active this flag in order to store quasi-particle energies for each measurment
 // note that in case of 1d or 2d codes this can require much more space than measurments itself
