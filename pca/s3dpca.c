@@ -113,9 +113,9 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
                 printf( "\n" );
         }
 }
-double u_ext(int ix, int iy, int iz, int it, int spin);
+double u_ext(int ix, int iy, int iz, int it, int spin, double *params);
 void process_params(double *params, double kF, double *mu);
-void modify_potentials(int it, double *h_densities, double *h_potentials, void * extra_data);
+void modify_potentials(int it, double *h_densities, double *h_potentials, void * extra_data, double *params);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -1238,7 +1238,7 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( recompute_potentials(it, h_densities, h_potentials, h_potentials) ); 
-        modify_potentials(it, h_densities, h_potentials, extra_data) ;
+        modify_potentials(it, h_densities, h_potentials, extra_data, dc_params) ;
         rt_pot+=e_t(0);
         
         // ------------------ angular momentum ------------------
