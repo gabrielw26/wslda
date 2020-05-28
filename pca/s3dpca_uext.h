@@ -5,9 +5,6 @@
 #ifndef __S3DPCA_UEXT__
 #define __S3DPCA_UEXT__
 
-
-extern double *dc_params; // array with params from input file 
-
 /**
  * Switch function - performs switch in time interval [0-T]
  * */
@@ -293,34 +290,20 @@ void modify_potentials_phase_random(int it, double *h_densities, double *h_poten
 // *******************************************************************************************
 // **************************** FUNCTIONS CALLED BY THE CODE *********************************
 // *******************************************************************************************
-/** 
- * THIS FUNCTION IS CALLED BY KERLNELS FROM 's3dpca.c'
- * */
-double u_ext(int ix, int iy, int iz, int it, int spin)
-{
-#ifdef UNIFORM_TEST_MODE
-    return 0.0; // no external potential
-#endif
-    
-//     return u_ext_HO(ix, iy, iz, it, spin);
-    
-    // studies of VR
-//     return u_ext_VR_study(ix, iy, iz, it, spin);
-    
-    // Higgs mode
-    return u_ext_smooth_HO(ix, iy, iz, it, spin);
-}
 
 /** 
- * THIS FUNCTION IS CALLED FROM 's3dpca.c'
- * AFTER LOADING params ARRAY FROM INPUT FILES.
- * AFTER PROCESSING THE params ARE LOADED TO CONST MEMORY ON GPU.
- * THE PARAMS ARE VISIBLE IN dc_params
- * @param params array of size MAX_USER_PARAMS with parameters
- * @param kF typical Fermi momentum of the problem
- * @param mu chemical potentials, mu[SPINA] and mu[SPINB]
+ * THIS FUNCTION IS CALLED BY MAIN ENGINE.
+ * After loading params array from input files, the parameters are processed by this routine.
+ * The routine is executed at beginning of each iteration.
+ * @param params array of size MAX_USER_PARAMS with parameters from input file. 
+ * @param kF typical Fermi momentum scale of the problem. 
+ *           kF=referencekF if the referencekF tag is indicated in the input file, 
+ *           otherwise to kF value (3*pi^2*n)^{1/3} is assigned, where n corresponds to density in the box center
+ * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void process_params(double *params, double kF, double *mu)
+void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
 {
 #ifndef UNIFORM_TEST_MODE
     // no processing
@@ -337,9 +320,16 @@ void process_params(double *params, double kF, double *mu)
 }
 
 /**
- * THIS FUNCTIONS IS CALLED AFTER EACH EXECUTION `recompute_potentials`
+ * THIS FUNCTION IS CALLED AFTER EACH EXTRATION OF densities AND potentials
+ * Use this function is you want to impose additional constraints on densities and/or potentials.
+ * @param it iteration number
+ * @param h_densities array with densities, see (wiki) documentation for decoding prescription
+ * @param h_potentials array with potentials, see (wiki) documentation for decoding prescription
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void modify_potentials(int it, double *h_densities, double *h_potentials, void *extra_data)
+void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     if(dc_params[31]>0.5 && it<=1) modify_potentials_phase_random(it, h_densities, h_potentials); 
@@ -356,17 +346,46 @@ void modify_potentials(int it, double *h_densities, double *h_potentials, void *
 #endif
 }
 
+/** 
+ * THIS FUNCTION IS CALLED BY MAIN ENGINE.
+ * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
+ * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2)
+ * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
+ * @param it iteration number
+ * @param spin spin indicator, value from set {SPINA,SPINB}
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return value of the external potential V_spin(x,y,z)
+ * */
+double u_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+{
+#ifdef UNIFORM_TEST_MODE
+    return 0.0; // no external potential
+#endif
+    
+//     return u_ext_HO(ix, iy, iz, it, spin);
+    
+    // studies of VR
+//     return u_ext_VR_study(ix, iy, iz, it, spin);
+    
+    // Higgs mode
+    return u_ext_smooth_HO(ix, iy, iz, it, spin);
+}
 
 /** 
- * THIS FUNCTION IS CALLED BY KERLNELS FROM 'sXdpca_kernels.cu'
- * @param ix - coordinate x,  in range [0,NX)
- * @param iy - coordinate y,  in range [0,NY)
- * @param iz - coordinate z,  in range [0,NZ)
- * @param it - index if time step, time is computed as time = dc_t0 + dc_dt*it
- * @param delta - value of delta computed self-consitently for given point in time. Note that simulation will conserve particle number only if arg[delta] = arg[Delta_{ext}], otherwise the particle number conervation will be violated. 
- * @return value of exterrnal pairing potential Delta_{ext}(x,y,z,t)
+ * THIS FUNCTION IS CALLED BY MAIN ENGINE.
+ * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
+ * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2)
+ * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
+ * @param it iteration number
+ * @param delta - value of delta computed self-consitently for given iteration it. 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return value of external pairing potential Delta_{ext}(x,y,z)
  * */
-double complex delta_ext(int ix, int iy, int iz, int it, double complex delta)
+double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     return 0.0 + I*0.0; // no external potential
@@ -378,17 +397,18 @@ double complex delta_ext(int ix, int iy, int iz, int it, double complex delta)
 }
 
 /** 
- * THIS FUNCTION IS CALLED BY KERLNELS FROM 'sXdpca_kernels.cu'
- * @param ix - coordinate x,  in range [0,NX)
- * @param iy - coordinate y,  in range [0,NY)
- * @param iz - coordinate z,  in range [0,NZ)
- * @param it - index if time step, time is computed as time = dc_t0 + dc_dt*it
- * @param spin - spin coordinate, one from {SPINA, SPINB}
- * @param coordinate - coordinate of external velocity field that should be computed, one of {XAXIS, YAXIS, ZAXIS}
- * @return value of exterrnal pairing potential Delta_{ext}(x,y,z,t)
+ * THIS FUNCTION IS CALLED BY MAIN ENGINE.
+ * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
+ * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2)
+ * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
+ * @param it iteration number
+ * @param spin spin indicator, value from set {SPINA,SPINB}
+ * @param coordinate - Cartesian coordinate of the external velocity vector that should be computed, value from set {XAXIS, YAXIS, ZAXIS}
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return value of the external velocity vector v_ext(x,y,z)
  * */
-
-double vector_vext(int ix, int iy, int iz, int it, int spin, int coordinate)
+double vector_vext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     return 0.0; // no external velocity field
@@ -402,7 +422,9 @@ double vector_vext(int ix, int iy, int iz, int it, int spin, int coordinate)
 /**
  * This function provides size of extra_data array, in bytes.
  * The extra_data of specified size will be allocated by the main process.
+ * This function is thread-safe.
  * @param array with input file parameters. NOTE: the array contains bare input file values, not processed by process_params()!
+ * @return size of the extra_data array than needs to be allocated, if 0 then extra_data then extra_data will not be allocated.
  * */
 size_t get_extra_data_size(double *params)
 {
@@ -410,12 +432,12 @@ size_t get_extra_data_size(double *params)
 }
 
 /**
- * This function loads data into extra_data array.extra_data
+ * This function loads data into extra_data array.
  * This function is thread-safe.
  * @param size size of array compute using function get_extra_data_size()
- * @param extra_data pointer to array that shoule be filled with data
+ * @param extra_data pointer to array that should be filled with data
  * @param array with input file parameters. NOTE: the array contains bare input file values, not processed by process_params()!
- * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code terminates.
+ * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
 int load_extra_data(size_t size, void *extra_data, double *params)
 {

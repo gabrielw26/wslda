@@ -113,9 +113,8 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
                 printf( "\n" );
         }
 }
-double u_ext(int ix, int iy, int iz, int it, int spin);
-void process_params(double *params, double kF, double *mu);
-void modify_potentials(int it, double *h_densities, double *h_potentials, void * extra_data);
+void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
+void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -128,6 +127,8 @@ int load_extra_data(size_t size, void *extra_data, double *params);
 // ====================================================================================
 // This section reporduces variables keeped in GPU constant memory 
 double *dc_params; /* Declaration of the variable */
+size_t dc_extra_data_size;
+void *dc_extra_data;
 double dc_mu_a;
 double dc_mu_b;
 double dc_mu_a_old;		// for Broyden
@@ -598,7 +599,7 @@ int main( int argc , char ** argv )
             if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
             for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
             mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-            process_params(dc_params, kF, mu);
+            process_params(dc_params, kF, mu, extra_data_size, extra_data);
             cpu_exec( recompute_potentials_meanfield_only(it, h_densities, h_potentials, h_potentials) ); 
             
             // set chemical potentials using TF approximation
@@ -684,6 +685,8 @@ int main( int argc , char ** argv )
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     }
+    dc_extra_data_size=extra_data_size;
+    dc_extra_data=extra_data;
 
     // ===================================================================================
     // ================================== FFTW PLANS =====================================
@@ -899,25 +902,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-        process_params(dc_params, kF, mu);
+        process_params(dc_params, kF, mu, extra_data_size, extra_data);
         ECHOLINE;
-        
-	/*
-        // NOTE: ajusting particle number
-        double tkF = 1.0;
-        double tol = 0.005*tkF;
-        kF = pow(6.*M_PI*M_PI*rho_a[NY/2 + NX/2*NY],1./3.);
-        double diff = kF-tkF;
-        if(fabs(diff)>tol) 
-        {
-            if(diff>0.0) md.Na-=1.0; 
-            else         md.Na+=1.0;
-            if(iam==0) printf("# CHANGING PARTICLE NUMBER TO md.Na=%f\n", md.Na);
-        }
-	*/
-/*        md.Nb=md.Na;
-        if(iam==0) printf("# LOCAL FERMI MOMENTUM kF=%f\n", kF);
-        kF=1.0; // set by hand to*/ 
         rt_other+=e_t(0);
         
         // matrix elements
@@ -1238,7 +1224,7 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( recompute_potentials(it, h_densities, h_potentials, h_potentials) ); 
-        modify_potentials(it, h_densities, h_potentials, extra_data) ;
+        modify_potentials(it, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
         rt_pot+=e_t(0);
         
         // ------------------ angular momentum ------------------
