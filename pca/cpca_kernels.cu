@@ -1068,6 +1068,7 @@ __global__ void kernel_apply_hamiltonian_bdg(
 
 #ifdef WORK_IN_ROTATING_FRAME
     Complex gax, gay;
+    Complex gbx, gby;
     int ix, iy; // need to decode coordinate
 #endif
     
