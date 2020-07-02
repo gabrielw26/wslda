@@ -47,7 +47,7 @@ dirs:
 	mkdir -p $(OBJDIR)
 	mkdir -p $(BINDIR)
 
-.PHONY: clean ver
+.PHONY: clean all ver
 
 clean:
 	rm -f $(OBJDIR)*
