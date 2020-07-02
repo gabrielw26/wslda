@@ -674,7 +674,7 @@ void modify_potentials(int it, double *h_densities, double *h_potentials, double
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external potential V_spin(x,y)
  * */
-double u_ext(int ix, int iy, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+double aau_ext(int ix, int iy, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     return 0.0; // no external potential
@@ -702,7 +702,7 @@ double u_ext(int ix, int iy, int it, int spin, double *params, size_t extra_data
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of external pairing potential Delta_{ext}(x,y)
  * */
-double complex delta_ext(int ix, int iy, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data)
+double complex aadelta_ext(int ix, int iy, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     return 0.0 + I*0.0; // no external potential
@@ -724,7 +724,7 @@ double complex delta_ext(int ix, int iy, int it, double complex delta, double *p
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external velocity vector v_ext(x,y)
  * */
-double vector_vext(int ix, int iy, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
+double aavector_vext(int ix, int iy, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
 #ifdef UNIFORM_TEST_MODE
     return 0.0; // no external velocity field
