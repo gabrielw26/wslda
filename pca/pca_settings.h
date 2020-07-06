@@ -7,6 +7,14 @@
 // ================================ GLOBAL SETTINGS ==============================
 // ===============================================================================
 
+#ifdef WSLDA
+// STATIC CODE
+#define CODE "W-SLDA-TOOLKIT"
+#define VERSION "0.1dev"
+#include "predefines.h"
+
+#else
+// DYNAMIC CODE
 #define CODE PCA_ASLDA
 #define VERSION "1.10"
 
@@ -23,23 +31,11 @@
 #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
 
-// Integration scheme AB - predictor, AM - correctior, number specify order
-// #define ITEGRATION_SCHEME AB3AM4
-#define INTEGRATION_SCHEME AB4AM5
-
 // Maximal number of parameters in params array
 #define MAX_USER_PARAMS 32 
 
-// Number of self-consistent iterations for U and delta computation
-#define UD_SCITERS 15
-// Mixing parameter for self-consistent algorithm - fraction of new solution used for mixing
-#define UD_MIX_COEFF 0.75
-
 // Minimal density to avoid numerical problems
 #define DENSEPSILON 1.0e-8
-
-// if particle number changed by this percentage then break the simulation
-#define N_STABILITY_CRITERIA 0.25 
 
 // spin-symmetric mode decreases computing time for factor about two
 #define SPINSYMMETRY_MODE
@@ -57,16 +53,6 @@
 // If this flag is active, you must provide body of vector_vext(...) function in pca_uext.h file
 #define ENABLE_VELOCITY_EXT
 
-// activate this if you know that HFB matrix is real
-// the code will utilize it in roder to speed-up the calculations
-// meaningful only for static codes
-// #define MATRIX_IS_REAL
-
-// select diagonalization routine
-// it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
-#define DIAGONALIZATION_ROUTINE PZHEEVR
-// #define DIAGONALIZATION_ROUTINE PZHEEVD
-
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
 
@@ -81,6 +67,20 @@
 // NOTE: in rotating frame the code uses constant variables dc_Omega_a and dc_Omega_b
 // NOTE: the systems rotates along z-axis
 // #define WORK_IN_ROTATING_FRAME
+
+#endif
+
+// Number of self-consistent iterations for U and delta computation
+#define UD_SCITERS 15
+// Mixing parameter for self-consistent algorithm - fraction of new solution used for mixing
+#define UD_MIX_COEFF 0.75
+
+// if particle number changed by this percentage then break the simulation
+#define N_STABILITY_CRITERIA 0.25 
+
+// Integration scheme AB - predictor, AM - correctior, number specify order
+// #define ITEGRATION_SCHEME AB3AM4
+#define INTEGRATION_SCHEME AB4AM5
 
 // ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
@@ -221,5 +221,6 @@
 
 #define PZHEEVR 1
 #define PZHEEVD 2
+
 
 #endif

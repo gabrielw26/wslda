@@ -82,6 +82,7 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
 }
 
 void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
+void modify_densities(int it, double *h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
@@ -1211,6 +1212,8 @@ int main( int argc , char ** argv )
         	if (tau_a[ixyz] < 0.) tau_a[ixyz] = dens_min;
         	if (tau_b[ixyz] < 0.) tau_b[ixyz] = dens_min;
         }
+        
+        modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
         
         // ------------------ compute new potentials ------------------
         b_t();
