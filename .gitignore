@@ -63,3 +63,11 @@ pca/torm*
 data/
 
 pca/ccpca
+
+st-testcase-uniform/wslda-3d
+
+st-testcase-uniform/wslda-2d
+
+st-myproject-template/wslda-3d
+
+st-myproject-template/wslda-2d
