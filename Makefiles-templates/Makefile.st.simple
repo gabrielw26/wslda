@@ -35,12 +35,12 @@ DEPS := $(addprefix $(INCLUDEDIR),$(DEPS))
 all: 2d 3d
 
 2d: $(OBJS2D) $(OBJS) 
-	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)wslda-2d $^  
+	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-2d $^  
 	
 3d: $(OBJS3D) $(OBJS) 
-	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)wslda-3d $^
+	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-3d $^
 
-$(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) dirs
+$(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 	
 
@@ -52,8 +52,8 @@ dirs:
 
 clean:
 	rm -f $(OBJDIR)*
-	rm -f $(BINDIR)wslda-2d
-	rm -f $(BINDIR)wslda-3d
+	rm -f $(BINDIR)st-wslda-2d
+	rm -f $(BINDIR)st-wslda-3d
 	
 ver:
 	$(CXX) --version
