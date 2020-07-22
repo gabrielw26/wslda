@@ -6,8 +6,8 @@ inittype                0      # 0 - create uniform solution;
                                # 5 - start from s3dpca solution                                                                                                                                                   
                                                                                                                                                                                                                   
 # trajectory length                                                                                                                                                                                               
-dt                      0.035   # in units of Emax=M_PI^2/2.
-measurements            100
+dt                      0.0035   # in units of eF^-1
+measurements            1
 timesteps               100 
 
 # files

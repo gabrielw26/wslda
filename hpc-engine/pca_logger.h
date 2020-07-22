@@ -138,10 +138,17 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
     fprintf(log,"# mu_b/eF            =%14.6g\n", mu[SPINB]/eF);   
     fprintf(log,"# E_cut              =%14.6g\n", ec);
     fprintf(log,"# E_cut/eF           =%14.6g\n", ec/eF);    
+#ifdef TDWSLDA
+    double Emax =  M_PI*M_PI/2.;
+    fprintf(log,"# dt*emax            =%14.6g\n", md.dt/eF*Emax);
+    fprintf(log,"# dt*eF              =%14.6g\n", md.dt);
+    fprintf(log,"# dt                 =%14.6g\n", md.dt/eF);
+#else
     fprintf(log,"# dt*emax            =%14.6g\n", md.dt);
     double Emax =  M_PI*M_PI/2.;
     fprintf(log,"# dt*eF              =%14.6g\n", md.dt/Emax*eF);
     fprintf(log,"# dt                 =%14.6g\n", md.dt/Emax);
+#endif
     fprintf(log,"# nwf                =%14d\n", nwf);
     fprintf(log,"# \n");
     fprintf(log,"# ==================== QUANTUM FRICTION =====================\n");

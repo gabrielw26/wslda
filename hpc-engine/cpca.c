@@ -156,8 +156,10 @@ int main( int argc , char ** argv )
     
     // variables
     dt= md.dt ;
+#ifndef TDWSLDA
     double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
     dt/=Emax; // time step
+#endif
     
 #ifdef SPINSYMMETRY_MODE
     if(ip==0) printf("# IMPOSING: spinsymmetry=1\n");
@@ -503,7 +505,11 @@ int main( int argc , char ** argv )
     
     // ====================================================================================
     // ==================================== COPY DATA TO GPU ==============================
-    // ====================================================================================    
+    // ====================================================================================  
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+
     if(md.inittype==2){ 
 
         if(ip==0) printf("# LOADING CHECKPOINT\n");
