@@ -142,6 +142,9 @@ int main( int argc , char ** argv )
             return( EXIT_FAILURE ) ;      
         }
         
+        // Make copy of input file
+        sprintf(file_name, "%s_input.txt", md.outprefix);
+        file_operation( copy_input_file(argv[i],file_name) ); 
     }
     
     // Broadcast input parameter

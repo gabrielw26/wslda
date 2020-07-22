@@ -144,7 +144,10 @@ int main( int argc , char ** argv )
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
-        
+       
+        // Make copy of input file
+        sprintf(file_name, "%s_input.txt", md.outprefix);
+        file_operation( copy_input_file(argv[i],file_name) ); 
     }
     
     // Broadcast input parameter

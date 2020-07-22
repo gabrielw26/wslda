@@ -146,6 +146,9 @@ int main( int argc , char ** argv )
             return( EXIT_FAILURE ) ;      
         }
         
+        // Make copy of input file
+        sprintf(file_name, "%s_input.txt", md.outprefix);
+        file_operation( copy_input_file(argv[i],file_name) ); 
     }
     
     // Broadcast input parameter
@@ -661,6 +664,7 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
+        
         #define OUTPUT_ENTRIES 18
         double line_items[OUTPUT_ENTRIES]={     
             // line id (added automatically): 1
@@ -690,7 +694,7 @@ int main( int argc , char ** argv )
 
     // Create binary files and add initial measurement
     if(ip==0)
-    {
+    {        
         // Create empty files with headers - do it once
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );
