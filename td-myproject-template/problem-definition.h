@@ -83,7 +83,7 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
+extern "C" void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
 
@@ -97,7 +97,7 @@ void process_params(double *params, double kF, double *mu, size_t extra_data_siz
  *              NOTE: the array contains bare input file values, not processed by process_params()!
  * @return size of the extra_data array that needs to be allocated, if 0 then extra_data will not be allocated.
  * */
-size_t get_extra_data_size(double *params)
+extern "C" size_t get_extra_data_size(double *params)
 {
     return 0;
 }
@@ -111,7 +111,7 @@ size_t get_extra_data_size(double *params)
  *               NOTE: the array contains bare input file values, not processed by process_params()!
  * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-int load_extra_data(size_t size, void *extra_data, double *params)
+extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
 {
     return 0;
 }

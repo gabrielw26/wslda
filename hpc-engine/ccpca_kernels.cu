@@ -28,13 +28,12 @@ __constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2))
 __constant__ double dc_gBdG;
 #endif
 
-#include "pca_uext.h"
-
 __constant__ double *dc_extra_data;
 __constant__ size_t dc_extra_data_size;
 
 #ifdef TDWSLDA
 
+__constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input file
 #include "problem-definition.h"
 
 #ifdef ENABLE_V_EXT
@@ -50,6 +49,8 @@ __constant__ size_t dc_extra_data_size;
 #endif 
 
 #else
+
+#include "pca_uext.h"
 
 #ifdef ENABLE_DELTA_EXT
 #define macro_delta_ext(ix, iy, iz, it, delta) delta_ext(ix, 0, 0, it, delta)
