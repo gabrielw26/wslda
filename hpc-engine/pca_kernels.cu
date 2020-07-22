@@ -35,6 +35,42 @@ __constant__ double dc_gBdG;
 
 #include "pca_uext.h"
 
+__constant__ double *dc_extra_data;
+__constant__ size_t dc_extra_data_size;
+
+// extern "C" int memcopy_H0_UD(RCUNUMBER *U, RCUNUMBER *delta)
+// {
+//     if( cudaMemcpyToSymbol(d_H0_U, &U,     sizeof(RCUNUMBER *))!= cudaSuccess ) return 1;
+//     if( cudaMemcpyToSymbol(d_H0_D, &delta, sizeof(RCUNUMBER *))!= cudaSuccess ) return 2;
+//     return 0;
+// }
+
+#ifdef TDWSLDA
+
+#include "problem-definition.h"
+
+#ifdef ENABLE_V_EXT
+#define u_ext(ix, iy, iz, it, spin) v_ext(ix, iy, iz, it, spin, dc_params, dc_extra_data_size, dc_extra_data)
+#else 
+#define u_ext(ix, iy, iz, it, spin) 0.0
+#endif 
+
+#ifdef ENABLE_DELTA_EXT
+#define macro_delta_ext(ix, iy, iz, it, delta) delta_ext(ix, iy, iz, it, delta, dc_params, dc_extra_data_size, dc_extra_data)
+#else 
+#define macro_delta_ext(ix, iy, iz, it, delta) Complex(0.0,0.0)
+#endif 
+
+#else
+
+#ifdef ENABLE_DELTA_EXT
+#define macro_delta_ext(ix, iy, iz, it, delta) delta_ext(ix, iy, iz, it, delta)
+#else 
+#define macro_delta_ext(ix, iy, iz, it, delta) Complex(0.0,0.0)
+#endif 
+
+#endif
+
 /**
  * This function copies data to constant memory buffers
  * */
@@ -403,10 +439,10 @@ __global__ void kernel_compute_potentials(int it,
         
         // save results to global memory
         V_a[ixyz]=Va;
-        V_b[ixyz]=Vb;
-#ifdef ENABLE_DELTA_EXT   
-        ldelta += delta_ext(ix, iy, iz, it, ldelta);
-#endif
+        V_b[ixyz]=Vb;   
+        
+        ldelta += macro_delta_ext(ix, iy, iz, it, ldelta);
+        
         delta[ixyz]=ldelta;
     }
 }
@@ -457,9 +493,9 @@ __global__ void kernel_compute_potentials_bdg(int it,
         // save results to global memory
         V_a[ixyz]=Va;
         V_b[ixyz]=Vb;
-#ifdef ENABLE_DELTA_EXT   
-        ldelta += delta_ext(ix, iy, izs, it, ldelta);
-#endif
+  
+        ldelta += macro_delta_ext(ix, iy, iz, it, ldelta);
+        
         delta[ixyz]=ldelta;
     }
 }

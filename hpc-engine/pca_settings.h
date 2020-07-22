@@ -13,8 +13,19 @@
 #define VERSION "0.1dev"
 #include "predefines.h"
 
+#elif TDWSLDA
+// DYNAMIC  CODE
+#define CODE "W-SLDA-TOOLKIT"
+#define VERSION "0.1dev"
+#include "predefines.h"
+
+// HARD SET - TODO 
+#define DX 1.0
+#define DY 1.0                                                                                                                                       
+#define DZ 1.0
+
 #else
-// DYNAMIC CODE
+// DYNAMIC CODE - LEGACY MODE
 #define CODE PCA_ASLDA
 #define VERSION "1.10"
 

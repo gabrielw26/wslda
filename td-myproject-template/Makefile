@@ -37,7 +37,8 @@ NVCCSRCS2D = cpca_derivative.o cpca_kernels.o cpca_dens.o
 
 SRCS3D = pca.o pca_checkpoint.o
 NVCCSRCS3D = pca_derivative.o pca_kernels.o pca_dens.o
-CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I./
+CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
+NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 
 OBJS := $(addprefix $(OBJDIR),$(SRCS:.c=.o))
 SRCS := $(addprefix $(SRCDIR),$(SRCS))

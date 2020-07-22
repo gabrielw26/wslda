@@ -561,7 +561,11 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
     
     // Process params and copy them to gpu;
+#ifdef TDWSLDA
+    process_params(md.params, kF, mu, 0, NULL);
+#else
     process_params(md.params, kF, mu);
+#endif
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef WORK_IN_ROTATING_FRAME

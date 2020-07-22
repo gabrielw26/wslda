@@ -25,7 +25,12 @@ double der_tildeC__der_na_h(double n_a, double n_b);
 double der_tildeC__der_nb_h(double n_a, double n_b);
 
 // params handling
+// params handling
+#ifdef TDWSLDA
+void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
+#else
 void process_params(double *params, double kF, double *mu);
+#endif
 int memcopy_const_params(double *params);
 
 #ifdef WORK_IN_ROTATING_FRAME

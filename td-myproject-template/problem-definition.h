@@ -13,7 +13,7 @@
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external potential V_spin(x,y,z)
  * */
-double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+__device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
     // ADD HERE FORMULA FOR V_ext(r)
     double V_ext = 0.0;
@@ -34,11 +34,13 @@ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t ex
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of external pairing potential Delta_{ext}(x,y,z)
+ * Complex type is equivalent to thrust::complex<double>
+ * for more info see: https://thrust.github.io/doc/structthrust_1_1complex.html
  * */
-double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data)
+__device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
     // ADD HERE FORMULA FOR Delta_ext(r)
-    double complex D_ext = 0.0 + I*0.0;
+    Complex D_ext = Complex(0.0,0.0);
 
     return D_ext; 
 }
@@ -59,7 +61,7 @@ double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, d
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external velocity vector v_ext(x,y,z)
  * */
-double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
+__device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
     // ADD HERE FORMULAS FOR vec{v}_ext=(vx, vy, vz)
     double v_ext;
@@ -71,9 +73,8 @@ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, do
 }
 
 /** 
- * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
+ * THIS FUNCTION IS CALLED AT THE BEGINNING OF SIMULATION.
  * After loading params array from input file, the parameters are processed by this routine.
- * The routine is executed at beginning of each iteration.
  * @param params array of size MAX_USER_PARAMS with parameters from input file. 
  * @param kF typical Fermi momentum scale of the problem. 
  *           kF=referencekF if the referencekF tag is indicated in the input file, 
@@ -87,110 +88,6 @@ void process_params(double *params, double kF, double *mu, size_t extra_data_siz
     // PROCESS INPUT FILE PARAMETERS 
 
 }
-
-/**
- * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * Before each diagonalization process, user can modify arbitrarily densities
- * @param it iteration number
- * @param h_densities array with densities, see (wiki) documentation for decoding prescription
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-void modify_densities(int it, double *h_densities, double *params, size_t extra_data_size, void *extra_data)
-{
-    // DENSITIES DECODING
-    double *rho_a = (double *)(h_densities +  0*BLOCKSIZE);
-    double *rho_b = (double *)(h_densities +  1*BLOCKSIZE);
-    double *tau_a = (double *)(h_densities +  2*BLOCKSIZE);
-    double *tau_b = (double *)(h_densities +  3*BLOCKSIZE);
-    double complex *nu = (double complex *)(h_densities +  4*BLOCKSIZE);
-    double *j_a_x = (double *)(h_densities +  6*BLOCKSIZE);
-    double *j_a_y = (double *)(h_densities +  7*BLOCKSIZE);
-    double *j_a_z = (double *)(h_densities +  8*BLOCKSIZE);
-    double *j_b_x = (double *)(h_densities +  9*BLOCKSIZE);
-    double *j_b_y = (double *)(h_densities + 10*BLOCKSIZE);
-    double *j_b_z = (double *)(h_densities + 11*BLOCKSIZE);    
-    
-    // DETERMINE VARIANT OF THE CODE
-    int lNX, lNY, lNZ; // local sizes
-    int ix, iy, iz, ixyz;
-    if(BLOCKSIZE==NX      ) {lNX=NX; lNY=1 ; lNZ=1 ;} // 1D code
-    if(BLOCKSIZE==NX*NY   ) {lNX=NX; lNY=NY; lNZ=1 ;} // 2D code
-    if(BLOCKSIZE==NX*NY*NZ) {lNX=NX; lNY=NY; lNZ=NZ;} // 3D code
-    
-    // ITERATE OVER ALL POINTS
-    ixyz=0;
-    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
-    {
-        double x = DX*(ix-lNX/2);
-        double y = DY*(iy-lNY/2); // for 1d code y will be 0
-        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
-        
-        // rho_a[ixyz] stores value of spin-up particles densities for coordinate (x,y,z)
-        // and similarly for other densities
-        // ... below you can modify at your wish ...
-        
-        
-        ixyz++; // go to next point,  it should be last line of the triple loop
-    }
-}
-
-/**
- * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * Before each diagonalization process, user can modify arbitrarily potentials
- * @param it iteration number
- * @param h_densities array with densities, see (wiki) documentation for decoding prescription
- *                    NOTE: densities array is processed by modify_densities(...) function.
- * @param h_potentials array with potentials, see (wiki) documentation for decoding prescription
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data)
-{
-    // DENSITIES DECODING
-    double *rho_a = (double *)(h_densities +  0*BLOCKSIZE);
-    double *rho_b = (double *)(h_densities +  1*BLOCKSIZE);
-    double *tau_a = (double *)(h_densities +  2*BLOCKSIZE);
-    double *tau_b = (double *)(h_densities +  3*BLOCKSIZE);
-    double complex *nu = (double complex *)(h_densities +  4*BLOCKSIZE);
-    double *j_a_x = (double *)(h_densities +  6*BLOCKSIZE);
-    double *j_a_y = (double *)(h_densities +  7*BLOCKSIZE);
-    double *j_a_z = (double *)(h_densities +  8*BLOCKSIZE);
-    double *j_b_x = (double *)(h_densities +  9*BLOCKSIZE);
-    double *j_b_y = (double *)(h_densities + 10*BLOCKSIZE);
-    double *j_b_z = (double *)(h_densities + 11*BLOCKSIZE); 
-    
-    // POTENTIALS DECODING
-    double *V_a = (double *)(h_potentials +  0*BLOCKSIZE);
-    double *V_b = (double *)(h_potentials +  1*BLOCKSIZE);
-    double complex *delta = (double complex *)(h_potentials +  2*BLOCKSIZE); 
-    
-    // DETERMINE VARIANT OF THE CODE
-    int lNX, lNY, lNZ; // local sizes
-    int ix, iy, iz, ixyz;
-    if(BLOCKSIZE==NX      ) {lNX=NX; lNY=1 ; lNZ=1 ;} // 1D code
-    if(BLOCKSIZE==NX*NY   ) {lNX=NX; lNY=NY; lNZ=1 ;} // 2D code
-    if(BLOCKSIZE==NX*NY*NZ) {lNX=NX; lNY=NY; lNZ=NZ;} // 3D code
-    
-    // ITERATE OVER ALL POINTS
-    ixyz=0;
-    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
-    {
-        double x = DX*(ix-lNX/2);
-        double y = DY*(iy-lNY/2); // for 1d code y will be 0
-        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
-        
-        // V_a[ixyz] stores value of spin-up particles mean-field potential for coordinate (x,y,z)
-        // and similarly for other potentials
-        // ... below you can modify at your wish ...
-        
-        
-        ixyz++; // go to next point,  it should be last line of the triple loop
-    }
-}
-
 
 /**
  * This function provides size of extra_data array, in bytes.
