@@ -1261,6 +1261,7 @@ int main( int argc , char ** argv )
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
             
         if(iam==0) printf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
+        Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
         E_tot=0.0; E_tot_old=0.0;
         for(i=0; i<5; i++)
         {
