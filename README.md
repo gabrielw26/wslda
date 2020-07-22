@@ -1,4 +1,4 @@
-# Polarized cold atoms - simulation toolkit
+# W-SLDA Toolkit
 
 ### Implemented functionalities
 * Solvers: static equations and time dependent equations

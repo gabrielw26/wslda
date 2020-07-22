@@ -1,50 +1,55 @@
-# start type                                                                                                                                                                                                      
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
 inittype                0      # 0 - create uniform solution;                                                                                                                                                     
                                # 1 - read uniform solution from file `inprefix`_uniform.solution                                                                                                                  
                                # 2 - start from td-wslda checkpoint                                                                                                                                                    
-                               # 3 - start from s2dpca solution                                                                                                                                            
-                               # 5 - start from s3dpca solution                                                                                                                                                   
-                                                                                                                                                                                                                  
-# trajectory length                                                                                                                                                                                               
-dt                      0.0035   # in units of eF^-1
-measurements            100
-timesteps               100 
-
-# files
+                               # 3 - start from st-wslda-2d solution                                                                                                                                            
+                               # 5 - start from st-wslda-3d solution                                                                                                                                                   
+       
+# ------------------- INPUT/OUTPUT ------------------
 outprefix               test
 inprefix                none
 overwrite               1
+iogroups                32      # number of IO groups
+checkpoint              1       # do checkpoint at the end of calculation?
+walltime                11.9    # after this time force checkpoint [hr]
 
-# gpus threading set
+# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
+dt                      0.0035   # integration time step, in units of eF^-1
+measurements            100      # number of requested mesurments
+timesteps               100      # number of time steps between each measurement
+                                 # measurements are written with time resolution: timesteps*dt
+                                 # the total trajectory length is: measurements*timesteps*dt
+selfstart               0        # use Taylor expansion for first 5 steps? 
+
+
+
+
+# ------------------ GPUS THREADING SET --------------
 nthreads                512
 batch                   100000
 
-# functional
-# SLDA
+# --------------------- OTHER -----------------
 spinsymmetry            0       # spin symmetric system
-
-
-# other technical variable
-checkpoint              1       # do checkpoint at the end of calculation?
-walltime                11.9    # after this time force checpoint 
-selfstart               0       # use Taylor expansion for firts 5 steps? 
-iogroups                32      # number of IO groups in s3dpca code
-
-
 # current corrections
 # ccstart                 0.
 # ccswitch                10.
 # ccstop                  1000.
+# qfalpha                 0.0     # alpha parameter for quantum friction term
+# qfbeta                  0.0     # beta parameter for quantum friction - parring channel
+# qfgamma                 0.0     # gamma parameter for particle number control
+# qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
+# qfstop                  0.0     # stop time for evolving with quantum friction, in units of eF
+# qfswitch                0.0     # time for switch function
 
-# init0 parameters
-Na                      28. # will be ingnored for UNIFORM_TEST_MODE
-Nb                      28. # will be ingnored for UNIFORM_TEST_MODE
+# ----------- IN CASE OF: inittype=0 ----------------
+Na                      28. # will be ignored for UNIFORM_TEST_MODE
+Nb                      28. # will be ignored for UNIFORM_TEST_MODE
 muchange                0.1   # Change rate of chemical potential
-Tstart                  0.105  # Start temperature, in units of eF, default 0.2
-Tstop                   0.005  # Stop temperature, in units of eF, default 0.05
-DeltaT                  0.005  # change of temperature in units of eF, default 0.01
-init0eps                1.0e-12 # epsilon for convergence, default 1.0e-6
-init0scmix              0.25  # mixing parameter in self-consitent process, default 0.25
-init0maxiter            5000 # maximum number of iterations, default 100000
+Tstart                  0.1  # Start temperature, in units of eF, default 0.2
+Tstop                   0.1  # Stop temperature, in units of eF, default 0.05
+DeltaT                  0.01  # change of temperature in units of eF, default 0.01
+init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
+init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
+init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
