@@ -105,6 +105,8 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
     
+    if(ip==0) printf("# CODE: TD-WSLDA-3D\n");
+
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
     cppmallocl( wf_idx_tbl,np,int);
