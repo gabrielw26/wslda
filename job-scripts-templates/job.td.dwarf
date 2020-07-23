@@ -9,3 +9,12 @@ module load cuda/9.0
 
 mpirun -n 40 -hostfile dwarfnodes.txt ./td-wslda-2d input.txt
 
+
+# to submit use:
+#   qsub job.td.dwarf
+#   
+# to check status use:
+#   qstat 
+#   
+# to delete job use:
+#   qdel jobid
