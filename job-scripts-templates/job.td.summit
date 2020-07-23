@@ -1,7 +1,7 @@
 #!/bin/bash
-#BSUB -P nph126
-#BSUB -W 12:00
-#BSUB -nnodes 166
+#BSUB -P nph139
+#BSUB -W 1:00
+#BSUB -nnodes 24
 #BSUB -J NAME
 #BSUB -o OUTPUTFILE.%J
 #BSUB -e OUTPUTFILE.%J
@@ -14,8 +14,11 @@
 ##      bjobs
 ## NOTE: -n=-nnodes*6
 
+## For computation it is recomended to use location:
+## /gpfs/alpine/proj-shared/nph139
+
 cd $LS_SUBCWD
 pwd
 module load cuda
-jsrun -n996 -a1 -g1 -c1 ./pca input.txt.g0.5 > g0.5.r1.out
+jsrun -n144 -a1 -g1 -c1 ./td-wslda-3d input.txt
 

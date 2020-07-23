@@ -6,7 +6,7 @@
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -28,7 +28,7 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param delta - value of delta computed self-consistently for given iteration it. 
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -52,7 +52,7 @@ __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, doub
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param coordinate - Cartesian coordinate of the external velocity vector that should be computed, value from set {XAXIS, YAXIS, ZAXIS}
  *                     NOTE: for 1d code only XAXIS is requested, for 2d code XAXIS and YAXIS are requested.

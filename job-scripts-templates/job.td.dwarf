@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -N td-wslda
+#PBS -l nodes=7:ppn=20
+#PBS -l walltime=12:00:00
+#PBS -j oe
+#PBS -q long
+
+module load cuda/9.0
+
+mpirun -n 40 -hostfile dwarfnodes.txt ./td-wslda-2d input.txt
+
