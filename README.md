@@ -1,4 +1,4 @@
-# Polarized cold atoms - simulation toolkit
+# W-SLDA Toolkit
 
 ### Implemented functionalities
 * Solvers: static equations and time dependent equations
@@ -27,11 +27,11 @@
 
 ### Building
 
-In pca folder you will find make files of form Makefile._code_._machine_. In header of each make file are listed modules that you need to load before you compile the code. For example:
+In `Makefiles-templates` folder you will examples of makefiles. In header of each make file are listed modules that you need to load before you compile the code. After loading modules typical procedure is following:
 
 ```bash
-module load cuda
-make -f Makefile.pca.summit
+make dirs
+make
 ```
 
 ### Wiki

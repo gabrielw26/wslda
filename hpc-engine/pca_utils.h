@@ -532,4 +532,24 @@ void symmetrize_densities(double *h_densities)
     for(ixyz=0; ixyz<3*NXYZ; ixyz++) j_a_x[ixyz]=j_b_x[ixyz];
 
 }
+
+int copy_input_file(char * input_file, char * file_name)
+{
+    FILE * log;
+    
+    // open file
+    log = fopen (file_name,"w");
+    if(log==NULL) // error - cannot create the file
+        return 1; 
+    
+    FILE * inp;
+    char s[MAX_REC_LEN];
+    inp = fopen (input_file,"r");
+    if(inp==NULL) return 2; // error - cannot open file
+    while(fgets(s, MAX_REC_LEN, inp) != NULL) fprintf(log,"%s",s);
+    fclose(inp);
+    fclose(log);
+    
+    return 0;
+}
 #endif

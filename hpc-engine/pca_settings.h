@@ -13,8 +13,19 @@
 #define VERSION "0.1dev"
 #include "predefines.h"
 
+#elif TDWSLDA
+// DYNAMIC  CODE
+#define CODE "W-SLDA-TOOLKIT"
+#define VERSION "0.1dev"
+#include "predefines.h"
+
+// HARD SET - TODO 
+#define DX 1.0
+#define DY 1.0                                                                                                                                       
+#define DZ 1.0
+
 #else
-// DYNAMIC CODE
+// DYNAMIC CODE - LEGACY MODE
 #define CODE PCA_ASLDA
 #define VERSION "1.10"
 
@@ -38,7 +49,7 @@
 #define DENSEPSILON 1.0e-8
 
 // spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
+// #define SPINSYMMETRY_MODE
 
 // active this flag in order to store quasi-particle energies for each measurment
 // note that in case of 1d or 2d codes this can require much more space than measurments itself

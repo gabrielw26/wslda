@@ -109,6 +109,8 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
     
+    if(ip==0) printf("# CODE: TD-WSLDA-2D\n");
+    
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
     cppmallocl( wf_idx_tbl,np,int);
@@ -144,6 +146,9 @@ int main( int argc , char ** argv )
             return( EXIT_FAILURE ) ;      
         }
         
+        // Make copy of input file
+        sprintf(file_name, "%s_input.txt", md.outprefix);
+        file_operation( copy_input_file(argv[i],file_name) ); 
     }
     
     // Broadcast input parameter
@@ -151,8 +156,10 @@ int main( int argc , char ** argv )
     
     // variables
     dt= md.dt ;
+#ifndef TDWSLDA
     double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
     dt/=Emax; // time step
+#endif
     
 #ifdef SPINSYMMETRY_MODE
     if(ip==0) printf("# IMPOSING: spinsymmetry=1\n");
@@ -498,7 +505,11 @@ int main( int argc , char ** argv )
     
     // ====================================================================================
     // ==================================== COPY DATA TO GPU ==============================
-    // ====================================================================================    
+    // ====================================================================================  
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+
     if(md.inittype==2){ 
 
         if(ip==0) printf("# LOADING CHECKPOINT\n");
@@ -563,7 +574,11 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
     
     // Process params and copy them to gpu;
+#ifdef TDWSLDA
+    process_params(md.params, kF, mu, 0, NULL);
+#else
     process_params(md.params, kF, mu);
+#endif
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef WORK_IN_ROTATING_FRAME
@@ -655,6 +670,7 @@ int main( int argc , char ** argv )
         
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
+        
         #define OUTPUT_ENTRIES 18
         double line_items[OUTPUT_ENTRIES]={     
             // line id (added automatically): 1
@@ -684,7 +700,7 @@ int main( int argc , char ** argv )
 
     // Create binary files and add initial measurement
     if(ip==0)
-    {
+    {        
         // Create empty files with headers - do it once
         sprintf(file_name, "%s_density_a.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) );

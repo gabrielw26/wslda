@@ -25,7 +25,12 @@ double der_tildeC__der_na_h(double n_a, double n_b);
 double der_tildeC__der_nb_h(double n_a, double n_b);
 
 // params handling
+// params handling
+#ifdef TDWSLDA
+void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
+#else
 void process_params(double *params, double kF, double *mu);
+#endif
 int memcopy_const_params(double *params);
 
 #ifdef WORK_IN_ROTATING_FRAME
@@ -67,7 +72,7 @@ int local_reductionR(double *array, int size, double *partial_sums, int threads,
 int compute_potentials(int it, double *d_densities, double *d_potentials, double cccoeff, int nthreads);
 int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads);
 int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
-                            cufftDoubleComplex *wf_d_dx, double *d_kkyz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
+                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
                             int nthreads);
 int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
