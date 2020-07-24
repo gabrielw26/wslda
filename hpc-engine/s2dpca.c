@@ -1197,6 +1197,15 @@ int main( int argc , char ** argv )
         {
         	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NX*NY, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
         	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NX*NY+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+            
+            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
+            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
+            
+            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange*eF;
+            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange*eF;
+            
+            if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
+                
             if(iam==0) printf("# MUCHANGE BROY: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
             if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
@@ -1217,6 +1226,7 @@ int main( int argc , char ** argv )
         }
         
         modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
+        rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------
         b_t();

@@ -52,7 +52,7 @@ mumaxchange             0.05 # in units of fermi energy
 broyden                 1
 Mbroyden                5
 broydenmixing           0.75
-# startbroyden            3
+startbroyden            20
 # stopbroyden             10
 
 

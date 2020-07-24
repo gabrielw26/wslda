@@ -53,6 +53,7 @@
 #include "s3dpca_grid.h"
 #include "s3dpca_densities.h"
 #include "s3dpca_inittype4.h"
+#include "sxdpca_broyden.h"
 // #include "s3dpca_testfun.h"
 
 #ifdef USE_SCALAPACK_PZHEEVR
@@ -195,6 +196,13 @@ int main( int argc , char ** argv )
     int saving_iteration=0;
     dc_Omega_a=0.0;
     dc_Omega_b=0.0;
+    
+    // parameters for Broyden method
+	double omega_0 = md.omega0broyden;	// weight assigned to the error in the inverse Jacobian
+	double omega_n = md.omeganbroyden;	// weight associated with each previous iteration
+	double omega_k = md.omegakbroyden;	// 		---//---
+    double **dens_in;		// pointer to array of arrays of densities
+    double **dens_out;		// 		---//---
     
     char file_name[256];
     
@@ -389,6 +397,18 @@ int main( int argc , char ** argv )
     
     cppmallocl(h_fbetaEn, 2*NXYZ,double);
     cppmallocl(h_En, 2*NXYZ,double);
+    
+    // For Broyden method
+    cppmallocl(dens_in, (md.Mbroyden + 1), double*);
+    cppmallocl(dens_out, (md.Mbroyden + 1), double*);
+    for (i = 0; i < (md.Mbroyden + 1); i++){
+        cppmallocl(dens_in[i], 12*NXYZ + 2, double);
+        cppmallocl(dens_out[i], 12*NXYZ + 2, double);
+        
+        // reset values
+        for(j=0; j<12*NXYZ + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<12*NXYZ + 2; j++) dens_out[i][j]=0.0;
+    }
 
     // ---------------- HAMILTONIAN ----------------
     // hamitonian
@@ -549,6 +569,8 @@ int main( int argc , char ** argv )
             fread(npart        , sizeof(double)      , 2 , pFile);
             fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , 12*NXYZ + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , 12*NXYZ + 2 , pFile);
                   
             fclose(pFile);
             
@@ -590,6 +612,8 @@ int main( int argc , char ** argv )
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , 12*NXYZ + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], 12*NXYZ + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else if(md.inittype==4) // start from cuGPE initial solutions
     {
@@ -1174,32 +1198,9 @@ int main( int argc , char ** argv )
         free(En_d_local);
         Cblacs_gridexit( ictxt_d );
         rt_other+=e_t(0);
-
         
-        // ------------------ mix densities ------------------
-        b_t();
-        if(md.inittype==22 && kziter==0) //special case - started from interpolated checkpoint
-        {
-            // some densities like tau and nu are cut-off dependent, and may be very different 
-            // when moving onle from to another lattice
-            // what matters is only E_kin+E_pair which is well defined
-            
-            // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
-        }
-        else if(saving_iteration==1) //special case - saving interation
-        {
-            // typically results from this iteration are loded into dynamical code
-            // for clear comparision of read corretness skip mixing here
-            
-            // pass - do not mix
-            if(iam==0) printf("# SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
-        }
-        else
-        {
-            for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
-        }
         // ------------------ update chemical potentials ------------------
+        b_t();
         if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
@@ -1225,7 +1226,74 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# MUCHANGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         rt_other+=e_t(0);
         
+        // ------------------ mix densities ------------------
+        b_t();
+        
+        if(md.inittype==22 && kziter==0) //special case - started from interpolated checkpoint
+        {
+            // some densities like tau and nu are cut-off dependent, and may be very different 
+            // when moving onle from to another lattice
+            // what matters is only E_kin+E_pair which is well defined
+            
+            // pass - do not mix
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
+        }
+        else if(saving_iteration==1) //special case - saving interation
+        {
+            // typically results from this iteration are loded into dynamical code
+            // for clear comparision of read corretness skip mixing here
+            
+            // pass - do not mix
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+        }
+        else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
+        {
+            int rkziter=it-md.startbroyden;
+            for(ixyz = 0; ixyz < 12*NXYZ; ixyz++) {
+				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
+				dens_out[rkziter][ixyz] = h_densities[ixyz];
+            	h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0 - md.linearmixing) * h_densities_old[ixyz];
+            }
+			dens_in[rkziter][ixyz+0] = dc_mu_a_old;
+			dens_out[rkziter][ixyz+0] = dc_mu_a;
+			dens_in[rkziter][ixyz+1] = dc_mu_b_old;
+			dens_out[rkziter][ixyz+1] = dc_mu_b;
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
+        }
+        else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
+        {
+        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NXYZ, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NXYZ+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+            
+            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
+            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
+            
+            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange*eF;
+            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange*eF;
+            
+            if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
+            
+            if(iam==0) printf("# MUCHANGE BROY: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+            if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
+        }
+        else
+        {
+        	for(ixyz = 0; ixyz < 12*NXYZ; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
+            if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
+        }
+        
+        // impose by hand nonegativity of densities
+        double dens_min = 1.0e-14;
+        for (ixyz = 0; ixyz < NXYZ; ixyz++)
+        {
+        	if (rho_a[ixyz] < 0.) rho_a[ixyz] = dens_min;
+        	if (rho_b[ixyz] < 0.) rho_b[ixyz] = dens_min;
+        	if (tau_a[ixyz] < 0.) tau_a[ixyz] = dens_min;
+        	if (tau_b[ixyz] < 0.) tau_b[ixyz] = dens_min;
+        }
+        
         modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
+        rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------
         b_t();
@@ -1353,6 +1421,8 @@ int main( int argc , char ** argv )
             fwrite(npart        , sizeof(double)      , 2 , pFile);
             fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , 12*NXYZ + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , 12*NXYZ + 2 , pFile);
                   
             fclose(pFile);
         }
