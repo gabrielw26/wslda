@@ -13,11 +13,11 @@
 #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
 
-// Enable computation with extarnal potential field
+// Enable computation with external potential field
 // If this flag is active, you must provide body of delta_ext(...) function in pca_uext.h file
 #define ENABLE_V_EXT
 
-// Enable computation with extarnal delta field
+// Enable computation with external delta field
 // If this flag is active, you must provide body of delta_ext(...) function in pca_uext.h file
 // #define ENABLE_DELTA_EXT
 
@@ -29,7 +29,7 @@
 #define MAX_USER_PARAMS 32 
 
 // Minimal density to avoid numerical problems
-// below this treshold density is regarded as zero
+// below this threshold density is regarded as zero
 #define DENSEPSILON 1.0e-8
 
 // Active it when you do calculations for system that preserves symmetry between spin components
