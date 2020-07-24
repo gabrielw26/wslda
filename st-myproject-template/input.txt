@@ -42,7 +42,7 @@ broydenmixing           0.75
 # NOTE: all matrices are processed collectively by p*q processes
 # Following condition must be satisfied:
 #   for 3D code: p*q=np
-#   for 2D code: p*q/np=i where i is INTEGER number from range set {1,2,...,NZ/2}
+#   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
 # where np is total number of processes utilized for computation
 p                       2
 q                       2

@@ -28,6 +28,6 @@
 #define MAX_USER_PARAMS 32 
 
 // Minimal density to avoid numerical problems
-// below this treshold density is regarded as zero
+// below this threshold density is regarded as zero
 #define DENSEPSILON 1.0e-8
 
