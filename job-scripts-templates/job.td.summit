@@ -10,10 +10,15 @@
 
 ## For submission use:
 ##      bsub job.sh.summit
+##      
 ## For checking status use:
 ##      bjobs
+##      
+## For interactove session use:
+##      bsub -W 30 -nnodes 32 -P nph139 -Is bash
+##      
 ## NOTE: -n=-nnodes*6
-
+##
 ## For computation it is recomended to use location:
 ## /gpfs/alpine/proj-shared/nph139
 
