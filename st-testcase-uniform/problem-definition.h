@@ -119,20 +119,31 @@ void modify_densities(int it, double *h_densities, double *params, size_t extra_
     if(BLOCKSIZE==NX*NY   ) {lNX=NX; lNY=NY; lNZ=1 ;} // 2D code
     if(BLOCKSIZE==NX*NY*NZ) {lNX=NX; lNY=NY; lNZ=NZ;} // 3D code
     
-    // ITERATE OVER ALL POINTS
-    ixyz=0;
-    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    if(params[31]>0.5 && it<=1) // add noise
     {
-        double x = DX*(ix-lNX/2);
-        double y = DY*(iy-lNY/2); // for 1d code y will be 0
-        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
+        srand(123);
+        double arg, abs_nu;
         
-        // rho_a[ixyz] stores value of spin-up particles densities for coordinate (x,y,z)
-        // and similarly for other densities
-        // ... below you can modify at your wish ...
-        
-        
-        ixyz++; // go to next point,  it should be last line of the triple loop
+        // ITERATE OVER ALL POINTS
+        ixyz=0;
+        for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+        {
+            double x = DX*(ix-lNX/2);
+            double y = DY*(iy-lNY/2); // for 1d code y will be 0
+            double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
+            
+            // rho_a[ixyz] stores value of spin-up particles densities for coordinate (x,y,z)
+            // and similarly for other densities
+            // ... below you can modify at your wish ...
+            abs_nu = cabs(nu[ixyz]);
+            arg = (double)rand() / (double)RAND_MAX;
+            arg = (2.0*arg-1.0)*M_PI;
+
+            // phase imprint
+            nu[ixyz]=abs_nu*cos(arg) + I*abs_nu*sin(arg);
+          
+            ixyz++; // go to next point,  it should be last line of the triple loop
+        }
     }
 }
 
