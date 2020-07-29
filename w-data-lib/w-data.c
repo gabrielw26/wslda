@@ -1,0 +1,395 @@
+/**
+ * W-SLDA Toolkit
+ * */
+
+#define WDATA_TESTING_MODE
+
+// gcc -std=gnu99 w-data.c -o w-data.exe -lm
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <complex.h>
+#include "w-data.h"
+
+#define MAX_REC_LEN 1024
+
+/** 
+ * Function reads metadata
+ * and puts values into struct wdata_metadata
+ * @return 0: ok, 1: Cannot open metadata file,
+ * */
+int wdata_parse_metadata_file(char * file_name, wdata_metadata *md)
+{
+    FILE *fp;
+    fp=fopen(file_name, "r");
+    if(fp==NULL)
+        return 1; // Cannot open file
+        
+    // reset vars
+    md->nvars=0;
+    md->nlinks=0;
+    
+    // buffers
+    char s[MAX_REC_LEN];
+    char tag[MAX_REC_LEN];
+    char ptag[MAX_REC_LEN];
+    
+    while(fgets(s, MAX_REC_LEN, fp) != NULL)
+    {
+        // Read first element of line
+        tag[0]='#'; tag[1]='\0';
+        sscanf (s,"%s %*s",tag);
+        
+        // Loop over known tags;
+        if(strcmp (tag,"#") == 0)
+            continue;
+        else if (strcmp (tag,"NX") == 0)
+            sscanf (s,"%s %d %*s",tag,&md->NX);
+        else if (strcmp (tag,"NY") == 0)
+            sscanf (s,"%s %d %*s",tag,&md->NY);
+        else if (strcmp (tag,"NZ") == 0)
+            sscanf (s,"%s %d %*s",tag,&md->NZ);
+        else if (strcmp (tag,"DX") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md->DX);
+        else if (strcmp (tag,"DY") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md->DY);
+        else if (strcmp (tag,"DZ") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md->DZ);
+        else if (strcmp (tag,"datadim") == 0)
+            sscanf (s,"%s %d %*s",tag,&md->datadim);
+        else if (strcmp (tag,"prefix") == 0)
+            sscanf (s,"%s %s %*s",tag,md->prefix);
+        else if (strcmp (tag,"cycles") == 0)
+            sscanf (s,"%s %d %*s",tag,&md->cycles);
+        else if (strcmp (tag,"dt") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md->dt);
+        else if (strcmp (tag,"t0") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md->t0);
+        
+        // variables
+        else if (strcmp (tag,"var") == 0)
+        {
+            sscanf (s,"%s %s %s %s %lf %*s",tag, &md->vars[md->nvars].name, &md->vars[md->nvars].type, &md->vars[md->nvars].unit); 
+            md->nvars++;       
+        }
+        
+        // links
+        else if (strcmp (tag,"link") == 0)
+        {
+            sscanf (s,"%s %s %s %*s",tag, &md->links[md->nlinks].name, &md->links[md->nlinks].linkto); 
+            md->nlinks++;       
+        }
+    }
+    
+    fclose(fp);
+    return 0;
+}
+
+void wdata_print_metadata(wdata_metadata *md, FILE *out)
+{
+    int i;
+    
+    fprintf(out, "NX %24d   # lattice\n", md->NX);
+    fprintf(out, "NY %24d   # lattice\n", md->NY);
+    fprintf(out, "NZ %24d   # lattice\n", md->NZ);
+    fprintf(out, "DX %24f   # spacing\n", md->DX);
+    fprintf(out, "DY %24f   # spacing\n", md->DY);
+    fprintf(out, "DZ %24f   # spacing\n", md->DZ);
+    fprintf(out, "datadim %19d   # dimension of block size: 1=NX, 2=NX*NY, 3=NX*NY*NZ\n", md->datadim);
+    fprintf(out, "prefix %20s   # prefix for files belonging to this data set, binary files have names prefix_variable.wdat\n", md->prefix);
+    fprintf(out, "cycles %20d   # number of cycles (measurements)\n", md->cycles);
+    fprintf(out, "dt %24f   # time value for the first cycle\n", md->dt);
+    fprintf(out, "t0 %24f   # time interval between cycles\n", md->t0);
+
+    // variables
+    fprintf(out,"\n");
+    fprintf(out,"# variables\n");
+    fprintf(out,"# tag                  name                    type                    unit\n");
+    for(i=0; i<md->nvars; i++) wdata_print_variable(&md->vars[i], out);
+    
+    // links
+    fprintf(out,"\n");
+    fprintf(out,"# links\n");
+    fprintf(out,"# tag                  name                 link-to\n");
+    for(i=0; i<md->nlinks; i++) wdata_print_link(&md->links[i], out);
+    
+    fprintf(out,"\n");
+}
+
+void wdata_print_variable(wdata_variable *md, FILE *out)
+{
+    fprintf(out, "var%24s%24s%24s\n", md->name, md->type, md->unit);
+}
+
+void wdata_print_link(wdata_link *md, FILE *out)
+{
+    fprintf(out, "link%23s%24s\n", md->name, md->linkto);
+}
+
+void wdata_add_variable(wdata_metadata *md, wdata_variable *var)
+{
+    md->vars[md->nvars] = *var;
+    md->nvars++;
+}
+
+void wdata_add_link(wdata_metadata *md, wdata_link *link)
+{
+    md->links[md->nlinks] = *link;
+    md->nlinks++;
+}
+
+int wdata_get_blocksize(wdata_metadata *md)
+{
+    if(md->datadim==3) return md->NX*md->NY*md->NZ;
+    if(md->datadim==2) return md->NX*md->NY       ;
+    if(md->datadim==1) return md->NX              ;
+    return -1; // error!!!
+}
+
+size_t wdata_get_blocksize_bytes(wdata_metadata *md, wdata_variable *var)
+{
+    if(strcmp(var->type, "real"   ) == 0) return sizeof(double)*wdata_get_blocksize(md)  ;
+    if(strcmp(var->type, "complex") == 0) return sizeof(double)*wdata_get_blocksize(md)*2;    
+    if(strcmp(var->type, "vector" ) == 0) return sizeof(double)*wdata_get_blocksize(md)*3;    
+         
+    return 0; // error
+}
+/**
+ * Function adds new block to data file
+ * @param md metadata for data set
+ * @param var variable to be added to file with name `prefix`_`varname`.wdat
+ * @param data pointer to binary data (INPUT)
+ * @return 0: ok; 1: cannot open binary file; 2: cannot add datablock to file
+ * */
+int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
+{
+    char file_name[MD_CHAR_LGTH];
+    wdata_get_filename(md, var, file_name);
+//     printf("wdata_add_datablock: file_name=%s\n", file_name);
+    
+    
+    FILE *pFile;
+    
+    pFile= fopen (file_name, "ab");
+    if (pFile==NULL)  return 1; // cannot open    
+        
+    size_t test_ele = fwrite (data , wdata_get_blocksize_bytes(md,var), 1, pFile);
+    if(test_ele!=1) return 2; // data not written 
+    
+    fclose(pFile);
+    
+    return 0;
+}
+
+/**
+ * Function adds new block to data file
+ * @param md metadata for data set
+ * @param varname name of variable, can be from list of vars or links
+ * @param data pointer to binary data (INPUT)
+ * @return 0: ok; 1: cannot open binary file; 2: cannot add datablock to file, 11: variable is not defined
+ * */
+int wdata_write_cycle(wdata_metadata *md, char *varname, void *data)
+{
+    int ierr;
+    wdata_variable var;
+    ierr = wdata_get_variable(md,varname, &var);
+    if(ierr>0) return 10+ierr;
+    
+//     wdata_print_variable(&var, stdout); // for testing
+    
+    char file_name[MD_CHAR_LGTH];
+    wdata_get_filename(md, &var, file_name);
+//     printf("wdata_write_cycle: Writing to file %s\n", file_name);
+    
+    
+    FILE *pFile;
+    
+    pFile= fopen (file_name, "ab");
+    if (pFile==NULL)  return 1; // cannot open    
+        
+    size_t test_ele = fwrite (data , wdata_get_blocksize_bytes(md,&var), 1, pFile);
+    if(test_ele!=1) return 2; // data not written 
+    
+    fclose(pFile);
+    
+    return 0;
+}
+
+/**
+ * Function read block of data from file
+ * @param md metadata for data set
+ * @param varname name of variable, can be from list of vars or links
+ * @param data pointer to binary data (OUTPUT)
+ * @return 0: ok; 1: cannot open binary file; 2: cannot read data block from file; 3: cannot shift pointer;  11: variable is not defined
+ * */
+int wdata_read_cycle(wdata_metadata *md, char *varname, int cycle, void *data)
+{
+    int ierr;
+    wdata_variable var;
+    ierr = wdata_get_variable(md,varname, &var);
+    if(ierr>0) return 10+ierr;
+    
+//     wdata_print_variable(&var, stdout); // for testing
+    
+    char file_name[MD_CHAR_LGTH];
+    wdata_get_filename(md, &var, file_name);
+//     printf("wdata_read_cycle: Reading from file %s\n", file_name);
+    
+    FILE *pFile;
+    
+    pFile= fopen (file_name, "rb");
+    if (pFile==NULL)  return 1; // cannot open    
+        
+    // set pointer to correct location
+    if(fseek ( pFile, wdata_get_blocksize_bytes(md,&var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
+    
+    size_t test_ele = fread (data , wdata_get_blocksize_bytes(md,&var), 1, pFile);
+    if(test_ele!=1) return 2; // data not read
+    
+    fclose(pFile);
+    
+    return 0;
+}
+
+int wdata_add_cycle(wdata_metadata *md)
+{
+    md->cycles++;
+    return 0;
+}
+
+void wdata_get_filename(wdata_metadata *md, wdata_variable *var, char *file_name)
+{
+    sprintf(file_name, "%s_%s.wdat", md->prefix, var->name);
+}
+
+/**
+ * Functions extracts variable corresponding to given name
+ * @param md metadata for data set
+ * @param varname name of variable, can be from list of vars or links
+ * @param var pointer to variable from md structure (OUTPUT)
+ * @return 0: ok; 1: cannot find variable
+ * */
+int wdata_get_variable(wdata_metadata *md, char *varname, wdata_variable *var)
+{
+    int i;
+    char tvarname[MD_CHAR_LGTH]; // target variable name
+    sprintf(tvarname,"%s", varname); // copy to tvarname
+    
+    // check is links redirects
+    for(i=0; i<md->nlinks; i++) if(strcmp(md->links[i].name, varname) == 0) sprintf(tvarname,"%s", md->links[i].linkto);
+    
+    // find variable
+    for(i=0; i<md->nvars; i++) if(strcmp(md->vars[i].name, tvarname) == 0)
+    {
+        *var = md->vars[i];
+        return 0;
+    }
+    
+    // cannot find varaiable
+    return 1;
+}
+
+#ifdef WDATA_TESTING_MODE
+
+// ===========================================================================
+// ============== FOR TESTING ONLY ===========================================
+// ===========================================================================
+#include <math.h>
+#define SQRT_2PI 2.506628274631
+double function_x(double x, double sigma)
+{
+    return 1./(sigma*SQRT_2PI) * exp(-0.5*x*x/(sigma*sigma));
+}
+
+double function_xyz(double x, double y, double z, double time)
+{
+    double val=0.0;
+    double sigmax = 2.0 * 0.20*time;
+    double sigmay = 3.0 * 0.15*time;
+    double sigmaz = 4.0 * 0.10*time;
+    
+    val = function_x(x, sigmax)*function_x(y, sigmay)*function_x(z, sigmaz);
+    
+    return val;
+}
+
+#define cppmallocl(pointer,size,type)                                           \
+    if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
+    {                                                                           \
+        fprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
+        fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        return -1 ;                                                             \
+    }
+    
+int main()
+{
+    int err;
+    int i, ix, iy, iz, ixyz;
+    
+    // create artificial data for visulisation in visit
+    wdata_metadata md = {24, 28, 32, 1.0, 1.0, 1.0, 3, "testa", 0, 0., 0.0, 0, 0};
+    
+    wdata_variable vdensity_a = {"density_a", "real", "none"};
+    wdata_add_variable(&md, &vdensity_a);
+    
+    wdata_link ldensity_b = {"density_b", "density_a"};
+    wdata_add_link(&md, &ldensity_b);
+    
+    // just in case - clear data sets
+    char file_name[256];
+    for(i=0; i<md.nvars; i++) 
+    {
+        wdata_get_filename(&md, &md.vars[i], file_name);
+        printf("Removing: %s\n", file_name);
+        remove(file_name);
+    }
+    
+    
+    // add artificial data to sets
+    double *dataR;
+    double complex *dataC;
+    cppmallocl(dataR,md.NX*md.NY*md.NZ,double);
+    cppmallocl(dataC,md.NX*md.NY*md.NZ,double complex);
+    
+    int ncycles=10;
+
+    for(i=0; i<ncycles; i++)
+    {
+        ixyz=0;
+        for(ix=0; ix<md.NX; ix++) for(iy=0; iy<md.NY; iy++) for(iz=0; iz<md.NZ; iz++)
+        {
+            double x = md.DX*(ix-md.NX/2);
+            double y = md.DY*(iy-md.NY/2);
+            double z = md.DZ*(iz-md.NZ/2);
+            double time = md.t0 + md.dt*i;
+            dataR[ixyz] = function_xyz(x,y,z,time);
+            ixyz++;
+        }
+        
+        // add cycle to binary sets
+        err = wdata_add_datablock(&md, &vdensity_a, dataR);
+//         err = wdata_write_cycle(&md, "density_a", dataR);
+        printf("err=%d\n", err);
+        wdata_add_cycle(&md);
+    }
+    
+    // write metadata file
+    sprintf(file_name, "%s_info.wtxt", md.prefix);
+    printf("creating %s\n", file_name);
+    FILE * fout = fopen(file_name, "w");
+    wdata_print_metadata(&md, fout);
+    fclose(fout);
+
+
+    // test of reading
+    for(i=0; i<ncycles+2; i++)
+    {
+        err = wdata_read_cycle(&md, "density_a", i, dataR);
+        printf("i=%d, err=%d\n", i, err);
+    }
+    
+    return 0;
+}
+
+#endif
+
