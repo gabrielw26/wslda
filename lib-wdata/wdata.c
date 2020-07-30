@@ -4,12 +4,12 @@
 
 // #define WDATA_TESTING_MODE
 
-// gcc -std=gnu99 w-data.c -o w-data.exe -lm -DWDATA_TESTING_MODE
+// gcc -std=gnu99 wdata.c -o wdata.exe -lm -DWDATA_TESTING_MODE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <complex.h>
-#include "w-data.h"
+#include "wdata.h"
 
 #define MAX_REC_LEN 1024
 

@@ -1,9 +1,9 @@
 Create static library libntg_io.a 
 
     Go to bsk folder and compile ntg_io.c file using command:
-        g++ -O3 -c w-data.c -fPIC
+        g++ -O3 -c wdata.c -fPIC
     and next create static library (copy it to folder with visit_plugin)
-        ar crf visit-plugin/libw-data.a w-data.o
+        ar crf visit-plugin/libwdata.a wdata.o
     
 To generate `Makefiles`:
    
