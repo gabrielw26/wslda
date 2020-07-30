@@ -2,9 +2,9 @@
  * W-SLDA Toolkit
  * */
 
-#define WDATA_TESTING_MODE
+// #define WDATA_TESTING_MODE
 
-// gcc -std=gnu99 w-data.c -o w-data.exe -lm
+// gcc -std=gnu99 w-data.c -o w-data.exe -lm -DWDATA_TESTING_MODE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
