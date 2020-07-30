@@ -48,7 +48,7 @@ typedef struct
 } wdata_metadata; 
 
 
-int wdata_parse_metadata_file(char * file_name, wdata_metadata *md);
+int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md);
 void wdata_print_metadata(wdata_metadata *md, FILE *out);
 void wdata_print_variable(wdata_variable *md, FILE *out);
 void wdata_print_link(wdata_link *md, FILE *out);
@@ -57,10 +57,10 @@ void wdata_add_link(wdata_metadata *md, wdata_link *link);
 int wdata_get_blocksize(wdata_metadata *md);
 size_t wdata_get_blocksize_bytes(wdata_metadata *md, wdata_variable *var);
 int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data);
-int wdata_write_cycle(wdata_metadata *md, char *varname, void *data);
-int wdata_read_cycle(wdata_metadata *md, char *varname, int cycle, void *data);
+int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data);
+int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *data);
 void wdata_get_filename(wdata_metadata *md, wdata_variable *var, char *file_name);
-int wdata_get_variable(wdata_metadata *md, char *varname, wdata_variable *var);
+int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *var);
 
 #endif
 

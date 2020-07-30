@@ -18,7 +18,7 @@
  * and puts values into struct wdata_metadata
  * @return 0: ok, 1: Cannot open metadata file,
  * */
-int wdata_parse_metadata_file(char * file_name, wdata_metadata *md)
+int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
 {
     FILE *fp;
     fp=fopen(file_name, "r");
@@ -98,8 +98,8 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     fprintf(out, "datadim %19d   # dimension of block size: 1=NX, 2=NX*NY, 3=NX*NY*NZ\n", md->datadim);
     fprintf(out, "prefix %20s   # prefix for files belonging to this data set, binary files have names prefix_variable.wdat\n", md->prefix);
     fprintf(out, "cycles %20d   # number of cycles (measurements)\n", md->cycles);
-    fprintf(out, "dt %24f   # time value for the first cycle\n", md->dt);
-    fprintf(out, "t0 %24f   # time interval between cycles\n", md->t0);
+    fprintf(out, "t0 %24f   # time value for the first cycle\n", md->t0);
+    fprintf(out, "dt %24f   # time interval between cycles\n", md->dt);
 
     // variables
     fprintf(out,"\n");
@@ -188,7 +188,7 @@ int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
  * @param data pointer to binary data (INPUT)
  * @return 0: ok; 1: cannot open binary file; 2: cannot add datablock to file, 11: variable is not defined
  * */
-int wdata_write_cycle(wdata_metadata *md, char *varname, void *data)
+int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
 {
     int ierr;
     wdata_variable var;
@@ -222,7 +222,7 @@ int wdata_write_cycle(wdata_metadata *md, char *varname, void *data)
  * @param data pointer to binary data (OUTPUT)
  * @return 0: ok; 1: cannot open binary file; 2: cannot read data block from file; 3: cannot shift pointer;  11: variable is not defined
  * */
-int wdata_read_cycle(wdata_metadata *md, char *varname, int cycle, void *data)
+int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *data)
 {
     int ierr;
     wdata_variable var;
@@ -269,7 +269,7 @@ void wdata_get_filename(wdata_metadata *md, wdata_variable *var, char *file_name
  * @param var pointer to variable from md structure (OUTPUT)
  * @return 0: ok; 1: cannot find variable
  * */
-int wdata_get_variable(wdata_metadata *md, char *varname, wdata_variable *var)
+int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *var)
 {
     int i;
     char tvarname[MD_CHAR_LGTH]; // target variable name
@@ -304,9 +304,9 @@ double function_x(double x, double sigma)
 double function_xyz(double x, double y, double z, double time)
 {
     double val=0.0;
-    double sigmax = 2.0 * 0.20*time;
-    double sigmay = 3.0 * 0.15*time;
-    double sigmaz = 4.0 * 0.10*time;
+    double sigmax = 2.0 + 0.20*time;
+    double sigmay = 3.0 + 0.15*time;
+    double sigmaz = 4.0 + 0.10*time;
     
     val = function_x(x, sigmax)*function_x(y, sigmay)*function_x(z, sigmaz);
     
@@ -327,13 +327,22 @@ int main()
     int i, ix, iy, iz, ixyz;
     
     // create artificial data for visulisation in visit
-    wdata_metadata md = {24, 28, 32, 1.0, 1.0, 1.0, 3, "testa", 0, 0., 0.0, 0, 0};
+    wdata_metadata md = {24, 28, 32, 1.0, 1.0, 1.0, 3, "testa", 0, 0.0, 1.0, 0, 0};
     
-    wdata_variable vdensity_a = {"density_a", "real", "none"};
+    wdata_variable vdensity_a = {"density_a", "real", "testunit"};
     wdata_add_variable(&md, &vdensity_a);
+    
+    wdata_variable vdelta = {"delta", "complex", "none"};
+    wdata_add_variable(&md, &vdelta);
+    
+    wdata_variable vcurrent_a = {"current_a", "vector", "none"};
+    wdata_add_variable(&md, &vcurrent_a);
     
     wdata_link ldensity_b = {"density_b", "density_a"};
     wdata_add_link(&md, &ldensity_b);
+    
+    wdata_link lcurrent_b = {"current_b", "current_a"};
+    wdata_add_link(&md, &lcurrent_b);
     
     // just in case - clear data sets
     char file_name[256];
@@ -348,8 +357,12 @@ int main()
     // add artificial data to sets
     double *dataR;
     double complex *dataC;
+    double *dataV;
     cppmallocl(dataR,md.NX*md.NY*md.NZ,double);
     cppmallocl(dataC,md.NX*md.NY*md.NZ,double complex);
+    cppmallocl(dataV,md.NX*md.NY*md.NZ*3,double);
+    
+    int bdim = wdata_get_blocksize(&md);
     
     int ncycles=10;
 
@@ -363,13 +376,23 @@ int main()
             double z = md.DZ*(iz-md.NZ/2);
             double time = md.t0 + md.dt*i;
             dataR[ixyz] = function_xyz(x,y,z,time);
+            dataC[ixyz] = -1.0*dataR[ixyz] + I*0.0;
+            
+            // vector 
+            dataV[ixyz+0*bdim] = -1.0*y;
+            dataV[ixyz+1*bdim] =  1.0*x;
+            dataV[ixyz+2*bdim] =  0.0;
+            
             ixyz++;
         }
         
         // add cycle to binary sets
         err = wdata_add_datablock(&md, &vdensity_a, dataR);
-//         err = wdata_write_cycle(&md, "density_a", dataR);
-        printf("err=%d\n", err);
+        printf("A err=%d\n", err);
+        err = wdata_write_cycle(&md, "delta", dataC);
+        printf("B err=%d\n", err);
+        err = wdata_write_cycle(&md, "current_a", dataV);
+        printf("C err=%d\n", err);
         wdata_add_cycle(&md);
     }
     
@@ -381,15 +404,56 @@ int main()
     fclose(fout);
 
 
-    // test of reading
-    for(i=0; i<ncycles+2; i++)
-    {
-        err = wdata_read_cycle(&md, "density_a", i, dataR);
-        printf("i=%d, err=%d\n", i, err);
-    }
+//     // test of reading
+// //     for(i=0; i<ncycles+2; i++)
+//     {
+//         err = wdata_read_cycle(&md, "density_a", i, dataR);
+//         printf("i=%d, err=%d\n", i, err);
+//         
+//         ixyz=0;
+//         for(ix=0; ix<md.NX; ix++) for(iy=0; iy<md.NY; iy++) for(iz=0; iz<md.NZ; iz++)
+//         {
+//             printf("%d %d %d %f\n", ix, iy, iz, dataR[ixyz]);
+//             ixyz++;
+//         }
+//     }
     
     return 0;
 }
+
+// int main()
+// {
+//     int err;
+//     int i, ix, iy, iz, ixyz;
+//     
+//     // create artificial data for visulisation in visit
+//     wdata_metadata md;
+//     char file_name[256] = "testa_info.wtxt";
+//     
+//     // write metadata file
+//     wdata_parse_metadata_file(file_name, &md);
+//     
+//     double *dataR;
+//     double complex *dataC;
+//     cppmallocl(dataR,md.NX*md.NY*md.NZ,double);
+//     cppmallocl(dataC,md.NX*md.NY*md.NZ,double complex);
+//     
+//     wdata_print_metadata(&md,stdout);
+//     
+//     i=0;
+//     
+//     {
+//         err = wdata_read_cycle(&md, "density_a", i, dataR);
+//         printf("i=%d, err=%d\n", i, err);
+//         
+//         ixyz=0;
+// //         for(ix=0; ix<md.NX; ix++) for(iy=0; iy<md.NY; iy++) for(iz=0; iz<md.NZ; iz++)
+//         {
+//             printf("%d %d %d %f\n", ix, iy, iz, dataR[ixyz]);
+//             ixyz++;
+//         }
+//     }
+// }
 
 #endif
 

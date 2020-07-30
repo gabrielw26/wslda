@@ -55,9 +55,265 @@
 #include <Expression.h>
 
 #include <InvalidVariableException.h>
+#include <InvalidDBTypeException.h>
+#include <DebugStream.h>
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 using     std::string;
+
+#define wdata_operation( cmd )                                                  \
+    { ierr=cmd;                                                                 \
+    debug4<<"[WDATA] Executed "<<#cmd<<", Return code="<<ierr<<endl;            \
+    if(ierr!=0)                                                                 \
+    {                                                                           \
+        char errmsg[256];                                                       \
+        sprintf(errmsg, "[WDATA] Cannot execute `%s`. Error=%s", #cmd, ierr);   \
+        EXCEPTION1(InvalidDBTypeException, errmsg);                             \
+    } }
+
+    
+wdataVariable::wdataVariable(wdata_metadata *wdmd, int varid)
+{
+    md = wdmd;
+    vid = varid;
+    loadedcycle = -1;
+    data = NULL;
+}
+
+int wdataVariable::loadCycle(int cycleid)
+{
+    int ierr=0;
+    
+    if(loadedcycle!=cycleid)
+        wdata_operation( wdata_read_cycle(md, md->vars[vid].name, cycleid, data) );
+    
+    if(ierr==0) loadedcycle = cycleid;
+    else        loadedcycle = -1;
+    
+    return ierr;
+}
+
+// =======================================================================================
+// ============================= wdataRealVariable =======================================
+// =======================================================================================
+wdataRealVariable::wdataRealVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
+{
+    // allocate memory for data
+    int bs = wdata_get_blocksize(md);
+    data = new double [bs];
+    
+    dataR = (double *)data; // for easier algebra 
+    
+    // create list of varaibles
+    varname.push_back(md->vars[vid].name);
+    varunit.push_back(md->vars[vid].unit);
+    
+    // check links
+    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    {
+        varname.push_back(md->links[i].name);
+        varunit.push_back(md->vars[vid].unit);        
+    }
+}
+
+bool wdataRealVariable::getVariable(const char * _varname, int cycleid, float * data_for_visit)
+{
+    // check it this varaible can generate data for varname
+    int varid=-1;
+    
+    for(int i=0; i<varname.size(); i++) if(strcmp(_varname, varname[i].c_str()) == 0) varid=i;
+    
+    if(varid==-1) return false;
+    
+    // load data
+    loadCycle(cycleid);
+    
+    int ix, iy, iz;
+    int ixyz1=0, ixyz2=0;
+    for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+    {
+        ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+        data_for_visit[ixyz2] = (float)dataR[ixyz1];
+//             debug4<<"[XXXX]"<<ix<<" "<<iy<<" "<<iz<<" "<<ixyz1<<" "<<ixyz2<<" "<<data[ixyz1]<<endl;
+        ixyz1++; 
+    }
+    
+    return true;
+}
+
+
+// =======================================================================================
+// ============================= wdataComplexVariable =======================================
+// =======================================================================================
+wdataComplexVariable::wdataComplexVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
+{
+    // allocate memory for data
+    int bs = wdata_get_blocksize(md);
+    data = new double [bs*2];
+    
+    dataC = (Complex *)data; // for easier algebra 
+    
+    // create list of varaibles
+    string varlabel;
+    
+    varlabel = md->vars[vid].name; varlabel+="_abs"; 
+    varname.push_back(varlabel);
+    varunit.push_back(md->vars[vid].unit);
+    trans.push_back(cabs);
+    
+    varlabel = md->vars[vid].name; varlabel+="_arg"; 
+    varname.push_back(varlabel);
+    varunit.push_back("PI");
+    trans.push_back(carg);
+    
+    varlabel = md->vars[vid].name; varlabel+="_re"; 
+    varname.push_back(varlabel);
+    varunit.push_back(md->vars[vid].unit);
+    trans.push_back(cre);
+    
+    varlabel = md->vars[vid].name; varlabel+="_im"; 
+    varname.push_back(varlabel);
+    varunit.push_back(md->vars[vid].unit);
+    trans.push_back(cim);
+    
+    // check links
+    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    {
+        varlabel = md->links[vid].name; varlabel+="_abs"; 
+        varname.push_back(varlabel);
+        varunit.push_back(md->vars[vid].unit);
+        trans.push_back(cabs);  
+        
+        varlabel = md->links[vid].name; varlabel+="_arg"; 
+        varname.push_back(varlabel);
+        varunit.push_back("PI");
+        trans.push_back(carg); 
+        
+        varlabel = md->links[vid].name; varlabel+="_re"; 
+        varname.push_back(varlabel);
+        varunit.push_back(md->vars[vid].unit);
+        trans.push_back(cre); 
+
+        varlabel = md->links[vid].name; varlabel+="_im"; 
+        varname.push_back(varlabel);
+        varunit.push_back(md->vars[vid].unit);
+        trans.push_back(cim); 
+    }
+}
+
+bool wdataComplexVariable::getVariable(const char * _varname, int cycleid, float * data_for_visit)
+{
+    // check it this varaible can generate data for varname
+    int varid=-1;
+    
+    for(int i=0; i<varname.size(); i++) if(strcmp(_varname, varname[i].c_str()) == 0) varid=i;
+    
+    if(varid==-1) return false;
+    
+    // load data
+    loadCycle(cycleid);
+    
+    int ix, iy, iz;
+    int ixyz1=0, ixyz2=0;
+    if(trans[varid]==cabs)
+    {
+        for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+        {
+            ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+            data_for_visit[ixyz2] = (float)abs(dataC[ixyz1]);
+
+            ixyz1++; 
+        }
+    }
+    else if(trans[varid]==carg)
+    {
+        for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+        {
+            ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+            data_for_visit[ixyz2] = (float)(arg(dataC[ixyz1])/M_PI);
+
+            ixyz1++; 
+        }
+    }
+    else if(trans[varid]==cre)
+    {
+        for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+        {
+            ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+            data_for_visit[ixyz2] = (float)(dataC[ixyz1].real());
+
+            ixyz1++; 
+        }
+    }
+    else if(trans[varid]==cim)
+    {
+        for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+        {
+            ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+            data_for_visit[ixyz2] = (float)(dataC[ixyz1].imag());
+
+            ixyz1++; 
+        }
+    }
+    
+    return true;
+}
+
+// =======================================================================================
+// ============================= wdataVectorVariable =======================================
+// =======================================================================================
+wdataVectorVariable::wdataVectorVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
+{
+    // allocate memory for data
+    int bs = wdata_get_blocksize(md);
+    data = new double [bs*3];
+    
+    dataVx = (double *)data; // for easier algebra 
+    dataVy = dataVx + bs;
+    dataVz = dataVy + bs;
+    
+    // create list of varaibles
+    varname.push_back(md->vars[vid].name);
+    varunit.push_back(md->vars[vid].unit);
+    
+    // check links
+    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    {
+        varname.push_back(md->links[i].name);
+        varunit.push_back(md->vars[vid].unit);        
+    }
+}
+
+bool wdataVectorVariable::getVariable(const char * _varname, int cycleid, float * data_for_visit)
+{
+    // check it this varaible can generate data for varname
+    int varid=-1;
+    
+    for(int i=0; i<varname.size(); i++) if(strcmp(_varname, varname[i].c_str()) == 0) varid=i;
+    
+    if(varid==-1) return false;
+    
+    // load data
+    loadCycle(cycleid);
+    
+    int ix, iy, iz;
+    int ixyz1=0, ixyz2=0;
+    for ( ix = 0 ; ix < md->NX ; ix++ )  for ( iy = 0 ; iy < md->NY ; iy++ ) for ( iz = 0 ; iz < md->NZ ; iz++ )
+    {
+        ixyz2 = ix + md->NX*iy + md->NX*md->NY*iz;
+        data_for_visit[3*ixyz2+0] = (float)dataVx[ixyz1];
+        data_for_visit[3*ixyz2+1] = (float)dataVy[ixyz1];
+        data_for_visit[3*ixyz2+2] = (float)dataVz[ixyz1];
+//             debug4<<"[XXXX]"<<ix<<" "<<iy<<" "<<iz<<" "<<ixyz1<<" "<<ixyz2<<" "<<data[ixyz1]<<endl;
+        ixyz1++; 
+    }
+    
+    
+    return true;
+}
 
 
 // ****************************************************************************
@@ -72,6 +328,40 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
     : avtMTSDFileFormat(&filename, 1)
 {
     // INITIALIZE DATA MEMBERS
+    
+    // rest values
+    wdmd.NX=0; wdmd.NY=0; wdmd.NZ=0;
+    wdmd.DX=0.0; wdmd.DY=0.0; wdmd.DZ=0.0;
+    int ierr;
+    
+    ierr = wdata_parse_metadata_file(filename, &wdmd);
+    
+    if(ierr!=0 || wdmd.NX==0 || wdmd.NY==0 || wdmd.NZ==0 || wdmd.DX==0.0 || wdmd.DY==0.0 || wdmd.DZ==0.0)
+    {
+        EXCEPTION1(InvalidDBTypeException,
+                    "[WDATA] Incorrect metadata file!");   
+    }
+    
+    // reduced data formats
+    if(wdmd.datadim==2) {wdmd.NZ=1;}
+    if(wdmd.datadim==1) {wdmd.NZ=1; wdmd.NY=1;}
+    
+    // create list of variables
+    wdataVariable * _var;
+    for(int i=0; i<wdmd.nvars; i++)
+    {
+        
+        if(strcmp(wdmd.vars[i].type, "real") == 0) _var = new wdataRealVariable(&wdmd, i);
+        if(strcmp(wdmd.vars[i].type, "complex") == 0) _var = new wdataComplexVariable(&wdmd, i);
+        if(strcmp(wdmd.vars[i].type, "vector") == 0) _var = new wdataVectorVariable(&wdmd, i);
+        
+        variable.push_back(_var);
+    }
+}
+
+avtwdataFileFormat::~avtwdataFileFormat()
+{
+    for(int i=0; i<wdmd.nvars; i++) delete variable[i];
 }
 
 
@@ -86,10 +376,23 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
 //
 // ****************************************************************************
 
+void avtwdataFileFormat::GetCycles(std::vector<int> &cycles)
+{
+    for(int i = 0; i < wdmd.cycles; ++i)
+        cycles.push_back(i);
+}
+
+void avtwdataFileFormat::GetTimes(std::vector<double> &times)
+{
+    for(int i = 0; i < wdmd.cycles; ++i)
+        if(i==0) times.push_back(wdmd.t0+1.0e-16);
+        else     times.push_back(wdmd.t0+wdmd.dt*i);   
+}
+
 int
 avtwdataFileFormat::GetNTimesteps(void)
 {
-    return YOU_MUST_DECIDE;
+    return wdmd.cycles;
 }
 
 
@@ -129,94 +432,62 @@ avtwdataFileFormat::FreeUpResources(void)
 void
 avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
 {
-    //
-    // CODE TO ADD A MESH
-    //
-    // string meshname = ...
+    std::string meshname = "mesh";
     //
     // AVT_RECTILINEAR_MESH, AVT_CURVILINEAR_MESH, AVT_UNSTRUCTURED_MESH,
     // AVT_POINT_MESH, AVT_SURFACE_MESH, AVT_UNKNOWN_MESH
-    // avtMeshType mt = AVT_RECTILINEAR_MESH;
-    //
-    // int nblocks = 1;  <-- this must be 1 for MTSD
-    // int block_origin = 0;
-    // int spatial_dimension = 2;
-    // int topological_dimension = 2;
-    // double *extents = NULL;
+    avtMeshType mt = AVT_RECTILINEAR_MESH;
+    
+    int nblocks = 1;  //<-- this must be 1 for MTSD
+    int block_origin = 0;
+    int spatial_dimension = 3;
+    int topological_dimension = 3;
+    double *extents = NULL;
     //
     // Here's the call that tells the meta-data object that we have a mesh:
     //
-    // AddMeshToMetaData(md, meshname, mt, extents, nblocks, block_origin,
-    //                   spatial_dimension, topological_dimension);
-    //
-
-    //
+    debug4<<"[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->AddMeshToMetaData"<<endl;
+    
+    AddMeshToMetaData(md, meshname, mt, extents, nblocks, block_origin,
+                      spatial_dimension, topological_dimension);
+    
     // CODE TO ADD A SCALAR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddScalarVarToMetaData(md, varname, mesh_for_this_var, cent);
-    //
-
-    //
-    // CODE TO ADD A VECTOR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    // int vector_dim = 2;
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddVectorVarToMetaData(md, varname, mesh_for_this_var, cent,vector_dim);
-    //
-
-    //
-    // CODE TO ADD A TENSOR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    // int tensor_dim = 9;
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddTensorVarToMetaData(md, varname, mesh_for_this_var, cent,tensor_dim);
-    //
-
-    //
-    // CODE TO ADD A MATERIAL
-    //
-    // string mesh_for_mat = meshname; // ??? -- could be multiple meshes
-    // string matname = ...
-    // int nmats = ...;
-    // vector<string> mnames;
-    // for (int i = 0 ; i < nmats ; i++)
-    // {
-    //     char str[32];
-    //     sprintf(str, "mat%d", i);
-    //     -- or -- 
-    //     strcpy(str, "Aluminum");
-    //     mnames.push_back(str);
-    // }
-    // 
-    // Here's the call that tells the meta-data object that we have a mat:
-    //
-    // AddMaterialToMetaData(md, matname, mesh_for_mat, nmats, mnames);
-    //
+    // TODO - add here variables
+    for(int ii=0; ii<variable.size(); ii++)
+    { 
+        wdataVariable * _var = variable[ii];
+        if(_var->isScalar()) for(int ivar=0; ivar<_var->numberOfVariables(); ivar++)
+        {
+            avtScalarMetaData *smd = new avtScalarMetaData;
+            smd->name = _var->getIthVariableName(ivar);
+            smd->meshName = meshname;
+            smd->centering = AVT_NODECENT;
+            if      (strcmp (_var->getIthVariableUnit(ivar).c_str(),"none") == 0) smd->hasUnits = false;
+            else if (strcmp (_var->getIthVariableUnit(ivar).c_str(),"null") == 0) smd->hasUnits = false;
+            else                                                                  smd->hasUnits = true;
+            smd->units = _var->getIthVariableUnit(ivar);
+            md->Add(smd);
+            
+            debug4<<"[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->Added scalar variable: "<<smd->name<<endl;
+        }
+        
+        if(_var->isVector()) for(int ivar=0; ivar<_var->numberOfVariables(); ivar++)
+        {
+            avtVectorMetaData *smv = new avtVectorMetaData;
+            smv->name = _var->getIthVariableName(ivar);
+            smv->meshName = meshname;
+            smv->centering = AVT_NODECENT;
+            if      (strcmp (_var->getIthVariableUnit(ivar).c_str(),"none") == 0) smv->hasUnits = false;
+            else if (strcmp (_var->getIthVariableUnit(ivar).c_str(),"null") == 0) smv->hasUnits = false;
+            else                                                                  smv->hasUnits = true;
+            smv->units = _var->getIthVariableUnit(ivar);
+            smv->varDim = 3;
+            md->Add(smv);
+            
+            debug4<<"[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->Added vector variable: "<<smv->name<<endl;
+        }
+        
+    }
     //
     // Here's the way to add expressions:
     //Expression momentum_expr;
@@ -255,7 +526,49 @@ avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeSt
 vtkDataSet *
 avtwdataFileFormat::GetMesh(int timestate, const char *meshname)
 {
-    YOU MUST IMPLEMENT THIS
+    debug4<<"[WDATA] avtwdataFileFormat::GetMesh"<<endl;
+    
+    int ndims = 3;
+    int dims[3];
+    int i;
+
+    dims[0]=wdmd.NX;
+    dims[1]=wdmd.NY;
+    dims[2]=wdmd.NZ;
+    
+    vtkFloatArray *coords[3] = {0,0,0};
+    
+    // Read the X coordinates from the file.
+    coords[0] = vtkFloatArray::New();
+    coords[0]->SetNumberOfTuples(dims[0]);
+    float *xarray = (float *)coords[0]->GetVoidPointer(0);
+    for(i=0; i<wdmd.NX; i++) xarray[i]=(float)(wdmd.DX*i);
+    
+    // Read the Y coordinates from the file.
+    coords[1] = vtkFloatArray::New();
+    coords[1]->SetNumberOfTuples(dims[1]);
+    float *yarray = (float *)coords[1]->GetVoidPointer(0);
+    for(i=0; i<wdmd.NY; i++) yarray[i]=(float)(wdmd.DY*i);
+    
+    // Read the Z coordinates from the file.
+    coords[2] = vtkFloatArray::New();
+    coords[2]->SetNumberOfTuples(dims[2]);
+    float *zarray = (float *)coords[2]->GetVoidPointer(0);
+    for(i=0; i<wdmd.NZ; i++) zarray[i]=(float)(wdmd.DZ*i);
+    
+    //
+    // Create the vtkRectilinearGrid object and set its dimensions
+    // and coordinates.
+    //
+    vtkRectilinearGrid *rgrid = vtkRectilinearGrid::New();
+    rgrid->SetDimensions(dims);
+    rgrid->SetXCoordinates(coords[0]);
+    coords[0]->Delete();
+    rgrid->SetYCoordinates(coords[1]);
+    coords[1]->Delete();
+    rgrid->SetZCoordinates(coords[2]);
+    coords[2]->Delete();
+    return rgrid;
 }
 
 
@@ -280,29 +593,24 @@ avtwdataFileFormat::GetMesh(int timestate, const char *meshname)
 vtkDataArray *
 avtwdataFileFormat::GetVar(int timestate, const char *varname)
 {
-    YOU MUST IMPLEMENT THIS
-
-    //
-    // If you have a file format where variables don't apply (for example a
-    // strictly polygonal format like the STL (Stereo Lithography) format,
-    // then uncomment the code below.
-    //
-    // EXCEPTION1(InvalidVariableException, varname);
-    //
-
-    //
-    // If you do have a scalar variable, here is some code that may be helpful.
-    //
-    // int ntuples = XXX; // this is the number of entries in the variable.
-    // vtkFloatArray *rv = vtkFloatArray::New();
-    // rv->SetNumberOfTuples(ntuples);
-    // for (int i = 0 ; i < ntuples ; i++)
-    // {
-    //      rv->SetTuple1(i, VAL);  // you must determine value for ith entry.
-    // }
-    //
-    // return rv;
-    //
+    
+    int ntuples = wdata_get_blocksize(&wdmd); // this is the number of entries in the variable.
+    vtkFloatArray *rv = vtkFloatArray::New();
+    rv->SetNumberOfComponents(1);
+    rv->SetNumberOfTuples(ntuples);
+    
+//     float * _data = new float[ntuples];
+    float *_data = (float *)rv->GetVoidPointer(0);
+    
+    bool hasdata;
+    for(int ii=0; ii<variable.size(); ii++)
+    {
+        hasdata = variable[ii]->getVariable(varname, timestate, _data);
+        if(hasdata) return rv;
+    }
+    
+    return NULL;
+    
 }
 
 
@@ -327,36 +635,17 @@ avtwdataFileFormat::GetVar(int timestate, const char *varname)
 vtkDataArray *
 avtwdataFileFormat::GetVectorVar(int timestate, const char *varname)
 {
-    YOU MUST IMPLEMENT THIS
-    //
-    // If you have a file format where variables don't apply (for example a
-    // strictly polygonal format like the STL (Stereo Lithography) format,
-    // then uncomment the code below.
-    //
-    // EXCEPTION1(InvalidVariableException, varname);
-    //
-
-    //
-    // If you do have a vector variable, here is some code that may be helpful.
-    //
-    // int ncomps = YYY;  // This is the rank of the vector - typically 2 or 3.
-    // int ntuples = XXX; // this is the number of entries in the variable.
-    // vtkFloatArray *rv = vtkFloatArray::New();
-    // int ucomps = (ncomps == 2 ? 3 : ncomps);
-    // rv->SetNumberOfComponents(ucomps);
-    // rv->SetNumberOfTuples(ntuples);
-    // float *one_entry = new float[ucomps];
-    // for (int i = 0 ; i < ntuples ; i++)
-    // {
-    //      int j;
-    //      for (j = 0 ; j < ncomps ; j++)
-    //           one_entry[j] = ...
-    //      for (j = ncomps ; j < ucomps ; j++)
-    //           one_entry[j] = 0.;
-    //      rv->SetTuple(i, one_entry); 
-    // }
-    //
-    // delete [] one_entry;
-    // return rv;
-    //
+    int ntuples = wdata_get_blocksize(&wdmd); // this is the number of entries in the variable.
+    vtkFloatArray *rv = vtkFloatArray::New();
+    rv->SetNumberOfComponents(3);
+    rv->SetNumberOfTuples(ntuples);
+    float *_data = (float *)rv->GetVoidPointer(0);
+    
+    bool hasdata;
+    for(int ii=0; ii<variable.size(); ii++)
+    {
+        hasdata = variable[ii]->getVariable(varname, timestate, _data);
+        if(hasdata)  return rv;
+    }
+    return NULL;
 }

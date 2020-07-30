@@ -46,7 +46,88 @@
 #include <avtMTSDFileFormat.h>
 
 #include <vector>
+#include <complex>
 
+typedef std::complex<double> Complex;
+
+#include "wdata.h"
+
+class wdataVariable
+{
+    public:
+        wdataVariable(wdata_metadata *wdmd, int varid);
+        virtual ~wdataVariable( ) { ;};
+                
+        virtual bool getVariable(const char * _varname, int cycleid, float * data_for_visit) { ;};
+        
+        int numberOfVariables() {return varname.size();};
+        std::string getIthVariableName(int ith) {return varname[ith];};
+        std::string getIthVariableUnit(int ith) {return varunit[ith];};
+        
+        virtual bool isScalar() { ;};
+        virtual bool isVector() { ;};
+        
+    protected:
+        int loadCycle(int cycleid);
+                
+        int vid; // index of varaiable in md->vars table
+        wdata_metadata *md; // variable info
+        int loadedcycle; 
+        
+        void *data; // each varaiable has data
+        
+        std::vector<std::string>varname; // list of var names that can be generated from this variable
+        std::vector<std::string>varunit; // corresponding units 
+};
+
+class wdataRealVariable : public wdataVariable
+{
+    public:
+        wdataRealVariable(wdata_metadata *wdmd, int varid);
+        ~wdataRealVariable( ) {free(data);};
+        
+        bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
+        
+        bool isScalar() {return true;};
+        bool isVector() {return false;};
+                
+    protected:
+        double *dataR;
+};
+
+enum cplxtrans  {cabs, carg, cre, cim};
+class wdataComplexVariable : public wdataVariable
+{
+    public:
+        wdataComplexVariable(wdata_metadata *wdmd, int varid);
+        ~wdataComplexVariable( ) {free(data);};
+        
+        bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
+        
+        bool isScalar() {return true;};
+        bool isVector() {return false;};
+                
+    protected:
+        Complex *dataC;
+        std::vector<cplxtrans>trans; // transformations
+};
+
+class wdataVectorVariable : public wdataVariable
+{
+    public:
+        wdataVectorVariable(wdata_metadata *wdmd, int varid);
+        ~wdataVectorVariable( ) {free(data);};
+        
+        bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
+        
+        bool isScalar() {return false;};
+        bool isVector() {return true;};
+                
+    protected:
+        double *dataVx;
+        double *dataVy;
+        double *dataVz;
+};
 
 // ****************************************************************************
 //  Class: avtwdataFileFormat
@@ -63,7 +144,7 @@ class avtwdataFileFormat : public avtMTSDFileFormat
 {
   public:
                        avtwdataFileFormat(const char *);
-    virtual           ~avtwdataFileFormat() {;};
+    virtual           ~avtwdataFileFormat();
 
     //
     // This is used to return unconvention data -- ranging from material
@@ -78,9 +159,9 @@ class avtwdataFileFormat : public avtMTSDFileFormat
     // If you know the times and cycle numbers, overload this function.
     // Otherwise, VisIt will make up some reasonable ones for you.
     //
-    // virtual void        GetCycles(std::vector<int> &);
-    // virtual void        GetTimes(std::vector<double> &);
-    //
+    virtual void        GetCycles(std::vector<int> &);
+    virtual void        GetTimes(std::vector<double> &);
+    
 
     virtual int            GetNTimesteps(void);
 
@@ -93,8 +174,12 @@ class avtwdataFileFormat : public avtMTSDFileFormat
 
   protected:
     // DATA MEMBERS
+      
+    wdata_metadata wdmd;
 
     virtual void           PopulateDatabaseMetaData(avtDatabaseMetaData *, int);
+    
+    std::vector<wdataVariable *>variable;
 };
 
 
