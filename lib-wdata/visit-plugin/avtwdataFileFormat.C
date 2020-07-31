@@ -452,7 +452,6 @@ avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeSt
                       spatial_dimension, topological_dimension);
     
     // CODE TO ADD A SCALAR VARIABLE
-    // TODO - add here variables
     for(int ii=0; ii<variable.size(); ii++)
     { 
         wdataVariable * _var = variable[ii];
@@ -471,6 +470,7 @@ avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeSt
             debug4<<"[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->Added scalar variable: "<<smd->name<<endl;
         }
         
+        // CODE TO ADD A VECTOR VARIABLE
         if(_var->isVector()) for(int ivar=0; ivar<_var->numberOfVariables(); ivar++)
         {
             avtVectorMetaData *smv = new avtVectorMetaData;
@@ -488,19 +488,21 @@ avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeSt
         }
         
     }
-    //
-    // Here's the way to add expressions:
-    //Expression momentum_expr;
-    //momentum_expr.SetName("momentum");
-    //momentum_expr.SetDefinition("{u, v}");
-    //momentum_expr.SetType(Expression::VectorMeshVar);
-    //md->AddExpression(&momentum_expr);
-    //Expression KineticEnergy_expr;
-    //KineticEnergy_expr.SetName("KineticEnergy");
-    //KineticEnergy_expr.SetDefinition("0.5*(momentum*momentum)/(rho*rho)");
-    //KineticEnergy_expr.SetType(Expression::ScalarMeshVar);
-    //md->AddExpression(&KineticEnergy_expr);
-    //
+    
+    // CONSTS
+    for(int ii=0; ii<wdmd.nconsts; ii++)
+    {
+        // Here's the way to add expressions:
+        char cdef[256];
+        Expression const_expr;
+        sprintf(cdef, "const_%s", wdmd.consts[ii].name);
+        const_expr.SetName(cdef);
+        sprintf(cdef, "coord(mesh)[0]*0 + (%f)", wdmd.consts[ii].value);
+        const_expr.SetDefinition(cdef);
+        // const_expr.SetType(Expression::VectorMeshVar);
+        const_expr.SetType(Expression::ScalarMeshVar);
+        md->AddExpression(&const_expr);
+    }
 }
 
 

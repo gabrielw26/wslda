@@ -28,6 +28,7 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
     // reset vars
     md->nvars=0;
     md->nlinks=0;
+    md->nconsts=0;
     
     // buffers
     char s[MAX_REC_LEN];
@@ -79,6 +80,13 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
             sscanf (s,"%s %s %s %*s",tag, &md->links[md->nlinks].name, &md->links[md->nlinks].linkto); 
             md->nlinks++;       
         }
+        
+        // consts
+        else if (strcmp (tag,"const") == 0)
+        {
+            sscanf (s,"%s %s %lf %*s",tag, &md->consts[md->nconsts].name, &md->consts[md->nconsts].value); 
+            md->nconsts++;       
+        }
     }
     
     fclose(fp);
@@ -113,6 +121,12 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     fprintf(out,"# tag                  name                 link-to\n");
     for(i=0; i<md->nlinks; i++) wdata_print_link(&md->links[i], out);
     
+    // links
+    fprintf(out,"\n");
+    fprintf(out,"# consts\n");
+    fprintf(out,"# tag                  name                   value\n");
+    for(i=0; i<md->nconsts; i++) wdata_print_const(&md->consts[i], out);
+    
     fprintf(out,"\n");
 }
 
@@ -126,6 +140,11 @@ void wdata_print_link(wdata_link *md, FILE *out)
     fprintf(out, "link%23s%24s\n", md->name, md->linkto);
 }
 
+void wdata_print_const(wdata_const *md, FILE *out)
+{
+    fprintf(out, "const%23s%24f\n", md->name, md->value);
+}
+
 void wdata_add_variable(wdata_metadata *md, wdata_variable *var)
 {
     md->vars[md->nvars] = *var;
@@ -136,6 +155,13 @@ void wdata_add_link(wdata_metadata *md, wdata_link *link)
 {
     md->links[md->nlinks] = *link;
     md->nlinks++;
+}
+
+
+void wdata_add_const(wdata_metadata *md, wdata_const *_const)
+{
+    md->consts[md->nconsts] = *_const;
+    md->nconsts++;
 }
 
 int wdata_get_blocksize(wdata_metadata *md)
@@ -285,8 +311,33 @@ int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *
         return 0;
     }
     
-    // cannot find varaiable
+    // cannot find variable
     return 1;
+}
+
+int wdata_get_const(wdata_metadata *md, const char *constname, wdata_const *_const)
+{
+    int i;
+    for(i=0; i<md->nconsts; i++) if(strcmp(md->consts[i].name, constname) == 0) 
+    {
+        *_const = md->consts[i];
+        return 0;
+    }
+    
+    // cannot find const;
+    return 1;
+}
+
+/**
+ * Functions returns value of constant
+ * If there is no constant with given name then 0.0 is returned 
+ * */
+double wdata_getconst(wdata_metadata *md, const char *constname)
+{
+    int i;
+    for(i=0; i<md->nconsts; i++) if(strcmp(md->consts[i].name, constname) == 0) return md->consts[i].value;
+    
+    return 0.0;
 }
 
 #ifdef WDATA_TESTING_MODE
@@ -343,6 +394,12 @@ int main()
     
     wdata_link lcurrent_b = {"current_b", "current_a"};
     wdata_add_link(&md, &lcurrent_b);
+    
+    wdata_const lconst_eF = {"eF", 0.1};
+    wdata_add_const(&md, &lconst_eF);
+    
+    wdata_const lconst_kF = {"kF", 1.1};
+    wdata_add_const(&md, &lconst_kF);
     
     // just in case - clear data sets
     char file_name[256];
