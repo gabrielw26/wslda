@@ -75,6 +75,10 @@ void wdata_get_filename(wdata_metadata *md, wdata_variable *var, char *file_name
 int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *var);
 int wdata_get_const(wdata_metadata *md, const char *constname, wdata_const *_const);
 double wdata_getconst_value(wdata_metadata *md, const char *constname);
+void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue);
+int wdata_file_exists(wdata_metadata *md, const char *varname);
+void wdata_clear_file(wdata_metadata *md, const char *varname);
+void wdata_clear_database(wdata_metadata *md);
 
 #endif
 

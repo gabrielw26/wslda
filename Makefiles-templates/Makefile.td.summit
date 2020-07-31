@@ -28,7 +28,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h
 DEPSLOCAL = predefines.h  problem-definition.h
 
-SRCS = 
+SRCS = pca_utils.o
 
 SRCS1D = ccpca.o ccpca_checkpoint.o
 NVCCSRCS1D = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o

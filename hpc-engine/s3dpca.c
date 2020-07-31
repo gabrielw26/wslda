@@ -741,6 +741,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // ======================================= LOGGER ====================================
     // =================================================================================== 
+    if(md.resetit) it=0; // reset iterator counter
     
     // NOTE settings some variables
 #ifndef UNIFORM_TEST_MODE
@@ -751,6 +752,8 @@ int main( int argc , char ** argv )
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
 #endif
+    
+    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
     double dc_ec_u= 1.0*dc_ec; // upper bound for states exteraction
@@ -787,7 +790,6 @@ int main( int argc , char ** argv )
         file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
         
         // Create run log and add entry
-        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, dc_ec, nwf, np, nwfip) );
     }
     
@@ -896,7 +898,6 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // ========================== SELF-CONSITENT LOOP ====================================
     // ===================================================================================     
-    if(md.resetit) it=0; // reset iterator counter
     
     // special case - only one iteration for diagonalization
     if(md.kzmaxiters==1 && md.writewf==1) saving_iteration=1;

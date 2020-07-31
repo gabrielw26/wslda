@@ -142,7 +142,7 @@ void wdata_print_link(wdata_link *md, FILE *out)
 
 void wdata_print_const(wdata_const *md, FILE *out)
 {
-    fprintf(out, "const%23s%24f\n", md->name, md->value);
+    fprintf(out, "const%22s%24f\n", md->name, md->value);
 }
 
 void wdata_add_variable(wdata_metadata *md, wdata_variable *var)
@@ -340,6 +340,73 @@ double wdata_getconst(wdata_metadata *md, const char *constname)
     return 0.0;
 }
 
+
+/**
+ * Functions sets value of constant. If constant was not added before it adds it and sets value.
+ * */
+void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue)
+{
+    int i;
+    for(i=0; i<md->nconsts; i++) if(strcmp(md->consts[i].name, constname) == 0) { md->consts[i].value=constvalue; return ;}
+    
+    wdata_const _const;
+    strcpy(_const.name,constname);
+    _const.value = constvalue;
+    md->consts[md->nconsts] = _const;
+    md->nconsts++;
+    
+    return ;
+}
+
+/**
+ * Function checks if binary file exists for variable
+ * @return 1 if binary file for this variable exists, otherwise 0
+ */
+int wdata_file_exists(wdata_metadata *md, const char *varname)
+{
+    int ierr;
+    wdata_variable var;
+    ierr = wdata_get_variable(md, varname, &var);
+    if(ierr!=0) return 0;
+    
+    char file_name[MD_CHAR_LGTH];
+    wdata_get_filename(md, &var, file_name);
+    
+    FILE *file;
+    if ((file = fopen(file_name, "r")))
+    {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * Function removes binary file associated with variable varname
+ * */
+void wdata_clear_file(wdata_metadata *md, const char *varname)
+{
+    char file_name[MD_CHAR_LGTH];
+    sprintf(file_name, "%s_%s.wdat", md->prefix, varname);
+    
+    remove(file_name);
+}
+
+/**
+ * Removes all datafiles, except metadata file
+ * */
+void wdata_clear_database(wdata_metadata *md)
+{
+    char file_name[MD_CHAR_LGTH];
+    int i;
+    for(i=0; i<md->nvars; i++) 
+    {
+        wdata_get_filename(md, &md->vars[i], file_name);
+        remove(file_name);
+    }
+    md->cycles=0;
+}
+
 #ifdef WDATA_TESTING_MODE
 
 // ===========================================================================
@@ -402,14 +469,10 @@ int main()
     wdata_add_const(&md, &lconst_kF);
     
     // just in case - clear data sets
+    wdata_clear_database(&md);
+
     char file_name[256];
-    for(i=0; i<md.nvars; i++) 
-    {
-        wdata_get_filename(&md, &md.vars[i], file_name);
-        printf("Removing: %s\n", file_name);
-        remove(file_name);
-    }
-    
+
     
     // add artificial data to sets
     double *dataR;
