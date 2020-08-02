@@ -18,7 +18,9 @@ writewf                 0       # write wf at the end of computation yes=1, no=0
 iogroups                8       # number of IO groups used for parallel wf writing, default=1
 
 # list of variables for writing
-writevars           density_a density_b delta current_a current_b 
+# all = density delta current nu tau U v_ext delta_ext velocity_ext
+# default = density delta current
+writevar           default all
 
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type

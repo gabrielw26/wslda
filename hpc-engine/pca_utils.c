@@ -83,6 +83,20 @@ metadata_t md =
 1, // iogroups
 };
 
+// Taken from:
+// https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
+void replace_str(char *str,char *org,char *rep)
+{
+    char *ToRep = strstr(str,org);
+    char *Rest = (char*)malloc(strlen(ToRep));
+    strcpy(Rest,((ToRep)+strlen(org)));
+
+    strcpy(ToRep,rep);
+    strcat(ToRep,Rest);
+
+    free(Rest);
+}
+
 /** 
  * Function reads input file 
  * and puts values into global struct `input`
@@ -99,11 +113,7 @@ int parse_input_file(char * file_name)
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
     
     // reset list of variables
-    md.nwritevars=0;
-    // add default variables
-    sprintf(md.writevars[md.nwritevars],"density"); md.nwritevars++;
-    sprintf(md.writevars[md.nwritevars],"delta"); md.nwritevars++;
-    sprintf(md.writevars[md.nwritevars],"current"); md.nwritevars++;
+    md.nwritevar=0;
         
     char s[MAX_REC_LEN];
     char tag[MAX_REC_LEN];
@@ -270,9 +280,55 @@ int parse_input_file(char * file_name)
             }
             
             // VARIABLES TO WITE 
-            // TODO
+            if (strcmp (tag,"writevar") == 0)
+            {
+                int ivars, ierr;
+                for(ivars=0; ivars=10; ivars++)
+                {
+//                     printf("[PARSER-i]: `%s`, `%s` `%s`\n", s, tag, ptag);
+                    ierr = sscanf (s,"%s %s %*s",tag,ptag);
+                    if(ierr<2) break;
+                    
+//                     if(ptag[0]=='#') printf("[PARSER-#]:\n");
+                    if(ptag[0]=='#') break;
+                    
+                    if (strcmp (ptag,"all") == 0) 
+                    {
+                        replace_str(s,ptag,"density delta current nu tau U v_ext delta_ext velocity_ext");
+//                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
+                        continue;
+                    }
+                    
+                    if (strcmp (ptag,"default") == 0) 
+                    {
+                        replace_str(s,ptag,"density delta current");
+//                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
+                        continue;
+                    }
+                        
+                    replace_str(s,ptag," ");
+                    
+                    // check if variable already added
+                    ierr=0;
+                    for(i=0; i<md.nwritevar; i++) if (strcmp (ptag,md.writevar[i]) == 0) {ierr=1; break;}
+                    if(ierr==1) continue; // variable already added;
+                    
+                    // add variable
+                    strcpy(md.writevar[md.nwritevar],ptag); md.nwritevar++;
+//                     printf("[ADDING]: %d->%s\n", md.nwritevar-1, md.writevar[md.nwritevar-1]);
+//                     printf("[PARSER-O]: `%s`, `%s` `%s`\n", s, tag, ptag);
+                }
+            }
         }
         
+    }
+    
+    // add default variables - if not added 
+    if(md.nwritevar==0)
+    {
+        sprintf(md.writevar[md.nwritevar],"density"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"delta"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"current"); md.nwritevar++;
     }
         
     fclose(fp);

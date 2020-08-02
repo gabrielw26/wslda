@@ -100,14 +100,14 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     fprintf(out, "NX %24d   # lattice\n", md->NX);
     fprintf(out, "NY %24d   # lattice\n", md->NY);
     fprintf(out, "NZ %24d   # lattice\n", md->NZ);
-    fprintf(out, "DX %24f   # spacing\n", md->DX);
-    fprintf(out, "DY %24f   # spacing\n", md->DY);
-    fprintf(out, "DZ %24f   # spacing\n", md->DZ);
+    fprintf(out, "DX %24g   # spacing\n", md->DX);
+    fprintf(out, "DY %24g   # spacing\n", md->DY);
+    fprintf(out, "DZ %24g   # spacing\n", md->DZ);
     fprintf(out, "datadim %19d   # dimension of block size: 1=NX, 2=NX*NY, 3=NX*NY*NZ\n", md->datadim);
     fprintf(out, "prefix %20s   # prefix for files belonging to this data set, binary files have names prefix_variable.wdat\n", md->prefix);
     fprintf(out, "cycles %20d   # number of cycles (measurements)\n", md->cycles);
-    fprintf(out, "t0 %24f   # time value for the first cycle\n", md->t0);
-    fprintf(out, "dt %24f   # time interval between cycles\n", md->dt);
+    fprintf(out, "t0 %24g   # time value for the first cycle\n", md->t0);
+    fprintf(out, "dt %24g   # time interval between cycles\n", md->dt);
 
     // variables
     fprintf(out,"\n");
@@ -142,7 +142,7 @@ void wdata_print_link(wdata_link *md, FILE *out)
 
 void wdata_print_const(wdata_const *md, FILE *out)
 {
-    fprintf(out, "const%22s%24f\n", md->name, md->value);
+    fprintf(out, "const%22s%24g\n", md->name, md->value);
 }
 
 void wdata_add_variable(wdata_metadata *md, wdata_variable *var)

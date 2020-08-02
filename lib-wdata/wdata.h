@@ -79,7 +79,7 @@ void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue
 int wdata_file_exists(wdata_metadata *md, const char *varname);
 void wdata_clear_file(wdata_metadata *md, const char *varname);
 void wdata_clear_database(wdata_metadata *md);
-
+int wdata_add_cycle(wdata_metadata *md);
 #endif
 
 

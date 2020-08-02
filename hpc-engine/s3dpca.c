@@ -41,6 +41,8 @@
 #include <complex.h>
 #include <mpi.h>
 
+#include "wdata.h"
+
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
@@ -54,6 +56,7 @@
 #include "s3dpca_densities.h"
 #include "s3dpca_inittype4.h"
 #include "sxdpca_broyden.h"
+#include "wslda_writevars.h"
 // #include "s3dpca_testfun.h"
 
 #ifdef USE_SCALAPACK_PZHEEVR
@@ -181,6 +184,7 @@ int main( int argc , char ** argv )
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
+    double *h_potentials_ext=NULL; // pointer to array with external potentials (CPU)
     double *h_energy; // buffer for energies (CPU)
     double energy[5], energy_old[5];
     string energy_labels[5];
@@ -755,6 +759,27 @@ int main( int argc , char ** argv )
     
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     
+    wdata_metadata wdmd; 
+    file_operation( create_wdata_metadata(&md, 3, 1.0*it, 1.0, md.spinsymmetry, &wdmd) );
+    
+    // set constants
+    wdata_setconst(&wdmd, "kF", kF);
+    wdata_setconst(&wdmd, "eF", eF);
+    wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
+    wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
+    
+    // prepare database
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(iam==0) 
+    {
+        file_operation( clear_files(&md, &wdmd) );
+        file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", h_densities, h_potentials, h_potentials_ext) );
+    if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
+    
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
     double dc_ec_u= 1.0*dc_ec; // upper bound for states exteraction
     if(md.spinsymmetry>0) dc_ec_l=0.0; // take only positive states
@@ -765,30 +790,6 @@ int main( int argc , char ** argv )
     // Create binary files and add initial measurement
     if(iam==0)
     {
-        // Create empty files with headers - do it once
-        sprintf(file_name, "%s_density_a.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, DX, DY, DZ, eF, 1.0*it, 1.0) );
-        sprintf(file_name, "%s_density_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, DX, DY, DZ, eF, 1.0*it, 1.0) );
-        sprintf(file_name, "%s_delta.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, DX, DY, DZ, eF, 1.0*it, 1.0) );    
-        sprintf(file_name, "%s_current_a.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, DX, DY, DZ, eF, 1.0*it, 1.0) );
-        sprintf(file_name, "%s_current_b.dpca", md.outprefix);
-        file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, DX, DY, DZ, eF, 1.0*it, 1.0) );    
-        
-        // for each measurement add data to file
-        sprintf(file_name, "%s_density_a.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, rho_a, sizeof(double)*NXYZ) );
-        sprintf(file_name, "%s_density_b.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, rho_b, sizeof(double)*NXYZ) );
-        sprintf(file_name, "%s_delta.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, delta, sizeof(double complex)*NXYZ) );
-        sprintf(file_name, "%s_current_a.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, j_a_x, sizeof(double)*NXYZ*3) );
-        sprintf(file_name, "%s_current_b.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
-        
         // Create run log and add entry
         cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, dc_ec, nwf, np, nwfip) );
     }
@@ -1385,19 +1386,9 @@ int main( int argc , char ** argv )
                 vextjb, // 19
             };
             cpu_exec( add_line_to_file(it, rt_tot, OUTPUT_ENTRIES, line_items) );
-            
-            // for each measurement add data to file
-            sprintf(file_name, "%s_density_a.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, rho_a, sizeof(double)*NXYZ) );
-            sprintf(file_name, "%s_density_b.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, rho_b, sizeof(double)*NXYZ) );
-            sprintf(file_name, "%s_delta.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, delta, sizeof(double complex)*NXYZ) );
-            sprintf(file_name, "%s_current_a.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, j_a_x, sizeof(double)*NXYZ*3) );
-            sprintf(file_name, "%s_current_b.dpca", md.outprefix);
-            file_operation( add_measurement_entry(file_name, j_b_x, sizeof(double)*NXYZ*3) );
         }
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", h_densities, h_potentials, h_potentials_ext) );
+        if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
                 
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)

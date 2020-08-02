@@ -111,8 +111,8 @@ typedef struct
     double params[MAX_USER_PARAMS];
     
     // variables to write
-    int nwritevars; // number of variables to write
-    char writevars[MAX_WRITEVARS][MAX_VARNAME_LGTH]; // and their names
+    int nwritevar; // number of variables to write
+    char writevar[MAX_WRITEVARS][MAX_VARNAME_LGTH]; // and their names
 } metadata_t;
 
 #ifndef ALLOCATE_MD_STRUCTURE
