@@ -1,0 +1,23 @@
+#!/bin/bash
+#BSUB -P nph139
+#BSUB -W 1:00
+#BSUB -nnodes 16
+#BSUB -J test
+#BSUB -o test.o.%J
+#BSUB -e test.e.%J
+#BSUB -N
+#BSUB -B
+
+## For submission use:
+##      bsub job.sh.summit
+## For checking status use:
+##      bjobs
+## NOTE: -n=-nnodes*42
+
+## For computation it is recomended to use location:
+## /gpfs/alpine/proj-shared/nph139
+
+cd $LS_SUBCWD
+pwd
+jsrun -n672 -a1 -g0 -c1 ./st-wslda-3d input.test.txt
+ 

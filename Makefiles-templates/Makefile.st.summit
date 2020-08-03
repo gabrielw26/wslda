@@ -1,0 +1,21 @@
+# LOAD BEFORE COMPILATION
+# 
+# module load fftw
+# module load netlib-lapack
+# module load netlib-scalapack
+
+
+# COMPILER
+CXX=mpicc
+
+# DIRECTORY SETTINGS
+OBJDIR=./obj/
+BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
+
+# COMPILER FLAGS
+CFLAGS= -std=gnu99 -O3 -DFOTRAN_NO_UNDERSCORE
+LIBS=-lfftw3 -lm -llapack -lscalapack
+
+include mk.st
