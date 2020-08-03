@@ -13,6 +13,11 @@ iogroups                32      # number of IO groups
 checkpoint              1       # do checkpoint at the end of calculation?
 walltime                11.9    # after this time force checkpoint [hr]
 
+# list of variables for writing
+# all = density delta current nu tau u v_ext delta_ext velocity_ext
+# default = density delta current
+writevar           default
+
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1
 measurements            100      # number of requested mesurments

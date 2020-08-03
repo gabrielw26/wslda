@@ -45,15 +45,18 @@ int get_v_ext(int datadim, int spin, int it, double *data)
     return 0;
 }
 
-int get_delta_ext(int datadim, int it, double complex *deltain, double complex *data)
+int get_delta_ext(int datadim, int it, void *deltain, void *data)
 {
+    double complex *_deltain = (double complex *)deltain;
+    double complex *_data = (double complex *)data;
+    
     int ix, iy, iz, ixyz=0;
     int nx=NX, ny=NY, nz=NZ;
     if(datadim==1) {ny=1; nz=1;}
     if(datadim==2) {nz=1;}
     for(ix=0; ix<nx; ix++) for(iy=0; iy<ny; iy++) for(iz=0; iz<nz; iz++)
     {
-        data[ixyz] = delta_ext(ix, iy, iz, it, deltain[ixyz], dc_params, dc_extra_data_size, dc_extra_data);
+        _data[ixyz] = delta_ext(ix, iy, iz, it, _deltain[ixyz], dc_params, dc_extra_data_size, dc_extra_data);
         ixyz++;
     }
     return 0;
@@ -81,6 +84,16 @@ int get_velocity_ext(int datadim, int spin, int it, double *data)
 }
 #endif
 
+#ifdef TDWSLDA
+int get_v_ext(int datadim, int spin, int it, double *data); // implemented on cuda
+
+void * ptr_d_delta; //pointer to delta on device 
+int get_delta_ext(int datadim, int it, void *deltain, void *data); // implemented on cuda
+void set_ptr_d_delta(void * ptr) {ptr_d_delta=ptr;}
+
+int get_velocity_ext(int datadim, int spin, int it, double *data); // implemented on cuda
+
+#endif
 
 /**
  * @param input input structure (INPUT)
@@ -273,15 +286,29 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
         j_b_y = (double *)(h_densities + 10*bs);
         j_b_z = (double *)(h_densities + 11*bs);
         
-        // pontentials
+        // potentials
         V_a = (double *)(h_potentials +  0*bs);
         V_b = (double *)(h_potentials +  1*bs);
         delta = (double complex *)(h_potentials +  2*bs);
     }
     else if (strcmp (codetype,"td") == 0)
     {
-        // TODO
-        return -2;
+        nu = (double complex *)(h_densities +  0*bs);
+        rho_a = (double *)(h_densities +  2*bs);
+        tau_a = (double *)(h_densities +  3*bs);
+        j_a_x = (double *)(h_densities +  4*bs);
+        j_a_y = (double *)(h_densities +  5*bs);
+        j_a_z = (double *)(h_densities +  6*bs);    
+        rho_b = (double *)(h_densities +  7*bs);
+        tau_b = (double *)(h_densities +  8*bs);
+        j_b_x = (double *)(h_densities +  9*bs);
+        j_b_y = (double *)(h_densities + 10*bs);
+        j_b_z = (double *)(h_densities + 11*bs);
+    
+        // potentials
+        V_a = (double *)(h_potentials +  0*bs);
+        V_b = (double *)(h_potentials +  1*bs);
+        delta = (double complex *)(h_potentials +  2*bs);
     }
     else return -1;
     
@@ -320,8 +347,12 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
         else if (strcmp (wdmd->vars[ivar].name,"delta_ext") == 0) 
         {
             double *towrt;
-            cppmallocl(towrt,bs*2,double);  
-            get_delta_ext(wdmd->datadim, it, delta, (double complex *)towrt);
+            cppmallocl(towrt,bs*2,double); 
+#ifdef TDWSLDA
+            get_delta_ext(wdmd->datadim, it, ptr_d_delta, towrt);
+#else
+            get_delta_ext(wdmd->datadim, it, delta, towrt);
+#endif
             ierr = wdata_write_cycle(wdmd, "delta_ext", towrt);
             free(towrt);
         }
