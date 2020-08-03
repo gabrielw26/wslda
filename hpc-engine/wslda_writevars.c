@@ -138,11 +138,11 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
         }
-        else if(strcmp (lvars[i],"U") == 0)
+        else if(strcmp (lvars[i],"u") == 0)
         {
-            wdata_variable va = {"U_a", "real", "none"};
-            wdata_variable vb = {"U_b", "real", "none"};
-            wdata_link l = {"U_b", "U_a"};
+            wdata_variable va = {"u_a", "real", "none"};
+            wdata_variable vb = {"u_b", "real", "none"};
+            wdata_link l = {"u_b", "u_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
@@ -299,8 +299,8 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
         else if (strcmp (wdmd->vars[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
         else if (strcmp (wdmd->vars[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
         else if (strcmp (wdmd->vars[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
-        else if (strcmp (wdmd->vars[ivar].name,"U_a") == 0) ierr = wdata_write_cycle(wdmd, "U_a", V_a);
-        else if (strcmp (wdmd->vars[ivar].name,"U_b") == 0) ierr = wdata_write_cycle(wdmd, "U_b", V_b);
+        else if (strcmp (wdmd->vars[ivar].name,"u_a") == 0) ierr = wdata_write_cycle(wdmd, "u_a", V_a);
+        else if (strcmp (wdmd->vars[ivar].name,"u_b") == 0) ierr = wdata_write_cycle(wdmd, "u_b", V_b);
         else if (strcmp (wdmd->vars[ivar].name,"v_ext_a") == 0) 
         {
             double *towrt;

@@ -294,7 +294,7 @@ int parse_input_file(char * file_name)
                     
                     if (strcmp (ptag,"all") == 0) 
                     {
-                        replace_str(s,ptag,"density delta current nu tau U v_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext");
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }

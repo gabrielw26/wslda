@@ -14,6 +14,11 @@ writewf                 0       # write wf at the end of computation yes=1, no=0
 # writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
 iogroups                8       # number of IO groups used for parallel wf writing, default=1
 
+# list of variables for writing
+# all = density delta current nu tau u v_ext delta_ext velocity_ext
+# default = density delta current
+writevar           all
+
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type
 Nb                      28.  # Requested number of particles b-type
