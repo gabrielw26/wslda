@@ -184,7 +184,6 @@ int main( int argc , char ** argv )
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
-    double *h_potentials_ext=NULL; // pointer to array with external potentials (CPU)
     double *h_energy; // buffer for energies (CPU)
     double energy[5], energy_old[5];
     string energy_labels[5];
@@ -777,7 +776,11 @@ int main( int argc , char ** argv )
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", h_densities, h_potentials, h_potentials_ext) );
+    if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
+    for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
+    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+    process_params(dc_params, kF, mu, extra_data_size, extra_data);
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
@@ -1387,7 +1390,12 @@ int main( int argc , char ** argv )
             };
             cpu_exec( add_line_to_file(it, rt_tot, OUTPUT_ENTRIES, line_items) );
         }
-        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", h_densities, h_potentials, h_potentials_ext) );
+        // set constants after update
+        wdata_setconst(&wdmd, "kF", kF);
+        wdata_setconst(&wdmd, "eF", eF);
+        wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
+        wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
                 
         // checkpoint - only by iam==0

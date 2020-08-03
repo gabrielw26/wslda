@@ -14,6 +14,74 @@
 #include "pca_settings.h"
 #include "pca_utils.h"
 #include <mpi.h>
+
+#define cppmallocl(pointer,size,type)                                           \
+    if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
+    {                                                                           \
+        fprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
+        fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        return -1 ;                                                             \
+    }
+
+#ifdef WSLDA
+extern double *dc_params; /* Declaration of the variable */
+extern size_t dc_extra_data_size;
+extern void *dc_extra_data;
+double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data);
+double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data);
+double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data);
+
+int get_v_ext(int datadim, int spin, int it, double *data)
+{
+    int ix, iy, iz, ixyz=0;
+    int nx=NX, ny=NY, nz=NZ;
+    if(datadim==1) {ny=1; nz=1;}
+    if(datadim==2) {nz=1;}
+    for(ix=0; ix<nx; ix++) for(iy=0; iy<ny; iy++) for(iz=0; iz<nz; iz++)
+    {
+        data[ixyz] = v_ext(ix, iy, iz, it, spin, dc_params, dc_extra_data_size, dc_extra_data);
+        ixyz++;
+    }
+    return 0;
+}
+
+int get_delta_ext(int datadim, int it, double complex *deltain, double complex *data)
+{
+    int ix, iy, iz, ixyz=0;
+    int nx=NX, ny=NY, nz=NZ;
+    if(datadim==1) {ny=1; nz=1;}
+    if(datadim==2) {nz=1;}
+    for(ix=0; ix<nx; ix++) for(iy=0; iy<ny; iy++) for(iz=0; iz<nz; iz++)
+    {
+        data[ixyz] = delta_ext(ix, iy, iz, it, deltain[ixyz], dc_params, dc_extra_data_size, dc_extra_data);
+        ixyz++;
+    }
+    return 0;
+}
+
+int get_velocity_ext(int datadim, int spin, int it, double *data)
+{
+    int ix, iy, iz, ixyz=0;
+    int nx=NX, ny=NY, nz=NZ;
+    if(datadim==1) {ny=1; nz=1;}
+    if(datadim==2) {nz=1;}
+    
+    double *datax = data;
+    double *datay = datax+nx*ny*nz;
+    double *dataz = datay+nx*ny*nz;
+    
+    for(ix=0; ix<nx; ix++) for(iy=0; iy<ny; iy++) for(iz=0; iz<nz; iz++)
+    {
+        datax[ixyz] = velocity_ext(ix, iy, iz, it, spin, XAXIS, dc_params, dc_extra_data_size, dc_extra_data);
+        datay[ixyz] = velocity_ext(ix, iy, iz, it, spin, YAXIS, dc_params, dc_extra_data_size, dc_extra_data);
+        dataz[ixyz] = velocity_ext(ix, iy, iz, it, spin, ZAXIS, dc_params, dc_extra_data_size, dc_extra_data);
+        ixyz++;
+    }
+    return 0;
+}
+#endif
+
+
 /**
  * @param input input structure (INPUT)
  * @param datadim data dimensonality (INPUT)
@@ -90,8 +158,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"velocity_ext") == 0)
         {
-            wdata_variable va = {"velocity_ext_a", "real", "none"};
-            wdata_variable vb = {"velocity_ext_b", "real", "none"};
+            wdata_variable va = {"velocity_ext_a", "vector", "none"};
+            wdata_variable vb = {"velocity_ext_b", "vector", "none"};
             wdata_link l = {"velocity_ext_b", "velocity_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -100,6 +168,11 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         else if(strcmp (lvars[i],"delta") == 0)
         {
             wdata_variable va = {"delta", "complex", "none"};
+            wdata_add_variable(&tmd, &va);
+        }
+        else if(strcmp (lvars[i],"delta_ext") == 0)
+        {
+            wdata_variable va = {"delta_ext", "complex", "none"};
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"nu") == 0)
@@ -156,10 +229,9 @@ int write_wdata_metadata_file(metadata_t *input, wdata_metadata *wdmd, char *cod
  * @param codetype "st" - static code, "td" - timependent code 
  * @param h_densities array of densities
  * @param h_potentials array of potentials
- * @param h_potentials_ext array of external potentials
  * @return 0: ok, otherwise error
  * */
-int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, double *h_densities, double *h_potentials, double *h_potentials_ext)
+int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, double *h_densities, double *h_potentials)
 {
     int iam, np;
     MPI_Comm_size( mpi_comm , &np ) ; /* total number of processes */
@@ -181,25 +253,30 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, d
     double *V_a;
     double *V_b;
     double complex *delta;
+    
+    int bs; // block size
+    if(wdmd->datadim==1) bs = NX;
+    else if(wdmd->datadim==2) bs = NX*NY;
+    else bs = NX*NY*NZ;
 
     if (strcmp (codetype,"st") == 0)
     {
-        rho_a = (double *)(h_densities +  0*NX*NY);
-        rho_b = (double *)(h_densities +  1*NX*NY);
-        tau_a = (double *)(h_densities +  2*NX*NY);
-        tau_b = (double *)(h_densities +  3*NX*NY);
-        nu = (double complex *)(h_densities +  4*NX*NY);
-        j_a_x = (double *)(h_densities +  6*NX*NY);
-        j_a_y = (double *)(h_densities +  7*NX*NY);
-        j_a_z = (double *)(h_densities +  8*NX*NY);
-        j_b_x = (double *)(h_densities +  9*NX*NY);
-        j_b_y = (double *)(h_densities + 10*NX*NY);
-        j_b_z = (double *)(h_densities + 11*NX*NY);
+        rho_a = (double *)(h_densities +  0*bs);
+        rho_b = (double *)(h_densities +  1*bs);
+        tau_a = (double *)(h_densities +  2*bs);
+        tau_b = (double *)(h_densities +  3*bs);
+        nu = (double complex *)(h_densities +  4*bs);
+        j_a_x = (double *)(h_densities +  6*bs);
+        j_a_y = (double *)(h_densities +  7*bs);
+        j_a_z = (double *)(h_densities +  8*bs);
+        j_b_x = (double *)(h_densities +  9*bs);
+        j_b_y = (double *)(h_densities + 10*bs);
+        j_b_z = (double *)(h_densities + 11*bs);
         
         // pontentials
-        V_a = (double *)(h_potentials +  0*NX*NY);
-        V_b = (double *)(h_potentials +  1*NX*NY);
-        delta = (double complex *)(h_potentials +  2*NX*NY);
+        V_a = (double *)(h_potentials +  0*bs);
+        V_b = (double *)(h_potentials +  1*bs);
+        delta = (double complex *)(h_potentials +  2*bs);
     }
     else if (strcmp (codetype,"td") == 0)
     {
@@ -210,8 +287,9 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, d
     
     // write variables
     int ivar, ierr;
-    for(ivar=0; ivar<wdmd->nvars; ivar++) if(ivar%np == iam) // each process handles different variable
+    for(ivar=0; ivar<wdmd->nvars; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable
     {
+
         ierr=0;
         if      (strcmp (wdmd->vars[ivar].name,"density_a") == 0) ierr = wdata_write_cycle(wdmd, "density_a", rho_a);
         else if (strcmp (wdmd->vars[ivar].name,"density_b") == 0) ierr = wdata_write_cycle(wdmd, "density_b", rho_b);
@@ -223,6 +301,46 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, d
         else if (strcmp (wdmd->vars[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
         else if (strcmp (wdmd->vars[ivar].name,"U_a") == 0) ierr = wdata_write_cycle(wdmd, "U_a", V_a);
         else if (strcmp (wdmd->vars[ivar].name,"U_b") == 0) ierr = wdata_write_cycle(wdmd, "U_b", V_b);
+        else if (strcmp (wdmd->vars[ivar].name,"v_ext_a") == 0) 
+        {
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINA, it, towrt);
+            ierr = wdata_write_cycle(wdmd, "v_ext_a", towrt);
+            free(towrt);
+        }
+        else if (strcmp (wdmd->vars[ivar].name,"v_ext_b") == 0) 
+        {
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINB, it, towrt);
+            ierr = wdata_write_cycle(wdmd, "v_ext_b", towrt);
+            free(towrt);
+        }
+        else if (strcmp (wdmd->vars[ivar].name,"delta_ext") == 0) 
+        {
+            double *towrt;
+            cppmallocl(towrt,bs*2,double);  
+            get_delta_ext(wdmd->datadim, it, delta, (double complex *)towrt);
+            ierr = wdata_write_cycle(wdmd, "delta_ext", towrt);
+            free(towrt);
+        }
+        else if (strcmp (wdmd->vars[ivar].name,"velocity_ext_a") == 0) 
+        {
+            double *towrt;
+            cppmallocl(towrt,bs*3,double);  
+            get_velocity_ext(wdmd->datadim, SPINA, it, towrt);
+            ierr = wdata_write_cycle(wdmd, "velocity_ext_a", towrt);
+            free(towrt);
+        }
+        else if (strcmp (wdmd->vars[ivar].name,"velocity_ext_b") == 0) 
+        {
+            double *towrt;
+            cppmallocl(towrt,bs*3,double);  
+            get_velocity_ext(wdmd->datadim, SPINB, it, towrt);
+            ierr = wdata_write_cycle(wdmd, "velocity_ext_b", towrt);
+            free(towrt);
+        }
         
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }
