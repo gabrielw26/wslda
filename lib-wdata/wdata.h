@@ -57,6 +57,10 @@ typedef struct
     // constants
     wdata_const consts[WDATA_MAX_NVARS];
     
+    // auxliary vars
+    int issetwrkdir; 
+    char wrkdir[MD_CHAR_LGTH]; // working directory
+    
 } wdata_metadata; 
 
 /** 
@@ -162,7 +166,15 @@ int wdata_add_cycle(wdata_metadata *md);
  * @param filename name of file to write md, if filename is empty string then default name of file will be used `prefix`.wtxt
  * @return 0: ok, 1: cannot create file
  * */
-int write_metadata_to_file(wdata_metadata *md, const char * filename);
+int wdata_write_metadata_to_file(wdata_metadata *md, const char * filename);
+
+/**
+ * Function sets working dir for given metadata.
+ * Working dir defines directory where all binary files will be stored.
+ * Default is working dir of code that executes wdata functions.
+ * */
+void wdata_set_working_dir(wdata_metadata *md, const char * wkrdir);
+
 
 #endif
 

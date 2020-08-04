@@ -5,11 +5,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h> 
+#include <libgen.h>
 #include <complex.h>
 #include "wdata.h"
 
 #define MAX_REC_LEN 1024
 
+#define WRKDIR_SET 123987
+
+char __wdata__basedir[MAX_REC_LEN];
+void wdata_goto_wrkdir(wdata_metadata *md)
+{
+    
+    if(md->issetwrkdir==WRKDIR_SET)
+    { 
+        getcwd(__wdata__basedir, MAX_REC_LEN);
+        chdir(md->wrkdir);
+//         printf("changing to workdir=%s\n", md->wrkdir);
+    }                                                                           
+}
+
+void wdata_goback_wrkdir(wdata_metadata *md)
+{
+    if(md->issetwrkdir==WRKDIR_SET) 
+    {
+        chdir(__wdata__basedir);
+//         printf("changing to basedir=%s\n", __wdata__basedir);
+    }
+}
 
 int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
 {
@@ -83,6 +107,13 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
     }
     
     fclose(fp);
+    
+    // set working dir to be consistent with wtxt file location
+    char ctmp[MD_CHAR_LGTH];
+    strcpy(ctmp, file_name); 
+    strcpy(md->wrkdir, dirname(ctmp)); 
+    md->issetwrkdir = WRKDIR_SET;
+    
     return 0;
 }
 
@@ -176,11 +207,12 @@ size_t wdata_get_blocksize_bytes(wdata_metadata *md, wdata_variable *var)
 
 int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
 {
+    wdata_goto_wrkdir(md);
+    
     char file_name[MD_CHAR_LGTH];
     wdata_get_filename(md, var, file_name);
 //     printf("wdata_add_datablock: file_name=%s\n", file_name);
-    
-    
+        
     FILE *pFile;
     
     pFile= fopen (file_name, "ab");
@@ -191,12 +223,16 @@ int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
     
     fclose(pFile);
     
+    wdata_goback_wrkdir(md);
+        
     return 0;
 }
 
 
 int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
 {
+    wdata_goto_wrkdir(md);
+    
     int ierr;
     wdata_variable var;
     ierr = wdata_get_variable(md,varname, &var);
@@ -207,8 +243,7 @@ int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
     char file_name[MD_CHAR_LGTH];
     wdata_get_filename(md, &var, file_name);
 //     printf("wdata_write_cycle: Writing to file %s\n", file_name);
-    
-    
+        
     FILE *pFile;
     
     pFile= fopen (file_name, "ab");
@@ -219,12 +254,16 @@ int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
     
     fclose(pFile);
     
+    wdata_goback_wrkdir(md);
+    
     return 0;
 }
 
 
 int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *data)
 {
+    wdata_goto_wrkdir(md);
+    
     int ierr;
     wdata_variable var;
     ierr = wdata_get_variable(md,varname, &var);
@@ -248,6 +287,8 @@ int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *d
     if(test_ele!=1) return 2; // data not read
     
     fclose(pFile);
+    
+    wdata_goback_wrkdir(md);
     
     return 0;
 }
@@ -331,6 +372,8 @@ void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue
 
 int wdata_file_exists(wdata_metadata *md, const char *varname)
 {
+    wdata_goto_wrkdir(md);
+    
     int ierr;
     wdata_variable var;
     ierr = wdata_get_variable(md, varname, &var);
@@ -345,21 +388,30 @@ int wdata_file_exists(wdata_metadata *md, const char *varname)
         fclose(file);
         return 1;
     }
+    
+    wdata_goback_wrkdir(md);
+    
     return 0;
 }
 
 
 void wdata_clear_file(wdata_metadata *md, const char *varname)
 {
+    wdata_goto_wrkdir(md);
+    
     char file_name[MD_CHAR_LGTH];
     sprintf(file_name, "%s_%s.wdat", md->prefix, varname);
     
     remove(file_name);
+    
+    wdata_goback_wrkdir(md);
 }
 
 
 void wdata_clear_database(wdata_metadata *md)
 {
+    wdata_goto_wrkdir(md);
+    
     char file_name[MD_CHAR_LGTH];
     int i;
     for(i=0; i<md->nvars; i++) 
@@ -368,19 +420,27 @@ void wdata_clear_database(wdata_metadata *md)
         remove(file_name);
     }
     md->cycles=0;
+    
+    wdata_goback_wrkdir(md);
 }
 
-int write_metadata_to_file(wdata_metadata *md, const char * filename)
+int wdata_write_metadata_to_file(wdata_metadata *md, const char * filename)
 {
     char file_name[MD_CHAR_LGTH];
     if(strcmp(filename,"")==0) sprintf(file_name, "%s.wtxt", md->prefix);
     else                       sprintf(file_name, "%s", filename);
     
-    printf("creating %s\n", file_name);
+//     printf("creating %s\n", file_name);
     FILE * fout = fopen(file_name, "w");
     if(fout==NULL) return 1;
     wdata_print_metadata(md, fout);
     fclose(fout);
+}
+
+void wdata_set_working_dir(wdata_metadata *md, const char * wrkdir)
+{
+    strcpy(md->wrkdir, wrkdir);
+    md->issetwrkdir=WRKDIR_SET;
 }
 
 

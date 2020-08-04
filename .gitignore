@@ -86,3 +86,4 @@ lib-wdata/example-write
 
 lib-wdata/libwdata\.a
 lib-wdata/test*
+tools/wdata-cut

@@ -16,3 +16,8 @@ examples: lib example-write.c
 	$(CXX) example-write.c -o example-write -L. -lwdata -lm 
 	$(CXX) example-read.c -o example-read -L. -lwdata -lm 
 
+clean:
+	rm wdata.o
+	rm libwdata.a
+	rm example-write
+	rm example-read

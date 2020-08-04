@@ -145,7 +145,7 @@ int main()
     }
     
     // write metadata file (with default name)
-    write_metadata_to_file(&md, "");
+    wdata_write_metadata_to_file(&md, "");
     
     return 0;
 }
