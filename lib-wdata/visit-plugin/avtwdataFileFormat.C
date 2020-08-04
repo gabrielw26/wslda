@@ -333,7 +333,7 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
     wdmd.NX=0; wdmd.NY=0; wdmd.NZ=0;
     wdmd.DX=0.0; wdmd.DY=0.0; wdmd.DZ=0.0;
     int ierr;
-    
+        
     ierr = wdata_parse_metadata_file(filename, &wdmd);
     
     if(ierr!=0 || wdmd.NX==0 || wdmd.NY==0 || wdmd.NZ==0 || wdmd.DX==0.0 || wdmd.DY==0.0 || wdmd.DZ==0.0)
@@ -346,6 +346,18 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
     if(wdmd.datadim==2) {wdmd.NZ=1;}
     if(wdmd.datadim==1) {wdmd.NZ=1; wdmd.NY=1;}
     
+    std::string str = filename;
+    unsigned found = str.find_last_of("/\\");
+    std::string path = str.substr(0,found);
+    debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: path="<<path<<endl;
+    if(path!="") 
+    {
+        str = path + "/" + wdmd.prefix;
+        // debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: str="<<str<<endl;
+        strcpy(wdmd.prefix, str.c_str());
+    }
+    debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: wdmd.prefix="<<wdmd.prefix<<endl;
+    
     // create list of variables
     wdataVariable * _var;
     for(int i=0; i<wdmd.nvars; i++)
@@ -357,6 +369,25 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
         
         variable.push_back(_var);
     }
+    
+    // fill comment section
+    #define MAX_REC_LEN 1024
+    FILE * inp;
+    
+    // open file
+    inp = fopen (filename,"r");
+    if(inp==NULL) // error - cannot create the file
+    {
+        EXCEPTION1(InvalidDBTypeException,
+                            "[WDATA] Incorrect metadata file!");
+    }
+    
+    char s[MAX_REC_LEN];
+    dbcomment="\n***********************************************\n";
+    while(fgets(s, MAX_REC_LEN, inp) != NULL) dbcomment+=s;
+    #undef MAX_REC_LEN
+    fclose(inp);   
+    dbcomment+="\n***********************************************";
 }
 
 avtwdataFileFormat::~avtwdataFileFormat()
@@ -503,6 +534,9 @@ avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeSt
         const_expr.SetType(Expression::ScalarMeshVar);
         md->AddExpression(&const_expr);
     }
+    
+    // db comment
+     md->SetDatabaseComment(dbcomment);
 }
 
 

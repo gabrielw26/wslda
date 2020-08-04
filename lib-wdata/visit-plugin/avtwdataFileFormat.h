@@ -180,6 +180,8 @@ class avtwdataFileFormat : public avtMTSDFileFormat
     virtual void           PopulateDatabaseMetaData(avtDatabaseMetaData *, int);
     
     std::vector<wdataVariable *>variable;
+    
+    std::string dbcomment; 
 };
 
 

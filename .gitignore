@@ -79,3 +79,10 @@ td-myproject-template/td-wslda-2d
 td-myproject-template/td-wslda-1d
 
 td-testcase-uniform/td-wslda-2d
+
+lib-wdata/example-read
+
+lib-wdata/example-write
+
+lib-wdata/libwdata\.a
+lib-wdata/test*
