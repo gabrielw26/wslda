@@ -35,6 +35,7 @@ temperature             0.1      # requested temperature in units of eF
 # aBdG                    -0.9   # akF about 0.9
 spinsymmetry            0       # set to 1 if you want to impose Na=Nb
 nocurrents              1       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
+nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
 
 broyden                 1 # use 1 if to activate Broyden mixing

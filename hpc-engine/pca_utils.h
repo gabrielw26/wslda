@@ -70,7 +70,7 @@ typedef struct
     // TSUBAME parameter
     int tsubamenodes; // number of nodes used in calculations on tsubame computer
     
-    // kz-solver parameters
+    // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
     double npartconveps; // convergence epsilon for particle number- fraction of N_tot=(Na+Nb) needed to get convergence, default=1.0e-6
     double linearmixing; // mixing parameter for linear algorithm, default=0.5
@@ -85,6 +85,7 @@ typedef struct
     double writeecut; // only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
     int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0
+    int nomixstart; // if 1 then in the first iteration do not do mixing, default nomixstart=0
     
     // broyden mixing parameters
     int broyden; // 0 - linear mixing, 1 - update densities with Broyden, default=0

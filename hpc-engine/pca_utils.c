@@ -68,6 +68,7 @@ metadata_t md =
 1.0e12, // writeecut
 0.0, // aBdG
 0, // nocurrents
+0, // nomixstart
 0, // broyden
 5, // Mbroyden
 0, // startbroyden
@@ -235,6 +236,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
         else if (strcmp (tag,"nocurrents") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nocurrents);
+        else if (strcmp (tag,"nomixstart") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.nomixstart);
         // broyden
         else if (strcmp (tag,"broyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.broyden);      

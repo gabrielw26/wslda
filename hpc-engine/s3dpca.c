@@ -759,7 +759,7 @@ int main( int argc , char ** argv )
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     
     wdata_metadata wdmd; 
-    file_operation( create_wdata_metadata(&md, 3, 1.0*it, 1.0, md.spinsymmetry, &wdmd) );
+    file_operation( create_wdata_metadata(&md, 3, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
     
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
@@ -780,6 +780,8 @@ int main( int argc , char ** argv )
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, kF, mu, extra_data_size, extra_data);
+    modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
+    modify_potentials(it, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     
@@ -1234,14 +1236,10 @@ int main( int argc , char ** argv )
         // ------------------ mix densities ------------------
         b_t();
         
-        if(md.inittype==22 && kziter==0) //special case - started from interpolated checkpoint
+        if(md.nomixstart==1 && kziter==0) //special case - no mixing for the first iteration
         {
-            // some densities like tau and nu are cut-off dependent, and may be very different 
-            // when moving onle from to another lattice
-            // what matters is only E_kin+E_pair which is well defined
-            
             // pass - do not mix
-            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: START FROM INTERPOLATED SOLUTION [md.inittype==22]! MIXING SKIPPED!\n");
+            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: NO MIXING FOR STARTING ITERATION (nomixstart==1)! MIXING SKIPPED!\n");
         }
         else if(saving_iteration==1) //special case - saving interation
         {
