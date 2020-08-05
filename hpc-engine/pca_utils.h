@@ -51,10 +51,10 @@ typedef struct
     // INIT-0 parameters
     double init0Na;            // Requested number of particles a-type - uniform solution
     double init0Nb;            // Requested number of particles b-type - uniform solution
-    double muchange;           // Change rate of chemical potential
-    double Tstart;             // Start temperature, in units of eF, default 0.2
-    double Tstop;              // Stop temperature, in units of eF, default 0.05
-    double DeltaT;             // change of temperature in units of eF, default 0.01
+    double init0muchange;           // Change rate of chemical potential
+    double init0Tstart;             // Start temperature, in units of eF, default 0.2
+    double init0Tstop;              // Stop temperature, in units of eF, default 0.05
+    double init0DeltaT;             // change of temperature in units of eF, default 0.01
     double init0eps;           // epsilon for convergence, default 1.0e-6
     double init0scmix;         // mixing parameter in self-consitent process, default 0.25
     int init0maxiter;          // maximum number of iterations, default 100000
@@ -74,9 +74,9 @@ typedef struct
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
     double npartconveps; // convergence epsilon for particle number- fraction of N_tot=(Na+Nb) needed to get convergence, default=1.0e-6
     double linearmixing; // mixing parameter for linear algorithm, default=0.5
-    double kzmuchange; // coefficient for changing chemical potential, default=0.5
-    int kzmaxiters; // maximum number of iterations, default=10000
-    double kztemp; // temperature in units of eF_a, default=0.01
+    double muchange; // coefficient for changing chemical potential, default=0.5
+    int maxiters; // maximum number of iterations, default=10000
+    double temperature; // temperature in units of eF_a, default=0.01
     double referencekF; // value of reference kF used in calculations, if 0.0 then not set (default)
     int spinsymmetry; // impose spin symmetry, default 0 - no
     double mumaxchange; // maximal change of chemical potential per iteration, in units of Fermi energy, default 0.1

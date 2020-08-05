@@ -40,10 +40,10 @@ metadata_t md =
 100.0, // Nb;         
 100.0, // init0Na;                
 100.0, // init0Nb; 
-1.0e-4, // muchange;   
-0.2, // Tstart;
-0.05, // Tstop;
-0.01, // DeltaT;
+1.0e-4, // init0muchange;   
+0.2, // init0Tstart;
+0.05, // init0Tstop;
+0.01, // init0DeltaT;
 1.0e-6, // init0eps;
 0.25, // init0scmix
 100000, // init0maxiter;
@@ -57,9 +57,9 @@ metadata_t md =
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 0.5, // linearmixing
-0.5, // kzmuchange
-10000, // kzmaxiters
-0.01, // kztemp
+0.5, // muchange
+10000, // maxiters
+0.01, // temperature
 0.0, // referencekF
 0, // spinsymmetry
 0.1, // mumaxchange
@@ -177,14 +177,14 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.init0Na);
         else if (strcmp (tag,"init0Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0Nb);
-        else if (strcmp (tag,"muchange") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.muchange);
-        else if (strcmp (tag,"Tstart") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.Tstart);
-        else if (strcmp (tag,"Tstop") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.Tstop);
-        else if (strcmp (tag,"DeltaT") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.DeltaT);
+        else if (strcmp (tag,"init0muchange") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0muchange);
+        else if (strcmp (tag,"init0Tstart") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0Tstart);
+        else if (strcmp (tag,"init0Tstop") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0Tstop);
+        else if (strcmp (tag,"init0DeltaT") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.init0DeltaT);
         else if (strcmp (tag,"init0eps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0eps);
         else if (strcmp (tag,"init0scmix") == 0)
@@ -213,12 +213,12 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.npartconveps);
         else if (strcmp (tag,"linearmixing") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.linearmixing);
-        else if (strcmp (tag,"kzmuchange") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.kzmuchange);
-        else if (strcmp (tag,"kzmaxiters") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.kzmaxiters);
-        else if (strcmp (tag,"kztemp") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.kztemp);
+        else if (strcmp (tag,"muchange") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.muchange);
+        else if (strcmp (tag,"maxiters") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.maxiters);
+        else if (strcmp (tag,"temperature") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.temperature);
         else if (strcmp (tag,"referencekF") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.referencekF);
         else if (strcmp (tag,"spinsymmetry") == 0)

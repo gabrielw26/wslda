@@ -672,7 +672,7 @@ int main( int argc , char ** argv )
             dc_mu_b = mu[SPINB];
             dc_ec=M_PI*M_PI/(2.*DX*DX);
             Effg = 0.6 * md.Na * eF;
-            beta = 1.0 / (md.kztemp * eF); 
+            beta = 1.0 / (md.temperature * eF); 
         }
         
         MPI_Bcast(&it          , 1 , MPI_INT    , 0 , MPI_COMM_WORLD );
@@ -751,7 +751,7 @@ int main( int argc , char ** argv )
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
     Effg = 0.6 * (md.Na+md.Nb) * eF;
-    beta = 1.0 / (md.kztemp * eF);    
+    beta = 1.0 / (md.temperature * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
 #endif
@@ -788,7 +788,7 @@ int main( int argc , char ** argv )
     if(md.spinsymmetry>0) dc_ec_l=0.0; // take only positive states
     
     // special case for saving
-    if(md.writewf==1 && md.kzmaxiters==1) saving_iteration=1;
+    if(md.writewf==1 && md.maxiters==1) saving_iteration=1;
     
     // Create binary files and add initial measurement
     if(iam==0)
@@ -904,12 +904,12 @@ int main( int argc , char ** argv )
     // ===================================================================================     
     
     // special case - only one iteration for diagonalization
-    if(md.kzmaxiters==1 && md.writewf==1) saving_iteration=1;
+    if(md.maxiters==1 && md.writewf==1) saving_iteration=1;
     
     while(1) // do until reached self-consitency
     {
         b_t();
-        if((kziter+1)==md.kzmaxiters && md.writewf==1) 
+        if((kziter+1)==md.maxiters && md.writewf==1) 
         {
             if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
             saving_iteration=1;
@@ -931,7 +931,7 @@ int main( int argc , char ** argv )
                                // take density in the center and use it for definition of the kF (for SPINA)
         
         eF = 0.5 * kF * kF;
-        beta = 1.0 / (md.kztemp * eF);
+        beta = 1.0 / (md.temperature * eF);
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
@@ -1212,20 +1212,20 @@ int main( int argc , char ** argv )
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
             npart[SPINA]*=DXYZ; npart[SPINB]*=DXYZ; 
-            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
-            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
-            if(fabs(kzmuchange_a)>md.mumaxchange*eF)
+            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
+            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
+            if(fabs(muchange_a)>md.mumaxchange*eF)
             {
-                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange*eF;
-                else                 kzmuchange_a=-1.0*md.mumaxchange*eF;
+                if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
+                else               muchange_a=-1.0*md.mumaxchange*eF;
             }
-            if(fabs(kzmuchange_b)>md.mumaxchange*eF)
+            if(fabs(muchange_b)>md.mumaxchange*eF)
             {
-                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange*eF;
-                else                 kzmuchange_b=-1.0*md.mumaxchange*eF;
+                if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
+                else               muchange_b=-1.0*md.mumaxchange*eF;
             }
-            dc_mu_a -= kzmuchange_a;
-            dc_mu_b -= kzmuchange_b;  
+            dc_mu_a -= muchange_a;
+            dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
         }
         if(iam==0) printf("# MUCHANGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
@@ -1475,7 +1475,7 @@ int main( int argc , char ** argv )
         
         it++; // go to next iteration
         kziter++;
-        if(kziter==md.kzmaxiters)
+        if(kziter==md.maxiters)
         {
             if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);
             

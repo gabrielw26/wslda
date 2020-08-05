@@ -705,7 +705,7 @@ int main( int argc , char ** argv )
     if(md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
     Effg = 0.6 * (md.Na+md.Nb) * eF;
-    beta = 1.0 / (md.kztemp * eF);    
+    beta = 1.0 / (md.temperature * eF);    
     if(md.ec>0.0) dc_ec = md.ec; 
     else          dc_ec = M_PI*M_PI/(2.*DX*DX);
 #endif
@@ -824,12 +824,12 @@ int main( int argc , char ** argv )
     // ===================================================================================     
     
     // special case - only one iteration for diagonalization
-    if(md.kzmaxiters==1 && md.writewf==1) saving_iteration=1;
+    if(md.maxiters==1 && md.writewf==1) saving_iteration=1;
     
     while(1) // do until reached self-consitency
     {
         b_t();
-        if((kziter+1)==md.kzmaxiters && md.writewf==1) 
+        if((kziter+1)==md.maxiters && md.writewf==1) 
         {
             if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
             saving_iteration=1;
@@ -851,7 +851,7 @@ int main( int argc , char ** argv )
         else kF = pow(6.*M_PI*M_PI*rho_a[NY/2 + NX/2*NY],1./3.);
         
         eF = 0.5 * kF * kF;
-        beta = 1.0 / (md.kztemp * eF);
+        beta = 1.0 / (md.temperature * eF);
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
@@ -1143,21 +1143,21 @@ int main( int argc , char ** argv )
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
         if(it>0) 
         {       
-            double kzmuchange_a = md.kzmuchange*(npart[SPINA] - md.Na)/md.Na;
-            double kzmuchange_b = md.kzmuchange*(npart[SPINB] - md.Nb)/md.Nb;
+            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
+            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
             
-            if(fabs(kzmuchange_a)>md.mumaxchange*eF)
+            if(fabs(muchange_a)>md.mumaxchange*eF)
             {
-                if(kzmuchange_a>0.0) kzmuchange_a=     md.mumaxchange*eF;
-                else                 kzmuchange_a=-1.0*md.mumaxchange*eF;
+                if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
+                else               muchange_a=-1.0*md.mumaxchange*eF;
             }
-            if(fabs(kzmuchange_b)>md.mumaxchange*eF)
+            if(fabs(muchange_b)>md.mumaxchange*eF)
             {
-                if(kzmuchange_b>0.0) kzmuchange_b=     md.mumaxchange*eF;
-                else                 kzmuchange_b=-1.0*md.mumaxchange*eF;
+                if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
+                else               muchange_b=-1.0*md.mumaxchange*eF;
             }
-            dc_mu_a -= kzmuchange_a;
-            dc_mu_b -= kzmuchange_b;  
+            dc_mu_a -= muchange_a;
+            dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
                         
         }
@@ -1405,7 +1405,7 @@ int main( int argc , char ** argv )
         
         it++; // go to next iteration - global counter
         kziter++; // go to next iteration - this run counter
-        if(kziter==md.kzmaxiters)
+        if(kziter==md.maxiters)
         {
             if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);
             

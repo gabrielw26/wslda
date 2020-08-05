@@ -47,12 +47,12 @@ spinsymmetry            0       # spin symmetric system
 # qfswitch                0.0     # time for switch function
 
 # ----------- IN CASE OF: inittype=0 ----------------
-Na                      28. # will be ignored for UNIFORM_TEST_MODE
-Nb                      28. # will be ignored for UNIFORM_TEST_MODE
-muchange                0.1   # Change rate of chemical potential
-Tstart                  0.05  # Start temperature, in units of eF, default 0.2
-Tstop                   0.05  # Stop temperature, in units of eF, default 0.05
-DeltaT                  0.01  # change of temperature in units of eF, default 0.01
+init0Na                 28. # will be ignored for UNIFORM_TEST_MODE
+init0Nb                 28. # will be ignored for UNIFORM_TEST_MODE
+init0muchange           0.1   # Change rate of chemical potential
+init0Tstart             0.05  # Start temperature, in units of eF, default 0.2
+init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
+init0DeltaT             0.01  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
 init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
 init0maxiter            20000 # maximum number of iterations, default 100000

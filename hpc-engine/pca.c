@@ -173,9 +173,10 @@ int main( int argc , char ** argv )
 #ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
 #else
-    md.Nb = md.Na+1;
+    md.Nb = md.Na +1; 
 #endif
-    if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f\n", md.Na);
+    if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f Nb=%f\n", md.Na, md.Nb);
+    md.init0Na=md.Na; md.init0Nb=md.Nb;
 #endif
     
     if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NXYZ*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
@@ -287,9 +288,9 @@ int main( int argc , char ** argv )
             
             // Generate initial state for testing
 #ifdef BDG_MODE
-            cpu_exec( solve_uniform_problem_bdg(md.Na/NXYZ, md.Nb/NXYZ, &nwf, ip==0) );
+            cpu_exec( solve_uniform_problem_bdg(md.init0Na/NXYZ, md.init0Nb/NXYZ, &nwf, ip==0) );
 #else
-            cpu_exec( solve_uniform_problem(md.Na/NXYZ, md.Nb/NXYZ, &nwf, ip==0) );
+            cpu_exec( solve_uniform_problem(md.init0Na/NXYZ, md.init0Nb/NXYZ, &nwf, ip==0) );
 #endif
             MPI_Barrier(MPI_COMM_WORLD);
 //             ABORT;

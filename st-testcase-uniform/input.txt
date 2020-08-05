@@ -1,3 +1,6 @@
+# -------------------- CUSTOM PARAMS ------------------
+params31            0.0 # add noise
+
 # ------------------- INITIALIZATION ------------------
 inittype                0      # 0 - create uniform solution;
                                # 1 - read uniform solution from file `inprefix`_uniform.solution
@@ -17,7 +20,7 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # list of variables for writing
 # all = density delta current nu tau u v_ext delta_ext velocity_ext
 # default = density delta current
-writevar           all
+writevar           default all
 
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type
@@ -69,8 +72,4 @@ init0scmix              0.5  # mixing parameter in self-consistent process, defa
 init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
-
-
-
-
 
