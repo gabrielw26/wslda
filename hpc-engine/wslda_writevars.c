@@ -206,7 +206,7 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
 int clear_files(metadata_t *input, wdata_metadata *wdmd)
 {
     int i;
-    if(md.overwrite==0) for(i=0; i<wdmd->nvars; i++) if(wdata_file_exists(wdmd,wdmd->vars[i].name)) return 1;
+    if(md.overwrite==0) for(i=0; i<wdmd->nvar; i++) if(wdata_file_exists(wdmd,wdmd->var[i].name)) return 1;
     
     wdata_clear_database(wdmd);
     
@@ -314,21 +314,21 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
     
     // write variables
     int ivar, ierr;
-    for(ivar=0; ivar<wdmd->nvars; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable
+    for(ivar=0; ivar<wdmd->nvar; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable
     {
 
         ierr=0;
-        if      (strcmp (wdmd->vars[ivar].name,"density_a") == 0) ierr = wdata_write_cycle(wdmd, "density_a", rho_a);
-        else if (strcmp (wdmd->vars[ivar].name,"density_b") == 0) ierr = wdata_write_cycle(wdmd, "density_b", rho_b);
-        else if (strcmp (wdmd->vars[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
-        else if (strcmp (wdmd->vars[ivar].name,"current_a") == 0) ierr = wdata_write_cycle(wdmd, "current_a", j_a_x);
-        else if (strcmp (wdmd->vars[ivar].name,"current_b") == 0) ierr = wdata_write_cycle(wdmd, "current_b", j_b_x);
-        else if (strcmp (wdmd->vars[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
-        else if (strcmp (wdmd->vars[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
-        else if (strcmp (wdmd->vars[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
-        else if (strcmp (wdmd->vars[ivar].name,"u_a") == 0) ierr = wdata_write_cycle(wdmd, "u_a", V_a);
-        else if (strcmp (wdmd->vars[ivar].name,"u_b") == 0) ierr = wdata_write_cycle(wdmd, "u_b", V_b);
-        else if (strcmp (wdmd->vars[ivar].name,"v_ext_a") == 0) 
+        if      (strcmp (wdmd->var[ivar].name,"density_a") == 0) ierr = wdata_write_cycle(wdmd, "density_a", rho_a);
+        else if (strcmp (wdmd->var[ivar].name,"density_b") == 0) ierr = wdata_write_cycle(wdmd, "density_b", rho_b);
+        else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
+        else if (strcmp (wdmd->var[ivar].name,"current_a") == 0) ierr = wdata_write_cycle(wdmd, "current_a", j_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"current_b") == 0) ierr = wdata_write_cycle(wdmd, "current_b", j_b_x);
+        else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
+        else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
+        else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
+        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) ierr = wdata_write_cycle(wdmd, "u_a", V_a);
+        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0) ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+        else if (strcmp (wdmd->var[ivar].name,"v_ext_a") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs,double);  
@@ -336,7 +336,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "v_ext_a", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->vars[ivar].name,"v_ext_b") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"v_ext_b") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs,double);  
@@ -344,7 +344,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "v_ext_b", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->vars[ivar].name,"delta_ext") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"delta_ext") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs*2,double); 
@@ -356,7 +356,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "delta_ext", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->vars[ivar].name,"velocity_ext_a") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"velocity_ext_a") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs*3,double);  
@@ -364,7 +364,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "velocity_ext_a", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->vars[ivar].name,"velocity_ext_b") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"velocity_ext_b") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs*3,double);  

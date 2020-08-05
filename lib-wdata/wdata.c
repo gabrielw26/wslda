@@ -188,7 +188,7 @@ void wdata_add_const(wdata_metadata *md, wdata_const *_const)
     md->nconsts++;
 }
 
-int wdata_get_blocksize(wdata_metadata *md)
+int wdata_get_blocklength(wdata_metadata *md)
 {
     if(md->datadim==3) return md->NX*md->NY*md->NZ;
     if(md->datadim==2) return md->NX*md->NY       ;
@@ -196,11 +196,11 @@ int wdata_get_blocksize(wdata_metadata *md)
     return -1; // error!!!
 }
 
-size_t wdata_get_blocksize_bytes(wdata_metadata *md, wdata_variable *var)
+size_t wdata_get_blocksize(wdata_metadata *md, wdata_variable *var)
 {
-    if(strcmp(var->type, "real"   ) == 0) return sizeof(double)*wdata_get_blocksize(md)  ;
-    if(strcmp(var->type, "complex") == 0) return sizeof(double)*wdata_get_blocksize(md)*2;    
-    if(strcmp(var->type, "vector" ) == 0) return sizeof(double)*wdata_get_blocksize(md)*3;    
+    if(strcmp(var->type, "real"   ) == 0) return sizeof(double)*wdata_get_blocklength(md)  ;
+    if(strcmp(var->type, "complex") == 0) return sizeof(double)*wdata_get_blocklength(md)*2;    
+    if(strcmp(var->type, "vector" ) == 0) return sizeof(double)*wdata_get_blocklength(md)*3;    
          
     return 0; // error
 }
@@ -218,7 +218,7 @@ int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
     pFile= fopen (file_name, "ab");
     if (pFile==NULL)  return 1; // cannot open    
         
-    size_t test_ele = fwrite (data , wdata_get_blocksize_bytes(md,var), 1, pFile);
+    size_t test_ele = fwrite (data , wdata_get_blocksize(md,var), 1, pFile);
     if(test_ele!=1) return 2; // data not written 
     
     fclose(pFile);
@@ -249,7 +249,7 @@ int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
     pFile= fopen (file_name, "ab");
     if (pFile==NULL)  return 1; // cannot open    
         
-    size_t test_ele = fwrite (data , wdata_get_blocksize_bytes(md,&var), 1, pFile);
+    size_t test_ele = fwrite (data , wdata_get_blocksize(md,&var), 1, pFile);
     if(test_ele!=1) return 2; // data not written 
     
     fclose(pFile);
@@ -281,9 +281,9 @@ int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *d
     if (pFile==NULL)  return 1; // cannot open    
         
     // set pointer to correct location
-    if(fseek ( pFile, wdata_get_blocksize_bytes(md,&var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
+    if(fseek ( pFile, wdata_get_blocksize(md,&var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
     
-    size_t test_ele = fread (data , wdata_get_blocksize_bytes(md,&var), 1, pFile);
+    size_t test_ele = fread (data , wdata_get_blocksize(md,&var), 1, pFile);
     if(test_ele!=1) return 2; // data not read
     
     fclose(pFile);
@@ -444,3 +444,31 @@ void wdata_set_working_dir(wdata_metadata *md, const char * wrkdir)
 }
 
 
+int wdata_add_var_to_metadata_file(const char * file_name, wdata_variable *var)
+{    
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    wdata_print_variable(var, fout);
+    fclose(fout);
+    return 0;
+}
+
+
+int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link)
+{
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    wdata_print_link(link, fout);
+    fclose(fout);
+    return 0;
+}
+
+
+int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const)
+{
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    wdata_print_const(_const, fout);
+    fclose(fout);
+    return 0;
+}

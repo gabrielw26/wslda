@@ -102,7 +102,7 @@ int wdataVariable::loadCycle(int cycleid)
 wdataRealVariable::wdataRealVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
 {
     // allocate memory for data
-    int bs = wdata_get_blocksize(md);
+    int bs = wdata_get_blocklength(md);
     data = new double [bs];
     
     dataR = (double *)data; // for easier algebra 
@@ -151,7 +151,7 @@ bool wdataRealVariable::getVariable(const char * _varname, int cycleid, float * 
 wdataComplexVariable::wdataComplexVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
 {
     // allocate memory for data
-    int bs = wdata_get_blocksize(md);
+    int bs = wdata_get_blocklength(md);
     data = new double [bs*2];
     
     dataC = (Complex *)data; // for easier algebra 
@@ -268,7 +268,7 @@ bool wdataComplexVariable::getVariable(const char * _varname, int cycleid, float
 wdataVectorVariable::wdataVectorVariable(wdata_metadata *wdmd, int varid):wdataVariable(wdmd, varid)
 {
     // allocate memory for data
-    int bs = wdata_get_blocksize(md);
+    int bs = wdata_get_blocklength(md);
     data = new double [bs*3];
     
     dataVx = (double *)data; // for easier algebra 
@@ -630,7 +630,7 @@ vtkDataArray *
 avtwdataFileFormat::GetVar(int timestate, const char *varname)
 {
     
-    int ntuples = wdata_get_blocksize(&wdmd); // this is the number of entries in the variable.
+    int ntuples = wdata_get_blocklength(&wdmd); // this is the number of entries in the variable.
     vtkFloatArray *rv = vtkFloatArray::New();
     rv->SetNumberOfComponents(1);
     rv->SetNumberOfTuples(ntuples);
@@ -671,7 +671,7 @@ avtwdataFileFormat::GetVar(int timestate, const char *varname)
 vtkDataArray *
 avtwdataFileFormat::GetVectorVar(int timestate, const char *varname)
 {
-    int ntuples = wdata_get_blocksize(&wdmd); // this is the number of entries in the variable.
+    int ntuples = wdata_get_blocklength(&wdmd); // this is the number of entries in the variable.
     vtkFloatArray *rv = vtkFloatArray::New();
     rv->SetNumberOfComponents(3);
     rv->SetNumberOfTuples(ntuples);

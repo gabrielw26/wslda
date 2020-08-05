@@ -88,7 +88,7 @@ int main()
     wdata_clear_database(&md);
 
     // generate some artifical data 
-    int bdim = wdata_get_blocksize(&md); // get block size
+    int bdim = wdata_get_blocklength(&md); // get block size
     
     double *dataR;         // real data
     Complex *dataC; // complex data

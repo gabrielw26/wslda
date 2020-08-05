@@ -40,7 +40,7 @@ int main()
     wdata_print_metadata(&md, stdout);
     
     // allocate memory for variables
-    int bdim = wdata_get_blocksize(&md); // get block size
+    int bdim = wdata_get_blocklength(&md); // get block size
     
     double *dataR;         // real data
     Complex *dataC;        // complex data

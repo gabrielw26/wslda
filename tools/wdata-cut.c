@@ -74,7 +74,7 @@ int main( int argc , char ** argv )
     wdata_clear_database(&mdout);
     
     double *data;
-    int bdim = wdata_get_blocksize(&md); // get block size
+    int bdim = wdata_get_blocklength(&md); // get block size
     cppmallocl(data,bdim*3,double);
     
     int icycle, ivar;

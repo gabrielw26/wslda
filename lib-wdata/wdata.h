@@ -84,9 +84,12 @@ void wdata_add_link(wdata_metadata *md, wdata_link *link);
 
 void wdata_add_const(wdata_metadata *md, wdata_const *_const);
 
-int wdata_get_blocksize(wdata_metadata *md);
+int wdata_get_blocklength(wdata_metadata *md);
 
-size_t wdata_get_blocksize_bytes(wdata_metadata *md, wdata_variable *var);
+/**
+ * @return size of block in bytes for given variable
+ * */
+size_t wdata_get_blocksize(wdata_metadata *md, wdata_variable *var);
 
 /**
  * Low level function. It adds block of data to binary file.
@@ -175,7 +178,23 @@ int wdata_write_metadata_to_file(wdata_metadata *md, const char * filename);
  * */
 void wdata_set_working_dir(wdata_metadata *md, const char * wkrdir);
 
+/**
+ * Function adds at the end of file new entry for variable
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_var_to_metadata_file(const char * file_name, wdata_variable *var);
 
+/**
+ * Function adds at the end of file new entry for link
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link);
+
+/**
+ * Function adds at the end of file new entry for link
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const);
 #endif
 
 
