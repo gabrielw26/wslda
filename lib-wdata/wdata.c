@@ -43,8 +43,8 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
         return 1; // Cannot open file
         
     // reset vars
-    md->nvars=0;
-    md->nlinks=0;
+    md->nvar=0;
+    md->nlink=0;
     md->nconsts=0;
     
     // buffers
@@ -87,15 +87,15 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
         // variables
         else if (strcmp (tag,"var") == 0)
         {
-            sscanf (s,"%s %s %s %s %lf %*s",tag, &md->vars[md->nvars].name, &md->vars[md->nvars].type, &md->vars[md->nvars].unit); 
-            md->nvars++;       
+            sscanf (s,"%s %s %s %s %lf %*s",tag, &md->var[md->nvar].name, &md->var[md->nvar].type, &md->var[md->nvar].unit); 
+            md->nvar++;       
         }
         
         // links
         else if (strcmp (tag,"link") == 0)
         {
-            sscanf (s,"%s %s %s %*s",tag, &md->links[md->nlinks].name, &md->links[md->nlinks].linkto); 
-            md->nlinks++;       
+            sscanf (s,"%s %s %s %*s",tag, &md->link[md->nlink].name, &md->link[md->nlink].linkto); 
+            md->nlink++;       
         }
         
         // consts
@@ -137,15 +137,15 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     fprintf(out,"\n");
     fprintf(out,"# variables\n");
     fprintf(out,"# tag                  name                    type                    unit\n");
-    for(i=0; i<md->nvars; i++) wdata_print_variable(&md->vars[i], out);
+    for(i=0; i<md->nvar; i++) wdata_print_variable(&md->var[i], out);
     
     // links
     fprintf(out,"\n");
     fprintf(out,"# links\n");
     fprintf(out,"# tag                  name                 link-to\n");
-    for(i=0; i<md->nlinks; i++) wdata_print_link(&md->links[i], out);
+    for(i=0; i<md->nlink; i++) wdata_print_link(&md->link[i], out);
     
-    // links
+    // consts
     fprintf(out,"\n");
     fprintf(out,"# consts\n");
     fprintf(out,"# tag                  name                   value\n");
@@ -171,14 +171,14 @@ void wdata_print_const(wdata_const *md, FILE *out)
 
 void wdata_add_variable(wdata_metadata *md, wdata_variable *var)
 {
-    md->vars[md->nvars] = *var;
-    md->nvars++;
+    md->var[md->nvar] = *var;
+    md->nvar++;
 }
 
 void wdata_add_link(wdata_metadata *md, wdata_link *link)
 {
-    md->links[md->nlinks] = *link;
-    md->nlinks++;
+    md->link[md->nlink] = *link;
+    md->nlink++;
 }
 
 
@@ -311,12 +311,12 @@ int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *
     sprintf(tvarname,"%s", varname); // copy to tvarname
     
     // check is links redirects
-    for(i=0; i<md->nlinks; i++) if(strcmp(md->links[i].name, varname) == 0) sprintf(tvarname,"%s", md->links[i].linkto);
+    for(i=0; i<md->nlink; i++) if(strcmp(md->link[i].name, varname) == 0) sprintf(tvarname,"%s", md->link[i].linkto);
     
     // find variable
-    for(i=0; i<md->nvars; i++) if(strcmp(md->vars[i].name, tvarname) == 0)
+    for(i=0; i<md->nvar; i++) if(strcmp(md->var[i].name, tvarname) == 0)
     {
-        *var = md->vars[i];
+        *var = md->var[i];
         return 0;
     }
     
@@ -414,9 +414,9 @@ void wdata_clear_database(wdata_metadata *md)
     
     char file_name[MD_CHAR_LGTH];
     int i;
-    for(i=0; i<md->nvars; i++) 
+    for(i=0; i<md->nvar; i++) 
     {
-        wdata_get_filename(md, &md->vars[i], file_name);
+        wdata_get_filename(md, &md->var[i], file_name);
         remove(file_name);
     }
     md->cycles=0;

@@ -80,12 +80,12 @@ int main( int argc , char ** argv )
     int icycle, ivar;
     for(icycle=0; icycle<md.cycles; icycle++) if(icycle>=start && icycle<stop)
     {
-        for(ivar=0; ivar<md.nvars; ivar++)
+        for(ivar=0; ivar<md.nvar; ivar++)
         {
-            ierr = wdata_read_cycle(&md, md.vars[ivar].name, icycle, data);
+            ierr = wdata_read_cycle(&md, md.var[ivar].name, icycle, data);
             if(ierr!=0) { printf("ERROR: Cannot read datablock!\n"); return 1;}
             
-            ierr = wdata_write_cycle(&mdout, md.vars[ivar].name, data);
+            ierr = wdata_write_cycle(&mdout, md.var[ivar].name, data);
             if(ierr!=0) { printf("ERROR: Cannot write datablock!\n"); return 1;}
         }
         wdata_add_cycle(&mdout);

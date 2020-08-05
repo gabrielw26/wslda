@@ -44,15 +44,15 @@ typedef struct
     int cycles;                /// number of cycles (measurments)
     double t0;                 /// time value for the first mesurments
     double dt;                 /// time interval between cycles    
-    int nvars;                 /// number of variables
-    int nlinks;                /// number of links
+    int nvar;                 /// number of variables
+    int nlink;                /// number of links
     int nconsts;               /// number of constants
     
     // variables
-    wdata_variable vars[WDATA_MAX_NVARS];
+    wdata_variable var[WDATA_MAX_NVARS];
     
     // links
-    wdata_link links[WDATA_MAX_NVARS];
+    wdata_link link[WDATA_MAX_NVARS];
 
     // constants
     wdata_const consts[WDATA_MAX_NVARS];

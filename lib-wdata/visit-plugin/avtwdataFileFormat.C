@@ -88,7 +88,7 @@ int wdataVariable::loadCycle(int cycleid)
     int ierr=0;
     
     if(loadedcycle!=cycleid)
-        wdata_operation( wdata_read_cycle(md, md->vars[vid].name, cycleid, data) );
+        wdata_operation( wdata_read_cycle(md, md->var[vid].name, cycleid, data) );
     
     if(ierr==0) loadedcycle = cycleid;
     else        loadedcycle = -1;
@@ -108,14 +108,14 @@ wdataRealVariable::wdataRealVariable(wdata_metadata *wdmd, int varid):wdataVaria
     dataR = (double *)data; // for easier algebra 
     
     // create list of varaibles
-    varname.push_back(md->vars[vid].name);
-    varunit.push_back(md->vars[vid].unit);
+    varname.push_back(md->var[vid].name);
+    varunit.push_back(md->var[vid].unit);
     
     // check links
-    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    for(int i=0; i<md->nlink; i++) if(strcmp(md->link[i].linkto, md->var[vid].name) == 0)
     {
-        varname.push_back(md->links[i].name);
-        varunit.push_back(md->vars[vid].unit);        
+        varname.push_back(md->link[i].name);
+        varunit.push_back(md->var[vid].unit);        
     }
 }
 
@@ -159,47 +159,47 @@ wdataComplexVariable::wdataComplexVariable(wdata_metadata *wdmd, int varid):wdat
     // create list of varaibles
     string varlabel;
     
-    varlabel = md->vars[vid].name; varlabel+="_abs"; 
+    varlabel = md->var[vid].name; varlabel+="_abs"; 
     varname.push_back(varlabel);
-    varunit.push_back(md->vars[vid].unit);
+    varunit.push_back(md->var[vid].unit);
     trans.push_back(cabs);
     
-    varlabel = md->vars[vid].name; varlabel+="_arg"; 
+    varlabel = md->var[vid].name; varlabel+="_arg"; 
     varname.push_back(varlabel);
     varunit.push_back("PI");
     trans.push_back(carg);
     
-    varlabel = md->vars[vid].name; varlabel+="_re"; 
+    varlabel = md->var[vid].name; varlabel+="_re"; 
     varname.push_back(varlabel);
-    varunit.push_back(md->vars[vid].unit);
+    varunit.push_back(md->var[vid].unit);
     trans.push_back(cre);
     
-    varlabel = md->vars[vid].name; varlabel+="_im"; 
+    varlabel = md->var[vid].name; varlabel+="_im"; 
     varname.push_back(varlabel);
-    varunit.push_back(md->vars[vid].unit);
+    varunit.push_back(md->var[vid].unit);
     trans.push_back(cim);
     
     // check links
-    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    for(int i=0; i<md->nlink; i++) if(strcmp(md->link[i].linkto, md->var[vid].name) == 0)
     {
-        varlabel = md->links[vid].name; varlabel+="_abs"; 
+        varlabel = md->link[vid].name; varlabel+="_abs"; 
         varname.push_back(varlabel);
-        varunit.push_back(md->vars[vid].unit);
+        varunit.push_back(md->var[vid].unit);
         trans.push_back(cabs);  
         
-        varlabel = md->links[vid].name; varlabel+="_arg"; 
+        varlabel = md->link[vid].name; varlabel+="_arg"; 
         varname.push_back(varlabel);
         varunit.push_back("PI");
         trans.push_back(carg); 
         
-        varlabel = md->links[vid].name; varlabel+="_re"; 
+        varlabel = md->link[vid].name; varlabel+="_re"; 
         varname.push_back(varlabel);
-        varunit.push_back(md->vars[vid].unit);
+        varunit.push_back(md->var[vid].unit);
         trans.push_back(cre); 
 
-        varlabel = md->links[vid].name; varlabel+="_im"; 
+        varlabel = md->link[vid].name; varlabel+="_im"; 
         varname.push_back(varlabel);
-        varunit.push_back(md->vars[vid].unit);
+        varunit.push_back(md->var[vid].unit);
         trans.push_back(cim); 
     }
 }
@@ -276,14 +276,14 @@ wdataVectorVariable::wdataVectorVariable(wdata_metadata *wdmd, int varid):wdataV
     dataVz = dataVy + bs;
     
     // create list of varaibles
-    varname.push_back(md->vars[vid].name);
-    varunit.push_back(md->vars[vid].unit);
+    varname.push_back(md->var[vid].name);
+    varunit.push_back(md->var[vid].unit);
     
     // check links
-    for(int i=0; i<md->nlinks; i++) if(strcmp(md->links[i].linkto, md->vars[vid].name) == 0)
+    for(int i=0; i<md->nlink; i++) if(strcmp(md->link[i].linkto, md->var[vid].name) == 0)
     {
-        varname.push_back(md->links[i].name);
-        varunit.push_back(md->vars[vid].unit);        
+        varname.push_back(md->link[i].name);
+        varunit.push_back(md->var[vid].unit);        
     }
 }
 
@@ -360,12 +360,12 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
     
     // create list of variables
     wdataVariable * _var;
-    for(int i=0; i<wdmd.nvars; i++)
+    for(int i=0; i<wdmd.nvar; i++)
     {
         
-        if(strcmp(wdmd.vars[i].type, "real") == 0) _var = new wdataRealVariable(&wdmd, i);
-        if(strcmp(wdmd.vars[i].type, "complex") == 0) _var = new wdataComplexVariable(&wdmd, i);
-        if(strcmp(wdmd.vars[i].type, "vector") == 0) _var = new wdataVectorVariable(&wdmd, i);
+        if(strcmp(wdmd.var[i].type, "real") == 0) _var = new wdataRealVariable(&wdmd, i);
+        if(strcmp(wdmd.var[i].type, "complex") == 0) _var = new wdataComplexVariable(&wdmd, i);
+        if(strcmp(wdmd.var[i].type, "vector") == 0) _var = new wdataVectorVariable(&wdmd, i);
         
         variable.push_back(_var);
     }
@@ -392,7 +392,7 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
 
 avtwdataFileFormat::~avtwdataFileFormat()
 {
-    for(int i=0; i<wdmd.nvars; i++) delete variable[i];
+    for(int i=0; i<wdmd.nvar; i++) delete variable[i];
 }
 
 
