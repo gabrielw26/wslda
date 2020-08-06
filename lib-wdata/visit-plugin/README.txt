@@ -15,6 +15,20 @@ To compile and install plugin:
     
     make
     
+Making plugin to be public (availabe for everyone) use xml2cmake with additional -public option:
+
+    xml2cmake -public -clobber wdata.xml 
+    
+    
+--------------------------------------------------------------------    
+INSTALLING ON DWARF:
+--------------------------------------------------------------------
+* use node2066
+* module load visit/2_13_1
+* execute makelinks.sh
+* from node2072 execute: install2072.sh
+* from node2072 execute: makelinks.sh
+    
 --------------------------------------------------------------------    
 PROBLEMS YOU MAY ENCOUNTER:
 --------------------------------------------------------------------

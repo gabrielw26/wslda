@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h> 
-#include <complex.h>
+#include <complex>
 
 typedef std::complex<double> Complex;
 
