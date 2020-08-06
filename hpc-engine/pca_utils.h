@@ -107,6 +107,7 @@ typedef struct
     
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
+    char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
 
     // POTENTIAL PARAMETERS
     double params[MAX_USER_PARAMS];

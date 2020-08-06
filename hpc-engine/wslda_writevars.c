@@ -126,8 +126,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
     {        
         if(strcmp (lvars[i],"density") == 0)
         {
-            wdata_variable va = {"density_a", "real", "none"};
-            wdata_variable vb = {"density_b", "real", "none"};
+            wdata_variable va = {"density_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"density_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"density_b", "density_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -135,8 +135,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"current") == 0)
         {
-            wdata_variable va = {"current_a", "vector", "none"};
-            wdata_variable vb = {"current_b", "vector", "none"};
+            wdata_variable va = {"current_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"current_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"current_b", "current_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -144,8 +144,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"tau") == 0)
         {
-            wdata_variable va = {"tau_a", "real", "none"};
-            wdata_variable vb = {"tau_b", "real", "none"};
+            wdata_variable va = {"tau_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"tau_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"tau_b", "tau_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -153,8 +153,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"u") == 0)
         {
-            wdata_variable va = {"u_a", "real", "none"};
-            wdata_variable vb = {"u_b", "real", "none"};
+            wdata_variable va = {"u_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"u_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"u_b", "u_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -162,8 +162,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"v_ext") == 0)
         {
-            wdata_variable va = {"v_ext_a", "real", "none"};
-            wdata_variable vb = {"v_ext_b", "real", "none"};
+            wdata_variable va = {"v_ext_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"v_ext_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"v_ext_b", "v_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -171,8 +171,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"velocity_ext") == 0)
         {
-            wdata_variable va = {"velocity_ext_a", "vector", "none"};
-            wdata_variable vb = {"velocity_ext_b", "vector", "none"};
+            wdata_variable va = {"velocity_ext_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"velocity_ext_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
             wdata_link l = {"velocity_ext_b", "velocity_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -180,17 +180,17 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"delta") == 0)
         {
-            wdata_variable va = {"delta", "complex", "none"};
+            wdata_variable va = {"delta", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"delta_ext") == 0)
         {
-            wdata_variable va = {"delta_ext", "complex", "none"};
+            wdata_variable va = {"delta_ext", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"nu") == 0)
         {
-            wdata_variable va = {"nu", "complex", "none"};
+            wdata_variable va = {"nu", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
         
