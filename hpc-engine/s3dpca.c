@@ -780,9 +780,9 @@ int main( int argc , char ** argv )
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, kF, mu, extra_data_size, extra_data);
-    modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
-    modify_potentials(it, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
+    modify_densities(it-1, h_densities, dc_params, extra_data_size, extra_data) ;
+    modify_potentials(it-1, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, h_densities, h_potentials) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction

@@ -82,6 +82,7 @@ metadata_t md =
 99999.0, // ccstop;
 10.0, // ccswitch;
 1, // iogroups
+"wdat", // dataformat
 };
 
 // Taken from:
@@ -268,6 +269,8 @@ int parse_input_file(char * file_name)
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
+        else if (strcmp (tag,"dataformat") == 0)
+            sscanf (s,"%s %s %*s",tag,md.dataformat);
         else
         {
             // POTENTIAL PARAMETERS
