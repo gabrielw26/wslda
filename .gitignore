@@ -91,3 +91,5 @@ lib-wdata/test*
 tools/libwdata\.a
 tools/wdata-cut
 tools/test*
+
+tools/dpca2wdata

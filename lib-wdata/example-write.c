@@ -59,13 +59,13 @@ int main()
     
     // add variables to data set
     // for each variable binary file of name `prefix_`varname`.wdat will be created
-    wdata_variable vdensity_a = {"density_a", "real", "none"};
+    wdata_variable vdensity_a = {"density_a", "real", "none", "wdat"};
     wdata_add_variable(&md, &vdensity_a);
     
-    wdata_variable vdelta = {"delta", "complex", "none"};
+    wdata_variable vdelta = {"delta", "complex", "none", "wdat"};
     wdata_add_variable(&md, &vdelta);
     
-    wdata_variable vcurrent_a = {"current_a", "vector", "none"};
+    wdata_variable vcurrent_a = {"current_a", "vector", "none", "wdat"};
     wdata_add_variable(&md, &vcurrent_a);
     
     // add links to data sets

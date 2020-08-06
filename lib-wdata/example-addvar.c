@@ -41,7 +41,7 @@ int main()
     if(current_a==NULL) {printf("Cannot allocate current_a!\n"); return 1;}
  
     // add variable to metadata file
-    wdata_variable w_a = {"w_a", "vector", "none"};
+    wdata_variable w_a = {"w_a", "vector", "none", "wdat"};
     wdata_add_variable(&md, &w_a); // add to metadata structure
     wdata_add_var_to_metadata_file("test.wtxt", &w_a); // add entry to metadata file
  

@@ -87,7 +87,7 @@ int wdata_parse_metadata_file(const char * file_name, wdata_metadata *md)
         // variables
         else if (strcmp (tag,"var") == 0)
         {
-            sscanf (s,"%s %s %s %s %lf %*s",tag, &md->var[md->nvar].name, &md->var[md->nvar].type, &md->var[md->nvar].unit); 
+            sscanf (s,"%s %s %s %s %s %*s",tag, &md->var[md->nvar].name, &md->var[md->nvar].type, &md->var[md->nvar].unit, &md->var[md->nvar].format ); 
             md->nvar++;       
         }
         
@@ -128,7 +128,7 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     fprintf(out, "DY %24g   # spacing\n", md->DY);
     fprintf(out, "DZ %24g   # spacing\n", md->DZ);
     fprintf(out, "datadim %19d   # dimension of block size: 1=NX, 2=NX*NY, 3=NX*NY*NZ\n", md->datadim);
-    fprintf(out, "prefix %20s   # prefix for files belonging to this data set, binary files have names prefix_variable.wdat\n", md->prefix);
+    fprintf(out, "prefix %20s   # prefix for files belonging to this data set, binary files have names prefix_variable.format\n", md->prefix);
     fprintf(out, "cycles %20d   # number of cycles (measurements)\n", md->cycles);
     fprintf(out, "t0 %24g   # time value for the first cycle\n", md->t0);
     fprintf(out, "dt %24g   # time interval between cycles\n", md->dt);
@@ -136,7 +136,7 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
     // variables
     fprintf(out,"\n");
     fprintf(out,"# variables\n");
-    fprintf(out,"# tag                  name                    type                    unit\n");
+    fprintf(out,"# tag                  name                    type                    unit                  format\n");
     for(i=0; i<md->nvar; i++) wdata_print_variable(&md->var[i], out);
     
     // links
@@ -156,7 +156,7 @@ void wdata_print_metadata(wdata_metadata *md, FILE *out)
 
 void wdata_print_variable(wdata_variable *md, FILE *out)
 {
-    fprintf(out, "var%24s%24s%24s\n", md->name, md->type, md->unit);
+    fprintf(out, "var%24s%24s%24s%24s\n", md->name, md->type, md->unit, md->format);
 }
 
 void wdata_print_link(wdata_link *md, FILE *out)
@@ -209,6 +209,18 @@ int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
 {
     wdata_goto_wrkdir(md);
     
+    int ierr=-1;
+    if     (strcmp(var->format, "wdat" ) == 0) ierr = wdata_add_datablock_wdat(md,var, data);
+    else if(strcmp(var->format, "dpca" ) == 0) ierr = wdata_add_datablock_dpca(md,var, data);
+    else if(strcmp(var->format, "npy"  ) == 0) ierr = wdata_add_datablock_npy(md,var, data);
+    
+    wdata_goback_wrkdir(md);
+    
+    return ierr; // error code
+}
+
+int wdata_add_datablock_wdat(wdata_metadata *md, wdata_variable *var, void *data)
+{
     char file_name[MD_CHAR_LGTH];
     wdata_get_filename(md, var, file_name);
 //     printf("wdata_add_datablock: file_name=%s\n", file_name);
@@ -223,56 +235,37 @@ int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data)
     
     fclose(pFile);
     
-    wdata_goback_wrkdir(md);
-        
     return 0;
 }
 
+int wdata_add_datablock_dpca(wdata_metadata *md, wdata_variable *var, void *data)
+{
+    return -99; // pdca format is deprecated, thus writing files in this format is no longer supported!
+}
 
-int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
+int wdata_add_datablock_npy(wdata_metadata *md, wdata_variable *var, void *data)
+{
+    return -99; // TODO
+}
+
+int wdata_load_datablock(wdata_metadata *md, wdata_variable *var, int cycle, void *data)
 {
     wdata_goto_wrkdir(md);
     
-    int ierr;
-    wdata_variable var;
-    ierr = wdata_get_variable(md,varname, &var);
-    if(ierr>0) return 10+ierr;
-    
-//     wdata_print_variable(&var, stdout); // for testing
-    
-    char file_name[MD_CHAR_LGTH];
-    wdata_get_filename(md, &var, file_name);
-//     printf("wdata_write_cycle: Writing to file %s\n", file_name);
-        
-    FILE *pFile;
-    
-    pFile= fopen (file_name, "ab");
-    if (pFile==NULL)  return 1; // cannot open    
-        
-    size_t test_ele = fwrite (data , wdata_get_blocksize(md,&var), 1, pFile);
-    if(test_ele!=1) return 2; // data not written 
-    
-    fclose(pFile);
+    int ierr=-1;
+    if     (strcmp(var->format, "wdat" ) == 0) ierr = wdata_load_datablock_wdat(md,var, cycle, data);
+    else if(strcmp(var->format, "dpca" ) == 0) ierr = wdata_load_datablock_dpca(md,var, cycle, data);
+    else if(strcmp(var->format, "npy"  ) == 0) ierr = wdata_load_datablock_npy(md,var, cycle, data);
     
     wdata_goback_wrkdir(md);
     
-    return 0;
+    return ierr; // error code    
 }
 
-
-int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *data)
+int wdata_load_datablock_wdat(wdata_metadata *md, wdata_variable *var, int cycle, void *data)
 {
-    wdata_goto_wrkdir(md);
-    
-    int ierr;
-    wdata_variable var;
-    ierr = wdata_get_variable(md,varname, &var);
-    if(ierr>0) return 10+ierr;
-    
-//     wdata_print_variable(&var, stdout); // for testing
-    
     char file_name[MD_CHAR_LGTH];
-    wdata_get_filename(md, &var, file_name);
+    wdata_get_filename(md, var, file_name);
 //     printf("wdata_read_cycle: Reading from file %s\n", file_name);
     
     FILE *pFile;
@@ -281,16 +274,65 @@ int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *d
     if (pFile==NULL)  return 1; // cannot open    
         
     // set pointer to correct location
-    if(fseek ( pFile, wdata_get_blocksize(md,&var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
+    if(fseek ( pFile, wdata_get_blocksize(md,var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
     
-    size_t test_ele = fread (data , wdata_get_blocksize(md,&var), 1, pFile);
+    size_t test_ele = fread (data , wdata_get_blocksize(md,var), 1, pFile);
     if(test_ele!=1) return 2; // data not read
     
     fclose(pFile);
+
+    return 0; 
+}
+
+int wdata_load_datablock_dpca(wdata_metadata *md, wdata_variable *var, int cycle, void *data)
+{
+    char file_name[MD_CHAR_LGTH];
+    wdata_get_filename(md, var, file_name);
+//     printf("wdata_read_cycle: Reading from file %s\n", file_name);
     
-    wdata_goback_wrkdir(md);
+    FILE *pFile;
     
+    pFile= fopen (file_name, "rb");
+    if (pFile==NULL)  return 1; // cannot open    
+        
+    // set pointer to correct location
+    #define MIO_CNT_INTS 4
+    #define MIO_CNT_double 6
+    size_t header_size = (MIO_CNT_INTS+1)*sizeof(int) + MIO_CNT_double*sizeof(double);
+    if(fseek ( pFile, header_size + wdata_get_blocksize(md,var)*cycle, SEEK_SET ) != 0 ) return 3; // cannot seek pointer
+    
+    size_t test_ele = fread (data , wdata_get_blocksize(md,var), 1, pFile);
+    if(test_ele!=1) return 2; // data not read
+    
+    fclose(pFile);
+
     return 0;
+}
+
+int wdata_load_datablock_npy(wdata_metadata *md, wdata_variable *var, int cycle, void *data)
+{
+    return -99; // TODO
+}
+
+int wdata_write_cycle(wdata_metadata *md, const char *varname, void *data)
+{
+    
+    int ierr;
+    wdata_variable var;
+    ierr = wdata_get_variable(md,varname, &var);
+    if(ierr>0) return 10+ierr;
+    
+    return wdata_add_datablock(md, &var, data);
+}
+
+int wdata_read_cycle(wdata_metadata *md, const char *varname, int cycle, void *data)
+{
+    int ierr;
+    wdata_variable var;
+    ierr = wdata_get_variable(md,varname, &var);
+    if(ierr>0) return 10+ierr;
+    
+    return wdata_load_datablock(md, &var, cycle, data);
 }
 
 int wdata_add_cycle(wdata_metadata *md)
@@ -301,7 +343,9 @@ int wdata_add_cycle(wdata_metadata *md)
 
 void wdata_get_filename(wdata_metadata *md, wdata_variable *var, char *file_name)
 {
-    sprintf(file_name, "%s_%s.wdat", md->prefix, var->name);
+    if     (strcmp(var->format, "wdat" ) == 0) sprintf(file_name, "%s_%s.wdat", md->prefix, var->name);
+    else if(strcmp(var->format, "dpca" ) == 0) sprintf(file_name, "%s_%s.dpca", md->prefix, var->name);
+    else if(strcmp(var->format, "npy"  ) == 0) sprintf(file_name, "%s_%s.npy", md->prefix, var->name);
 }
 
 int wdata_get_variable(wdata_metadata *md, const char *varname, wdata_variable *var)

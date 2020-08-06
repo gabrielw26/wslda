@@ -85,7 +85,8 @@ int main( int argc , char ** argv )
             ierr = wdata_read_cycle(&md, md.var[ivar].name, icycle, data);
             if(ierr!=0) { printf("ERROR: Cannot read datablock!\n"); return 1;}
             
-            ierr = wdata_write_cycle(&mdout, md.var[ivar].name, data);
+            sprintf(mdout.var[ivar].format, "wdat"); // use wdat format
+            ierr = wdata_write_cycle(&mdout, mdout.var[ivar].name, data);
             if(ierr!=0) { printf("ERROR: Cannot write datablock!\n"); return 1;}
         }
         wdata_add_cycle(&mdout);

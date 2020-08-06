@@ -17,6 +17,7 @@ typedef struct
     char name[MD_VARNAME_LGTH];
     char type[MD_VARNAME_LGTH];
     char unit[MD_VARNAME_LGTH];
+    char format[8]; // one of wdat, npy, dpca
 } wdata_variable;
 
 typedef struct
@@ -99,6 +100,14 @@ size_t wdata_get_blocksize(wdata_metadata *md, wdata_variable *var);
  * @return 0: ok; 1: cannot open binary file; 2: cannot add datablock to file
  * */
 int wdata_add_datablock(wdata_metadata *md, wdata_variable *var, void *data);
+int wdata_add_datablock_wdat(wdata_metadata *md, wdata_variable *var, void *data);
+int wdata_add_datablock_dpca(wdata_metadata *md, wdata_variable *var, void *data); 
+int wdata_add_datablock_npy(wdata_metadata *md, wdata_variable *var, void *data);  
+
+int wdata_load_datablock(wdata_metadata *md, wdata_variable *var, int cycle, void *data);
+int wdata_load_datablock_wdat(wdata_metadata *md, wdata_variable *var, int cycle, void *data);
+int wdata_load_datablock_dpca(wdata_metadata *md, wdata_variable *var, int cycle, void *data);
+int wdata_load_datablock_npy(wdata_metadata *md, wdata_variable *var, int cycle, void *data);
 
 /**
  * Function adds new block to data file.
