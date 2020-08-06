@@ -22,6 +22,8 @@
 #include <complex.h>
 #include <time.h>
 
+#include "netlib-lapack.h"
+
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
     {                                                                           \

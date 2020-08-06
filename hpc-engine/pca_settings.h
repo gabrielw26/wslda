@@ -11,6 +11,7 @@
 // STATIC CODE
 #define CODE "W-SLDA-TOOLKIT"
 #define VERSION "0.1dev"
+#include "netlib-lapack.h"
 #include "predefines.h"
 
 #elif TDWSLDA

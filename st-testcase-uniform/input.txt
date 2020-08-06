@@ -1,3 +1,6 @@
+# -------------------- CUSTOM PARAMS ------------------
+params31            0.0 # add noise
+
 # ------------------- INITIALIZATION ------------------
 inittype                0      # 0 - create uniform solution;
                                # 1 - read uniform solution from file `inprefix`_uniform.solution
@@ -9,7 +12,7 @@ outprefix               test
 inprefix                none
 overwrite               1       # allow for overwriting results
 checkpoint              1       # do checkpoints after each iteration
-resetit                 1       # if 1 then reset iterations counter
+resetit                 0       # if 1 then reset iterations counter
 writewf                 0       # write wf at the end of computation yes=1, no=0
 # writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
 iogroups                8       # number of IO groups used for parallel wf writing, default=1
@@ -17,7 +20,7 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # list of variables for writing
 # all = density delta current nu tau u v_ext delta_ext velocity_ext
 # default = density delta current
-writevar           all
+writevar           default all
 
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type
@@ -41,7 +44,7 @@ mumaxchange             0.05 # in units of Fermi energy
 broyden                 1 # use 1 if to activate Broyden mixing
 Mbroyden                5
 broydenmixing           0.75
-# startbroyden            3
+startbroyden            3
 # stopbroyden             10
 
 # -------------- PARALLELIZATION SETTINGS --------------
@@ -70,8 +73,4 @@ init0scmix              0.5  # mixing parameter in self-consistent process, defa
 init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
-
-
-
-
 

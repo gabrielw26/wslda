@@ -64,16 +64,32 @@ data/
 
 pca/ccpca
 
-st-testcase-uniform/wslda-3d
+st-testcase-uniform/test*
+st-testcase-uniform/st-wslda-3d
+st-testcase-uniform/st-wslda-2d
 
-st-testcase-uniform/wslda-2d
+st-myproject-template/test*
+st-myproject-template/st-wslda-3d
+st-myproject-template/st-wslda-2d
 
-st-myproject-template/wslda-3d
-
-st-myproject-template/wslda-2d
-
+td-myproject-template/test*
 td-myproject-template/td-wslda-3d
-
 td-myproject-template/td-wslda-2d
-
 td-myproject-template/td-wslda-1d
+
+td-testcase-uniform/test*
+td-testcase-uniform/td-wslda-3d
+td-testcase-uniform/td-wslda-2d
+td-testcase-uniform/td-wslda-1d
+
+lib-wdata/example-read
+lib-wdata/example-write
+lib-wdata/example-addvar
+lib-wdata/libwdata\.a
+lib-wdata/test*
+
+tools/libwdata\.a
+tools/wdata-cut
+tools/test*
+
+tools/dpca2wdata

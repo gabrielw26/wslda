@@ -1,3 +1,5 @@
+# LOAD BEFORE COMPILATION
+# 
 # module load cuda
 
 # COMPILERS
@@ -7,6 +9,8 @@ NVCC = nvcc
 # DIRECTORY SETTINGS
 OBJDIR=./obj/
 BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3 -I$(OMPI_DIR)/include -DTARGET_MACHINE=TITAN
@@ -16,83 +20,5 @@ NVCCFLAGS = -arch sm_60 -O3
 LIBS=-L$(OMPI_DIR)/lib -L$(CUDA_DIR)/targets/ppc64le-linux/lib/stubs -lmpi_ibm -lnvidia-ml -L$(CUDA_DIR)/lib64 -lcudart -lcufft -lm
 
 
-
-# =====================================================================
-# =================== DO NOT MODIFY THIS PART =========================
-# =====================================================================
-SRCDIR=../hpc-engine/
-INCLUDEDIR=../hpc-engine/
-DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
-       ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
-       cpca_kernels.h cpca_derivative.h cpca_dens.h
-NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h
-DEPSLOCAL = predefines.h  problem-definition.h
-
-SRCS = 
-
-SRCS1D = ccpca.o ccpca_checkpoint.o
-NVCCSRCS1D = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o
-
-SRCS2D = cpca.o cpca_checkpoint.o
-NVCCSRCS2D = cpca_derivative.o cpca_kernels.o cpca_dens.o
-
-SRCS3D = pca.o pca_checkpoint.o
-NVCCSRCS3D = pca_derivative.o pca_kernels.o pca_dens.o
-CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
-NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
-
-OBJS := $(addprefix $(OBJDIR),$(SRCS:.c=.o))
-SRCS := $(addprefix $(SRCDIR),$(SRCS))
-OBJS1D := $(addprefix $(OBJDIR),$(SRCS1D:.c=.o))
-SRCS1D := $(addprefix $(SRCDIR),$(SRCS1D))
-NVCCOBJS1D := $(addprefix $(OBJDIR),$(NVCCSRCS1D:.cu=.o))
-NVCCSRCS1D := $(addprefix $(SRCDIR),$(NVCCSRCS1D))
-OBJS2D := $(addprefix $(OBJDIR),$(SRCS2D:.c=.o))
-SRCS2D := $(addprefix $(SRCDIR),$(SRCS2D))
-NVCCOBJS2D := $(addprefix $(OBJDIR),$(NVCCSRCS2D:.cu=.o))
-NVCCSRCS2D := $(addprefix $(SRCDIR),$(NVCCSRCS2D))
-OBJS3D := $(addprefix $(OBJDIR),$(SRCS3D:.c=.o))
-SRCS3D := $(addprefix $(SRCDIR),$(SRCS3D))
-NVCCOBJS3D := $(addprefix $(OBJDIR),$(NVCCSRCS3D:.cu=.o))
-NVCCSRCS3D := $(addprefix $(SRCDIR),$(NVCCSRCS3D))
-DEPS := $(addprefix $(INCLUDEDIR),$(DEPS))
-NVCCDEPS := $(addprefix $(INCLUDEDIR),$(NVCCDEPS))
-	
-all: 1d 2d 3d
-
-1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) 
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-1d $^ 
-	
-2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) 
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-2d $^ 
-	
-3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) 
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
-	
-$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
-	
-$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
-	
-$(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) -c -o $@ $< 
-		
-$(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
-	$(NVCC) $(NVCCFLAGS) -c -o $@ $< 
-
-dirs:
-	mkdir -p $(OBJDIR)
-	mkdir -p $(BINDIR)
-
-.PHONY: clean all ver
-
-clean:
-	rm -f $(OBJDIR)*
-	rm -f $(BINDIR)td-wslda-1d
-	rm -f $(BINDIR)td-wslda-2d
-	rm -f $(BINDIR)td-wslda-3d
-	
-ver:
-	$(CXX) --version
+include mk.td
 

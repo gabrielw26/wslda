@@ -1,60 +1,73 @@
-# Input file for test case
+# -------------------- CUSTOM PARAMS ------------------
+params31            0.0 # add noise
+
+# ------------------- INITIALIZATION ------------------
 inittype                0      # 0 - create uniform solution;
                                # 1 - read uniform solution from file `inprefix`_uniform.solution
                                # 2 - start from checkpoint
                                # 22- start from interpolated checkpoint
 
-params31            0.0 # add noise
-
-# CBLACS grid
-# NOTE: p*q=np
-# p                       2
-# q                       2
-mb                      32
-nb                      32
-
+# ------------------- INPUT/OUTPUT ------------------
 outprefix               test
 inprefix                none
-overwrite               1
-nthreads                24
-batch                   24
+overwrite               1       # allow for overwriting results
+checkpoint              1       # do checkpoints after each iteration
+resetit                 1       # if 1 then reset iterations counter
+writewf                 0       # write wf at the end of computation yes=1, no=0
+# writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
+iogroups                8       # number of IO groups used for parallel wf writing, default=1
 
-# Particle numbers
+# list of variables for writing
+# all = density delta current nu tau u v_ext delta_ext velocity_ext
+# default = density delta current
+writevar           default all
+
+# ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type
 Nb                      28.  # Requested number of particles b-type
 
-# INIT-0 parameters
+# ----------------- SELF-CONSISTENT LOOP -----------------
+# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*(pi/DX)^2
+energyconveps           1.0e-6   # energy convergence epsilon
+npartconveps            1.0e-6   # number of particles convergence epsilon
+linearmixing            0.5      # mixing parameter for densities, default=0.5
+kzmuchange              0.5      # coefficient for changing chemical potential, default=0.5
+kzmaxiters              1000     # maximum number of iterations, default=10000
+kztemp                  0.1      # requested temperature in units of eF
+# referencekF             1.0    # reference kF
+# aBdG                    -0.9   # akF about 0.9
+spinsymmetry            0       # set to 1 if you want to impose Na=Nb
+nocurrents              1       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
+mumaxchange             0.05 # in units of Fermi energy
+
+broyden                 1 # use 1 if to activate Broyden mixing
+Mbroyden                5
+broydenmixing           0.75
+# startbroyden            3
+# stopbroyden             10
+
+# -------------- PARALLELIZATION SETTINGS --------------
+# NOTE: all matrices are processed collectively by p*q processes
+# Following condition must be satisfied:
+#   for 3D code: p*q=np
+#   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
+# where np is total number of processes utilized for computation
+p                       2
+q                       2
+
+# data block size 
+# if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
+mb                      32
+nb                      32
+
+# ----------- IN CASE OF: inittype=0 ----------------
 muchange                0.1   # Change rate of chemical potential
 Tstart                  0.1  # Start temperature, in units of eF, default 0.2
 Tstop                   0.1  # Stop temperature, in units of eF, default 0.05
 DeltaT                  0.01  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
-init0scmix              0.5  # mixing parameter in self-consitent process, default 0.25
+init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
 init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
-
-# s2d-solver
-energyconveps           1.0e-6   # energy convergence epsilon
-npartconveps            1.0e-6   # number of particles convergence epsilon
-linearmixing            0.5       # mixing parameter for densities, default=0.5
-kzmuchange              0.5     # coefficient for changing chemical potential, default=0.5
-kzmaxiters              1000      # maximum number of iterations, default=10000
-kztemp                  0.1    # requested temperature in units of eF
-# referencekF             1.0    # reference kF
-# aBdG                    -0.9   # akF about 0.9
-spinsymmetry            0       # spin symmetric system
-resetit                 1       # start from it=0
-writewf                 0       # no wf writing
-mumaxchange             0.05 # in units of fermi energy
-
-# broyden
-broyden                 1
-Mbroyden                5
-broydenmixing           0.75
-startbroyden            20
-# stopbroyden             10
-
-
-checkpoint              1       # do checkpoint everytime
 
