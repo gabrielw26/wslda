@@ -53,8 +53,8 @@ startbroyden            3
 #   for 3D code: p*q=np
 #   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
 # where np is total number of processes utilized for computation
-p                       2
-q                       2
+# p                       2
+# q                       2
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended

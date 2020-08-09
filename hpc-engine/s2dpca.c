@@ -342,13 +342,33 @@ int main( int argc , char ** argv )
     { 
         if(iam==0) printf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
         int tnp;
-        for(iz=NZ_HALF; iz>=1; iz--) { tnp=np/iz; if(tnp>=1) break; }
-        int dims[2] = {0,0};
-        MPI_Dims_create(tnp, 2, dims); // however, you can also set nprow and npcol by hand, keeping constraing nprow*npcol=np
-        md.p = dims[0]; // cartesian direction 0
-        md.q = dims[1]; // cartesian direction 1        
+        for(iz=NZ_HALF; iz>=1; iz--) 
+        { 
+            tnp=np/iz;
+            int dims[2] = {0,0};
+            MPI_Dims_create(tnp, 2, dims); // however, you can also set nprow and npcol by hand, keeping constraing nprow*npcol=np
+            if(iz*dims[0]*dims[1]==np)
+            {
+                if(dims[0]<dims[1])
+                {
+                    md.p = dims[0]; // cartesian direction 0
+                    md.q = dims[1]; // cartesian direction 1
+                }
+                else
+                {
+                    md.p = dims[1]; // cartesian direction 0
+                    md.q = dims[0]; // cartesian direction 1
+                }
+                break; 
+            }
+        }
     }
     
+    if(md.p==0 || md.q==0) 
+    {
+        if(iam==0) printf("ERROR: CANNOT SET p AND q VALUES! CHECK INPUT FILE SETTINGS!\n"); fflush(stdout);
+        ABORT;
+    }
     int kzgroups = np / (md.p*md.q);
     int idgroup; // identifier of the group
     MPI_Comm mpi_comm_group;
