@@ -16,6 +16,8 @@ extern double dc_ec;
 extern double dc_Omega_a;
 extern double dc_Omega_b;
 
+extern int wsldapid; // process id - global variable
+
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "s2dpca_fft.h"
