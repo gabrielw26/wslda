@@ -147,6 +147,8 @@ double dc_Omega_b;
 // BdG mode
 double aBdG;
 
+int wsldapid; // process id - global variable
+
 typedef char * string;
 
 // make -f Makefile.kzsolver
@@ -216,6 +218,7 @@ int main( int argc , char ** argv )
     MPI_Init( &argc , &argv ) ; /* set up the parallel WORLD */
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
+    wsldapid=iam; // save to global variable
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
