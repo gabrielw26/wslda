@@ -19,9 +19,8 @@ Making plugin to be public (availabe for everyone) use xml2cmake with additional
 
     xml2cmake -public -clobber wdata.xml 
     
-    
 --------------------------------------------------------------------    
-INSTALLING ON DWARF:
+INSTALLING ON DWARF (ONLY IF YOU HAVE ROOT PERMISSION: GW, JO):
 --------------------------------------------------------------------
 * use node2066
 * module load visit/2_13_1

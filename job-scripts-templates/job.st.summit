@@ -18,6 +18,10 @@
 ## For computation it is recomended to use location:
 ## /gpfs/alpine/proj-shared/nph139
 
+module load fftw
+module load netlib-lapack
+module load netlib-scalapack
+
 cd $LS_SUBCWD
 pwd
 jsrun -n672 -a1 -g0 -c1 ./st-wslda-3d input.test.txt
