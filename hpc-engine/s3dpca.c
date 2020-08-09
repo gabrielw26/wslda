@@ -565,6 +565,11 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s_checkpoint.s3dpca", md.inprefix);
             printf("# READING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "rb");
+            if(pFile==NULL)
+            {
+                printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
+                ABORT_NOBARRIER;
+            }
             
             // write all nescesary data to file
             fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
