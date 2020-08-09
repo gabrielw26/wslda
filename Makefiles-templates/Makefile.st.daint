@@ -1,0 +1,19 @@
+# LOAD BEFORE COMPILATION
+#
+# module load cray-fftw
+
+# COMPILER
+CXX=cc
+
+# DIRECTORY SETTINGS
+OBJDIR=./obj/
+BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
+
+# COMPILER FLAGS
+CFLAGS= -O3  
+LIBS=-lfftw3  
+
+include mk.st
+ 

@@ -289,7 +289,7 @@ int parse_input_file(char * file_name)
             if (strcmp (tag,"writevar") == 0)
             {
                 int ivars, ierr;
-                for(ivars=0; ivars=10; ivars++)
+                for(ivars=0; ivars<100; ivars++)
                 {
 //                     printf("[PARSER-i]: `%s`, `%s` `%s`\n", s, tag, ptag);
                     ierr = sscanf (s,"%s %s %*s",tag,ptag);

@@ -1,0 +1,28 @@
+#!/bin/bash -l
+#SBATCH --job-name=run1
+#SBATCH --output="run1.out"
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=gabriel.wlazlowski@pw.edu.pl
+#SBATCH --time=24:00:00
+#SBATCH --nodes=288
+#SBATCH --ntasks-per-core=1
+#SBATCH --ntasks-per-node=12
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=normal
+#SBATCH --constraint=gpu
+#SBATCH -A pr91
+
+module load cray-fftw
+
+# For data storage use:
+#   cd /project/pr91/
+#   
+# For computaion you MUST use folder:
+#   cd $SCRATCH
+#
+# n = nodes*12
+
+# execute
+date
+srun -n 3456 ./st-wslda-3d input.txt
+date

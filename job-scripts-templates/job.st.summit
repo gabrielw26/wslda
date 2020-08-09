@@ -7,6 +7,7 @@
 #BSUB -e test.e.%J
 #BSUB -N
 #BSUB -B
+#BSUB -alloc_flags smt1
 
 ## For submission use:
 ##      bsub job.sh.summit
@@ -16,6 +17,10 @@
 
 ## For computation it is recomended to use location:
 ## /gpfs/alpine/proj-shared/nph139
+
+module load fftw
+module load netlib-lapack
+module load netlib-scalapack
 
 cd $LS_SUBCWD
 pwd
