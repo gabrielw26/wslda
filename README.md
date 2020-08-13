@@ -21,7 +21,7 @@
 
 
 ### Setting up and building
-See instructios provided [here](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/setting-up-calculations-and-compilation).  
+See instructions provided [here](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/setting-up-calculations-and-compilation).  
 
 ### Wiki
 For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/home)
