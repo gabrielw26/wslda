@@ -21,8 +21,9 @@
 
 // select diagonalization routine
 // it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
-#define DIAGONALIZATION_ROUTINE PZHEEVR
+// #define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
+#define DIAGONALIZATION_ROUTINE ELPA
 
 // Maximal number of parameters in params array
 #define MAX_USER_PARAMS 32 

@@ -9,19 +9,6 @@
 // #define VERBOSE
 // #define S3DDEBUG
 
-
-#if DIAGONALIZATION_ROUTINE==PZHEEVR
-#define USE_SCALAPACK_PZHEEVR
-#elif DIAGONALIZATION_ROUTINE==PZHEEVD
-#define USE_SCALAPACK_PZHEEVD
-#else
-    select DIAGONALIZATION ROUTINE in pca_settings
-    // #define USE_SCALAPACK_PZHEEV
-#endif
-
-// #define USE_ELPA
-// #define USE_ELPA_NEV_FRACTION 0.775
-
 #ifdef S3DDEBUG
 #define ECHOLINE                                                                                                        \
     {                                                                                                                   \
@@ -58,6 +45,18 @@
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
 // #include "s3dpca_testfun.h"
+
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
+#define USE_SCALAPACK_PZHEEVR
+#elif DIAGONALIZATION_ROUTINE==PZHEEVD
+#define USE_SCALAPACK_PZHEEVD
+#elif DIAGONALIZATION_ROUTINE==ELPA
+#define USE_ELPA
+#define USE_ELPA_NEV_FRACTION 0.775
+#else
+    select DIAGONALIZATION ROUTINE in predifines.h
+#endif
+
 
 #ifdef USE_SCALAPACK_PZHEEVR
 /* PZHEEVR prototype */

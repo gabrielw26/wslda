@@ -35,8 +35,7 @@
 #elif DIAGONALIZATION_ROUTINE==PZHEEVD
 #define USE_SCALAPACK_PZHEEVD
 #else
-    select DIAGONALIZATION ROUTINE in pca_settings
-    // #define USE_SCALAPACK_PZHEEV
+    select DIAGONALIZATION ROUTINE in predifines.h
 #endif
 
 
