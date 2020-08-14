@@ -13,17 +13,16 @@
 
 // activate this if you know that HFB matrix is real
 // the code will utilize it in roder to speed-up the calculations
-// meaningful only for static codes
 // #define MATRIX_IS_REAL
 
-// spin-symmetric mode decreases computing time for factor about two
-// #define SPINSYMMETRY_MODE
-
-// select diagonalization routine
-// it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
-// #define DIAGONALIZATION_ROUTINE PZHEEVR
+// Select diagonalization routine
+// ELPA demonstrates the best performance, use it if target system supports this lib.
+// Otherwise use standard ScaLapack lib (PZHEEV?) .
+// In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
+// For more info see: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/Parallelization-settings
+#define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
-#define DIAGONALIZATION_ROUTINE ELPA
+// #define DIAGONALIZATION_ROUTINE ELPA
 
 // Maximal number of parameters in params array
 #define MAX_USER_PARAMS 32 
