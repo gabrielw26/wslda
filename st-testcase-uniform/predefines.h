@@ -13,16 +13,16 @@
 
 // activate this if you know that HFB matrix is real
 // the code will utilize it in roder to speed-up the calculations
-// meaningful only for static codes
 // #define MATRIX_IS_REAL
 
-// spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
-
-// select diagonalization routine
-// it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
+// Select diagonalization routine
+// ELPA demonstrates the best performance, use it if target system supports this lib.
+// Otherwise use standard ScaLapack lib (PZHEEV?) .
+// In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
+// For more info see: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/Parallelization-settings
 #define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
+// #define DIAGONALIZATION_ROUTINE ELPA
 
 // Maximal number of parameters in params array
 #define MAX_USER_PARAMS 32 
@@ -33,3 +33,21 @@
 
 // activate this flag for setting code in testing mode with uniform system
 #define UNIFORM_TEST_MODE
+
+
+// ---------------------- ELPA SETTINGS ---------------------------
+// Fill this part only if ELPA library is used for diagonnalization
+
+// uncomment it if you want to activate GPU for diagonalizations 
+#define ELPA_USE_GPU
+
+// Select ELPA kernels
+#define ELPS_USE_SOLVER ELPA_SOLVER_1STAGE
+#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
+#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+
+// Fraction of eigenvectors to be extracted in each cycle.
+// 1.0 corresponds to extraction if all eigenvectors (USE IT IF YOU YOU ARE NOT SURE)
+// NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
+// NOTE: For 3D case this value typically can be set to 0.78
+#define ELPA_NEV_FRACTION 1.0

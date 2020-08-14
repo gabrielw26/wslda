@@ -7,6 +7,7 @@ OBJDIR=./obj/
 BINDIR=./
 WSLDADIR=../hpc-engine/
 WDATADIR=../lib-wdata/
+
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3  
 LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack 

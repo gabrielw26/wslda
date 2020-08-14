@@ -233,6 +233,6 @@
 
 #define PZHEEVR 1
 #define PZHEEVD 2
-
+#define ELPA 3
 
 #endif
