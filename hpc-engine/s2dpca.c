@@ -267,11 +267,13 @@ int main( int argc , char ** argv )
     aBdG = 0.0; // deactivate BdG functional
 #endif
         
-    if(iam==0)
-    {
-        if(fabs(aBdG)<1.0e-12) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA [UNITARITY]\n");
-        else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
-    }
+#if FUNCTIONAL==BDG
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA    
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA    
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+#endif
     
 #ifdef SPINSYMMETRY_MODE
     md.spinsymmetry=1; // force spin symmetry mode

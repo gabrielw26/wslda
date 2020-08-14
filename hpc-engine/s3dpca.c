@@ -52,7 +52,6 @@
 #define USE_SCALAPACK_PZHEEVD
 #elif DIAGONALIZATION_ROUTINE==ELPA
 #define USE_ELPA
-#define USE_ELPA_NEV_FRACTION 0.775
 #else
     select DIAGONALIZATION ROUTINE in predifines.h
 #endif
@@ -287,12 +286,14 @@ int main( int argc , char ** argv )
 #else
     aBdG = 0.0; // deactivate BdG functional
 #endif
-    
-    if(iam==0)
-    {
-        if(fabs(aBdG)<1.0e-12) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA [UNITARITY]\n");
-        else                   printf("# ENERGY DENSITY FUNCTIONAL: BdG [a=%16.8f]\n", aBdG);
-    }
+
+#if FUNCTIONAL==BDG
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA    
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA    
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+#endif
     
 #ifdef SPINSYMMETRY_MODE
     md.spinsymmetry=1; // force spin symmetry mode
@@ -897,7 +898,7 @@ int main( int argc , char ** argv )
     
     /* Set parameters */
     elpa_set(handle, "na", Hsize, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-    int elpa_nev = (int)(USE_ELPA_NEV_FRACTION*Hsize);
+    int elpa_nev = (int)(ELPA_NEV_FRACTION*Hsize); if(elpa_nev>Hsize) elpa_nev=Hsize;
     elpa_set(handle, "nev", elpa_nev, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "local_nrows", nip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "local_ncols", niq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
@@ -905,13 +906,34 @@ int main( int argc , char ** argv )
     elpa_set(handle, "mpi_comm_parent", MPI_Comm_c2f(MPI_COMM_WORLD), &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_row",ip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_col", iq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-
+#ifdef ELPA_USE_GPU
+    if(iam==0) printf("# ELPA: ACTIVATING GPUs\n");
+    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#else
+    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+    
     /* Setup */
     info=elpa_setup(handle);    
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);    
     
-    elpa_set(handle, "solver", ELPA_SOLVER_2STAGE, &info);
+//     ISSUE: autotuning
+//     elpa_autotune_t autotune_handle = elpa_autotune_setup(handle, ELPA_AUTOTUNE_FAST, ELPA_AUTOTUNE_DOMAIN_COMPLEX, &info); 
+//     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+//     int elpa_atotue_unfinished=1;
+#ifdef MATRIX_IS_REAL
+    elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info); 
+    if(iam==0) printf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
+#else
+    elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
+    if(iam==0) printf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
+#endif
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    
+    elpa_set(handle, "solver", ELPS_USE_SOLVER, &info);  
+    if(iam==0) printf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPS_USE_SOLVER));
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+        
     if(iam==0) printf("# SETTING UP OF ELPA  DONE.\n");
 #endif
         
@@ -1005,16 +1027,34 @@ int main( int argc , char ** argv )
         }
 #endif
 #ifdef USE_ELPA
-        elpa_eigenvectors(handle, h, En, U, &info);
+//  ISSUE: autotue
+//         if (elpa_atotue_unfinished != 0 ) elpa_atotue_unfinished = elpa_autotune_step(handle, autotune_handle, &info);
+//         sprintf(file_name, "%s_elpa.autotune", md.outprefix);
+//         if(iam==0) elpa_autotune_save_state(handle, autotune_handle, file_name, &info);
+//         if(iam==0) printf("----> elpa_atotue_unfinished=%d info=%d\n", elpa_atotue_unfinished, info);
+//         if (elpa_atotue_unfinished == 0) 
+//         {
+//             elpa_autotune_set_best(handle, autotune_handle, &info);  // from now on use values used by autotuning
+//             elpa_autotune_deallocate(autotune_handle, &info);        // cleanup autotuning
+//         }
+//         if (elpa_atotue_unfinished == 0 && iam==0) 
+//         {
+//             printf("# ELPA autotuning finished in the %d th scf step \n",kziter);
+//         }
+
+#ifdef MATRIX_IS_REAL
+        elpa_eigenvectors(handle, hR, En, UR, &info);
+#else
+        elpa_eigenvectors(handle, h , En, U , &info);
+#endif
         if( info !=ELPA_OK ) 
         {
             printf( "The algorithm failed to compute eigenvalues!\n" );
             ABORT_NOBARRIER;
         }     
-        if(En[elpa_nev-1]<dc_ec)
+        if(elpa_nev<Hsize && En[elpa_nev-1]<dc_ec)
         {
-            printf( "ELPA: fraction of extracted values is too small!\n" );
-            ABORT_NOBARRIER;
+            printf( "# !!!!!!! WARNING !!!!!!!: ELPA_NEV_FRACTION IS TOO SMALL!!!!!!!\n" );
         }
 #endif
 #ifdef MATRIX_IS_REAL

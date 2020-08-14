@@ -41,7 +41,7 @@ nocurrents              1       # set to 1 if you want to impose ja=jb=0 (soluti
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
 
-broyden                 1 # use 1 if to activate Broyden mixing
+broyden                 0 # use 1 if to activate Broyden mixing
 Mbroyden                5
 broydenmixing           0.75
 startbroyden            3
@@ -58,8 +58,8 @@ startbroyden            3
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
-mb                      32
-nb                      32
+mb                      8
+nb                      8
 
 # ----------- IN CASE OF: inittype=0 ----------------
 init0Na                 28.0  # uniform solver - requested number of particles

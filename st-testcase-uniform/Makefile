@@ -1,3 +1,11 @@
+# LOAD MODULES BEFORE COMPILATION
+# 
+# source scl_source enable devtoolset-7 python27
+# module load cuda/9.0
+# module load openmpi-gcc721-Cuda90/3.1.1
+# module load lapack/391
+# module load scalapack-gcc721-cuda90-openmpi311/210
+# module load elpa-gcc721/202005
 
 # COMPILER
 CXX=mpicc
@@ -7,10 +15,10 @@ OBJDIR=./obj/
 BINDIR=./
 WSLDADIR=../hpc-engine/
 WDATADIR=../lib-wdata/
+
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3  -I/usr/local/include/elpa-2018.11.001
-# LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack 
-LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack -L/usr/local/lib/ -lelpa
+CFLAGS= -std=gnu99 -O3 -I /usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack391/include/elpa-2020.05.001
+# LIBS=-lfftw3 -L/usr/lib64/atlas/ -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack # for old inteface
+LIBS=-lfftw3 -lm -llapack -lscalapack -lelpa
 
 include mk.st
- 

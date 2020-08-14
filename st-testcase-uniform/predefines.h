@@ -34,3 +34,21 @@
 
 // activate this flag for setting code in testing mode with uniform system
 #define UNIFORM_TEST_MODE
+
+
+// ---------------------- ELPA SETTINGS ---------------------------
+// Fill this part only if ELPA library is used for diagonnalization
+
+// Fraction of eigenvectors to be extracted in each cycle.
+// 1.0 corresponds to extraction if all eigenvectors. 
+// NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
+#define ELPA_NEV_FRACTION 0.78
+
+// uncomment it if you want to activate GPU for diagonalizations 
+#define ELPA_USE_GPU
+
+// Select ELPA kernels
+#define ELPS_USE_SOLVER ELPA_SOLVER_1STAGE
+#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
+#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+
