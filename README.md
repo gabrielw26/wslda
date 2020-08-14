@@ -20,14 +20,8 @@
 * **st-wslda-1d** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ and _y_ directions, generator of initial states for _pca_ and _cpca_ and _ccpca_ codes. (status: **under construction**)
 
 
-### Building
-
-In `Makefiles-templates` folder you will examples of makefiles. In header of each make file are listed modules that you need to load before you compile the code. After loading modules typical procedure is following:
-
-```bash
-make dirs
-make
-```
+### Setting up and building
+See instructions provided [here](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/setting-up-calculations-and-compilation).  
 
 ### Wiki
 For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/home)
