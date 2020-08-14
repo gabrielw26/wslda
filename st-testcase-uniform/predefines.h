@@ -17,7 +17,7 @@
 // #define MATRIX_IS_REAL
 
 // spin-symmetric mode decreases computing time for factor about two
-#define SPINSYMMETRY_MODE
+// #define SPINSYMMETRY_MODE
 
 // select diagonalization routine
 // it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
@@ -39,11 +39,6 @@
 // ---------------------- ELPA SETTINGS ---------------------------
 // Fill this part only if ELPA library is used for diagonnalization
 
-// Fraction of eigenvectors to be extracted in each cycle.
-// 1.0 corresponds to extraction if all eigenvectors. 
-// NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
-#define ELPA_NEV_FRACTION 0.78
-
 // uncomment it if you want to activate GPU for diagonalizations 
 #define ELPA_USE_GPU
 
@@ -52,3 +47,8 @@
 #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
 #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
 
+// Fraction of eigenvectors to be extracted in each cycle.
+// 1.0 corresponds to extraction if all eigenvectors (USE IT IF YOU YOU ARE NOT SURE)
+// NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
+// NOTE: For 3D case this value typically can be set to 0.78
+#define ELPA_NEV_FRACTION 1.0

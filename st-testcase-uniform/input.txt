@@ -41,7 +41,7 @@ nocurrents              1       # set to 1 if you want to impose ja=jb=0 (soluti
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
 
-broyden                 0 # use 1 if to activate Broyden mixing
+broyden                 1 # use 1 if to activate Broyden mixing
 Mbroyden                5
 broydenmixing           0.75
 startbroyden            3
@@ -53,8 +53,8 @@ startbroyden            3
 #   for 3D code: p*q=np
 #   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
 # where np is total number of processes utilized for computation
-# p                       2
-# q                       2
+p                       2
+q                       2
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
