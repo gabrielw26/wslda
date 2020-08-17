@@ -2,27 +2,39 @@
 #BSUB -P nph139
 #BSUB -W 1:00
 #BSUB -nnodes 16
-#BSUB -J test
-#BSUB -o test.o.%J
-#BSUB -e test.e.%J
+#BSUB -J NAME
+#BSUB -o NAME.o.%J
+#BSUB -e NAME.e.%J
 #BSUB -N
 #BSUB -B
-#BSUB -alloc_flags smt1
+#BSUB -alloc_flags "gpumps smt1"
 
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/summit
+## 
+## ------ QUEUE SYSTEM ------
 ## For submission use:
-##      bsub job.sh.summit
+##      bsub job.sh
 ## For checking status use:
 ##      bjobs
-## NOTE: -n=-nnodes*42
-
+## To kill job use:
+##      bkill pid
+## 
+## ------ COMPUTATION -------     
 ## For computation it is recomended to use location:
 ## /gpfs/alpine/proj-shared/nph139
 
-module load fftw
+module load gcc/7.4.0
+module load libtool
+module load cuda 
+module load essl
 module load netlib-lapack
 module load netlib-scalapack
+module load fftw
+export LD_LIBRARY_PATH=/ccs/home/gabrielw/proj-shared/share/elpa/lib:$LD_LIBRARY_PATH
 
 cd $LS_SUBCWD
-pwd
-jsrun -n672 -a1 -g0 -c1 ./st-wslda-3d input.test.txt
- 
+
+## NOTE: YOU MUST ASSURE: -n=-nnodes*6
+jsrun -n 96 -a 7 -c 7 -g 1 -d packed ./st-wslda-3d input.txt 
+

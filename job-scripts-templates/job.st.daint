@@ -1,6 +1,7 @@
 #!/bin/bash -l
-#SBATCH --job-name=run1
-#SBATCH --output="run1.out"
+#SBATCH --job-name=NAME
+#SBATCH --output="NAME.out"
+#SBATCH --error="NAME.err"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=gabriel.wlazlowski@pw.edu.pl
 #SBATCH --time=24:00:00
@@ -12,17 +13,33 @@
 #SBATCH --constraint=gpu
 #SBATCH -A pr91
 
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/daint
+## 
+## ------ QUEUE SYSTEM ------
+## For submission use:
+##      sbatch job.st.daint
+## For checking status use:
+##      squeue -u gabrielw
+## To kill job use:
+##      scancel pid
+##       
+## ------ COMPUTATION -------     
+## For computation you must use $SCRATCH folder
+##      cd $SCRATCH
+## NOTE: files older than 30days are atomatically removed from  $SCRATCH
+## For storing results use location:
+##      cd /project/pr91/
+
+
+module load daint-gpu
+module swap PrgEnv-cray PrgEnv-gnu
+module load cudatoolkit
+module load craype-accel-nvidia60
 module load cray-fftw
+export LD_LIBRARY_PATH=/project/pr91/share/lib:$LD_LIBRARY_PATH 
 
-# For data storage use:
-#   cd /project/pr91/
-#   
-# For computaion you MUST use folder:
-#   cd $SCRATCH
-#
-# n = nodes*12
+# execute (with GPU-ELPA)
+## YOU MUST ASSURE: -n=--nodes 
+srun -n 288 --ntasks-per-node=1 ./st-wslda-3d input.txt
 
-# execute
-date
-srun -n 3456 ./st-wslda-3d input.txt
-date

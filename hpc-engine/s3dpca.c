@@ -928,7 +928,7 @@ int main( int argc , char ** argv )
     elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
     if(iam==0) printf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
 #endif
-    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    if(info!=ELPA_OK) printf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
     
     elpa_set(handle, "solver", ELPS_USE_SOLVER, &info);  
     if(iam==0) printf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPS_USE_SOLVER));

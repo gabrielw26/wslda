@@ -1,6 +1,11 @@
 # LOAD BEFORE COMPILATION
 #
+# module load daint-gpu
+# module swap PrgEnv-cray PrgEnv-gnu
+# module load cudatoolkit
+# module load craype-accel-nvidia60
 # module load cray-fftw
+# export LD_LIBRARY_PATH=/project/pr91/share/lib:$LD_LIBRARY_PATH
 
 # COMPILER
 CXX=cc
@@ -12,8 +17,8 @@ WSLDADIR=../hpc-engine/
 WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
-CFLAGS= -O3  
-LIBS=-lfftw3  
+CFLAGS= -O3  -I/project/pr91/share/include/elpa-2020.05.001
+LIBS=-lfftw3  -L/project/pr91/share/lib -lelpa
 
 include mk.st
  

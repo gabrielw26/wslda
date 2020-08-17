@@ -3,27 +3,30 @@
 #BSUB -W 1:00
 #BSUB -nnodes 24
 #BSUB -J NAME
-#BSUB -o OUTPUTFILE.%J
-#BSUB -e OUTPUTFILE.%J
+#BSUB -o NAME.o.%J
+#BSUB -e NAME.e.%J
 #BSUB -N
 #BSUB -B
 
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/summit
+## 
+## ------ QUEUE SYSTEM ------
 ## For submission use:
-##      bsub job.sh.summit
-##      
+##      bsub job.sh
 ## For checking status use:
 ##      bjobs
-##      
-## For interactove session use:
-##      bsub -W 30 -nnodes 32 -P nph139 -Is bash
-##      
-## NOTE: -n=-nnodes*6
-##
+## To kill job use:
+##      bkill pid
+## 
+## ------ COMPUTATION -------     
 ## For computation it is recomended to use location:
 ## /gpfs/alpine/proj-shared/nph139
 
-cd $LS_SUBCWD
-pwd
 module load cuda
-jsrun -n144 -a1 -g1 -c1 ./td-wslda-3d input.txt
+
+cd $LS_SUBCWD
+
+## NOTE: YOU MUST ASSURE: -n=-nnodes*6
+jsrun -n 144 -a 1 -g 1 -c 1 ./td-wslda-3d input.txt
 
