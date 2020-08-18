@@ -13,13 +13,13 @@
 typedef struct
 {
     double complex *fft2;
-    double complex *fft2many;
+//     double complex *fft2many;
     double complex *fft2grad; // gradients for computing densities
     double complex *fft2uv; // for transforming (u,v) simultaniesly 
     fftw_plan plan_f;
     fftw_plan plan_b;
-    fftw_plan plan_f_many;
-    fftw_plan plan_b_many;
+//     fftw_plan plan_f_many;
+//     fftw_plan plan_b_many;
     fftw_plan plan_f_grad;
     fftw_plan plan_b_grad;
     fftw_plan plan_f_uv;

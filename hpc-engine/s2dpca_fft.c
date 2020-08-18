@@ -19,7 +19,7 @@ int create_fft_plans(metadata_s2dpca_fft *mdfft, int batch)
     
     // allocate memory for buffers
     cppmallocl(mdfft->fft2,NX*NY,double complex); 
-    cppmallocl(mdfft->fft2many,batch*NX*NY,double complex);
+//     cppmallocl(mdfft->fft2many,batch*NX*NY,double complex);
     cppmallocl(mdfft->fft2grad,2*2*NX*NY,double complex); // (u,v) * (dx,dy)
     cppmallocl(mdfft->fft2uv,2*NX*NY,double complex); // (u,v)
     cppmallocl(mdfft->fft2rc,NX*NY,double); 
@@ -36,14 +36,14 @@ int create_fft_plans(metadata_s2dpca_fft *mdfft, int batch)
     idist = odist = NX*NY; /* the distance in memory between the first element of the first array and the first element of the second array */
     istride = ostride = 1; /* array is contiguous in memory */
     int *inembed = fftwn, *onembed = fftwn;
-    mdfft->plan_f_many = fftw_plan_many_dft(2, fftwn, mdfft->batch,
-                                mdfft->fft2many, inembed, istride, idist,
-                                mdfft->fft2many, onembed, ostride, odist,
-                                FFTW_FORWARD, USE_FFTW_PLANNER);
-    mdfft->plan_b_many = fftw_plan_many_dft(2, fftwn, mdfft->batch,
-                                mdfft->fft2many, inembed, istride, idist,
-                                mdfft->fft2many, onembed, ostride, odist,
-                                FFTW_BACKWARD, USE_FFTW_PLANNER);
+//     mdfft->plan_f_many = fftw_plan_many_dft(2, fftwn, mdfft->batch,
+//                                 mdfft->fft2many, inembed, istride, idist,
+//                                 mdfft->fft2many, onembed, ostride, odist,
+//                                 FFTW_FORWARD, USE_FFTW_PLANNER);
+//     mdfft->plan_b_many = fftw_plan_many_dft(2, fftwn, mdfft->batch,
+//                                 mdfft->fft2many, inembed, istride, idist,
+//                                 mdfft->fft2many, onembed, ostride, odist,
+//                                 FFTW_BACKWARD, USE_FFTW_PLANNER);
     
     // gradients
     mdfft->plan_f_grad = fftw_plan_many_dft(2, fftwn, 2*2,
@@ -82,7 +82,7 @@ int create_fft_plans(metadata_s2dpca_fft *mdfft, int batch)
 int destroy_fft_plans(metadata_s2dpca_fft *mdfft)
 {
     free(mdfft->fft2);
-    free(mdfft->fft2many);
+//     free(mdfft->fft2many);
     free(mdfft->fft2grad);
     free(mdfft->fft2uv);
     free(mdfft->fft2rc);
