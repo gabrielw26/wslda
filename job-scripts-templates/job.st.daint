@@ -27,7 +27,7 @@
 ## ------ COMPUTATION -------     
 ## For computation you must use $SCRATCH folder
 ##      cd $SCRATCH
-## NOTE: files older than 30days are atomatically removed from  $SCRATCH
+## NOTE: files older than 30days are automatically removed from  $SCRATCH
 ## For storing results use location:
 ##      cd /project/pr91/
 
