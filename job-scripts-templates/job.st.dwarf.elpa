@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -N st-wslda
+#PBS -l nodes=node2067.grid4cern.if.pw.edu.pl:ppn=40
+#PBS -l walltime=12:00:00
+#PBS -j oe
+#PBS -q long
+
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/dwarf
+## 
+## ------ QUEUE SYSTEM ------
+## to submit use:
+##     qsub job.st.dwarf
+## to check status use:
+##     qstat 
+## to delete job use:
+##     qdel jobid
+##       
+## ------ COMPUTATION -------    
+## For computation with ELPA single node runs are the most efficient
+## Recommended node is 2067.    
+## For computation use /home2/scratch
+##      cd /home2/scratch
+## NOTE: files older than 100days are automatically removed from  /home2/scratch
+## For storing results use location:
+##      cd /home2/archive
+
+source scl_source enable devtoolset-7 python27
+module load cuda/9.0
+module load openmpi-gcc721-Cuda90/3.1.1
+module load lapack/391
+module load scalapack-gcc721-cuda90-openmpi311/210
+module load elpa-gcc721/202005
+
+# execute code
+cd $PBS_O_WORKDIR
+mpirun -n 24 ./st-wslda-2d input.txt
+
