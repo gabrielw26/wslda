@@ -5,7 +5,7 @@
 # module load craype-accel-nvidia60
 
 # COMPILERS
-CXX=mpicc
+CXX=cc
 NVCC = nvcc 
 
 # DIRECTORY SETTINGS
