@@ -1,0 +1,26 @@
+# LOAD BEFORE COMPILATION
+# 
+# module load daint-gpu
+# module load cudatoolkit
+# module load craype-accel-nvidia60
+
+# COMPILERS
+CXX=mpicc
+NVCC = nvcc 
+
+# DIRECTORY SETTINGS
+OBJDIR=./obj/
+BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
+
+# COMPILER FLAGS
+CFLAGS= -std=gnu99 -O3 -DTARGET_MACHINE=TITAN
+NVCCFLAGS = -arch sm_60 -O3 
+
+# LIBRARIES
+LIBS=-lcudart -lcufft -lm
+
+
+include mk.td
+
