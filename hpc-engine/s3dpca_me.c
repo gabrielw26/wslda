@@ -23,6 +23,7 @@ extern int wsldapid; // process id - global variable
 #include "s3dpca_me.h"
 // #include "s3dpca_uext.h"
 
+#include "pca_utils.h"
 #define BLOCKSIZE (NX*NY*NZ)
 #include "problem-definition.h"
 
