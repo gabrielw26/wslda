@@ -204,6 +204,25 @@ int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link);
  * @return 0: ok, 1: cannot add entry to file
  * */
 int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const);
+
+/**
+ * Function checks if dataset has variable of name varname
+ * @return 1: dataset has this variable, 0: no variable in given dataset
+ * */
+int wdata_has_variable(wdata_metadata *md, const char *varname);
+
+/**
+ * Function checks if dataset has link of name linkname
+ * @return 1: dataset has this link, 0: no link in given dataset
+ * */
+int wdata_has_link(wdata_metadata *md, const char *linkname);
+
+/**
+ * Function checks if dataset has constant of name constname
+ * @return 1: dataset has this constant, 0: no constant in given dataset
+ * */
+int wdata_has_const(wdata_metadata *md, const char *constname);
+
 #endif
 
 
