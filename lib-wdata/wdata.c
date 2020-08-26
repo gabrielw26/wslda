@@ -516,3 +516,37 @@ int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const
     fclose(fout);
     return 0;
 }
+
+int wdata_has_variable(wdata_metadata *md, const char *varname)
+{
+    int i;
+
+    // find variable
+    for(i=0; i<md->nvar; i++) if(strcmp(md->var[i].name, varname) == 0) return 1;
+    
+    // cannot find variable
+    return 0;
+}
+
+int wdata_has_link(wdata_metadata *md, const char *linkname)
+{
+    int i;
+
+    // find variable
+    for(i=0; i<md->nlink; i++) if(strcmp(md->link[i].name, linkname) == 0) return 1;
+    
+    // cannot find variable
+    return 0;
+}
+
+int wdata_has_const(wdata_metadata *md, const char *constname)
+{
+    int i;
+
+    // find variable
+    for(i=0; i<md->nconsts; i++) if(strcmp(md->consts[i].name, constname) == 0) return 1;
+    
+    // cannot find variable
+    return 0;
+}
+

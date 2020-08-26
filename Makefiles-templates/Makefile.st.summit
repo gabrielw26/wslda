@@ -7,6 +7,7 @@
 # module load netlib-lapack
 # module load netlib-scalapack
 # module load fftw
+# export LD_LIBRARY_PATH=/gpfs/alpine/proj-shared/nph139/share/elpa/lib:$LD_LIBRARY_PATH
 
 # NOTE:
 # Best performance is obtained with ELPA lib.
@@ -23,8 +24,8 @@ WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 
-CFLAGS= -std=gnu99 -O3 -I/ccs/home/gabrielw/proj-shared/share/elpa/include/elpa-2020.05.001 
+CFLAGS= -std=gnu99 -O3 -I/gpfs/alpine/proj-shared/nph139/share/elpa/include/elpa-2020.05.001 
 #-DFOTRAN_NO_UNDERSCORE
-LIBS=-lfftw3 -lm -L${OLCF_NETLIB_SCALAPACK_ROOT}/lib -lscalapack -L${OLCF_ESSL_ROOT}/lib64 -lessl -L${OLCF_NETLIB_LAPACK_ROOT}/lib64 -llapack -L/ccs/home/gabrielw/proj-shared/share/elpa/lib -lelpa
+LIBS=-lfftw3 -lm -L${OLCF_NETLIB_SCALAPACK_ROOT}/lib -lscalapack -L${OLCF_ESSL_ROOT}/lib64 -lessl -L${OLCF_NETLIB_LAPACK_ROOT}/lib64 -llapack -L/gpfs/alpine/proj-shared/nph139/share/elpa/lib -lelpa
 
 include mk.st

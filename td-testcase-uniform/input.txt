@@ -18,6 +18,8 @@ walltime                11.9    # after this time force checkpoint [hr]
 # default = density delta current
 writevar           default
 
+# aBdG                -0.9 # scattering length for BDG mode 
+
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1
 measurements            3        # number of requested mesurments

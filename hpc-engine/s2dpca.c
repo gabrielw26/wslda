@@ -904,8 +904,8 @@ int main( int argc , char ** argv )
 #endif
     if(info!=ELPA_OK) printf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
     
-    elpa_set(handle, "solver", ELPS_USE_SOLVER, &info);  
-    if(iam==0) printf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPS_USE_SOLVER));
+    elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
+    if(iam==0) printf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
         
     if(iam==0) printf("# SETTING UP OF ELPA  DONE.\n");

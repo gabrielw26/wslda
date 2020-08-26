@@ -644,7 +644,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[5]+h_energy[6]; // save initial value of particle number
-    if(md.inittype!=2) Effg = 0.6 * (N_tot_init) * eF; // set correct value of Effg
+    if(md.inittype!=2) Effg = 0.6 * (N_tot_init*NZ) * eF; // set correct value of Effg
     
     // report result
     if(ip==0)
