@@ -148,6 +148,8 @@ double aBdG;
 int wsldapid; // process id - global variable
 
 typedef char * string;
+#define DENSDIM 12*NXYZ
+#define POTDIM  4*NXYZ
 
 // make -f Makefile.kzsolver
 
@@ -183,7 +185,6 @@ int main( int argc , char ** argv )
     double *h_densities_old; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
-    double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
     double energy[5], energy_old[5];
     string energy_labels[5];
@@ -384,11 +385,10 @@ int main( int argc , char ** argv )
     // ====================================================================================
     
     // ---------------- POTENTIALS & DENSITIES----------------
-    cppmallocl(h_densities,12*NXYZ,double);
-    cppmallocl(h_densities_old,12*NXYZ,double);
-    cppmallocl(h_densities_partial,12*NXYZ,double);
-    cppmallocl(h_potentials,4*NXYZ,double);
-    cppmallocl(h_potentials_old,4*NXYZ,double);
+    cppmallocl(h_densities,DENSDIM,double);
+    cppmallocl(h_densities_old,DENSDIM,double);
+    cppmallocl(h_densities_partial,DENSDIM,double);
+    cppmallocl(h_potentials,POTDIM,double);
     cppmallocl(dc_params, MAX_USER_PARAMS, double);
     
     // For easier access to data
@@ -417,12 +417,12 @@ int main( int argc , char ** argv )
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
     cppmallocl(dens_out, (md.Mbroyden + 1), double*);
     for (i = 0; i < (md.Mbroyden + 1); i++){
-        cppmallocl(dens_in[i], 12*NXYZ + 2, double);
-        cppmallocl(dens_out[i], 12*NXYZ + 2, double);
+        cppmallocl(dens_in[i], DENSDIM + 2, double);
+        cppmallocl(dens_out[i], DENSDIM + 2, double);
         
         // reset values
-        for(j=0; j<12*NXYZ + 2; j++) dens_in[i][j]=0.0;
-        for(j=0; j<12*NXYZ + 2; j++) dens_out[i][j]=0.0;
+        for(j=0; j<DENSDIM + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
     }
 
     // ---------------- HAMILTONIAN ----------------
@@ -583,14 +583,14 @@ int main( int argc , char ** argv )
             fread(&eF          , sizeof(double)      , 1 , pFile); 
             fread(&kF          , sizeof(double)      , 1 , pFile);
             fread(&Effg        , sizeof(double)      , 1 , pFile);
-            fread(h_potentials , sizeof(double)*NXYZ , 4 , pFile);
-            fread(h_densities  , sizeof(double)*NXYZ , 12, pFile);
+            fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
+            fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
             fread(energy       , sizeof(double)      , 5 , pFile);
             fread(npart        , sizeof(double)      , 2 , pFile);
             fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , 12*NXYZ + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , 12*NXYZ + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
                   
             fclose(pFile);
             
@@ -626,14 +626,14 @@ int main( int argc , char ** argv )
         MPI_Bcast(&eF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&kF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&Effg        , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_potentials , 4*NXYZ , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_densities  , 12*NXYZ, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(h_potentials , POTDIM , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(h_densities  , DENSDIM, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(energy       , 5 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , 12*NXYZ + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], 12*NXYZ + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else if(md.inittype==4) // start from cuGPE initial solutions
     {
@@ -700,8 +700,8 @@ int main( int argc , char ** argv )
         MPI_Bcast(&eF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&kF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&Effg        , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_potentials , 4*NXYZ , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_densities  , 12*NXYZ, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(h_potentials , POTDIM , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(h_densities  , DENSDIM, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         
 
 //         ABORT; // TODO
@@ -956,10 +956,9 @@ int main( int argc , char ** argv )
         }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
         b_t();
-        // Make copy of potentials and densities
-        for(ixyz=0; ixyz< 4*NXYZ; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
-        for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
-        for(ixyz=0; ixyz<12*NXYZ; ixyz++) h_densities_partial[ixyz] = 0.0; // reset
+        // Make copy of densities
+        for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
+        for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_partial[ixyz] = 0.0; // reset
         for(i=0; i< 5; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
@@ -1231,7 +1230,7 @@ int main( int argc , char ** argv )
         // compute contribution to the densities
         cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, h_densities_partial, &mdfft, md.spinsymmetry) );
         // compute densities as global reduction
-        MPI_Allreduce( h_densities_partial, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
         if(md.spinsymmetry==1)  for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand symmetry on densities
         {
@@ -1308,7 +1307,7 @@ int main( int argc , char ** argv )
         else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
         {
             int rkziter=it-md.startbroyden;
-            for(ixyz = 0; ixyz < 12*NXYZ; ixyz++) {
+            for(ixyz = 0; ixyz < DENSDIM; ixyz++) {
 				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
 				dens_out[rkziter][ixyz] = h_densities[ixyz];
             	h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0 - md.linearmixing) * h_densities_old[ixyz];
@@ -1321,8 +1320,8 @@ int main( int argc , char ** argv )
         }
         else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
         {
-        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, 12*NXYZ, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
-        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, 12*NXYZ+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, DENSDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, DENSDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
             
             if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
             else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
@@ -1337,7 +1336,7 @@ int main( int argc , char ** argv )
         }
         else
         {
-        	for(ixyz = 0; ixyz < 12*NXYZ; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
+        	for(ixyz = 0; ixyz < DENSDIM; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
             if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
         }
         
@@ -1469,14 +1468,14 @@ int main( int argc , char ** argv )
             fwrite(&eF          , sizeof(double)      , 1 , pFile); 
             fwrite(&kF          , sizeof(double)      , 1 , pFile);
             fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-            fwrite(h_potentials , sizeof(double)*NXYZ , 4 , pFile);
-            fwrite(h_densities  , sizeof(double)*NXYZ , 12, pFile);
+            fwrite(h_potentials , sizeof(double)*POTDIM , 1 , pFile);
+            fwrite(h_densities  , sizeof(double)*DENSDIM, 1 , pFile);
             fwrite(energy       , sizeof(double)      , 5 , pFile);
             fwrite(npart        , sizeof(double)      , 2 , pFile);
             fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , 12*NXYZ + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , 12*NXYZ + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
                   
             fclose(pFile);
         }
