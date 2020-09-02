@@ -14,6 +14,7 @@
 #include "pca_settings.h"
 #include "pca_utils.h"
 #include <mpi.h>
+#include "wslda_writevars.h"
 
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
@@ -244,74 +245,34 @@ int write_wdata_metadata_file(metadata_t *input, wdata_metadata *wdmd, char *cod
  * @param h_potentials array of potentials
  * @return 0: ok, otherwise error
  * */
-int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, double *h_densities, double *h_potentials)
+int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, wslda_density h_densities, wslda_potential h_potentials)
 {
     int iam, np;
     MPI_Comm_size( mpi_comm , &np ) ; /* total number of processes */
     MPI_Comm_rank( mpi_comm , &iam ) ; /* id of process st 0 <= iam < np */    
     
-    double *rho_a;
-    double *rho_b;
-    double *tau_a;
-    double *tau_b;
-    double complex *nu;
-    double *j_a_x;
-    double *j_a_y;
-    double *j_a_z;
-    double *j_b_x;
-    double *j_b_y;
-    double *j_b_z;
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
     // pontentials
-    double *V_a;
-    double *V_b;
-    double complex *delta;
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
     int bs; // block size
     if(wdmd->datadim==1) bs = NX;
     else if(wdmd->datadim==2) bs = NX*NY;
     else bs = NX*NY*NZ;
 
-    if (strcmp (codetype,"st") == 0)
-    {
-        rho_a = (double *)(h_densities +  0*bs);
-        rho_b = (double *)(h_densities +  1*bs);
-        tau_a = (double *)(h_densities +  2*bs);
-        tau_b = (double *)(h_densities +  3*bs);
-        nu = (double complex *)(h_densities +  4*bs);
-        j_a_x = (double *)(h_densities +  6*bs);
-        j_a_y = (double *)(h_densities +  7*bs);
-        j_a_z = (double *)(h_densities +  8*bs);
-        j_b_x = (double *)(h_densities +  9*bs);
-        j_b_y = (double *)(h_densities + 10*bs);
-        j_b_z = (double *)(h_densities + 11*bs);
-        
-        // potentials
-        V_a = (double *)(h_potentials +  0*bs);
-        V_b = (double *)(h_potentials +  1*bs);
-        delta = (double complex *)(h_potentials +  2*bs);
-    }
-    else if (strcmp (codetype,"td") == 0)
-    {
-        nu = (double complex *)(h_densities +  0*bs);
-        rho_a = (double *)(h_densities +  2*bs);
-        tau_a = (double *)(h_densities +  3*bs);
-        j_a_x = (double *)(h_densities +  4*bs);
-        j_a_y = (double *)(h_densities +  5*bs);
-        j_a_z = (double *)(h_densities +  6*bs);    
-        rho_b = (double *)(h_densities +  7*bs);
-        tau_b = (double *)(h_densities +  8*bs);
-        j_b_x = (double *)(h_densities +  9*bs);
-        j_b_y = (double *)(h_densities + 10*bs);
-        j_b_z = (double *)(h_densities + 11*bs);
-    
-        // potentials
-        V_a = (double *)(h_potentials +  0*bs);
-        V_b = (double *)(h_potentials +  1*bs);
-        delta = (double complex *)(h_potentials +  2*bs);
-    }
-    else return -1;
-    
     // write variables
     int ivar, ierr;
     for(ivar=0; ivar<wdmd->nvar; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable

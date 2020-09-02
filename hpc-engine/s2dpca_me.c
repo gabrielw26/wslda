@@ -25,6 +25,7 @@ extern int wsldapid; // process id - global variable
 #include "s3dpca_grid.h"
 
 #include "pca_utils.h"
+#include "s2dpca_me.h"
 #define BLOCKSIZE (NX*NY)
 #include "problem-definition.h"
 
@@ -100,30 +101,30 @@ int indxl2g_(int*, int*, int*, int*, int*);
  *                     they are used as initial point for computation of new potentials 
  * @param h_potentials_new recomputed potentials (OUTPUT)
  * */
-int recompute_potentials_aslda(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+int recompute_potentials_aslda(int it, wslda_density h_densities, wslda_potential h_potentials, wslda_potential h_potentials_new)
 {
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
-    // pontentials - decode
-    double *V_a = (double *)(h_potentials +  0*NX*NY);
-    double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
-    // pontentials - decode
-    double *V_a_new = (double *)(h_potentials_new +  0*NX*NY);
-    double *V_b_new = (double *)(h_potentials_new +  1*NX*NY);
-    double complex *delta_new = (double complex *)(h_potentials_new +  2*NX*NY);    
+    // potentials - decode
+    double *V_a_new = h_potentials_new.V_a;
+    double *V_b_new = h_potentials_new.V_b;
+    double complex *delta_new = h_potentials_new.delta;    
     
     // Code is equivivalent to the code implemented in pca_kernels.cu
     
@@ -321,25 +322,25 @@ double k_1D(int k, int l, int N, double a)
  * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
  * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
  * */
-int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, wslda_density h_densities, wslda_potential h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
-    // pontentials - decode
-    double *V_a = (double *)(h_potentials +  0*NX*NY);
-    double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
     double p, alph_1, alph_2;
     
@@ -582,27 +583,26 @@ int compute_matrix_elements_aslda(metadata_s3dpca_grid *bgrid, int it, double *h
  * @param energy array with contributions to the energy (OUTPUT)
  * @param npart array with contributions to the particle number (OUTPUT)
  * */
-int compute_energy_aslda(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart)
 {
     // Set pointers for to simplify notation
-    // densities 
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
-    // pontentials
-    // pontentials - decode
-//     double *V_a = (double *)(h_potentials +  0*NX*NY);
-//     double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
+    
+    // potentials - decode
+//     double *V_a = h_potentials.V_a;
+//     double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
     // buffers for energies
     double *E_kin = (double *)(energy +  0);
@@ -868,30 +868,30 @@ extern double aBdG; // scattering length
  *                     they are used as initial point for computation of new potentials 
  * @param h_potentials_new recomputed potentials (OUTPUT)
  * */
-int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+int recompute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_potentials, wslda_potential h_potentials_new)
 {
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
-    // pontentials - decode
-    double *V_a = (double *)(h_potentials +  0*NX*NY);
-    double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
-    // pontentials - decode
-    double *V_a_new = (double *)(h_potentials_new +  0*NX*NY);
-    double *V_b_new = (double *)(h_potentials_new +  1*NX*NY);
-    double complex *delta_new = (double complex *)(h_potentials_new +  2*NX*NY);    
+    // potentials - decode
+    double *V_a_new = h_potentials_new.V_a;
+    double *V_b_new = h_potentials_new.V_b;
+    double complex *delta_new = h_potentials_new.delta;    
     
     // Code is equivivalent to the code implemented in pca_kernels.cu
     
@@ -963,25 +963,25 @@ int recompute_potentials_bdg(int it, double *h_densities, double *h_potentials, 
  * @param me_d_dx matrix elements of (-i*d/dx) operator, matrix of size [NX x NX] (INPUT)
  * @param me_d_dy matrix elements of (-i*d/dy) operator, matrix of size [NY x NY] (INPUT)
  * */
-int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, wslda_density h_densities, wslda_potential h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
-    // pontentials - decode
-    double *V_a = (double *)(h_potentials +  0*NX*NY);
-    double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
     double p, alph_1, alph_2;
     
@@ -1131,27 +1131,24 @@ int compute_matrix_elements_bdg(metadata_s3dpca_grid *bgrid, int it, double *h_d
  * @param energy array with contributions to the energy (OUTPUT)
  * @param npart array with contributions to the particle number (OUTPUT)
  * */
-int compute_energy_bdg(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart)
 {
     // Set pointers for to simplify notation
-    // densities 
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
-    // pontentials
-    // pontentials - decode
-//     double *V_a = (double *)(h_potentials +  0*NX*NY);
-//     double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
+    
+    // potentials - decode
+    double complex *delta = h_potentials.delta;
     
     // buffers for energies
     double *E_kin = (double *)(energy +  0);
@@ -1218,19 +1215,19 @@ int compute_energy_bdg(int it, double *h_densities, double *h_potentials, double
 // ==========================================================================
 // ============================== WRAPPER ===================================
 // ==========================================================================
-int recompute_potentials(int it, double *h_densities, double *h_potentials, double *h_potentials_new)
+int recompute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, wslda_potential h_potentials_new)
 {
     if(fabs(aBdG)<1.0e-12) return recompute_potentials_aslda(it, h_densities, h_potentials, h_potentials_new);
     else                   return recompute_potentials_bdg  (it, h_densities, h_potentials, h_potentials_new);
 }
 
-int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, double *h_densities, double *h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
+int compute_matrix_elements(metadata_s3dpca_grid *bgrid, int it, wslda_density h_densities, wslda_potential h_potentials, metadata_s2dpca_fft *mdfft, double complex *h, double kz, double complex * me_d_dx, double complex * me_d_dy)
 {
     if(fabs(aBdG)<1.0e-12) return compute_matrix_elements_aslda(bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);
     else                   return compute_matrix_elements_bdg  (bgrid, it, h_densities, h_potentials, mdfft, h, kz, me_d_dx, me_d_dy);
 }
 
-int compute_energy(int it, double *h_densities, double *h_potentials, double *energy, double *npart)
+int compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart)
 {
     if(fabs(aBdG)<1.0e-12) return compute_energy_aslda(it, h_densities, h_potentials, energy, npart);
     else                   return compute_energy_bdg  (it, h_densities, h_potentials, energy, npart);

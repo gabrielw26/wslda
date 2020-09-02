@@ -21,7 +21,7 @@ double fbeta(double E, double beta);
  * @param mdfft metadata for ffts plans execution (INPUT) 
  * @param spinsymmetry
  * */
-int compute_contribution_to_densities(double *En, double complex *psi, int nwfip, double beta, double *h_densities, 
+int compute_contribution_to_densities(double *En, double complex *psi, int nwfip, double beta, wslda_density h_densities, 
                                       metadata_s3dpca_fft *mdfft, int spinsymmetry)
 {
     int ien; 
@@ -35,17 +35,17 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
     double norm;
     
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NXYZ);
-    double *rho_b = (double *)(h_densities +  1*NXYZ);
-    double *tau_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_b = (double *)(h_densities +  3*NXYZ);
-    double complex *nu = (double complex *)(h_densities +  4*NXYZ);
-    double *j_a_x = (double *)(h_densities +  6*NXYZ);
-    double *j_a_y = (double *)(h_densities +  7*NXYZ);
-    double *j_a_z = (double *)(h_densities +  8*NXYZ);
-    double *j_b_x = (double *)(h_densities +  9*NXYZ);
-    double *j_b_y = (double *)(h_densities + 10*NXYZ);
-    double *j_b_z = (double *)(h_densities + 11*NXYZ);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
     
     for(ien=0; ien<nwfip; ien++) // for each eigen-energy 
@@ -192,20 +192,20 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
  * @param mdfft handler for fftw plans
  * @return 0 - OK, otherwise ERROR 
  */
-int density_caculate_tau(double *h_densities, metadata_s3dpca_fft *mdfft)
+int density_caculate_tau(wslda_density h_densities, metadata_s3dpca_fft *mdfft)
 {
     // densities - decode 
-    double *rho_a = (double *)(h_densities +  0*NXYZ);
-    double *rho_b = (double *)(h_densities +  1*NXYZ);
-    double *tau_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_b = (double *)(h_densities +  3*NXYZ);
-    double complex *nu = (double complex *)(h_densities +  4*NXYZ);
-    double *j_a_x = (double *)(h_densities +  6*NXYZ);
-    double *j_a_y = (double *)(h_densities +  7*NXYZ);
-    double *j_a_z = (double *)(h_densities +  8*NXYZ);
-    double *j_b_x = (double *)(h_densities +  9*NXYZ);
-    double *j_b_y = (double *)(h_densities + 10*NXYZ);
-    double *j_b_z = (double *)(h_densities + 11*NXYZ);
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
     int ierr, ixyz;
     double *laplace_rho;

@@ -1,13 +1,7 @@
 // This is code for solving DFT equations for polarized cold atoms 
-
+//
 // Authors:
 // Gabriel Wlazlowski <gabriel.wlazlowski@pw.edu.pl>
-
-// compile:
-//      use make tool
-
-// test run:
-//      mpirun -np 8 ./pca input.test.pca.txt 
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -26,6 +20,7 @@
 #include "pca_kernels.h"
 #include "pca_dens.h"
 #include "pca_utils.h"
+#include "wslda_potdens.h"
 #include "pca_io.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
@@ -187,7 +182,7 @@ int main( int argc , char ** argv )
 #if TARGET_MACHINE == TITAN
     if(ip==0) printf("# MACHINE: TITAN\n");
     int deviceId=0;
-    printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
+//     printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
     
@@ -197,7 +192,7 @@ int main( int argc , char ** argv )
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
     int deviceId = ip % 4;
-    printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
+//     printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
     
@@ -239,7 +234,7 @@ int main( int argc , char ** argv )
 #if TARGET_MACHINE == DWARF_ONE_NODE
     if(ip==0) printf("# MACHINE: DWARF_ONE_NODE\n");
     int deviceId=ip;
-    printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
+//     printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
     
@@ -259,23 +254,8 @@ int main( int argc , char ** argv )
     gpu_exec( host_malloc_pl((size_t)9*sizeof(double), (void **)&h_energy) );
     
     // For easier access to data
-    // densities 
-    double complex *nu = (double complex *)(h_densities +  0*NXYZ);
-    double *rho_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_a = (double *)(h_densities +  3*NXYZ);
-    double *j_a_x = (double *)(h_densities +  4*NXYZ);
-    double *j_a_y = (double *)(h_densities +  5*NXYZ);
-    double *j_a_z = (double *)(h_densities +  6*NXYZ);    
-    double *rho_b = (double *)(h_densities +  7*NXYZ);
-    double *tau_b = (double *)(h_densities +  8*NXYZ);
-    double *j_b_x = (double *)(h_densities +  9*NXYZ);
-    double *j_b_y = (double *)(h_densities + 10*NXYZ);
-    double *j_b_z = (double *)(h_densities + 11*NXYZ);
-        
-    // pontentials
-    double *V_a = (double *)(h_potentials +  0*NXYZ);
-    double *V_b = (double *)(h_potentials +  1*NXYZ);
-    double complex *delta = (double complex *)(h_potentials +  2*NXYZ);
+    wslda_density densall = convert_into_wslda_density(h_densities, NXYZ);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ);
         
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
@@ -338,9 +318,9 @@ int main( int argc , char ** argv )
         // initialize potentials
         for(ixyz=0; ixyz<NXYZ; ixyz++)
         {
-            V_a[ixyz]=__md_pca_uniform.V_a; 
-            V_b[ixyz]=__md_pca_uniform.V_b; 
-            delta[ixyz]=__md_pca_uniform.delta + I*0.0;
+            potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
+            potsall.V_b[ixyz]=__md_pca_uniform.V_b; 
+            potsall.delta[ixyz]=__md_pca_uniform.delta + I*0.0;
         }
         
         // set eF, kF and Effg
@@ -356,7 +336,7 @@ int main( int argc , char ** argv )
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
         cppmallocl(h_wavefun, NXYZ*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
-        printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+//         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
     }        
     else if(md.inittype==3) // Start from solution of s2dpca solver (newer version of kzsolver)
     {
@@ -473,9 +453,9 @@ int main( int argc , char ** argv )
             ixyz=0;
             for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
             {
-                V_a[ixyz]  =kzpot[ix*NY + iy];
-                V_b[ixyz]  =kzpot[ix*NY + iy + NX*NY];
-                delta[ixyz]=kzdelta[ix*NY + iy];
+                potsall.V_a[ixyz]  =kzpot[ix*NY + iy];
+                potsall.V_b[ixyz]  =kzpot[ix*NY + iy + NX*NY];
+                potsall.delta[ixyz]=kzdelta[ix*NY + iy];
                 ixyz++;
             }            
         }
@@ -620,7 +600,7 @@ int main( int argc , char ** argv )
     
     // Write info about distribution of wf
     MPI_Barrier(MPI_COMM_WORLD);
-    printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+//     printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -833,9 +813,9 @@ int main( int argc , char ** argv )
             Laz/Na, // 12
             Lbz/Nb, // 13
             (Laz+Lbz)/(Na+Nb), // 14
-            cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-            rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-            rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+            cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+            densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+            densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
             qfalpha, //18
             cccoeff // 19
             // time per measurment (added automatically)
@@ -866,7 +846,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXYZ*sizeof(double)) );
     set_ptr_d_delta(d_potentials+2*NXYZ);
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, h_densities, h_potentials) );
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-3d") );
     
     if(ip==0)
@@ -1172,9 +1152,9 @@ int main( int argc , char ** argv )
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-                rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+                cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+                densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+                densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
                 qfalpha, //18
                 cccoeff // 19
                 // time per measurment (added automatically)
@@ -1375,9 +1355,9 @@ int main( int argc , char ** argv )
                 Laz/Na, // 12
                 Lbz/Nb, // 13
                 (Laz+Lbz)/(Na+Nb), // 14
-                cabs(delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-                rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-                rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
+                cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
+                densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
+                densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
                 qfalpha, //18
                 cccoeff // 19
                 // time per measurment (added automatically)
@@ -1389,7 +1369,7 @@ int main( int argc , char ** argv )
         // add binary data
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
         gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXYZ*sizeof(double)) );
-        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, h_densities, h_potentials) );
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-3d") );
         
         if(ip==0) 

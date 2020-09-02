@@ -1,15 +1,9 @@
 // This is code for solving DFT equations for polarized cold atoms (pca)
 // Version constrained polarized cold atoms (cpca)
-// Along z-direction translational symmetry is assumeed.
-
+// Along z and y direction translational symmetry is assumeed.
+// 
 // Authors:
 // Gabriel Wlazlowski <gabrielw@if.pw.edu.pl>
-
-// compile:
-//      use make tool
-
-// test run:
-//      mpirun -np 8 ./ccpca input.test.cpca.txt 
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -28,6 +22,7 @@
 #include "ccpca_kernels.h"
 #include "ccpca_dens.h"
 #include "pca_utils.h"
+#include "wslda_potdens.h"
 #include "pca_io.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
@@ -191,7 +186,7 @@ int main( int argc , char ** argv )
     if(ip==0) printf("# MACHINE: TITAN\n");
     
     int deviceId=0;
-    printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
+//     printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
     
@@ -201,7 +196,7 @@ int main( int argc , char ** argv )
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
     int deviceId = ip % 4;
-    printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
+//     printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
     gpu_exec( set_gpu(deviceId) );
 #endif
     
@@ -256,23 +251,8 @@ int main( int argc , char ** argv )
     gpu_exec( host_malloc_pl((size_t)9*sizeof(double), (void **)&h_energy) );
     
     // For easier access to data
-    // densities 
-    double complex *nu = (double complex *)(h_densities +  0*NX);
-    double *rho_a = (double *)(h_densities +  2*NX);
-    double *tau_a = (double *)(h_densities +  3*NX);
-    double *j_a_x = (double *)(h_densities +  4*NX);
-    double *j_a_y = (double *)(h_densities +  5*NX);
-    double *j_a_z = (double *)(h_densities +  6*NX);    
-    double *rho_b = (double *)(h_densities +  7*NX);
-    double *tau_b = (double *)(h_densities +  8*NX);
-    double *j_b_x = (double *)(h_densities +  9*NX);
-    double *j_b_y = (double *)(h_densities + 10*NX);
-    double *j_b_z = (double *)(h_densities + 11*NX);
-    
-    // pontentials
-    double *V_a = (double *)(h_potentials +  0*NX);
-    double *V_b = (double *)(h_potentials +  1*NX);
-    double complex *delta = (double complex *)(h_potentials +  2*NX);
+    wslda_density densall = convert_into_wslda_density(h_densities, NX);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NX);
         
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
@@ -336,9 +316,9 @@ int main( int argc , char ** argv )
         // initialize potentials
         for(ixyz=0; ixyz<NX; ixyz++)
         {
-            V_a[ixyz]=__md_pca_uniform.V_a; 
-            V_b[ixyz]=__md_pca_uniform.V_b; 
-            delta[ixyz]=__md_pca_uniform.delta + I*0.0;
+            potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
+            potsall.V_b[ixyz]=__md_pca_uniform.V_b; 
+            potsall.delta[ixyz]=__md_pca_uniform.delta + I*0.0;
         }
         
         // set eF, kF and Effg
@@ -355,7 +335,7 @@ int main( int argc , char ** argv )
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
-        printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+//         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
 //     else if(md.inittype==3) // Start from solution of kzSLpca solver 
@@ -473,7 +453,7 @@ int main( int argc , char ** argv )
     
     // Write info about distribution of wf
     MPI_Barrier(MPI_COMM_WORLD);
-    printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+//     printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -687,9 +667,9 @@ int main( int argc , char ** argv )
             energy_pair/Effg, // 9
             energy_CM/Effg, // 10
             energy_uext/Effg, //11
-            cabs(delta[NX/2]), // 12
-            rho_a[NX/2], // 13
-            rho_b[NX/2], // 14
+            cabs(potsall.delta[NX/2]), // 12
+            densall.rho_a[NX/2], // 13
+            densall.rho_b[NX/2], // 14
             qfalpha, //15
             cccoeff // 16
             // time per measurment (added automatically)
@@ -720,7 +700,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );
     set_ptr_d_delta(d_potentials+2*NXY);
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, h_densities, h_potentials) );
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-1d") );
     if(ip==0)
     {  
@@ -1022,9 +1002,9 @@ int main( int argc , char ** argv )
                 energy_pair/Effg, // 9
                 energy_CM/Effg, // 10
                 energy_uext/Effg, //11
-                cabs(delta[NX/2]), // 12
-                rho_a[NX/2], // 13
-                rho_b[NX/2], // 14
+                cabs(potsall.delta[NX/2]), // 12
+                densall.rho_a[NX/2], // 13
+                densall.rho_b[NX/2], // 14
                 qfalpha, //15
                 cccoeff // 16
                 // time per measurment (added automatically)
@@ -1220,9 +1200,9 @@ int main( int argc , char ** argv )
                 energy_pair/Effg, // 9
                 energy_CM/Effg, // 10
                 energy_uext/Effg, //11
-                cabs(delta[NX/2]), // 12
-                rho_a[NX/2], // 13
-                rho_b[NX/2], // 14
+                cabs(potsall.delta[NX/2]), // 12
+                densall.rho_a[NX/2], // 13
+                densall.rho_b[NX/2], // 14
                 qfalpha, //15
                 cccoeff // 16
                 // time per measurment (added automatically)
@@ -1234,7 +1214,7 @@ int main( int argc , char ** argv )
         // add binary data
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
         gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );
-        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, h_densities, h_potentials) );
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-1d") );
         
         if(ip==0) 

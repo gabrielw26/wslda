@@ -19,6 +19,7 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
+#include "wslda_potdens.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
@@ -91,9 +92,9 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
         }
 }
 
-void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
-void modify_densities(int it, double *h_densities, double *params, size_t extra_data_size, void *extra_data);
-void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data);
+void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
+void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
+void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -140,6 +141,7 @@ int wsldapid; // process id - global variable
 typedef char * string;
 #define DENSDIM 12*NX*NY
 #define POTDIM  4*NX*NY
+#define BLOCKLENGTH (NX*NY)
 
 // make -f Makefile.kzsolver
 
@@ -313,22 +315,10 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     // densities 
-    double *rho_a = (double *)(h_densities +  0*NX*NY);
-    double *rho_b = (double *)(h_densities +  1*NX*NY);
-    double *tau_a = (double *)(h_densities +  2*NX*NY);
-    double *tau_b = (double *)(h_densities +  3*NX*NY);
-    double complex *nu = (double complex *)(h_densities +  4*NX*NY);
-    double *j_a_x = (double *)(h_densities +  6*NX*NY);
-    double *j_a_y = (double *)(h_densities +  7*NX*NY);
-    double *j_a_z = (double *)(h_densities +  8*NX*NY);
-    double *j_b_x = (double *)(h_densities +  9*NX*NY);
-    double *j_b_y = (double *)(h_densities + 10*NX*NY);
-    double *j_b_z = (double *)(h_densities + 11*NX*NY);
-    
-    // pontentials
-    double *V_a = (double *)(h_potentials +  0*NX*NY);
-    double *V_b = (double *)(h_potentials +  1*NX*NY);
-    double complex *delta = (double complex *)(h_potentials +  2*NX*NY);
+    wslda_density densall = convert_into_wslda_density(h_densities, NX*NY);
+    wslda_density densall_old = convert_into_wslda_density(h_densities_old, NX*NY);
+    wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NX*NY);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NX*NY);
     
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
@@ -582,22 +572,22 @@ int main( int argc , char ** argv )
         for(ixyz=0; ixyz<NX*NY; ixyz++)
         {
             // potentials
-            V_a[ixyz]=__md_pca_uniform.V_a; 
-            V_b[ixyz]=__md_pca_uniform.V_b; 
-            delta[ixyz]=__md_pca_uniform.delta + I*0.0;
+            potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
+            potsall.V_b[ixyz]=__md_pca_uniform.V_b; 
+            potsall.delta[ixyz]=__md_pca_uniform.delta + I*0.0;
             
             // densities
-            rho_a[ixyz]=__md_pca_uniform.n0_a; 
-            rho_b[ixyz]=__md_pca_uniform.n0_b; 
-            tau_a[ixyz]=__md_pca_uniform.tau_a; 
-            tau_b[ixyz]=__md_pca_uniform.tau_b; 
-            nu[ixyz]=__md_pca_uniform.nu; 
-            j_a_x[ixyz]=0.0;
-            j_a_y[ixyz]=0.0;
-            j_a_z[ixyz]=0.0;
-            j_b_x[ixyz]=0.0;
-            j_b_y[ixyz]=0.0;
-            j_b_z[ixyz]=0.0;           
+            densall.rho_a[ixyz]=__md_pca_uniform.n0_a; 
+            densall.rho_b[ixyz]=__md_pca_uniform.n0_b; 
+            densall.tau_a[ixyz]=__md_pca_uniform.tau_a; 
+            densall.tau_b[ixyz]=__md_pca_uniform.tau_b; 
+            densall.nu[ixyz]=__md_pca_uniform.nu; 
+            densall.j_a_x[ixyz]=0.0;
+            densall.j_a_y[ixyz]=0.0;
+            densall.j_a_z[ixyz]=0.0;
+            densall.j_b_x[ixyz]=0.0;
+            densall.j_b_y[ixyz]=0.0;
+            densall.j_b_z[ixyz]=0.0;           
         }
         
         // set eF, kF and Effg
@@ -774,10 +764,10 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-    process_params(dc_params, kF, mu, extra_data_size, extra_data);
-    modify_densities(it-1, h_densities, dc_params, extra_data_size, extra_data) ;
-    modify_potentials(it-1, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, h_densities, h_potentials) );
+    process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+    modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
+    modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
 
     if(iam==0)
@@ -941,14 +931,19 @@ int main( int argc , char ** argv )
         
         // take density in the center and use it for definition of the kF (for SPINA)
         if(md.referencekF>0.0) kF = md.referencekF;
-        else kF = pow(6.*M_PI*M_PI*rho_a[NY/2 + NX/2*NY],1./3.);
+        else 
+        {
+            double _max_dens=0.0;
+            for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) if(densall.rho_a[ixyz]+densall.rho_b[ixyz]>_max_dens) _max_dens=densall.rho_a[ixyz]+densall.rho_b[ixyz];
+            kF = pow(3.*M_PI*M_PI*_max_dens,1./3.);
+        }
         
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-        process_params(dc_params, kF, mu, extra_data_size, extra_data);        
+        process_params(dc_params, &kF, mu, extra_data_size, extra_data);        
         rt_other+=e_t(0);
         
         // ------------------ diagonalize for each kz ------------------
@@ -957,7 +952,7 @@ int main( int argc , char ** argv )
         {
             // matrix elements
             b_t();
-            cpu_exec( compute_matrix_elements(&bgrid, it, h_densities, h_potentials, &mdfft, h, kkz[ikz], me_d_dx, me_d_dy) );
+            cpu_exec( compute_matrix_elements(&bgrid, it, densall, potsall, &mdfft, h, kkz[ikz], me_d_dx, me_d_dy) );
             rt_me+=e_t(0);
             
             // diagonalize
@@ -1216,7 +1211,7 @@ int main( int argc , char ** argv )
             // --------- DENSITIES ----------
             // compute contribution to the densities
             b_t();
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, h_densities_partial, &mdfft, kkz[ikz], md.spinsymmetry) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kkz[ikz], md.spinsymmetry) );
             rt_dens+=e_t(0);
             
             // free temporary resources
@@ -1241,28 +1236,28 @@ int main( int argc , char ** argv )
         b_t();
         if(md.spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
         {
-            rho_a[ixyz]=rho_b[ixyz];
-            tau_a[ixyz]=tau_b[ixyz];
-            j_a_x[ixyz]=j_b_x[ixyz];
-            j_a_y[ixyz]=j_b_y[ixyz];
-            j_a_z[ixyz]=j_b_z[ixyz];
+            densall.rho_a[ixyz]=densall.rho_b[ixyz];
+            densall.tau_a[ixyz]=densall.tau_b[ixyz];
+            densall.j_a_x[ixyz]=densall.j_b_x[ixyz];
+            densall.j_a_y[ixyz]=densall.j_b_y[ixyz];
+            densall.j_a_z[ixyz]=densall.j_b_z[ixyz];
         }
         if(md.nocurrents) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand no currents
         {
-            j_a_x[ixyz]=0.0; j_b_x[ixyz]=0.0;
-            j_a_y[ixyz]=0.0; j_b_y[ixyz]=0.0;
-            j_a_z[ixyz]=0.0; j_b_z[ixyz]=0.0;
+            densall.j_a_x[ixyz]=0.0; densall.j_b_x[ixyz]=0.0;
+            densall.j_a_y[ixyz]=0.0; densall.j_b_y[ixyz]=0.0;
+            densall.j_a_z[ixyz]=0.0; densall.j_b_z[ixyz]=0.0;
         }
         
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS  
         // finalize computation of tau
-        cpu_exec( density_caculate_tau(h_densities, &mdfft) );
+        cpu_exec( density_caculate_tau(densall, &mdfft) );
 #endif
         
         // ------------------ update chemical potentials ------------------
         if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
-        for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
+        for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
         if(it>0) 
         {       
@@ -1342,25 +1337,25 @@ int main( int argc , char ** argv )
         double dens_min = 1.0e-14;
         for (ixyz = 0; ixyz < NX*NY; ixyz++)
         {
-        	if (rho_a[ixyz] < 0.) rho_a[ixyz] = dens_min;
-        	if (rho_b[ixyz] < 0.) rho_b[ixyz] = dens_min;
-        	if (tau_a[ixyz] < 0.) tau_a[ixyz] = dens_min;
-        	if (tau_b[ixyz] < 0.) tau_b[ixyz] = dens_min;
+        	if (densall.rho_a[ixyz] < 0.) densall.rho_a[ixyz] = dens_min;
+        	if (densall.rho_b[ixyz] < 0.) densall.rho_b[ixyz] = dens_min;
+        	if (densall.tau_a[ixyz] < 0.) densall.tau_a[ixyz] = dens_min;
+        	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
         
-        modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
+        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
         rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------
         b_t();
-        cpu_exec( recompute_potentials(it, h_densities, h_potentials, h_potentials) ); 
-        modify_potentials(it, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
+        cpu_exec( recompute_potentials(it, densall, potsall, potsall) ); 
+        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         rt_pot+=e_t(0);
         
         // ------------------ angular momentum ------------------
         b_t();
-        cpu_exec( compute_angular_momentum_Lz(j_a_x, j_a_y, &Lz_a) );
-        cpu_exec( compute_angular_momentum_Lz(j_b_x, j_b_y, &Lz_b) );
+        cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
+        cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
         Lz = Lz_a + Lz_b; // total angular momentum
         if(iam==0) printf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
@@ -1372,8 +1367,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("dc_Omega_a=%16.8g  dc_Omega_b=%16.8g\n",dc_Omega_a, dc_Omega_b);
         
         // ------------------ external velocity ------------------
-        cpu_exec( compute_vext_dot_j(it, SPINA, j_a_x, j_a_y, &vextja) );
-        cpu_exec( compute_vext_dot_j(it, SPINB, j_a_x, j_a_y, &vextjb) );  
+        cpu_exec( compute_vext_dot_j(it, SPINA, densall.j_a_x, densall.j_a_y, &vextja) );
+        cpu_exec( compute_vext_dot_j(it, SPINB, densall.j_b_x, densall.j_b_y, &vextjb) );  
         if(iam==0) printf("# EXTERNAL VELOCITY: it=%d\n", it);
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "VEXT_A*J", vextja, vextja_old, (vextja-vextja_old));    
@@ -1382,7 +1377,7 @@ int main( int argc , char ** argv )
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, h_densities, h_potentials, energy, npart) );
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         if(iam==0) printf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
@@ -1445,7 +1440,7 @@ int main( int argc , char ** argv )
         wdata_setconst(&wdmd, "eF", eF);
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
-        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
         
         // checkpoint - only by iam==0
@@ -1497,7 +1492,7 @@ int main( int argc , char ** argv )
                 
                 // write potentials
                 sprintf(file_name, "%s_s2dpca.pud", md.outprefix);
-                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY, V_a, delta) );
+                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY, potsall.V_a, potsall.delta) );
             }
             
             // Create check.stamp

@@ -33,6 +33,7 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
+#include "wslda_potdens.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
@@ -41,7 +42,6 @@
 #include "s3dpca_me.h"
 #include "s3dpca_grid.h"
 #include "s3dpca_densities.h"
-#include "s3dpca_inittype4.h"
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
 // #include "s3dpca_testfun.h"
@@ -115,9 +115,9 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
                 printf( "\n" );
         }
 }
-void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
-void modify_densities(int it, double *h_densities, double *params, size_t extra_data_size, void *extra_data);
-void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data);
+void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
+void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
+void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -150,8 +150,7 @@ int wsldapid; // process id - global variable
 typedef char * string;
 #define DENSDIM 12*NXYZ
 #define POTDIM  4*NXYZ
-
-// make -f Makefile.kzsolver
+#define BLOCKLENGTH (NXYZ) 
 
 int main( int argc , char ** argv ) 
 {    
@@ -179,8 +178,6 @@ int main( int argc , char ** argv )
     
     // arrays
     double complex *h_wavefun; // pointer to wave-functions on host (cpu) side 
-    double *h_fbetaEn; // pointer to weights of wave-functions on host (cpu) side
-    double *h_En; // pointer to eigen-values of wave-functions on host (cpu) side
     double *h_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_densities_old; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
@@ -210,7 +207,7 @@ int main( int argc , char ** argv )
     
     char file_name[256];
     
-    double *extra_data = NULL;
+    void *extra_data = NULL;
     size_t extra_data_size;
   
     /* start main */
@@ -392,27 +389,11 @@ int main( int argc , char ** argv )
     cppmallocl(dc_params, MAX_USER_PARAMS, double);
     
     // For easier access to data
-    // densities 
-    double *rho_a = (double *)(h_densities +  0*NXYZ);
-    double *rho_b = (double *)(h_densities +  1*NXYZ);
-    double *tau_a = (double *)(h_densities +  2*NXYZ);
-    double *tau_b = (double *)(h_densities +  3*NXYZ);
-    double complex *nu = (double complex *)(h_densities +  4*NXYZ);
-    double *j_a_x = (double *)(h_densities +  6*NXYZ);
-    double *j_a_y = (double *)(h_densities +  7*NXYZ);
-    double *j_a_z = (double *)(h_densities +  8*NXYZ);
-    double *j_b_x = (double *)(h_densities +  9*NXYZ);
-    double *j_b_y = (double *)(h_densities + 10*NXYZ);
-    double *j_b_z = (double *)(h_densities + 11*NXYZ);
-    
-    // pontentials
-    double *V_a = (double *)(h_potentials +  0*NXYZ);
-    double *V_b = (double *)(h_potentials +  1*NXYZ);
-    double complex *delta = (double complex *)(h_potentials +  2*NXYZ);
-    
-    cppmallocl(h_fbetaEn, 2*NXYZ,double);
-    cppmallocl(h_En, 2*NXYZ,double);
-    
+    wslda_density densall = convert_into_wslda_density(h_densities, NXYZ);
+    wslda_density densall_old = convert_into_wslda_density(h_densities_old, NXYZ);
+    wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NXYZ);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ);
+            
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
     cppmallocl(dens_out, (md.Mbroyden + 1), double*);
@@ -530,22 +511,22 @@ int main( int argc , char ** argv )
         for(ixyz=0; ixyz<NXYZ; ixyz++)
         {
             // potentials
-            V_a[ixyz]=__md_pca_uniform.V_a; 
-            V_b[ixyz]=__md_pca_uniform.V_b; 
-            delta[ixyz]=__md_pca_uniform.delta + I*0.0;
+            potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
+            potsall.V_b[ixyz]=__md_pca_uniform.V_b; 
+            potsall.delta[ixyz]=__md_pca_uniform.delta + I*0.0;
             
             // densities
-            rho_a[ixyz]=__md_pca_uniform.n0_a; 
-            rho_b[ixyz]=__md_pca_uniform.n0_b; 
-            tau_a[ixyz]=__md_pca_uniform.tau_a; 
-            tau_b[ixyz]=__md_pca_uniform.tau_b; 
-            nu[ixyz]=__md_pca_uniform.nu; 
-            j_a_x[ixyz]=0.0;
-            j_a_y[ixyz]=0.0;
-            j_a_z[ixyz]=0.0;
-            j_b_x[ixyz]=0.0;
-            j_b_y[ixyz]=0.0;
-            j_b_z[ixyz]=0.0;           
+            densall.rho_a[ixyz]=__md_pca_uniform.n0_a; 
+            densall.rho_b[ixyz]=__md_pca_uniform.n0_b; 
+            densall.tau_a[ixyz]=__md_pca_uniform.tau_a; 
+            densall.tau_b[ixyz]=__md_pca_uniform.tau_b; 
+            densall.nu[ixyz]=__md_pca_uniform.nu; 
+            densall.j_a_x[ixyz]=0.0;
+            densall.j_a_y[ixyz]=0.0;
+            densall.j_a_z[ixyz]=0.0;
+            densall.j_b_x[ixyz]=0.0;
+            densall.j_b_y[ixyz]=0.0;
+            densall.j_b_z[ixyz]=0.0;           
         }
         
         // set eF, kF and Effg
@@ -634,77 +615,6 @@ int main( int argc , char ** argv )
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-    }
-    else if(md.inittype==4) // start from cuGPE initial solutions
-    {
-        if(iam==0) 
-        {
-            printf("# INITTYPE[4]: DENSITIES FROM dpca FILES.\n");
-            file_operation( inittype4_readdpca(md.inprefix, h_densities, h_potentials, &eF) );
-            
-            // recompute potentials
-            kF=sqrt(2*eF);
-            if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
-            for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
-            mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-            process_params(dc_params, kF, mu, extra_data_size, extra_data);
-            cpu_exec( recompute_potentials_meanfield_only(it, h_densities, h_potentials, h_potentials) ); 
-            
-            // set chemical potentials using TF approximation
-            zbrent_data_t npart_mu;
-            for(j=0; j<2; j++)
-            {
-                reset_zbrent_data(&npart_mu);
-                double sol;
-                double init_mu_1=-100;
-                double init_mu_2= 100.;
-                double *__U;
-                double __N;
-                if(j==SPINA) {__U = V_a; __N=md.Na;}
-                else         {__U = V_b; __N=md.Nb;}
-                
-//                 for(ix=0; ix<NX; ix++) printf("UUU %d %f %f\n", ix, __U[(NZ/2)+NZ*(NY/2)+NZ*NY*ix], cabs(delta[(NZ/2)+NZ*(NY/2)+NZ*NY*ix]));
-                
-                while(1)
-                {
-                    sol=zbrent2(&npart_mu, &init_mu_1, &init_mu_2, 1.0e-12, &ierr);
-        //             if(ip==0) printf("sol=%f, ierr=%d\n", sol, ierr);
-                    if(ierr==0) break; // we converged
-                    if(ierr>0) // request for point
-                    {
-                        double x = get_point_from_zbrent_data(&npart_mu);
-        //                 if(ip==0) printf("zbrent needs value of function for x=%f\n", x);
-                        double fx=npart_TF(NXYZ, __U, x, DXYZ);
-//                         if(iam==0) printf("Setting: f(%f)=%f\n", x, fx);
-                        fx=fx-__N;
-//                         if(iam==0) printf("Setting: f(%f)=%f\n", x, fx);
-                        set_point_in_zbrent_data(&npart_mu, fx);
-                    }
-                    if(ierr<0) ABORT_NOBARRIER;
-                }
-                mu[j]=sol;
-            }
-            
-            dc_mu_a = mu[SPINA];
-            dc_mu_b = mu[SPINB];
-            dc_ec=M_PI*M_PI/(2.*DX*DX);
-            Effg = 0.6 * md.Na * eF;
-            beta = 1.0 / (md.temperature * eF); 
-        }
-        
-        MPI_Bcast(&it          , 1 , MPI_INT    , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(&dc_mu_a     , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
-        MPI_Bcast(&dc_mu_b     , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
-        MPI_Bcast(&dc_ec       , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
-        MPI_Bcast(&beta        , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
-        MPI_Bcast(&eF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
-        MPI_Bcast(&kF          , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(&Effg        , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_potentials , POTDIM , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(h_densities  , DENSDIM, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        
-
-//         ABORT; // TODO
     }
     else
     {
@@ -796,10 +706,10 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-    process_params(dc_params, kF, mu, extra_data_size, extra_data);
-    modify_densities(it-1, h_densities, dc_params, extra_data_size, extra_data) ;
-    modify_potentials(it-1, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
-    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, h_densities, h_potentials) );
+    process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+    modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
+    modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
+    file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
@@ -966,21 +876,25 @@ int main( int argc , char ** argv )
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         if(md.referencekF>0.0) kF = md.referencekF;
-        else                   kF = pow(6.*M_PI*M_PI*rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2],1./3.); 
-                               // take density in the center and use it for definition of the kF (for SPINA)
+        else 
+        {
+            double _max_dens=0.0;
+            for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) if(densall.rho_a[ixyz]+densall.rho_b[ixyz]>_max_dens) _max_dens=densall.rho_a[ixyz]+densall.rho_b[ixyz];
+            kF = pow(3.*M_PI*M_PI*_max_dens,1./3.);
+        }
         
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-        process_params(dc_params, kF, mu, extra_data_size, extra_data);
+        process_params(dc_params, &kF, mu, extra_data_size, extra_data);
         ECHOLINE;
         rt_other+=e_t(0);
         
         // matrix elements
         b_t();
-        cpu_exec( compute_matrix_elements(&bgrid, it, h_densities, h_potentials, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
+        cpu_exec( compute_matrix_elements(&bgrid, it, densall, potsall, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
         rt_me+=e_t(0);
         ECHOLINE;
         
@@ -1228,28 +1142,28 @@ int main( int argc , char ** argv )
         // --------- DENSITIES ----------
         b_t();
         // compute contribution to the densities
-        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, h_densities_partial, &mdfft, md.spinsymmetry) );
+        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, densall_partial, &mdfft, md.spinsymmetry) );
         // compute densities as global reduction
         MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
         if(md.spinsymmetry==1)  for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand symmetry on densities
         {
-            rho_a[ixyz]=rho_b[ixyz];
-            tau_a[ixyz]=tau_b[ixyz];
-            j_a_x[ixyz]=j_b_x[ixyz];
-            j_a_y[ixyz]=j_b_y[ixyz];
-            j_a_z[ixyz]=j_b_z[ixyz];
+            densall.rho_a[ixyz]=densall.rho_b[ixyz];
+            densall.tau_a[ixyz]=densall.tau_b[ixyz];
+            densall.j_a_x[ixyz]=densall.j_b_x[ixyz];
+            densall.j_a_y[ixyz]=densall.j_b_y[ixyz];
+            densall.j_a_z[ixyz]=densall.j_b_z[ixyz];
         }
         if(md.nocurrents) for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand no currents
         {
-            j_a_x[ixyz]=0.0; j_b_x[ixyz]=0.0;
-            j_a_y[ixyz]=0.0; j_b_y[ixyz]=0.0;
-            j_a_z[ixyz]=0.0; j_b_z[ixyz]=0.0;
+            densall.j_a_x[ixyz]=0.0; densall.j_b_x[ixyz]=0.0;
+            densall.j_a_y[ixyz]=0.0; densall.j_b_y[ixyz]=0.0;
+            densall.j_a_z[ixyz]=0.0; densall.j_b_z[ixyz]=0.0;
         }
         
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS  
         // finalize computation of tau
-        cpu_exec( density_caculate_tau(h_densities, &mdfft) );
+        cpu_exec( density_caculate_tau(densall, &mdfft) );
 #endif
         rt_dens+=e_t(0);
                 
@@ -1267,7 +1181,7 @@ int main( int argc , char ** argv )
         if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
-            for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=rho_a[ixyz]; npart[SPINB]+=rho_b[ixyz];}
+            for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
             npart[SPINA]*=DXYZ; npart[SPINB]*=DXYZ; 
             double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
             double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
@@ -1344,25 +1258,25 @@ int main( int argc , char ** argv )
         double dens_min = 1.0e-14;
         for (ixyz = 0; ixyz < NXYZ; ixyz++)
         {
-        	if (rho_a[ixyz] < 0.) rho_a[ixyz] = dens_min;
-        	if (rho_b[ixyz] < 0.) rho_b[ixyz] = dens_min;
-        	if (tau_a[ixyz] < 0.) tau_a[ixyz] = dens_min;
-        	if (tau_b[ixyz] < 0.) tau_b[ixyz] = dens_min;
+        	if (densall.rho_a[ixyz] < 0.) densall.rho_a[ixyz] = dens_min;
+        	if (densall.rho_b[ixyz] < 0.) densall.rho_b[ixyz] = dens_min;
+        	if (densall.tau_a[ixyz] < 0.) densall.tau_a[ixyz] = dens_min;
+        	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
         
-        modify_densities(it, h_densities, dc_params, extra_data_size, extra_data) ;
+        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
         rt_other+=e_t(0);
         
         // ------------------ compute new potentials ------------------
         b_t();
-        cpu_exec( recompute_potentials(it, h_densities, h_potentials, h_potentials) ); 
-        modify_potentials(it, h_densities, h_potentials, dc_params, extra_data_size, extra_data) ;
+        cpu_exec( recompute_potentials(it, densall, potsall, potsall) ); 
+        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         rt_pot+=e_t(0);
         
         // ------------------ angular momentum ------------------
         b_t();
-        cpu_exec( compute_angular_momentum_Lz(j_a_x, j_a_y, &Lz_a) );
-        cpu_exec( compute_angular_momentum_Lz(j_b_x, j_b_y, &Lz_b) );
+        cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
+        cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
         Lz = Lz_a + Lz_b; // total angular momentum        
         if(iam==0) printf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
@@ -1374,8 +1288,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("dc_Omega_a=%16.8g  dc_Omega_b=%16.8g\n",dc_Omega_a, dc_Omega_b);
         
         // ------------------ external velocity ------------------
-        cpu_exec( compute_vext_dot_j(it, SPINA, j_a_x, j_a_y, j_a_z, &vextja) );
-        cpu_exec( compute_vext_dot_j(it, SPINB, j_a_x, j_a_y, j_a_z, &vextjb) );  
+        cpu_exec( compute_vext_dot_j(it, SPINA, densall.j_a_x, densall.j_a_y, densall.j_a_z, &vextja) );
+        cpu_exec( compute_vext_dot_j(it, SPINB, densall.j_b_x, densall.j_b_y, densall.j_b_z, &vextjb) );  
         if(iam==0) printf("# EXTERNAL VELOCITY: it=%d\n", it);
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "VEXT_A*J", vextja, vextja_old, (vextja-vextja_old));    
@@ -1384,7 +1298,7 @@ int main( int argc , char ** argv )
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, h_densities, h_potentials, energy, npart) );
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         if(iam==0) printf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
@@ -1448,7 +1362,7 @@ int main( int argc , char ** argv )
         wdata_setconst(&wdmd, "eF", eF);
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
-        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, h_densities, h_potentials) );
+        file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
                 
         // checkpoint - only by iam==0
@@ -1501,7 +1415,7 @@ int main( int argc , char ** argv )
                 
                 // write potentials
                 sprintf(file_name, "%s_s3dpca.pud", md.outprefix);
-                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY*NZ, V_a, delta) );
+                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY*NZ, potsall.V_a, potsall.delta) );
             }
             
             // Create check.stamp
