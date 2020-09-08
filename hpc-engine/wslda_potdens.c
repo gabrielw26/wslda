@@ -49,9 +49,20 @@ wslda_potential convert_into_wslda_potential(double *h_potentials, int blockleng
     if(blocklength==NX*NY*NZ) {d.nx=NX; d.ny=NY; d.nz=NZ; d.datadim=3;} // 3D code
     d.blocklength = d.nx*d.ny*d.nz;
     
-    d.V_a = (double *)(h_potentials +  0*blocklength);
-    d.V_b = (double *)(h_potentials +  1*blocklength);
-    d.delta = (double complex *)(h_potentials +  2*blocklength);
+    d.delta = (double complex *)(h_potentials +  0*blocklength);
+    
+    d.V_a = (double *)(h_potentials +  2*blocklength);
+    d.V_b = (double *)(h_potentials +  3*blocklength);
+    
+    d.alpha_a = (double *)(h_potentials +  4*blocklength);
+    d.alpha_b = (double *)(h_potentials +  5*blocklength);
+    
+    d.A_a_x = (double *)(h_potentials +  6*blocklength);
+    d.A_a_y = (double *)(h_potentials +  7*blocklength);
+    d.A_a_z = (double *)(h_potentials +  8*blocklength);
+    d.A_b_x = (double *)(h_potentials +  9*blocklength);
+    d.A_b_y = (double *)(h_potentials + 10*blocklength);
+    d.A_b_z = (double *)(h_potentials + 11*blocklength);
     
     return d;
 }

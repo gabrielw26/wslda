@@ -44,7 +44,7 @@
 #include "s3dpca_densities.h"
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
-// #include "s3dpca_testfun.h"
+#include "wslda_functionals.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -138,10 +138,6 @@ double dc_mu_a_old;		// for Broyden
 double dc_mu_b_old;		// for Broyden
 double dc_ec;
 
-// rotating frame
-double dc_Omega_a;
-double dc_Omega_b;
-
 // BdG mode
 double aBdG;
 
@@ -149,7 +145,7 @@ int wsldapid; // process id - global variable
 
 typedef char * string;
 #define DENSDIM 12*NXYZ
-#define POTDIM  4*NXYZ
+#define POTDIM  12*NXYZ
 #define BLOCKLENGTH (NXYZ) 
 
 int main( int argc , char ** argv ) 
@@ -195,8 +191,6 @@ int main( int argc , char ** argv )
     char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
     int is_converged, is_converged_local;
     int saving_iteration=0;
-    dc_Omega_a=0.0;
-    dc_Omega_b=0.0;
     
     // parameters for Broyden method
 	double omega_0 = md.omega0broyden;	// weight assigned to the error in the inverse Jacobian
@@ -277,7 +271,8 @@ int main( int argc , char ** argv )
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        if(iam==0) printf("SET aBdG IN INPUT FILE!") ;
+        if(iam==0) printf("ERROR: SET aBdG IN INPUT FILE!\n");
+        fflush(stdout);
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
     }
@@ -514,6 +509,14 @@ int main( int argc , char ** argv )
             potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
             potsall.V_b[ixyz]=__md_pca_uniform.V_b; 
             potsall.delta[ixyz]=__md_pca_uniform.delta + I*0.0;
+            potsall.alpha_a[ixyz]=__md_pca_uniform.alph_a; 
+            potsall.alpha_b[ixyz]=__md_pca_uniform.alph_b;
+            potsall.A_a_x[ixyz]=0.0; 
+            potsall.A_a_y[ixyz]=0.0;  
+            potsall.A_a_z[ixyz]=0.0;  
+            potsall.A_b_x[ixyz]=0.0; 
+            potsall.A_b_y[ixyz]=0.0; 
+            potsall.A_b_z[ixyz]=0.0; 
             
             // densities
             densall.rho_a[ixyz]=__md_pca_uniform.n0_a; 
@@ -711,6 +714,7 @@ int main( int argc , char ** argv )
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
+    ECHOLINE;
     
     double dc_ec_l=-1.0*dc_ec; // lower bound for states extraction
     double dc_ec_u= 1.0*dc_ec; // upper bound for states exteraction
@@ -894,7 +898,7 @@ int main( int argc , char ** argv )
         
         // matrix elements
         b_t();
-        cpu_exec( compute_matrix_elements(&bgrid, it, densall, potsall, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
+        cpu_exec( compute_matrix_elements_3d(&bgrid, it, densall, potsall, &mdfft, h, me_d_dx, me_d_dy, me_d_dz) );
         rt_me+=e_t(0);
         ECHOLINE;
         
@@ -1269,7 +1273,7 @@ int main( int argc , char ** argv )
         
         // ------------------ compute new potentials ------------------
         b_t();
-        cpu_exec( recompute_potentials(it, densall, potsall, potsall) ); 
+        cpu_exec( compute_potentials(it, densall, potsall) ); 
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         rt_pot+=e_t(0);
         
@@ -1285,7 +1289,6 @@ int main( int argc , char ** argv )
             "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
-        if(iam==0) printf("dc_Omega_a=%16.8g  dc_Omega_b=%16.8g\n",dc_Omega_a, dc_Omega_b);
         
         // ------------------ external velocity ------------------
         cpu_exec( compute_vext_dot_j(it, SPINA, densall.j_a_x, densall.j_a_y, densall.j_a_z, &vextja) );
@@ -1328,8 +1331,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
         
-        double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - dc_Omega_a*Lz_a - dc_Omega_b*Lz_b - vextja - vextjb;
-        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - dc_Omega_a*Lz_a_old - dc_Omega_b*Lz_b_old - vextja_old - vextjb_old;
+        double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - vextja - vextjb;
+        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - vextja_old - vextjb_old;
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0)

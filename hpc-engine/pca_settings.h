@@ -101,6 +101,7 @@
 #define SLDA 111
 #define ASLDA 112
 #define BDG 113
+#define CUSTOMEDF 114
 
 // if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
 #if FUNCTIONAL==BDG
