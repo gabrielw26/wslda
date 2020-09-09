@@ -165,7 +165,7 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
-    double vextja=0.0, vextjb=0.0,  vextja_old=0.0, vextjb_old=0.0;
+    double vextja=0.0, vextjb=0.0,  vextja_old=0.0, vextjb_old=0.0; // TODO - remove
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -179,13 +179,15 @@ int main( int argc , char ** argv )
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
-    double energy[5], energy_old[5];
-    string energy_labels[5];
-    energy_labels[0] = "E_kin";
-    energy_labels[1] = "E_pot";
-    energy_labels[2] = "E_pair";
-    energy_labels[3] = "E_CM";
-    energy_labels[4] = "E_ext";
+    double energy[ENERGYITEMS], energy_old[ENERGYITEMS];
+    string energy_labels[ENERGYITEMS];
+    energy_labels[EKIN] = "E_kin";
+    energy_labels[EPOT] = "E_pot";
+    energy_labels[EPAIR] = "E_pair";
+    energy_labels[ECURRENT] = "E_curr";
+    energy_labels[EPOTEXT] = "E_potext";
+    energy_labels[EPAIREXT] = "E_pairext";
+    energy_labels[EVELEXT] = "E_velext";
     double E_tot, E_tot_old;
     double npart[2], npart_old[2], nparttest;
     char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
@@ -471,7 +473,7 @@ int main( int argc , char ** argv )
     beta = __md_pca_uniform.beta;
     
     // reset energy and particle number
-    for(ixyz=0; ixyz< 5; ixyz++) energy[ixyz] = 0.0;
+    for(ixyz=0; ixyz< ENERGYITEMS; ixyz++) energy[ixyz] = 0.0;
     npart[SPINA]=0.0; npart[SPINB]=0.0;
     
     // ===================================================================================
@@ -544,6 +546,11 @@ int main( int argc , char ** argv )
         dc_mu_b=__md_pca_uniform.mu_b;
         dc_ec = __md_pca_uniform.ec;
         beta = __md_pca_uniform.beta;
+        
+        // set energy buffers
+        energy[EKIN]=__md_pca_uniform.ekin;
+        energy[EPOT]=__md_pca_uniform.epot;
+        energy[EPAIR]=__md_pca_uniform.epair;
     }
     else if(md.inittype==2 || md.inittype==22) // start from checkpoint
     {
@@ -569,7 +576,7 @@ int main( int argc , char ** argv )
             fread(&Effg        , sizeof(double)      , 1 , pFile);
             fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
             fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
-            fread(energy       , sizeof(double)      , 5 , pFile);
+            fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
             fread(npart        , sizeof(double)      , 2 , pFile);
             fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
@@ -583,21 +590,21 @@ int main( int argc , char ** argv )
             printf("# CHECKPOINT READ: dc_ec=%16.8g  beta=%16.8g\n", dc_ec, beta);
             printf("# CHECKPOINT READ: eF=%16.8g  kF=%16.8g  Effg=%16.8g\n", eF, kF, Effg);
             printf("# CHECKPOINT READ: ------- NPART -------\n");
-            printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "SPINA", npart[SPINA], npart[SPINA], (npart[SPINA]-npart[SPINA]));
-            printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "SPINB", npart[SPINB], npart[SPINB], (npart[SPINB]-npart[SPINB]));  
             printf("# CHECKPOINT READ: ------- ENERGY -------\n");
             E_tot=0.0; E_tot_old=0.0;
-            for(i=0; i<5; i++)
+            for(i=0; i<ENERGYITEMS; i++)
             {
                 E_tot+=energy[i]; 
                 
-                printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+                printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                     energy_labels[i], energy[i]/Effg, energy[i]/Effg, (energy[i]-energy[i])/Effg);
             }
             printf("  ------------------------------------------------------------------------\n");
-            printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot/Effg, (E_tot-E_tot)/Effg);
         }
         
@@ -612,7 +619,7 @@ int main( int argc , char ** argv )
         MPI_Bcast(&Effg        , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(h_potentials , POTDIM , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(h_densities  , DENSDIM, MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        MPI_Bcast(energy       , 5 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        MPI_Bcast(energy       , ENERGYITEMS , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
@@ -873,10 +880,9 @@ int main( int argc , char ** argv )
         // Make copy of densities
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_partial[ixyz] = 0.0; // reset
-        for(i=0; i< 5; i++) energy_old[i] = energy[i]; // make copy
+        for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
-        vextja_old=vextja; vextjb_old=vextjb; 
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         if(md.referencekF>0.0) kF = md.referencekF;
@@ -1283,21 +1289,12 @@ int main( int argc , char ** argv )
         cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
         Lz = Lz_a + Lz_b; // total angular momentum        
         if(iam==0) printf("# ANGULAR MOMENTUM: it=%d\n", it);
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ_A", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
-        
-        // ------------------ external velocity ------------------
-        cpu_exec( compute_vext_dot_j(it, SPINA, densall.j_a_x, densall.j_a_y, densall.j_a_z, &vextja) );
-        cpu_exec( compute_vext_dot_j(it, SPINB, densall.j_b_x, densall.j_b_y, densall.j_b_z, &vextjb) );  
-        if(iam==0) printf("# EXTERNAL VELOCITY: it=%d\n", it);
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "VEXT_A*J", vextja, vextja_old, (vextja-vextja_old));    
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "VEXT_B*J", vextjb, vextjb_old, (vextjb-vextjb_old));
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "LZ_T", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
         
         // ------------------ check convergence ------------------
         is_converged=1;
@@ -1305,34 +1302,34 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
             "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]), convstatus[is_converged_local], nparttest);
         nparttest=fabs(npart[SPINB]-md.Nb)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
             
         if(iam==0) printf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
         Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
         E_tot=0.0; E_tot_old=0.0;
-        for(i=0; i<5; i++)
+        for(i=0; i<ENERGYITEMS; i++)
         {
             E_tot+=energy[i]; 
             E_tot_old+=energy_old[i];
             
             if(fabs((energy[i]-energy_old[i])/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
             
-            if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+            if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 energy_labels[i], energy[i]/Effg, energy_old[i]/Effg, (energy[i]-energy_old[i])/Effg, convstatus[is_converged_local]);
             
         }
-        if(iam==0) printf("  ------------------------------------------------------------------------\n");
+        if(iam==0) printf("  ------------------------------------------------------------------------------------------\n");
         if(fabs((E_tot-E_tot_old)/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%8s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
         
-        double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB] - vextja - vextjb;
-        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB] - vextja_old - vextjb_old;
+        double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB];
+        double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0)
@@ -1387,7 +1384,7 @@ int main( int argc , char ** argv )
             fwrite(&Effg        , sizeof(double)      , 1 , pFile);
             fwrite(h_potentials , sizeof(double)*POTDIM , 1 , pFile);
             fwrite(h_densities  , sizeof(double)*DENSDIM, 1 , pFile);
-            fwrite(energy       , sizeof(double)      , 5 , pFile);
+            fwrite(energy       , sizeof(double)      , ENERGYITEMS , pFile);
             fwrite(npart        , sizeof(double)      , 2 , pFile);
             fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
@@ -1428,12 +1425,15 @@ int main( int argc , char ** argv )
                 sprintf(file_name, "%s_check.stamp", md.outprefix);
                 printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
                 file_operation( touch_file(file_name) );
-                file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, 5, energy) );
+                file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, ENERGYITEMS, energy) );
             }
             
             if(iam==0) printf("# SAVING ITERATION DONE.\n");
             break;
         }
+        
+        it++; // go to next iteration - global counter
+        kziter++; // go to next iteration - this run counter
         
         if(is_converged && kziter>0)
         {
@@ -1443,8 +1443,6 @@ int main( int argc , char ** argv )
             else saving_iteration=1;
         }
         
-        it++; // go to next iteration
-        kziter++;
         if(kziter==md.maxiters)
         {
             if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);

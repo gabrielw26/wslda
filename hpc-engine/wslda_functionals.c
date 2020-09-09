@@ -31,6 +31,72 @@ extern double dc_mu_b;
 extern double dc_ec;
 
 // --------------------------------------------------------------------------------------------------
+// ----------------------------------------- Generic ------------------------------------------------
+// --------------------------------------------------------------------------------------------------
+/**
+ * Function computes energy contributions from external fields
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * */
+int compute_energy_ext(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy)
+{
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    
+    // reset energy entries
+    energy[EPOTEXT]=0.0;
+    energy[EPAIREXT]=0.0;
+    energy[EVELEXT]=0.0;
+    
+    int ix, iy, iz;
+    int ixyz=0;
+    double na, nb;
+    
+    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    {
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
+        
+        // External potential energy
+        energy[EPOTEXT]+=na*v_ext(ix,iy,iz,it,SPINA,dc_params,dc_extra_data_size,dc_extra_data) + 
+                         nb*v_ext(ix,iy,iz,it,SPINB,dc_params,dc_extra_data_size,dc_extra_data);
+                         
+        // External pairing energy -(Delta x nu^* + Delta^* x nu)=-2Re[Delta x nu^*] 
+        energy[EPAIREXT]-=2.0*creal( 
+                            h_densities.nu[ixyz]*conj(v_ext(ix,iy,iz,it,h_potentials.delta[ixyz],dc_params,dc_extra_data_size,dc_extra_data)) 
+                                   );
+        
+        // External energy related to coupling with external velocity filed: -v^{ext}(r)*j(r)
+        // x component
+        energy[EVELEXT]-= h_densities.j_a_x[ixyz]*velocity_ext(ix,iy,iz,it,SPINA,XAXIS,dc_params,dc_extra_data_size,dc_extra_data)
+                         +h_densities.j_b_x[ixyz]*velocity_ext(ix,iy,iz,it,SPINB,XAXIS,dc_params,dc_extra_data_size,dc_extra_data);
+        // y component
+        energy[EVELEXT]-= h_densities.j_a_y[ixyz]*velocity_ext(ix,iy,iz,it,SPINA,YAXIS,dc_params,dc_extra_data_size,dc_extra_data)
+                         +h_densities.j_b_y[ixyz]*velocity_ext(ix,iy,iz,it,SPINB,YAXIS,dc_params,dc_extra_data_size,dc_extra_data);
+        // z component
+        energy[EVELEXT]-= h_densities.j_a_z[ixyz]*velocity_ext(ix,iy,iz,it,SPINA,ZAXIS,dc_params,dc_extra_data_size,dc_extra_data)
+                         +h_densities.j_b_z[ixyz]*velocity_ext(ix,iy,iz,it,SPINB,ZAXIS,dc_params,dc_extra_data_size,dc_extra_data);
+                         
+        ixyz++;
+    }
+    
+    // take into account variants of code
+    double volume_element=0.0;
+    
+    if(h_densities.datadim==3) volume_element=DX*DY*DZ;
+    if(h_densities.datadim==2) volume_element=DX*DY*LZ;
+    if(h_densities.datadim==1) volume_element=DX*LY*LZ;
+    
+    energy[EPOTEXT]*=volume_element;
+    energy[EPAIREXT]*=volume_element;
+    energy[EVELEXT]*=volume_element;
+    
+    return 0;
+}
+
+
+// --------------------------------------------------------------------------------------------------
 // -------------------------------------- SLDA variant ----------------------------------------------
 // --------------------------------------------------------------------------------------------------
 
@@ -40,8 +106,11 @@ extern double dc_ec;
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials potentials from PREVIOUS iteration as input, 
  *                     updated values as output (INPUT/OUTPUT) 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential h_potentials)
+int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
 {
     int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
     
@@ -87,8 +156,8 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
     for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
     {
         // store value of potentials in separate variables, will be used later
-        v_ext_a=v_ext(ix,iy,iz,it,SPINA,dc_params,dc_extra_data_size,dc_extra_data);
-        v_ext_b=v_ext(ix,iy,iz,it,SPINB,dc_params,dc_extra_data_size,dc_extra_data);     
+        v_ext_a=v_ext(ix,iy,iz,it,SPINA,params,extra_data_size,extra_data);
+        v_ext_b=v_ext(ix,iy,iz,it,SPINB,params,extra_data_size,extra_data);     
         
         // start computation of delta and mean-field
         Va_const=v_ext_a;
@@ -262,6 +331,99 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
     return 0;
 }
 
+/**
+ * Function that computes energy of the system
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * */
+int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{    
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    
+    // reset buffers
+    energy[EKIN]=0.0;       //
+    energy[EPOT]=0.0;       // 
+    energy[EPAIR]=0.0;      // Together they give intristic energy of the system
+    energy[ECURRENT]=0.0;   // 
+    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    
+    double na, nb;
+    double taua, taub;
+#ifdef CURRENT_CORRECTIONS
+    double tx1, ty1, tz1, tx2, ty2, tz2;
+#endif
+    
+    int ix, iy, iz;
+    int ixyz=0;
+    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    {
+
+        // densities
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
+        
+        // particle number
+        npart[SPINA]+=na;
+        npart[SPINB]+=nb;
+                                 
+        // kinetic energy - not that I use here Galilean invariant definition of tau
+        taua=h_densities.tau_a[ixyz]; // tau_a
+        taub=h_densities.tau_b[ixyz]; // tau_b    
+        
+        // current corrections
+#ifdef CURRENT_CORRECTIONS
+        tx1=h_densities.j_a_x[ixyz];
+        ty1=h_densities.j_a_y[ixyz];
+        tz1=h_densities.j_a_z[ixyz];
+        tx2=h_densities.j_b_x[ixyz];
+        ty2=h_densities.j_b_y[ixyz];
+        tz2=h_densities.j_b_z[ixyz];
+        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
+        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
+#endif
+
+        energy[EKIN]+=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub);
+        
+        // potential energy
+        energy[EPOT]+=funD(na, nb);
+        
+        // pairing energy
+        energy[EPAIR]-=creal(h_potentials.delta[ixyz]*conj(h_densities.nu[ixyz]));
+        
+        // center of mass motion energy
+#ifdef CURRENT_CORRECTIONS
+//         E_CM[ixyz]=p_regularization(na+nb)*((tx1+tx2)*(tx1+tx2) + (ty1+ty2)*(ty1+ty2) + (tz1+tz2)*(tz1+tz2))/(2.0*(na+nb));
+        energy[ECURRENT]+=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
+                           + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb);  
+#else
+        energy[ECURRENT]+=0.0;
+#endif
+        ixyz++;
+    }
+    
+    // take into account variants of code
+    double volume_element=0.0;
+    
+    if(h_densities.datadim==3) volume_element=DX*DY*DZ;
+    if(h_densities.datadim==2) volume_element=DX*DY*LZ;
+    if(h_densities.datadim==1) volume_element=DX*LY*LZ;
+
+    energy[EKIN]*=volume_element;
+    energy[EPOT]*=volume_element;
+    energy[EPAIR]*=volume_element;
+    energy[ECURRENT]*=volume_element;
+    npart[SPINA]*=volume_element;
+    npart[SPINB]*=volume_element;
+    
+    return 0;
+}
+
 
 // --------------------------------------------------------------------------------------------------
 // -------------------------------------- BdG variant -----------------------------------------------
@@ -273,8 +435,11 @@ extern double aBdG; // scattering length
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials potentials from PREVIOUS iteration as input, 
  *                     updated values as output (INPUT/OUTPUT) 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_potentials)
+int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
 {
     int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
     
@@ -311,8 +476,8 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
     ixyz=0;
     for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
     {
-        v_ext_a=v_ext(ix,iy,iz,it,SPINA,dc_params,dc_extra_data_size,dc_extra_data);
-        v_ext_b=v_ext(ix,iy,iz,it,SPINB,dc_params,dc_extra_data_size,dc_extra_data);     
+        v_ext_a=v_ext(ix,iy,iz,it,SPINA,params,extra_data_size,extra_data);
+        v_ext_b=v_ext(ix,iy,iz,it,SPINB,params,extra_data_size,extra_data);     
         
         // start computation of delta
         t5 = 1.0/ (4.0*M_PI*aBdG);
@@ -359,19 +524,102 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
     return 0;
 }
 
+/**
+ * Function that computes energy of the system
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * */
+int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{    
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    
+    // reset buffers
+    energy[EKIN]=0.0;       //
+    energy[EPOT]=0.0;       // 
+    energy[EPAIR]=0.0;      // Together they give intristic energy of the system
+    energy[ECURRENT]=0.0;   // 
+    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    
+
+    double na, nb, taua, taub;    
+    int ix, iy, iz;
+    int ixyz=0;
+    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    {
+
+        // densities
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
+        
+        // particle number
+        npart[SPINA]+=na;
+        npart[SPINB]+=nb;
+                                 
+        // kinetic energy
+        taua=h_densities.tau_a[ixyz]; // tau_a
+        taub=h_densities.tau_b[ixyz]; // tau_b    
+        energy[EKIN]+=0.5*(taua + taub);
+        
+        // potential energy
+        energy[EPOT]+=0.0;
+        
+        // pairing energy
+        energy[EPAIR]-=creal(h_potentials.delta[ixyz]*conj(h_densities.nu[ixyz]));
+        
+        // current contribution
+        energy[ECURRENT]+=0.0;
+        
+        ixyz++;
+    }
+    
+    // take into account variants of code
+    double volume_element=0.0;
+    
+    if(h_densities.datadim==3) volume_element=DX*DY*DZ;
+    if(h_densities.datadim==2) volume_element=DX*DY*LZ;
+    if(h_densities.datadim==1) volume_element=DX*LY*LZ;
+
+    energy[EKIN]*=volume_element;
+    energy[EPOT]*=volume_element;
+    energy[EPAIR]*=volume_element;
+    energy[ECURRENT]*=volume_element;
+    npart[SPINA]*=volume_element;
+    npart[SPINB]*=volume_element;
+    
+    return 0;
+}
+
 // --------------------------------------------------------------------------------------------------
 // -------------------------------------- Selector --------------------------------------------------
 // --------------------------------------------------------------------------------------------------
 int compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials)
 {
 #if FUNCTIONAL==BDG
-    return compute_potentials_bdg(it, h_densities, h_potentials);
+    return compute_potentials_bdg(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==SLDA    
-    return compute_potentials_aslda(it, h_densities, h_potentials);
+    return compute_potentials_aslda(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==ASLDA    
-    return compute_potentials_aslda(it, h_densities, h_potentials);    
+    return compute_potentials_aslda(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);    
 #elif FUNCTIONAL==CUSTOMEDF    
-    return compute_potentials_custom(it, h_densities, h_potentials); 
+    return compute_potentials_custom(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data); 
 #endif
 }
 
+int compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart)
+{
+#if FUNCTIONAL==BDG
+    return compute_energy_bdg(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
+#elif FUNCTIONAL==SLDA    
+    return compute_energy_aslda(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
+#elif FUNCTIONAL==ASLDA    
+    return compute_energy_aslda(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
+#elif FUNCTIONAL==CUSTOMEDF    
+    return compute_energy_custom(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
+#endif
+}

@@ -24,6 +24,9 @@ typedef struct
     double tau_a;
     double tau_b;
     double beta;
+    double ekin;
+    double epot;
+    double epair;
     int nwf;
 } metadata_pca_uniform_t;
 
@@ -376,6 +379,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     if(printout) printf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
     if(printout) printf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
     
+    
     // Clear memory
     free(kkx);
     free(kky);
@@ -400,6 +404,9 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     __md_pca_uniform.tau_b=tau_b;
     __md_pca_uniform.beta=beta;    
     __md_pca_uniform.nwf=*nwf;
+    __md_pca_uniform.ekin=energy_kin;
+    __md_pca_uniform.epot=energy_pot;
+    __md_pca_uniform.epair=energy_pair;
     
     if(iter==maxiter) return 1; // not converged!
     return 0;
@@ -1345,6 +1352,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     __md_pca_uniform.tau_b=tau_b;
     __md_pca_uniform.beta=beta;    
     __md_pca_uniform.nwf=*nwf;
+    __md_pca_uniform.ekin=energy_kin;
+    __md_pca_uniform.epot=energy_pot;
+    __md_pca_uniform.epair=energy_pair;
     
 //     // Append results to the file
 //     FILE * ff = fopen("bdg.txt", "a");

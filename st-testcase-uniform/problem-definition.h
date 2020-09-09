@@ -195,4 +195,43 @@ int load_extra_data(size_t size, void *extra_data, double *params)
 }
 
 
+/**
+ * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
+ * */
 
+/**
+ * This function computes internal energy in case is CUSTOMEDF functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages. 
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_energy_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}
+
+/**
+ * This function computes potentials defining Hamiltonian in case is CUSTOMEDF functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages. 
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials from PREVIOUS iteration as input, 
+ *                     updated values as output (INPUT/OUTPUT) 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_potentials_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}

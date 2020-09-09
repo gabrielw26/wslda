@@ -23,14 +23,35 @@
 
 #include "aslda_edf.h"
 
+#define ENERGYITEMS 7
+#define EKIN        0
+#define EPOT        1
+#define EPAIR       2
+#define ECURRENT    3
+#define EPOTEXT     4
+#define EPAIREXT    5
+#define EVELEXT     6
+
 /**
  * Function computes potentials for selected functional
  * @param it iteration number
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials potentials from PREVIOUS iteration as input, 
  *                     updated values as output (INPUT/OUTPUT) 
+ * @return 0: ok, otherwise error code 
  * */
 int compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials);
+
+/**
+ * Function computes potentials for selected functional
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials array with potentials (INPUT)
+ * @param energy array of size ENERGYITEMS with computed energies (OUTPUT)
+ * @param npart array of size 2 with computed particle numbers (OUTPUT)
+ * @return 0: ok, otherwise error code 
+ * */
+int compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart);
 
 #endif
 
