@@ -194,6 +194,26 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             wdata_variable va = {"nu", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
+#ifdef WSLDA
+        else if(strcmp (lvars[i],"alpha") == 0)
+        {
+            wdata_variable va = {"alpha_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"alpha_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"alpha_b", "alpha_a"};
+            wdata_add_variable(&tmd, &va);
+            if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
+            else                wdata_add_link(&tmd, &l);
+        }
+        else if(strcmp (lvars[i],"A") == 0)
+        {
+            wdata_variable va = {"A_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"A_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"A_b", "A_a"};
+            wdata_add_variable(&tmd, &va);
+            if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
+            else                wdata_add_link(&tmd, &l);
+        }
+#endif
         
     }
     
@@ -275,7 +295,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
 
     // write variables
     int ivar, ierr;
-    for(ivar=0; ivar<wdmd->nvar; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable
+    for(ivar=0; ivar<wdmd->nvar; ivar++) if(ivar%np == iam) // each process handles different variable
     {
 
         ierr=0;
@@ -287,8 +307,34 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
-        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) ierr = wdata_write_cycle(wdmd, "u_a", V_a);
-        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0) ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) 
+        {
+#ifdef WSLDA
+            ierr = wdata_write_cycle(wdmd, "u_a", V_a);
+#else
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINA, it, towrt);
+            int ixyz=0;
+            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            ierr = wdata_write_cycle(wdmd, "u_a", towrt);
+            free(towrt);
+#endif
+        }
+        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0)
+        {
+#ifdef WSLDA
+            ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+#else
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINB, it, towrt);
+            int ixyz=0;
+            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            ierr = wdata_write_cycle(wdmd, "u_b", towrt);
+            free(towrt);
+#endif
+        }
         else if (strcmp (wdmd->var[ivar].name,"v_ext_a") == 0) 
         {
             double *towrt;
@@ -333,6 +379,12 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "velocity_ext_b", towrt);
             free(towrt);
         }
+#ifdef WSLDA
+        else if (strcmp (wdmd->var[ivar].name,"alpha_a") == 0) ierr = wdata_write_cycle(wdmd, "alpha_a", h_potentials.alpha_a);
+        else if (strcmp (wdmd->var[ivar].name,"alpha_b") == 0) ierr = wdata_write_cycle(wdmd, "alpha_b", h_potentials.alpha_b);
+        else if (strcmp (wdmd->var[ivar].name,"A_a") == 0) ierr = wdata_write_cycle(wdmd, "A_a", h_potentials.A_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"A_b") == 0) ierr = wdata_write_cycle(wdmd, "A_b", h_potentials.A_b_x);
+#endif
         
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }
