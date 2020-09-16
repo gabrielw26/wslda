@@ -613,6 +613,7 @@ int compute_potentials(int it, wslda_density h_densities, wslda_potential h_pote
 
 int compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart)
 {
+    compute_energy_ext(it, h_densities, h_potentials, energy);
 #if FUNCTIONAL==BDG
     return compute_energy_bdg(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==SLDA    

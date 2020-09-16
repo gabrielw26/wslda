@@ -127,7 +127,7 @@ int compute_matrix_elements_2d(metadata_s3dpca_grid *bgrid, int it, wslda_densit
     cppmallocl(laplace_alpha_a,NX*NY,double);
     cppmallocl(laplace_alpha_b,NX*NY,double);
     int ierr;
-     if(bgrid->nip*bgrid->niq<NX*NY/2) return -199; // check if enough memory
+    if(bgrid->nip*bgrid->niq<NX*NY/2) return -199; // check if enough memory
     double *wrk_dble = (double *)(h); // only for temporary calculations 
     
     ixyz=0;
@@ -299,7 +299,7 @@ int compute_matrix_elements_2d(metadata_s3dpca_grid *bgrid, int it, wslda_densit
     // clear memory
     free(laplace_alpha_a);
     free(laplace_alpha_b);
-    
+
     return 0;
 }
 
