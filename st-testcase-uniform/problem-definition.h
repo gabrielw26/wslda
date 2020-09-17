@@ -77,12 +77,13 @@ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, do
  * @param params array of size MAX_USER_PARAMS with parameters from input file. 
  * @param kF typical Fermi momentum scale of the problem. 
  *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center
+ *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to maximal density.
+ *           You can also set kF at request in this function using (*kF)=myvalue;
  * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
+void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
 
@@ -92,32 +93,16 @@ void process_params(double *params, double kF, double *mu, size_t extra_data_siz
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
  * Before each diagonalization process, user can modify arbitrarily densities
  * @param it iteration number
- * @param h_densities array with densities, see (wiki) documentation for decoding prescription
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void modify_densities(int it, double *h_densities, double *params, size_t extra_data_size, void *extra_data)
+void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data)
 {
-    // DENSITIES DECODING
-    double *rho_a = (double *)(h_densities +  0*BLOCKSIZE);
-    double *rho_b = (double *)(h_densities +  1*BLOCKSIZE);
-    double *tau_a = (double *)(h_densities +  2*BLOCKSIZE);
-    double *tau_b = (double *)(h_densities +  3*BLOCKSIZE);
-    double complex *nu = (double complex *)(h_densities +  4*BLOCKSIZE);
-    double *j_a_x = (double *)(h_densities +  6*BLOCKSIZE);
-    double *j_a_y = (double *)(h_densities +  7*BLOCKSIZE);
-    double *j_a_z = (double *)(h_densities +  8*BLOCKSIZE);
-    double *j_b_x = (double *)(h_densities +  9*BLOCKSIZE);
-    double *j_b_y = (double *)(h_densities + 10*BLOCKSIZE);
-    double *j_b_z = (double *)(h_densities + 11*BLOCKSIZE);    
-    
-    // DETERMINE VARIANT OF THE CODE
-    int lNX, lNY, lNZ; // local sizes
+    // DETERMINE LOCAL SIZES OF ARRAYS (CODE DIMENSIONALITY DEPENDENT)
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
     int ix, iy, iz, ixyz;
-    if(BLOCKSIZE==NX      ) {lNX=NX; lNY=1 ; lNZ=1 ;} // 1D code
-    if(BLOCKSIZE==NX*NY   ) {lNX=NX; lNY=NY; lNZ=1 ;} // 2D code
-    if(BLOCKSIZE==NX*NY*NZ) {lNX=NX; lNY=NY; lNZ=NZ;} // 3D code
     
     if(params[31]>0.5 && it<=1) // add noise
     {
@@ -128,19 +113,19 @@ void modify_densities(int it, double *h_densities, double *params, size_t extra_
         ixyz=0;
         for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
         {
-            double x = DX*(ix-lNX/2);
-            double y = DY*(iy-lNY/2); // for 1d code y will be 0
-            double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
+        double x = DX*(ix-lNX/2);
+        double y = DY*(iy-lNY/2); // for 1d code y will be always 0
+        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be always 0
             
             // rho_a[ixyz] stores value of spin-up particles densities for coordinate (x,y,z)
             // and similarly for other densities
             // ... below you can modify at your wish ...
-            abs_nu = cabs(nu[ixyz]);
+            abs_nu = cabs(h_densities.nu[ixyz]);
             arg = (double)rand() / (double)RAND_MAX;
             arg = (2.0*arg-1.0)*M_PI;
 
             // phase imprint
-            nu[ixyz]=abs_nu*cos(arg) + I*abs_nu*sin(arg);
+            h_densities.nu[ixyz]=abs_nu*cos(arg) + I*abs_nu*sin(arg);
           
             ixyz++; // go to next point,  it should be last line of the triple loop
         }
@@ -151,47 +136,26 @@ void modify_densities(int it, double *h_densities, double *params, size_t extra_
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
  * Before each diagonalization process, user can modify arbitrarily potentials
  * @param it iteration number
- * @param h_densities array with densities, see (wiki) documentation for decoding prescription
- *                    NOTE: densities array is processed by modify_densities(...) function.
- * @param h_potentials array with potentials, see (wiki) documentation for decoding prescription
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
+ * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-void modify_potentials(int it, double *h_densities, double *h_potentials, double *params, size_t extra_data_size, void *extra_data)
-{
-    // DENSITIES DECODING
-    double *rho_a = (double *)(h_densities +  0*BLOCKSIZE);
-    double *rho_b = (double *)(h_densities +  1*BLOCKSIZE);
-    double *tau_a = (double *)(h_densities +  2*BLOCKSIZE);
-    double *tau_b = (double *)(h_densities +  3*BLOCKSIZE);
-    double complex *nu = (double complex *)(h_densities +  4*BLOCKSIZE);
-    double *j_a_x = (double *)(h_densities +  6*BLOCKSIZE);
-    double *j_a_y = (double *)(h_densities +  7*BLOCKSIZE);
-    double *j_a_z = (double *)(h_densities +  8*BLOCKSIZE);
-    double *j_b_x = (double *)(h_densities +  9*BLOCKSIZE);
-    double *j_b_y = (double *)(h_densities + 10*BLOCKSIZE);
-    double *j_b_z = (double *)(h_densities + 11*BLOCKSIZE); 
-    
-    // POTENTIALS DECODING
-    double *V_a = (double *)(h_potentials +  0*BLOCKSIZE);
-    double *V_b = (double *)(h_potentials +  1*BLOCKSIZE);
-    double complex *delta = (double complex *)(h_potentials +  2*BLOCKSIZE); 
-    
-    // DETERMINE VARIANT OF THE CODE
-    int lNX, lNY, lNZ; // local sizes
+void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
+{    
+    // DETERMINE LOCAL SIZES OF ARRAYS (CODE DIMENSIONALITY DEPENDENT)
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
     int ix, iy, iz, ixyz;
-    if(BLOCKSIZE==NX      ) {lNX=NX; lNY=1 ; lNZ=1 ;} // 1D code
-    if(BLOCKSIZE==NX*NY   ) {lNX=NX; lNY=NY; lNZ=1 ;} // 2D code
-    if(BLOCKSIZE==NX*NY*NZ) {lNX=NX; lNY=NY; lNZ=NZ;} // 3D code
     
     // ITERATE OVER ALL POINTS
     ixyz=0;
     for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
     {
         double x = DX*(ix-lNX/2);
-        double y = DY*(iy-lNY/2); // for 1d code y will be 0
-        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be 0
+        double y = DY*(iy-lNY/2); // for 1d code y will be always 0
+        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be always 0
         
         // V_a[ixyz] stores value of spin-up particles mean-field potential for coordinate (x,y,z)
         // and similarly for other potentials
@@ -231,4 +195,43 @@ int load_extra_data(size_t size, void *extra_data, double *params)
 }
 
 
+/**
+ * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
+ * */
 
+/**
+ * This function computes internal energy in case is CUSTOMEDF functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages. 
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT) 
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_energy_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}
+
+/**
+ * This function computes potentials defining Hamiltonian in case is CUSTOMEDF functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages. 
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials from PREVIOUS iteration as input, 
+ *                     updated values as output (INPUT/OUTPUT) 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_potentials_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}

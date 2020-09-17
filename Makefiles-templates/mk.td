@@ -8,12 +8,12 @@ WDATAINC=$(WDATADIR)
 WDATASRC=$(WDATADIR)
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
-       cpca_kernels.h cpca_derivative.h cpca_dens.h
+       cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h
 WDATADEPS = wdata.h
 DEPSLOCAL = predefines.h  problem-definition.h
 
-SRCS = pca_utils.o wslda_writevars.o
+SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o
 
 SRCS1D = ccpca.o ccpca_checkpoint.o
 NVCCSRCS1D = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o
@@ -51,13 +51,19 @@ WDATALIB := $(addprefix $(WDATASRC),$(WDATALIB))
 
 all: 1d 2d 3d
 
-1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
+1d: dirs d1d
+
+2d: dirs d2d
+
+3d: dirs d3d
+
+d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-1d $^ 
 
-2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
+d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-2d $^ 
 
-3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
+d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
 
 $(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
@@ -75,11 +81,11 @@ $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
 	$(NVCC) $(NVCCFLAGS) -c -o $@ $< 
 
+.PHONY: clean all ver dirs
+
 dirs:
 	mkdir -p $(OBJDIR)
 	mkdir -p $(BINDIR)
-
-.PHONY: clean all ver
 
 clean:
 	rm -f $(OBJDIR)*

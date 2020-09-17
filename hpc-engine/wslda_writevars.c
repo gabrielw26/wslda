@@ -14,6 +14,7 @@
 #include "pca_settings.h"
 #include "pca_utils.h"
 #include <mpi.h>
+#include "wslda_writevars.h"
 
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
@@ -193,6 +194,26 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             wdata_variable va = {"nu", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
+#ifdef WSLDA
+        else if(strcmp (lvars[i],"alpha") == 0)
+        {
+            wdata_variable va = {"alpha_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"alpha_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"alpha_b", "alpha_a"};
+            wdata_add_variable(&tmd, &va);
+            if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
+            else                wdata_add_link(&tmd, &l);
+        }
+        else if(strcmp (lvars[i],"A") == 0)
+        {
+            wdata_variable va = {"A_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"A_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"A_b", "A_a"};
+            wdata_add_variable(&tmd, &va);
+            if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
+            else                wdata_add_link(&tmd, &l);
+        }
+#endif
         
     }
     
@@ -244,77 +265,37 @@ int write_wdata_metadata_file(metadata_t *input, wdata_metadata *wdmd, char *cod
  * @param h_potentials array of potentials
  * @return 0: ok, otherwise error
  * */
-int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, double *h_densities, double *h_potentials)
+int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, wslda_density h_densities, wslda_potential h_potentials)
 {
     int iam, np;
     MPI_Comm_size( mpi_comm , &np ) ; /* total number of processes */
     MPI_Comm_rank( mpi_comm , &iam ) ; /* id of process st 0 <= iam < np */    
     
-    double *rho_a;
-    double *rho_b;
-    double *tau_a;
-    double *tau_b;
-    double complex *nu;
-    double *j_a_x;
-    double *j_a_y;
-    double *j_a_z;
-    double *j_b_x;
-    double *j_b_y;
-    double *j_b_z;
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
     
     // pontentials
-    double *V_a;
-    double *V_b;
-    double complex *delta;
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
     
     int bs; // block size
     if(wdmd->datadim==1) bs = NX;
     else if(wdmd->datadim==2) bs = NX*NY;
     else bs = NX*NY*NZ;
 
-    if (strcmp (codetype,"st") == 0)
-    {
-        rho_a = (double *)(h_densities +  0*bs);
-        rho_b = (double *)(h_densities +  1*bs);
-        tau_a = (double *)(h_densities +  2*bs);
-        tau_b = (double *)(h_densities +  3*bs);
-        nu = (double complex *)(h_densities +  4*bs);
-        j_a_x = (double *)(h_densities +  6*bs);
-        j_a_y = (double *)(h_densities +  7*bs);
-        j_a_z = (double *)(h_densities +  8*bs);
-        j_b_x = (double *)(h_densities +  9*bs);
-        j_b_y = (double *)(h_densities + 10*bs);
-        j_b_z = (double *)(h_densities + 11*bs);
-        
-        // potentials
-        V_a = (double *)(h_potentials +  0*bs);
-        V_b = (double *)(h_potentials +  1*bs);
-        delta = (double complex *)(h_potentials +  2*bs);
-    }
-    else if (strcmp (codetype,"td") == 0)
-    {
-        nu = (double complex *)(h_densities +  0*bs);
-        rho_a = (double *)(h_densities +  2*bs);
-        tau_a = (double *)(h_densities +  3*bs);
-        j_a_x = (double *)(h_densities +  4*bs);
-        j_a_y = (double *)(h_densities +  5*bs);
-        j_a_z = (double *)(h_densities +  6*bs);    
-        rho_b = (double *)(h_densities +  7*bs);
-        tau_b = (double *)(h_densities +  8*bs);
-        j_b_x = (double *)(h_densities +  9*bs);
-        j_b_y = (double *)(h_densities + 10*bs);
-        j_b_z = (double *)(h_densities + 11*bs);
-    
-        // potentials
-        V_a = (double *)(h_potentials +  0*bs);
-        V_b = (double *)(h_potentials +  1*bs);
-        delta = (double complex *)(h_potentials +  2*bs);
-    }
-    else return -1;
-    
     // write variables
     int ivar, ierr;
-    for(ivar=0; ivar<wdmd->nvar; ivar++) if(iam==0)/*if(ivar%np == iam)*/ // each process handles different variable
+    for(ivar=0; ivar<wdmd->nvar; ivar++) if(ivar%np == iam) // each process handles different variable
     {
 
         ierr=0;
@@ -326,8 +307,34 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
-        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) ierr = wdata_write_cycle(wdmd, "u_a", V_a);
-        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0) ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) 
+        {
+#ifdef WSLDA
+            ierr = wdata_write_cycle(wdmd, "u_a", V_a);
+#else
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINA, it, towrt);
+            int ixyz=0;
+            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            ierr = wdata_write_cycle(wdmd, "u_a", towrt);
+            free(towrt);
+#endif
+        }
+        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0)
+        {
+#ifdef WSLDA
+            ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+#else
+            double *towrt;
+            cppmallocl(towrt,bs,double);  
+            get_v_ext(wdmd->datadim, SPINB, it, towrt);
+            int ixyz=0;
+            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            ierr = wdata_write_cycle(wdmd, "u_b", towrt);
+            free(towrt);
+#endif
+        }
         else if (strcmp (wdmd->var[ivar].name,"v_ext_a") == 0) 
         {
             double *towrt;
@@ -372,6 +379,12 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "velocity_ext_b", towrt);
             free(towrt);
         }
+#ifdef WSLDA
+        else if (strcmp (wdmd->var[ivar].name,"alpha_a") == 0) ierr = wdata_write_cycle(wdmd, "alpha_a", h_potentials.alpha_a);
+        else if (strcmp (wdmd->var[ivar].name,"alpha_b") == 0) ierr = wdata_write_cycle(wdmd, "alpha_b", h_potentials.alpha_b);
+        else if (strcmp (wdmd->var[ivar].name,"A_a") == 0) ierr = wdata_write_cycle(wdmd, "A_a", h_potentials.A_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"A_b") == 0) ierr = wdata_write_cycle(wdmd, "A_b", h_potentials.A_b_x);
+#endif
         
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }

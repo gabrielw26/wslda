@@ -22,7 +22,7 @@ writevar           default
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1
-measurements            3        # number of requested mesurments
+measurements            10        # number of requested mesurments
 timesteps               100      # number of time steps between each measurement
                                  # measurements are written with time resolution: timesteps*dt
                                  # the total trajectory length is: measurements*timesteps*dt

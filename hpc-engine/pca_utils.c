@@ -300,7 +300,11 @@ int parse_input_file(char * file_name)
                     
                     if (strcmp (ptag,"all") == 0) 
                     {
+#ifdef WSLDA
+                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext alpha A");
+#else
                         replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext");
+#endif
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }

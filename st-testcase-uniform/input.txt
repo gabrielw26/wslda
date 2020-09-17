@@ -35,7 +35,7 @@ muchange                0.5      # coefficient for changing chemical potential, 
 maxiters                1000     # maximum number of iterations, default=10000
 temperature             0.1      # requested temperature in units of eF
 # referencekF             1.0    # reference kF
-# aBdG                    -0.9   # akF about 0.9
+aBdG                    -0.9   # akF about 0.9
 spinsymmetry            0       # set to 1 if you want to impose Na=Nb
 nocurrents              1       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
@@ -44,7 +44,7 @@ mumaxchange             0.05 # in units of Fermi energy
 broyden                 1 # use 1 if to activate Broyden mixing
 Mbroyden                5
 broydenmixing           0.75
-startbroyden            3
+startbroyden            5
 # stopbroyden             10
 
 # -------------- PARALLELIZATION SETTINGS --------------

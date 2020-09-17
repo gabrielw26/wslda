@@ -5,7 +5,7 @@
 
 // Commands to generate:
 // cp pca_edf.h s2dpca_edf.h
-// Remmove: __device__ __host__
+// Remove: __device__ __host__
 // Remove: extern "C"
 
 #ifndef __PCA_EDF__
