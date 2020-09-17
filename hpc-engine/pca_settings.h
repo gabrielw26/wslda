@@ -25,6 +25,9 @@
 #define DY 1.0                                                                                                                                       
 #define DZ 1.0
 
+// // To switch to cubic cut-off mode
+// #define USE_CUBIC_CUTOFF
+
 #else
 // DYNAMIC CODE - LEGACY MODE
 #define CODE PCA_ASLDA
