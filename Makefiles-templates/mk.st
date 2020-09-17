@@ -25,13 +25,16 @@ WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
 WDATAOBJS := $(addprefix $(OBJDIR),$(WDATALIB:.c=.o))
 WDATALIB := $(addprefix $(WDATASRC),$(WDATALIB))
 
-
 all: 2d 3d
 
-2d: $(OBJS2D) $(OBJS) $(WDATAOBJS)
+2d: dirs d2d
+
+3d: dirs d3d
+
+d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-2d $^  
 	
-3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
+d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-3d $^
 
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
@@ -40,12 +43,11 @@ $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
 $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 	
+.PHONY: clean all ver dirs 
 
 dirs:
 	mkdir -p $(OBJDIR)
 	mkdir -p $(BINDIR)
-
-.PHONY: clean ver
 
 clean:
 	rm -f $(OBJDIR)*

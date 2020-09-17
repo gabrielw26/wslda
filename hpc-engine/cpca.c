@@ -588,7 +588,7 @@ int main( int argc , char ** argv )
     
     
     // Allocate memory for plans
-    printf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
+    if(ip==0) printf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
     if(workarea_size<cufft_workSize) workarea_size=cufft_workSize;
     gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
     

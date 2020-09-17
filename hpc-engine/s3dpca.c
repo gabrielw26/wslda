@@ -288,6 +288,8 @@ int main( int argc , char ** argv )
     if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
 #elif FUNCTIONAL==ASLDA    
     if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+#elif FUNCTIONAL==CUSTOMEDF    
+    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
 #endif
     
 #ifdef SPINSYMMETRY_MODE
