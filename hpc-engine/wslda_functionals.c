@@ -9,8 +9,12 @@
  * @author Gabriel Wlazlowski
  * @date 04.09.2020
  * */ 
-
+#include <stdio.h>
+#include "pca_settings.h"
+#include "pca_utils.h"
 #include "wslda_functionals.h"
+
+extern int wsldapid; // process id - global variable
 #include "problem-definition.h"
 
 #define Complex(a,b) (a + I*b)
