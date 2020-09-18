@@ -48,11 +48,11 @@ wslda_potential convert_into_wslda_potential(double *h_potentials, int blockleng
     if(blocklength==NX*NY   ) {d.nx=NX; d.ny=NY; d.nz=1 ; d.datadim=2;} // 2D code
     if(blocklength==NX*NY*NZ) {d.nx=NX; d.ny=NY; d.nz=NZ; d.datadim=3;} // 3D code
     d.blocklength = d.nx*d.ny*d.nz;
-    
-    d.delta = (double complex *)(h_potentials +  0*blocklength);
-    
-    d.V_a = (double *)(h_potentials +  2*blocklength);
-    d.V_b = (double *)(h_potentials +  3*blocklength);
+        
+    // DO NOT CHANGE ORDER - IT WILL BREAKE TD CODES!
+    d.V_a = (double *)(h_potentials +  0*blocklength);
+    d.V_b = (double *)(h_potentials +  1*blocklength);
+    d.delta = (double complex *)(h_potentials +  2*blocklength);
     
     d.alpha_a = (double *)(h_potentials +  4*blocklength);
     d.alpha_b = (double *)(h_potentials +  5*blocklength);

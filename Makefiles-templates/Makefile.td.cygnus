@@ -1,0 +1,27 @@
+# LOAD BEFORE COMPILATION
+# 
+# module load openmpi/3.1.6/gcc4.8.5-cuda10.1.2
+# module load cuda/10.1.2
+
+# COMPILERS
+CXX=mpicc
+NVCC = nvcc 
+
+# DIRECTORY SETTINGS
+OBJDIR=./obj/
+BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
+
+# COMPILER FLAGS
+CFLAGS= -std=gnu99 -O3 -DTARGET_MACHINE=TSUBAME
+NVCCFLAGS = -arch sm_60 -O3 
+
+# LIBRARIES
+LIBS=-lcudart -lcufft -lm
+
+
+include mk.td
+
+
+ 

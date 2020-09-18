@@ -1,0 +1,42 @@
+#!/bin/bash                                                                                          
+#---------- qsub option ----------                                                                   
+#PBS -A TDSLDA20                                                                                     
+#PBS -q gpu                                                                                          
+#PBS -l elapstim_req=01:00:00     # SET WALLTIME                                                                     
+
+#---------- MPI option ----------                                                                    
+#PBS -b 8                         # SET NUMBER OF NODES                                                               
+#PBS -T intmpi                                                                                      
+#PBS -v NQSV_MPI_VER=19.0.5                                                       
+
+#---------- Others (optional) ----------                                                             
+#PBS -o output.o                  # SET NAME OF OUTPUT FILE                                                                    
+#PBS -e error.e                   # SET NAME OF ERROR FILE                                                                    
+#PBS -M your@mail                 # SET YOUR E-MAIL FOR NOTIFICATION
+
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/cygnus
+## 
+## ------ QUEUE SYSTEM ------
+## For submission use:
+##      qsub job.sh
+## For checking status use:
+##      qstat
+## To kill job use:
+##      qdel pid
+## 
+## ------ COMPUTATION -------     
+## For computation it is recomended to use location (create there your subfolder):
+##      cd /work/TDSLDA20/
+
+
+#---------- Program execution ----------                                                             
+module load intel/19.0.5
+module load intmpi/19.0.5
+module load mkl/19.0.5
+
+cd $PBS_O_WORKDIR
+
+## NOTE: YOU MUST ASSURE: -np=-b*24 (each node has 24 CPUs)
+mpirun -np 192 ./st-wslda-3d input.txt
+

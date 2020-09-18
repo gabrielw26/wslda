@@ -1,0 +1,22 @@
+# LOAD BEFORE COMPILATION
+# 
+# module load intel/19.0.5
+# module load intmpi/19.0.5
+# module load mkl/19.0.5
+
+# COMPILER
+CXX=mpiicc
+
+# DIRECTORY SETTINGS
+OBJDIR=./obj/
+BINDIR=./
+WSLDADIR=../hpc-engine/
+WDATADIR=../lib-wdata/
+
+# COMPILER FLAGS
+CFLAGS= -O3 -I/work/TDSLDA20/share/FFTW3/include -DMKL_ILP64 -mkl=cluster
+LIBS=/work/TDSLDA20/share/FFTW3/lib/libfftw3.a  -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl  -DMKL_ILP64 -mkl=cluster
+
+include mk.st
+
+ 
