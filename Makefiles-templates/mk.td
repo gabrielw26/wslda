@@ -11,7 +11,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h
 WDATADEPS = wdata.h
-DEPSLOCAL = predefines.h  problem-definition.h
+DEPSLOCAL = predefines.h  problem-definition.h logger.h
 
 SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o
 

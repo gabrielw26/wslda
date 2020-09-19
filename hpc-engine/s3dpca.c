@@ -143,6 +143,8 @@ double aBdG;
 
 int wsldapid; // process id - global variable
 
+#include "logger.h"
+
 typedef char * string;
 #define DENSDIM 12*NXYZ
 #define POTDIM  12*NXYZ
@@ -165,7 +167,6 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
-    double vextja=0.0, vextjb=0.0,  vextja_old=0.0, vextjb_old=0.0; // TODO - remove
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -732,12 +733,8 @@ int main( int argc , char ** argv )
     // special case for saving
     if(md.writewf==1 && md.maxiters==1) saving_iteration=1;
     
-    // Create binary files and add initial measurement
-    if(iam==0)
-    {
-        // Create run log and add entry
-        cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, dc_ec, nwf, np, nwfip) );
-    }
+    // Create run log and add entry
+    if(iam==0) cpu_exec( logger_create_header(execcmd) );
     
     // ====================================================================================
     // ====================================== WORKSPACE ===================================
@@ -1334,31 +1331,8 @@ int main( int argc , char ** argv )
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
-        if(iam==0)
-        {
-            #define OUTPUT_ENTRIES 18
-            double line_items[OUTPUT_ENTRIES]={     
-                npart[SPINA], // 2
-                npart[SPINB], // 3
-                npart[SPINA]+npart[SPINB], // 4
-                E_tot/Effg, // 5
-                energy[0]/Effg, // 6
-                energy[1]/Effg, // 7
-                energy[2]/Effg, // 8
-                energy[3]/Effg, // 9
-                energy[4]/Effg, //10
-                minF_new, // 11
-                dc_mu_a, //12
-                dc_mu_b, //13
-                beta, // 14
-                Lz_a/npart[SPINA], // 15
-                Lz_b/npart[SPINB], // 16
-                Lz/(npart[SPINA]+npart[SPINB]) ,  // 17
-                vextja, // 18
-                vextjb, // 19
-            };
-            cpu_exec( add_line_to_file(it, rt_tot, OUTPUT_ENTRIES, line_items) );
-        }
+        if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
         wdata_setconst(&wdmd, "eF", eF);

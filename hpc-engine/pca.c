@@ -27,6 +27,12 @@
 #include "pca_checkpoint.h"
 #include "wslda_writevars.h"
 
+static double dc_ec;
+static double dc_t0;
+static int dc_np;
+static int dc_nwfip;
+#include "logger.h"
+
 int main( int argc , char ** argv ) 
 {
     int i, j, k; // basic iterators
@@ -247,7 +253,8 @@ int main( int argc , char ** argv )
     gpu_exec(     gpu_malloc((size_t)12*NXYZ*sizeof(double), (void **)&d_densities) );
     
     // potentials
-    gpu_exec( host_malloc_pl((size_t)4*NXYZ*sizeof(double), (void **)&h_potentials) );
+    gpu_exec( host_malloc_pl((size_t)12*NXYZ*sizeof(double), (void **)&h_potentials) ); // FIXME: only 4*NXYZ is in use!
+    for(i=0; i<12*NXYZ; i++) h_potentials[i]=0.0; // reset
     gpu_exec(     gpu_malloc((size_t)4*NXYZ*sizeof(double), (void **)&d_potentials) );   
     
     // energy
@@ -699,10 +706,11 @@ int main( int argc , char ** argv )
     
     // Set constants
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
+    md.ec=ec; dc_ec=ec; dc_t0=t0; dc_np=np; dc_nwfip=nwfip;
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
-    process_params(md.params, kF, mu, 0, NULL);
+    process_params(md.params, kF, mu, 0, NULL); // TODO: Issue #46
 #else
     process_params(md.params, kF, mu);
 #endif
@@ -795,33 +803,9 @@ int main( int argc , char ** argv )
         printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
         
         // Create run log and add entry
-        cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-        #define OUTPUT_ENTRIES 18
-        
-        double line_items[OUTPUT_ENTRIES]={ 
-            // line id (added automatically): 1
-            time*eF, // 2
-            Na, // 3
-            Nb, // 4
-            Na+Nb, // 5
-            energy_tot/Effg, // 6
-            energy_kin/Effg, // 7
-            energy_pot/Effg, // 8
-            energy_pair/Effg, // 9
-            energy_CM/Effg, // 10
-            energy_uext/Effg, //11
-            Laz/Na, // 12
-            Lbz/Nb, // 13
-            (Laz+Lbz)/(Na+Nb), // 14
-            cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-            densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-            densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
-            qfalpha, //18
-            cccoeff // 19
-            // time per measurment (added automatically)
-            // date & time of adding enetry
-        };
-        cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
+        cpu_exec( logger_create_header(execcmd) );
+        double _npart[2]={h_energy[5],h_energy[6]};
+        cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
     }    
     
     // Create binary files and add initial measurement
@@ -1133,34 +1117,6 @@ int main( int argc , char ** argv )
             
             printf("# AFTER SELFSTART : energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f, energy_CM=%16.12f, energy_uext=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg, energy_CM/Effg, energy_uext/Effg);  
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
-            
-            // Create run log and add entry
-            cpu_exec( create_header_of_runlog(execcmd, kF, Effg, mu, ec, nwf, np, nwfip) );
-
-            double line_items[OUTPUT_ENTRIES]={ 
-                // line id (added automatically): 1
-                time*eF, // 2
-                Na, // 3
-                Nb, // 4
-                Na+Nb, // 5
-                energy_tot/Effg, // 6
-                energy_kin/Effg, // 7
-                energy_pot/Effg, // 8
-                energy_pair/Effg, // 9
-                energy_CM/Effg, // 10
-                energy_uext/Effg, //11
-                Laz/Na, // 12
-                Lbz/Nb, // 13
-                (Laz+Lbz)/(Na+Nb), // 14
-                cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-                densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-                densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
-                qfalpha, //18
-                cccoeff // 19
-                // time per measurment (added automatically)
-                // date & time of adding enetry
-            };
-            cpu_exec( add_line_to_file(0, 0.0, OUTPUT_ENTRIES, line_items) );
         }    
     
     }
@@ -1340,30 +1296,8 @@ int main( int argc , char ** argv )
             
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
             
-            double line_items[OUTPUT_ENTRIES]={ 
-                // line id (added automatically): 1
-                time*eF, // 2
-                Na, // 3
-                Nb, // 4
-                Na+Nb, // 5
-                energy_tot/Effg, // 6
-                energy_kin/Effg, // 7
-                energy_pot/Effg, // 8
-                energy_pair/Effg, // 9
-                energy_CM/Effg, // 10
-                energy_uext/Effg, //11
-                Laz/Na, // 12
-                Lbz/Nb, // 13
-                (Laz+Lbz)/(Na+Nb), // 14
-                cabs(potsall.delta[NZ/2 + NZ*NY/2 + NZ*NY*NX/2]), // 15
-                densall.rho_a[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 16
-                densall.rho_b[NZ/2 + NZ*NY/2 + NZ*NY*NX/2], // 17
-                qfalpha, //18
-                cccoeff // 19
-                // time per measurment (added automatically)
-                // date & time of adding enetry
-            };
-            cpu_exec( add_line_to_file(i_meas+1, rt, OUTPUT_ENTRIES, line_items) );
+            double _npart[2]={h_energy[5],h_energy[6]};
+            cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
         } 
         
         // add binary data
