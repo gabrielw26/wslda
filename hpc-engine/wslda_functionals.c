@@ -68,7 +68,7 @@ int compute_energy_ext(int it, wslda_density h_densities, wslda_potential h_pote
                          
         // External pairing energy -(Delta x nu^* + Delta^* x nu)=-2Re[Delta x nu^*] 
         energy[EPAIREXT]-=2.0*creal( 
-                            h_densities.nu[ixyz]*conj(v_ext(ix,iy,iz,it,h_potentials.delta[ixyz],dc_params,dc_extra_data_size,dc_extra_data)) 
+                            h_densities.nu[ixyz]*conj(delta_ext(ix,iy,iz,it,h_potentials.delta[ixyz],dc_params,dc_extra_data_size,dc_extra_data)) 
                                    );
         
         // External energy related to coupling with external velocity filed: -v^{ext}(r)*j(r)
