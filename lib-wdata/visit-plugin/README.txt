@@ -1,4 +1,4 @@
-Create static library libntg_io.a 
+Create static library libwdata.a 
 
     Go to bsk folder and compile ntg_io.c file using command:
         g++ -O3 -c wdata.c -fPIC
