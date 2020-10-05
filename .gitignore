@@ -93,3 +93,7 @@ tools/wdata-cut
 tools/test*
 
 tools/dpca2wdata
+
+st-testcase-uniform/obj/
+
+td-testcase-uniform/obj/

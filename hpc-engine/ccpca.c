@@ -28,6 +28,7 @@
 #include "pca_logger.h"
 #include "cpca_checkpoint.h"
 #include "wslda_writevars.h"
+#include "wslda_reproducibility.h"
 
 static double dc_ec;
 static double dc_t0;
@@ -152,6 +153,7 @@ int main( int argc , char ** argv )
         // Make copy of input file
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
+        file_operation( assure_reproducibility(md.outprefix) );
     }
     
     // Broadcast input parameter

@@ -10,11 +10,10 @@
 # COMPILER
 CXX=cc
 
-# DIRECTORY SETTINGS
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
 OBJDIR=./obj/
 BINDIR=./
-WSLDADIR=../hpc-engine/
-WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 CFLAGS= -O3  -I/project/pr91/share/include/elpa-2020.05.001

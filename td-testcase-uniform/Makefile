@@ -3,11 +3,10 @@
 CXX=mpicc
 NVCC = nvcc 
 
-# DIRECTORY SETTINGS
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
 OBJDIR=./obj/
 BINDIR=./
-WSLDADIR=../hpc-engine/
-WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/ -DTARGET_MACHINE=TITAN

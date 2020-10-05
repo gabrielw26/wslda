@@ -7,11 +7,10 @@
 # COMPILER
 CXX=mpiicc
 
-# DIRECTORY SETTINGS
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
 OBJDIR=./obj/
 BINDIR=./
-WSLDADIR=../hpc-engine/
-WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 CFLAGS= -O3 -I/work/TDSLDA20/share/FFTW3/include -DMKL_ILP64 -mkl=cluster
