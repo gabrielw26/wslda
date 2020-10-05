@@ -45,6 +45,7 @@
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
+#include "wslda_reproducibility.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -251,6 +252,7 @@ int main( int argc , char ** argv )
         // Make copy of input file
         sprintf(file_name, "%s_input.txt", md.outprefix);
         copy_input_file(argv[i],file_name) ; 
+        assure_reproducibility(md.outprefix);
     }
     
     // Broadcast input parameter

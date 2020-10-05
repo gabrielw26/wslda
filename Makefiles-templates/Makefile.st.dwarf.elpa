@@ -10,11 +10,10 @@
 # COMPILER
 CXX=mpicc
 
-# DIRECTORY SETTINGS
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
 OBJDIR=./obj/
 BINDIR=./
-WSLDADIR=../hpc-engine/
-WDATADIR=../lib-wdata/
 
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3 -I/usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack391/include/elpa-2020.05.001/
