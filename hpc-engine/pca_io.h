@@ -40,7 +40,14 @@ int urm( const char * fn )
 int exists(const char *filename) 
 {  
     return !access(filename, F_OK);  
-} 
+}
+
+int create_directory(const char *dirname)
+{
+    int err = mkdir(dirname, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+    if(err==0 || errno==EEXIST) return WSLDA_OK;
+    else return WSLDA_ERR_CANNOT_CREATE_DIR;
+}
 
 /**
  * return
@@ -463,152 +470,33 @@ int append_to_binary_file(const char * file_name, size_t size, void * data)
  * Function add entries to the file with wave-functions and kkz
  * */
 double fbeta(double E, double beta);
-int append_wf_from_kzpca(char * prefix, double *En, double complex *psi, double ecut, double beta, double kz, int *nwf)
-{
-    char file_name_u[512];
-    char file_name_v[512];
-    char file_name_kkz[512];
-    char file_name_fbeta[512];
-    
-    sprintf(file_name_u, "%s_s2dpca.wfu", prefix);
-    sprintf(file_name_v, "%s_s2dpca.wfv", prefix);
-    sprintf(file_name_kkz, "%s_s2dpca.kkz", prefix);
-    sprintf(file_name_fbeta, "%s_s2dpca.en", prefix);
-    
-    // open files
-    FILE *fu = fopen(file_name_u, "ab");
-    FILE *fv = fopen(file_name_v, "ab");
-    FILE *fkkz = fopen(file_name_kkz, "ab");
-    FILE *ffbeta = fopen(file_name_fbeta, "ab");
-    
-    if (fu==NULL)  return -1; // cannot open  
-    if (fv==NULL)  return -2; // cannot open  
-    if (fkkz==NULL)  return -3; // cannot open  
-    if (ffbeta==NULL)  return -4; // cannot open  
-    
-    int ien;
-    double complex *u, *v; // psi=(u,v)
-    size_t test_ele;
-    double fbEn;
-    
-    for(ien=0; ien<2*NX*NY; ien++) // for each eigen-energy 
-    {
-        
-        if(fabs(En[ien])>ecut) continue; // skip states above the cut-off energy
-        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
-        
-        (*nwf)++; // we have new state
-        
-        // docompose state
-        u = psi + ien*2*NX*NY;
-        v = u + NX*NY;
-        
-        test_ele = fwrite(u, sizeof(double complex)*NX*NY, 1, fu);
-        if(test_ele!=1) return -5; // data not written 
-        
-        test_ele = fwrite(v, sizeof(double complex)*NX*NY, 1, fv);
-        if(test_ele!=1) return -6; // data not written
-        
-        test_ele = fwrite(&kz, sizeof(double), 1, fkkz);
-        if(test_ele!=1) return -7; // data not written 
-        
-//         fbEn=fbeta(En[ien], beta);
-        fbEn=En[ien];
-        test_ele = fwrite(&fbEn, sizeof(double), 1, ffbeta);
-        if(test_ele!=1) return -8; // data not written
-    }
-    
-    // close files
-    fclose(fu);
-    fclose(fv);
-    fclose(fkkz);
-    fclose(ffbeta);
-    
-    return 0;
-}
-
-/**
- * Function writes data from kzSLpca solver
- * */
-int append_wf_from_kzpcaSL(char * prefix, double *En, double complex *psi, double ecut, double beta, double kz, int ikz, int nwftwrt, int *nwf)
-{
-    char file_name_u[512];
-    char file_name_v[512];
-    char file_name_kkz[512];
-    char file_name_fbeta[512];
-    
-    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
-    
-    // open files
-    FILE *fu = fopen(file_name_u, "ab");
-    FILE *fv = fopen(file_name_v, "ab");
-    FILE *fkkz = fopen(file_name_kkz, "ab");
-    FILE *ffbeta = fopen(file_name_fbeta, "ab");
-    
-    if (fu==NULL)  return -1; // cannot open  
-    if (fv==NULL)  return -2; // cannot open  
-    if (fkkz==NULL)  return -3; // cannot open  
-    if (ffbeta==NULL)  return -4; // cannot open  
-    
-    int ien;
-    double complex *u, *v; // psi=(u,v)
-    size_t test_ele;
-    double fbEn;
-    
-    for(ien=0; ien<nwftwrt; ien++) // for each eigen-energy 
-    {
-        
-        if(fabs(En[ien])>ecut) continue; // above cut-off - skip!!!
-        if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
-        
-        (*nwf)++; // we have new state
-        
-        // docompose state
-        u = psi + ien*2*NX*NY;
-        v = u + NX*NY;
-        
-        test_ele = fwrite(u, sizeof(double complex)*NX*NY, 1, fu);
-        if(test_ele!=1) return -5; // data not written 
-        
-        test_ele = fwrite(v, sizeof(double complex)*NX*NY, 1, fv);
-        if(test_ele!=1) return -6; // data not written
-        
-        test_ele = fwrite(&kz, sizeof(double), 1, fkkz);
-        if(test_ele!=1) return -7; // data not written 
-        
-//         fbEn=fbeta(En[ien], beta);
-        fbEn=En[ien];
-        test_ele = fwrite(&fbEn, sizeof(double), 1, ffbeta);
-        if(test_ele!=1) return -8; // data not written
-    }
-    
-    // close files
-    fclose(fu);
-    fclose(fv);
-    fclose(fkkz);
-    fclose(ffbeta);
-    
-    return 0;
-}
-
+#if CODEDIM==1
+#define _BSHIFT NX 
+#else
+#define _BSHIFT NX*NY
+#endif
 /**
  * Function writes data from kzSLpca solver
  * Saves only kkz and en and counts states
  * */
-int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi, double ecut, double beta, double kz, int ikz, int nwftwrt, int *nwf)
+int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi, double ecut, double beta, double ky, double kz, int ikz, int nwftwrt, int *nwf)
 {
     char file_name_u[512];
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
+#if CODEDIM==1
+    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+#else
+    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+#endif
     
     // open files
     FILE *fkkz = fopen(file_name_kkz, "ab");
@@ -628,7 +516,10 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
         
             
         (*nwf)++; // we have new state
-        
+#if CODEDIM==1
+        test_ele = fwrite(&ky, sizeof(double), 1, fkkz);
+        if(test_ele!=1) return -7; // data not written 
+#endif
         test_ele = fwrite(&kz, sizeof(double), 1, fkkz);
         if(test_ele!=1) return -7; // data not written 
         
@@ -649,18 +540,24 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
  * Function writes data from kzSLpca solver
  * Saves only u components
  * */
-int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi, double ecut, double beta, double kz, int ikz, int nwftwrt, int *nwf)
+int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi, double ecut, double beta, double ky, double kz, int ikz, int nwftwrt, int *nwf)
 {
     char file_name_u[512];
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
-    
+#if CODEDIM==1
+    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+#else
+    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+#endif
     // open files
     FILE *fu = fopen(file_name_u, "ab");
     
@@ -677,9 +574,9 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
         if(md.spinsymmetry==1 && En[ien]<0.0) continue; // spin symmetric mode - take only positive states
         
         // docompose state
-        u = psi + ien*2*NX*NY; 
+        u = psi + ien*2*_BSHIFT; 
         
-        test_ele = fwrite(u, sizeof(double complex)*NX*NY, 1, fu);
+        test_ele = fwrite(u, sizeof(double complex)*_BSHIFT, 1, fu);
         if(test_ele!=1) return -5; // data not written 
         
     }
@@ -694,17 +591,24 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
  * Function writes data from kzSLpca solver
  * Saves only v components
  * */
-int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi, double ecut, double beta, double kz, int ikz, int nwftwrt, int *nwf)
+int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi, double ecut, double beta, double ky, double kz, int ikz, int nwftwrt, int *nwf)
 {
     char file_name_u[512];
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
+#if CODEDIM==1
+    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+#else
+    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+#endif
     
     // open files
     FILE *fv = fopen(file_name_v, "ab");
@@ -722,11 +626,11 @@ int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi,
         
         
         // docompose state
-        u = psi + ien*2*NX*NY;
-        v = u + NX*NY;
+        u = psi + ien*2*_BSHIFT;
+        v = u + _BSHIFT;
         
         
-        test_ele = fwrite(v, sizeof(double complex)*NX*NY, 1, fv);
+        test_ele = fwrite(v, sizeof(double complex)*_BSHIFT, 1, fv);
         if(test_ele!=1) return -6; // data not written
         
     }
@@ -777,7 +681,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     
     for(ikz=0; ikz<nz/2; ikz++)
     {
-        sprintf(file_name, "%s_s2dpca.%04d.info", prefix, ikz);
+        sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz); // TODO!
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return 1000+ikz;
@@ -837,10 +741,10 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                 if(fu==NULL) // open files
                 {
 //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-                    sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-                    sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-                    sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
+                    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+                    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+                    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+                    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
                     
                     fu = fopen(file_name_u, "rb");
                     fv = fopen(file_name_v, "rb");
@@ -932,10 +836,10 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
                     if(fu==NULL) // open files
                     {
     //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                        sprintf(file_name_u, "%s_s2dpca.%04d.wfu", prefix, ikz);
-                        sprintf(file_name_v, "%s_s2dpca.%04d.wfv", prefix, ikz);
-                        sprintf(file_name_kkz, "%s_s2dpca.%04d.kkz", prefix, ikz);
-                        sprintf(file_name_fbeta, "%s_s2dpca.%04d.en", prefix, ikz);
+                        sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+                        sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+                        sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
                         
                         fu = fopen(file_name_u, "rb");
                         fv = fopen(file_name_v, "rb");
@@ -981,6 +885,8 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     
     return 0;
 }
+
+#undef _BSHIFT
 
 // ---------------------------------------- s3dpca IO -------------------------------------------
 /**

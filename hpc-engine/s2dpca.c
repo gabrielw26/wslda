@@ -215,6 +215,11 @@ int main( int argc , char ** argv )
     double **dens_out;		// 		---//---
     
     char file_name[256];
+#if CODEDIM==1
+    char suffix[8]="s1dpca";
+#else
+    char suffix[8]="s2dpca";
+#endif
     
     void *extra_data = NULL;
     size_t extra_data_size;
@@ -350,6 +355,8 @@ int main( int argc , char ** argv )
         for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
     }
     
+    if(iam==0) cpu_exec( create_directory(md.outprefix) );
+    
     // ====================================================================================
     // ================================ CREATE WAVE VECTORS ===============================
     // ====================================================================================
@@ -479,6 +486,13 @@ int main( int argc , char ** argv )
     
     if(gr_iam==0) printf("# GROUP %d COMPUTES FOR %d k-values [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
+    
+// #if CODEDIM==1 // TODO - remove
+//     // To avoid to many files in each file I store all waves for given kz
+//     MPI_Comm_split(MPI_COMM_WORLD, idgroup, iam, &mpi_comm_group);
+//     MPI_Comm_rank(mpi_comm_group, &gr_iam);
+//     MPI_Comm_size(mpi_comm_group, &gr_np);   
+// #endif
     
     // ====================================================================================
     // ==================================== BLACS GRID ====================================
@@ -641,7 +655,7 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.s2dpca", md.inprefix);
+            sprintf(file_name, "%s/checkpoint.%s", md.inprefix,suffix);
             printf("# READING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "rb");
             if(pFile==NULL)
@@ -1109,21 +1123,26 @@ int main( int argc , char ** argv )
                 //handle special case - no states - create empty files only
                 if(saving_iteration==1 && gr_iam==0)
                 {
-                    sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.info", md.outprefix, suffix, ikz);
                     mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                     file_operation( create_checkpoint_info_pca(file_name, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) ); 
                 
                     // Create empty files
-                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.wfu", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.wfv", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
+#if CODEDIM==1
+                    sprintf(file_name, "%s/%s.%04d.kkyz", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
+#else
+                    sprintf(file_name, "%s/%s.%04d.kkz", md.outprefix, suffix, ikz);
+                    file_operation( touch_file(file_name) );
+#endif
 
-                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.en", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -1192,16 +1211,21 @@ int main( int argc , char ** argv )
                 if(gr_iam==0)
                 {                
                     // Create empty files
-                    sprintf(file_name, "%s_s2dpca.%04d.wfu", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.wfu", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                 
-                    sprintf(file_name, "%s_s2dpca.%04d.wfv", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.wfv", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                     
-                    sprintf(file_name, "%s_s2dpca.%04d.kkz", md.outprefix, ikz);
+#if CODEDIM==1
+                    sprintf(file_name, "%s/%s.%04d.kkyz", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
+#else
+                    sprintf(file_name, "%s/%s.%04d.kkz", md.outprefix, suffix, ikz);
+                    file_operation( touch_file(file_name) );
+#endif
 
-                    sprintf(file_name, "%s_s2dpca.%04d.en", md.outprefix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.en", md.outprefix, suffix, ikz);
                     file_operation( touch_file(file_name) );
                 }
                 
@@ -1216,7 +1240,7 @@ int main( int argc , char ** argv )
                 
                 // save my wave-functions if generated
                 j=0;
-                file_operation( append_wf_from_kzpcaSL_part1(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kkz[ikz], ikz, niq_d, &j) );
+                file_operation( append_wf_from_kzpcaSL_part1(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kvecs[ikz].ky, kvecs[ikz].kz, ikz, niq_d, &j) );
                 lastwf+=j;
                 
                 if(gr_iam!=(gr_np-1)) // File is free, send info to next process
@@ -1228,7 +1252,7 @@ int main( int argc , char ** argv )
                     j = MPI_Recv(&j, 1, MPI_INT, gr_iam-1, 99, mpi_comm_group, &MPIStat);    
                 
                 // save my wave-functions if generated
-                file_operation( append_wf_from_kzpcaSL_part2(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kkz[ikz], ikz, niq_d, &j) );
+                file_operation( append_wf_from_kzpcaSL_part2(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kvecs[ikz].ky, kvecs[ikz].kz, ikz, niq_d, &j) );
                 
                 if(gr_iam!=(gr_np-1)) // File is free, send info to next process
                     j = MPI_Send(&j, 1, MPI_INT, gr_iam+1, 99, mpi_comm_group);    
@@ -1239,7 +1263,7 @@ int main( int argc , char ** argv )
                     j = MPI_Recv(&j, 1, MPI_INT, gr_iam-1, 99, mpi_comm_group, &MPIStat);    
                 
                 // save my wave-functions if generated
-                file_operation( append_wf_from_kzpcaSL_part3(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kkz[ikz], ikz, niq_d, &j) );
+                file_operation( append_wf_from_kzpcaSL_part3(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kvecs[ikz].ky, kvecs[ikz].kz, ikz, niq_d, &j) );
                 
                 if(gr_iam!=(gr_np-1)) // File is free, send info to next process
                     j = MPI_Send(&j, 1, MPI_INT, gr_iam+1, 99, mpi_comm_group);  
@@ -1247,7 +1271,7 @@ int main( int argc , char ** argv )
                 // finilize I/O
                 MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
                 
-                sprintf(file_name, "%s_s2dpca.%04d.info", md.outprefix, ikz);
+                sprintf(file_name, "%s/%s.%04d.info", md.outprefix, suffix, ikz);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
@@ -1478,7 +1502,7 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.s2dpca", md.outprefix);
+            sprintf(file_name, "%s/checkpoint.%s", md.outprefix, suffix);
             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "wb");
             
@@ -1518,12 +1542,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s_s2dpca.info", md.outprefix);
+                sprintf(file_name, "%s/%s.info", md.outprefix, suffix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
                 
                 // write potentials
-                sprintf(file_name, "%s_s2dpca.pud", md.outprefix);
+                sprintf(file_name, "%s/%s.pud", md.outprefix, suffix);
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, BLOCKLENGTH, potsall.V_a, potsall.delta) );
             }
             
