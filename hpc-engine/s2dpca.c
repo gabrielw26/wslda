@@ -17,6 +17,7 @@
 #include "wdata.h"
 
 #include "pca_settings.h"
+#include "wslda_errors.h"
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
@@ -24,14 +25,21 @@
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
+#if CODEDIM==1
+#include "s1dpca_fft.h"
+#include "s1dpca_me.h"
+#include "s1dpca_densities.h"
+#else
 #include "s2dpca_fft.h"
 #include "s2dpca_me.h"
 #include "s2dpca_densities.h"
+#endif
 #include "s3dpca_grid.h"
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h"
+#include "wslda_wavevectors.h" 
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -139,9 +147,16 @@ int wsldapid; // process id - global variable
 #include "logger.h"
 
 typedef char * string;
+
+#if CODEDIM==1
+#define DENSDIM 12*NX
+#define POTDIM  12*NX
+#define BLOCKLENGTH (NX)
+#else
 #define DENSDIM 12*NX*NY
 #define POTDIM  12*NX*NY
 #define BLOCKLENGTH (NX*NY)
+#endif
 
 // make -f Makefile.kzsolver
 
@@ -318,10 +333,10 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     // densities 
-    wslda_density densall = convert_into_wslda_density(h_densities, NX*NY);
-    wslda_density densall_old = convert_into_wslda_density(h_densities_old, NX*NY);
-    wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NX*NY);
-    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NX*NY);
+    wslda_density densall = convert_into_wslda_density(h_densities, BLOCKLENGTH);
+    wslda_density densall_old = convert_into_wslda_density(h_densities_old, BLOCKLENGTH);
+    wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, BLOCKLENGTH);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, BLOCKLENGTH);
     
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
@@ -335,22 +350,65 @@ int main( int argc , char ** argv )
         for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
     }
     
+    // ====================================================================================
+    // ================================ CREATE WAVE VECTORS ===============================
+    // ====================================================================================
+    // Allocate memory - Double values
+    // momentum on the lattice
+    double * kkx , * kky , * kkz ; /* values */
+    cppmallocl(kkx,NX,double);
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    /* nx , ny , nz = 2j forall j integers (e.g. even numbers for the lattice dimensions) */
+    // Initialize lattice in momentum space (first Brullion zone)
+    /* initialize the k-space lattice */    
+    for ( i = 0 ; i <= NX / 2 - 1 ; i++ ) {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) i ; }
+    j = - i ;
+    for ( i = NX / 2 ; i < NX ; i++ ) 
+    {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NY / 2 - 1 ; i++ ) {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) i ; }
+    j = - i ;
+    for ( i = NY / 2 ; i < NY ; i++ ) 
+    {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) j ;
+        j++ ;
+    }
+
+    for ( i = 0 ; i <= NZ / 2 - 1 ; i++ ) {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) i ; }
+    j = - i ;
+    for ( i = NZ / 2 ; i < NZ ; i++ ) 
+    {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) j ; 
+        j++ ;
+    }
         
     // ===================================================================================
     // =============================== WORK DIVISION =====================================
     // ===================================================================================
-    int NZ_HALF = NZ/2;
-    if(NZ_HALF<1) 
-    {
-        if(iam==0) printf("# STRICT 2D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
-        NZ_HALF=1;
-    }
+    int kvecs_to_consder = 0;    
+    count_number_of_k_modes(kkx, kky, kkz, CODEDIM, &kvecs_to_consder);
+    if(iam==0) printf("# NUMBER OF PLAN WAVES TO CONSIDER: %d\n", kvecs_to_consder);
+    
+    wslda_kmode *kvecs;
+    cppmallocl(kvecs,kvecs_to_consder,wslda_kmode);
+    create_k_modes(kkx, kky, kkz, CODEDIM, kvecs);
+                
+    if(NY==1 && NZ==1 && iam==0) printf("# STRICT 1D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
+    else if(    NZ==1 && iam==0) printf("# STRICT 2D CASE! CHECK IF YOUR FUNCTIONAL CORRECTLY HANDLES THIS SITUATION!\n");
     
     if(md.p==0 || md.q==0)
     { 
         if(iam==0) printf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
         int tnp;
-        for(iz=NZ_HALF; iz>=1; iz--) 
+        for(iz=kvecs_to_consder; iz>=1; iz--) 
         { 
             tnp=np/iz;
             if(tnp==0) continue;
@@ -399,12 +457,12 @@ int main( int argc , char ** argv )
     if(gr_iam==0) printf("# GROUP %d WITH %d PROCESSES HAS BEEN SUCCESSFULLY CREATED.\n", idgroup, gr_np);
 
     // assing number of kz values taken by each group
-    if ( kzgroups > NZ_HALF  )
+    if ( kzgroups > kvecs_to_consder  )
     {
         if(iam==0) printf("ERROR: TOO MUCH RESOURCES! (%d>%d)\n", kzgroups, NZ);
         ABORT;
     }
-    getnwfip( idgroup , kzgroups , NZ_HALF , &nwfip ) ;
+    getnwfip( idgroup , kzgroups , kvecs_to_consder , &nwfip ) ;
     MPI_Gather( &nwfip , 1 , MPI_INT , wf_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     MPI_Bcast( wf_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
     
@@ -419,7 +477,7 @@ int main( int argc , char ** argv )
     MPI_Gather( &j , 1 , MPI_INT , wf_idx_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     MPI_Bcast( wf_idx_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     
-    if(gr_iam==0) printf("# GROUP %d COMPUTES FOR %d kz-values [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
+    if(gr_iam==0) printf("# GROUP %d COMPUTES FOR %d k-values [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
     
     // ====================================================================================
@@ -431,7 +489,7 @@ int main( int argc , char ** argv )
     int MONE = -1 , ZERO = 0 , ONE = 1;
     int DESCA[ 9 ];
     int info;
-    int Hsize = NX*NY*2; // size of hamiltonian matrix
+    int Hsize = BLOCKLENGTH*2; // size of hamiltonian matrix
     
     if(iam==0) printf("# HAMILTONIAN SIZE: %d x %d\n", Hsize, Hsize);
 #ifdef MATRIX_IS_REAL
@@ -483,54 +541,14 @@ int main( int argc , char ** argv )
 #endif
     // eigen-values
     double * En; 
-    cppmallocl(En, 2*NXYZ,double); // allocate space for the whole vector
+    cppmallocl(En, 2*BLOCKLENGTH,double); // allocate space for the whole vector
     
 #ifdef MATRIX_IS_REAL
     // use only h matrix as working area
     double *hR = (double *)h;
     double *UR = hR + nip*niq;
 #endif
-    
-    // ====================================================================================
-    // ================================ CREATE WAVE VECTORS ===============================
-    // ====================================================================================
-    // Allocate memory - Double values
-    // momentum on the lattice
-    double * kkx , * kky , * kkz ; /* values */
-    cppmallocl(kkx,NX,double);
-    cppmallocl(kky,NY,double);
-    cppmallocl(kkz,NZ,double);
-    
-    /* nx , ny , nz = 2j forall j integers (e.g. even numbers for the lattice dimensions) */
-    // Initialize lattice in momentum space (first Brullion zone)
-    /* initialize the k-space lattice */    
-    for ( i = 0 ; i <= NX / 2 - 1 ; i++ ) {
-        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) i ; }
-    j = - i ;
-    for ( i = NX / 2 ; i < NX ; i++ ) 
-    {
-        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) j ;
-        j++ ;
-    }
-
-    for ( i = 0 ; i <= NY / 2 - 1 ; i++ ) {
-        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) i ; }
-    j = - i ;
-    for ( i = NY / 2 ; i < NY ; i++ ) 
-    {
-        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) j ;
-        j++ ;
-    }
-
-    for ( i = 0 ; i <= NZ / 2 - 1 ; i++ ) {
-        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) i ; }
-    j = - i ;
-    for ( i = NZ / 2 ; i < NZ ; i++ ) 
-    {
-        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) j ; 
-        j++ ;
-    }
-    
+        
     // ===================================================================================
     // ======================================== UEXT =====================================
     // ===================================================================================    
@@ -572,7 +590,7 @@ int main( int argc , char ** argv )
         }
                        
         // initialize potentials and densities
-        for(ixyz=0; ixyz<NX*NY; ixyz++)
+        for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++)
         {
             // potentials
             potsall.V_a[ixyz]=__md_pca_uniform.V_a; 
@@ -727,7 +745,11 @@ int main( int argc , char ** argv )
     // ================================== FFTW PLANS =====================================
     // ===================================================================================
     if(iam==0) { printf("# CREATING FFTW PLANS...\n"); fflush(stdout); }
+#if CODEDIM==1
+    metadata_s1dpca_fft mdfft; // keeps plans and buffers for fftw
+#else
     metadata_s2dpca_fft mdfft; // keeps plans and buffers for fftw
+#endif
     create_fft_plans(&mdfft, md.batch);
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -735,12 +757,14 @@ int main( int argc , char ** argv )
     // ========================= MATRIX ELEMENTS OF GRADIENTS ============================
     // ===================================================================================    
     double complex * me_d_dx;
-    double complex * me_d_dy;
     cppmallocl(me_d_dx, NX*NX,double complex);
-    cppmallocl(me_d_dy, NY*NY,double complex);
-    
     cpu_exec( compute_matrix_elements_of_momentum_operator(NX, DX, me_d_dx) );
+  
+#if CODEDIM==2
+    double complex * me_d_dy;    
+    cppmallocl(me_d_dy, NY*NY,double complex);
     cpu_exec( compute_matrix_elements_of_momentum_operator(NY, DY, me_d_dy) );
+#endif
         
     // ===================================================================================
     // ======================================= LOGGER ====================================
@@ -760,7 +784,7 @@ int main( int argc , char ** argv )
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     
     wdata_metadata wdmd; 
-    file_operation( create_wdata_metadata(&md, 2, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
+    file_operation( create_wdata_metadata(&md, CODEDIM, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
     
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
@@ -773,7 +797,11 @@ int main( int argc , char ** argv )
     if(iam==0) 
     {
         file_operation( clear_files(&md, &wdmd) );
+#if CODEDIM==1
+        file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-1d") );
+#else
         file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
+#endif
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -784,8 +812,12 @@ int main( int argc , char ** argv )
     modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
+#if CODEDIM==1
+    if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-1d") );
+#else
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
-
+#endif
+    
     // Create run log and add entry
     if(iam==0) cpu_exec( logger_create_header(execcmd) );
     
@@ -964,7 +996,11 @@ int main( int argc , char ** argv )
         {
             // matrix elements
             b_t();
-            cpu_exec( compute_matrix_elements_2d(&bgrid, it, densall, potsall, &mdfft, h, kkz[ikz], me_d_dx, me_d_dy) );
+#if CODEDIM==1
+            cpu_exec( compute_matrix_elements_1d(&bgrid, it, densall, potsall, &mdfft, h, kvecs[ikz].ky, kvecs[ikz].kz, me_d_dx) );
+#else
+            cpu_exec( compute_matrix_elements_2d(&bgrid, it, densall, potsall, &mdfft, h, kvecs[ikz].kz, me_d_dx, me_d_dy) );
+#endif
             rt_me+=e_t(0);
             
             // diagonalize
@@ -1096,7 +1132,8 @@ int main( int argc , char ** argv )
             
             // preparation for density computation
             b_t();
-            if(gr_iam==0) {if(ikz==0) nwf+=pzheevr_m; else nwf+=2*pzheevr_m;}
+            if(gr_iam==0) {nwf+=pzheevr_m*kvecs[ikz].weight;}
+//             if(gr_iam==0) {if(ikz==0) nwf+=pzheevr_m; else nwf+=2*pzheevr_m;}
             
             // Temporary grid for density computation
             int ictxt_d; // context for density computation
@@ -1215,7 +1252,7 @@ int main( int argc , char ** argv )
                 if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
                 double rt = e_t(0);
-                if(gr_iam==0) printf("# DATA WRITING FOR ikz=%d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", ikz, rt, 1.*lastwf*NX*NY*2*16/1024./1024., lastwf); fflush(stdout);
+                if(gr_iam==0) printf("# DATA WRITING FOR ikz=%d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", ikz, rt, 1.*lastwf*BLOCKLENGTH*2*16/1024./1024., lastwf); fflush(stdout);
                 rt_other+=rt;
             }
             
@@ -1223,7 +1260,11 @@ int main( int argc , char ** argv )
             // --------- DENSITIES ----------
             // compute contribution to the densities
             b_t();
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kkz[ikz], md.spinsymmetry) );
+#if CODEDIM==1
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].ky, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+#else
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+#endif
             rt_dens+=e_t(0);
             
             // free temporary resources
@@ -1246,7 +1287,7 @@ int main( int argc , char ** argv )
         rt_dens+=e_t(0);
         
         b_t();
-        if(md.spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand symmetry on densities
+        if(md.spinsymmetry>0) for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) // impose by hand symmetry on densities
         {
             densall.rho_a[ixyz]=densall.rho_b[ixyz];
             densall.tau_a[ixyz]=densall.tau_b[ixyz];
@@ -1254,7 +1295,7 @@ int main( int argc , char ** argv )
             densall.j_a_y[ixyz]=densall.j_b_y[ixyz];
             densall.j_a_z[ixyz]=densall.j_b_z[ixyz];
         }
-        if(md.nocurrents) for(ixyz=0; ixyz<NX*NY; ixyz++) // impose by hand no currents
+        if(md.nocurrents) for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) // impose by hand no currents
         {
             densall.j_a_x[ixyz]=0.0; densall.j_b_x[ixyz]=0.0;
             densall.j_a_y[ixyz]=0.0; densall.j_b_y[ixyz]=0.0;
@@ -1269,8 +1310,12 @@ int main( int argc , char ** argv )
         // ------------------ update chemical potentials ------------------
         if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
-        for(ixyz=0; ixyz<NX*NY; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
+        for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
+#if CODEDIM==1
+        npart[SPINA]*=DXYZ*NY*NZ; npart[SPINB]*=DXYZ*NY*NZ;
+#else
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
+#endif
         if(it>0) 
         {       
             double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
@@ -1347,7 +1392,7 @@ int main( int argc , char ** argv )
         
         // impose by hand nonegativity of densities
         double dens_min = 1.0e-14;
-        for (ixyz = 0; ixyz < NX*NY; ixyz++)
+        for (ixyz = 0; ixyz < BLOCKLENGTH; ixyz++)
         {
         	if (densall.rho_a[ixyz] < 0.) densall.rho_a[ixyz] = dens_min;
         	if (densall.rho_b[ixyz] < 0.) densall.rho_b[ixyz] = dens_min;
@@ -1366,8 +1411,12 @@ int main( int argc , char ** argv )
         
         // ------------------ angular momentum ------------------
         b_t();
+#if CODEDIM==1
+        Lz_a=0.0; Lz_b=0.0;
+#else
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
         cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
+#endif
         Lz = Lz_a + Lz_b; // total angular momentum
         if(iam==0) printf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
@@ -1420,7 +1469,11 @@ int main( int argc , char ** argv )
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
+#if CODEDIM==1
+        if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-1d") );
+#else
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
+#endif
         
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
@@ -1471,7 +1524,7 @@ int main( int argc , char ** argv )
                 
                 // write potentials
                 sprintf(file_name, "%s_s2dpca.pud", md.outprefix);
-                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY, potsall.V_a, potsall.delta) );
+                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, BLOCKLENGTH, potsall.V_a, potsall.delta) );
             }
             
             // Create check.stamp
@@ -1481,7 +1534,11 @@ int main( int argc , char ** argv )
                 sprintf(file_name, "%s_check.stamp", md.outprefix);
                 printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
                 file_operation( touch_file(file_name) );
-                file_operation( check_stamp_entry_coeff(file_name, 12, NX*NY, h_densities, ENERGYITEMS, energy, 1.0*NZ) );
+#if CODEDIM==1
+                file_operation( check_stamp_entry_coeff(file_name, 12, BLOCKLENGTH, h_densities, ENERGYITEMS, energy, DY*NY*DZ*NZ) );
+#else
+                file_operation( check_stamp_entry_coeff(file_name, 12, BLOCKLENGTH, h_densities, ENERGYITEMS, energy, DZ*NZ) );
+#endif
             }
             
             if(iam==0) printf("# EXTRA SAVING ITERATION DONE.\n");

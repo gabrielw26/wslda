@@ -1808,7 +1808,7 @@ int get_nwf_to_evolve_1d(int *nwf)
         if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
         {
             if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
-            else *nwf+=2; // thera are two solutions for each momentum
+            else *nwf+=2; // there are two solutions for each momentum
         }
             
         // make test for correctness
