@@ -419,7 +419,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
 int save_uniform()
 {
     char filename[512];
-    sprintf(filename, "%s_uniform.solution", md.outprefix);
+    sprintf(filename, "%s/uniform.solution", md.outprefix);
     printf("# UNIFORM SAVE: Creating file with solution: `%s`\n", filename);
     int fexist = exists(filename); 
     if(fexist)
@@ -457,7 +457,7 @@ int save_uniform()
 int read_uniform(int *nwf, int printout)
 {
     char filename[512];
-    sprintf(filename, "%s_uniform.solution", md.inprefix);
+    sprintf(filename, "%s/uniform.solution", md.inprefix);
     printf("# UNIFORM READ: Reading data from file: `%s`\n", filename);
     int fexist = exists(filename); 
     if(!fexist) return 1;

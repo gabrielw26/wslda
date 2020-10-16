@@ -899,9 +899,9 @@ int append_wf_from_s3dpca_part1(char * prefix, double *En, double complex *psi, 
     char file_name_v[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s_s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s_s3dpca.%04d.en", prefix, idgroup);
+    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
+    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
     
     // open files
     FILE *ffbeta = fopen(file_name_fbeta, "ab");
@@ -942,9 +942,9 @@ int append_wf_from_s3dpca_part2(char * prefix, double *En, double complex *psi, 
     char file_name_v[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s_s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s_s3dpca.%04d.en", prefix, idgroup);
+    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
+    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
     
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -985,9 +985,9 @@ int append_wf_from_s3dpca_part3(char * prefix, double *En, double complex *psi, 
     char file_name_v[512];
     char file_name_fbeta[512];
     
-    sprintf(file_name_u, "%s_s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s_s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s_s3dpca.%04d.en", prefix, idgroup);
+    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
+    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
     
     // open files
     FILE *fv = fopen(file_name_v, "ab");
@@ -1036,7 +1036,7 @@ int scan_s3dpca_info_files(const char * prefix, int number_of_files, int *nwf, i
     
     for(ikz=0; ikz<number_of_files; ikz++)
     {
-        sprintf(file_name, "%s_s3dpca.%04d.info", prefix, ikz);
+        sprintf(file_name, "%s/s3dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return 1000+ikz;
@@ -1089,9 +1089,9 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
                 if(fu==NULL) // open files
                 {
 //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s_s3dpca.%04d.wfu", prefix, ikz);
-                    sprintf(file_name_v, "%s_s3dpca.%04d.wfv", prefix, ikz);
-                    sprintf(file_name_fbeta, "%s_s3dpca.%04d.en", prefix, ikz);
+                    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, ikz);
+                    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, ikz);
+                    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, ikz);
                     
                     fu = fopen(file_name_u, "rb");
                     fv = fopen(file_name_v, "rb");
