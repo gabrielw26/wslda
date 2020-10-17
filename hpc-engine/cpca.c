@@ -268,7 +268,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
     // ====================================================================================
-    if(md.inittype==0 || md.inittype==1) // Start from uniform solution
+    if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
         {
@@ -339,7 +339,7 @@ int main( int argc , char ** argv )
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
         Effg = 0.6*__md_pca_uniform.n0_a*eF_a*NXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*NXYZ; 
     }
-    else if(md.inittype==2) 
+    else if(md.inittype==5) 
     {
         // allocate memory for my wf
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
@@ -349,7 +349,7 @@ int main( int argc , char ** argv )
 //         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
-    else if(md.inittype==3) // Start from solution of s2dpca solver 
+    else if(md.inittype==2) // Start from solution of st-wslda-2d solver 
     {
         // Load data from info file
         int _nx, _ny, _nz;
@@ -504,7 +504,7 @@ int main( int argc , char ** argv )
     dt/=eF; // time step
 #endif
 
-    if(md.inittype==2){ 
+    if(md.inittype==5){ 
 
         if(ip==0) printf("# LOADING CHECKPOINT\n");
         b_t();
@@ -543,7 +543,7 @@ int main( int argc , char ** argv )
     
     if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
-    if(md.inittype!=2)
+    if(md.inittype!=5)
     { 
         // copy wave-functions
         gpu_exec( memcopy_host2gpu(h_wavefun, d_wf,  (size_t)2*nwfip*NXY*sizeof(cufftDoubleComplex)) );   
@@ -624,7 +624,7 @@ int main( int argc , char ** argv )
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
     // potentials
-//     if(md.inittype!=2) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
+//     if(md.inittype!=5) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
     // energy
     gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) ); 
     
@@ -635,7 +635,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[5]+h_energy[6]; // save initial value of particle number
-    if(md.inittype!=2) Effg = 0.6 * (N_tot_init*NZ) * eF; // set correct value of Effg
+    if(md.inittype!=5) Effg = 0.6 * (N_tot_init*NZ) * eF; // set correct value of Effg
     
     // report result
     if(ip==0)
@@ -712,7 +712,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     int i_meas, i_step;
     
-    if(md.inittype!=2 && md.selfstart==1)
+    if(md.inittype!=5 && md.selfstart==1)
     { 
         // NOTE: I assume that potential is constant during first steps
         // NOTE: I assume there is no quantum friction during the first steps

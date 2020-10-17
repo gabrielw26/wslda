@@ -6,6 +6,8 @@
  * This file constains funtions for generation of ky and kz plane waves for 2D and 1D codes
  * */ 
 
+#ifndef __WSLDA_WAVEVECTORS__
+#define __WSLDA_WAVEVECTORS__
 /**
  * Structure containg info about k mode for 2D and 1D codes only
  * */
@@ -88,3 +90,74 @@ int create_k_modes(double *kkx, double *kky, double *kkz, int codedim, wslda_kmo
         
     return WSLDA_OK;
 }
+
+/**
+ * Create wave vectors, x-direction
+ * */
+int create_kkx(double *kkx)
+{
+    int i,j;
+    
+    for ( i = 0 ; i <= NX / 2 - 1 ; i++ ) {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) i ; }
+    j = - i ;
+    for ( i = NX / 2 ; i < NX ; i++ ) 
+    {
+        kkx[ i ] = 2. * ( double ) M_PI / LX * ( double ) j ;
+        j++ ;
+    }
+    
+    return WSLDA_OK;
+}
+
+/**
+ * Create wave vectors, y-direction
+ * */
+int create_kky(double *kky)
+{
+    int i,j;
+    
+    for ( i = 0 ; i <= NY / 2 - 1 ; i++ ) {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) i ; }
+    j = - i ;
+    for ( i = NY / 2 ; i < NY ; i++ ) 
+    {
+        kky[ i ] = 2. * ( double ) M_PI / LY * ( double ) j ;
+        j++ ;
+    }
+    
+    return WSLDA_OK;
+}
+
+/**
+ * Create wave vectors, z-direction
+ * */
+int create_kkz(double *kkz)
+{
+    int i,j;
+    
+    for ( i = 0 ; i <= NZ / 2 - 1 ; i++ ) {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) i ; }
+    j = - i ;
+    for ( i = NZ / 2 ; i < NZ ; i++ ) 
+    {
+        kkz[ i ] = 2. * ( double ) M_PI / LZ * ( double ) j ; 
+        j++ ;
+    }
+    
+    return WSLDA_OK;
+}
+
+/**
+ * Get weight for density computation in 1d
+ * */
+int get_weight_1d(double ky, double kz)
+{
+    int wcnt = 1; 
+    if(fabs(ky)>1.0e-12) wcnt*=2; // account for -ky and +ky 
+    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    return wcnt;
+}
+
+#endif
+

@@ -342,7 +342,7 @@ int read_checkpoint_info_pca(const char * file_name,
 {
     int fd ; /* file descriptor for handling the file or device */
     mode_t fd_mode = S_IRUSR | S_IRGRP | S_IROTH; /* S_IRWXU ; S_IRGRP, S_IRWXG ; S_IROTH , S_IRWXO; etc. */
-    if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return -1;
+    if ( ( fd = open( file_name , O_RDONLY  , fd_mode ) ) == -1 ) return WSLDA_ERR_CANNOT_OPEN_FILE;
     
     int werr=0;
     long int bytes_read ;
@@ -376,7 +376,7 @@ int touch_file(const char * file_name)
 {
     if(exists(file_name)) 
     {
-        if(md.overwrite==0) return -1; // We do not overwrite!  
+        if(md.overwrite==0) return WSLDA_ERR_CANNOT_OVERWRITE; // We do not overwrite!  
         else urm(file_name);
     }
     
@@ -681,7 +681,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     
     for(ikz=0; ikz<nz/2; ikz++)
     {
-        sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz); // TODO!
+        sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return 1000+ikz;
@@ -703,6 +703,47 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     *nwf=tnwf;
     
     return 0;
+}
+
+
+/**
+ * Function determines number of wave-functions in each kmode,
+ * @param prefix for construction file names (INPUT)
+ * @param codedim codes dimensonality
+ * @param kvecs_to_consder number of k-modes
+ * @param kvecs k-modes
+ * @param nwf total number of wf, for checking correctness of input set (INPUT/OUTPUT)
+ * @param nwf_per_kxy number of wf for each k-mode, of size kvecs_to_consder (OUTPUT)
+ * */
+int scan_stwslda_info_files(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf, int *nwf_per_kyz)
+{
+    char file_name[256];
+    int ikz;
+    FILE * pFile;
+    int i, tnwf=0;
+    
+    for(ikz=0; ikz<kvecs_to_consder; ikz++)
+    {
+        sprintf(file_name, "%s/s%ddpca.%04d.info", prefix, codedim, ikz);
+        
+        pFile = fopen(file_name, "rb");
+        if(pFile==NULL) return WSLDA_ERR_CANNOT_OPEN_FILE;
+        fread(&i          , sizeof(int)         , 1 , pFile); // percision
+        fread(&i          , sizeof(int)         , 1 , pFile); // nwf
+        fclose(pFile);
+        
+        nwf_per_kyz[ikz]=i;
+        tnwf+=i*kvecs[ikz].weight;        
+//         printf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
+    }
+    
+    if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
+    
+    tnwf=0;
+    for(ikz=0; ikz<kvecs_to_consder; ikz++)  tnwf+=nwf_per_kyz[ikz];
+    *nwf=tnwf;
+    
+    return WSLDA_OK;
 }
 
 /**
@@ -886,6 +927,97 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     return 0;
 }
 
+/**
+ * Function reads wf from kzSLpca standard
+ * */
+int read_stwslda_wf(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf_per_kyz, int mylidx, int myuidx, 
+                    double complex *h_wavefun, double *h_fbetaEn, double *h_kkyz)
+{
+    char file_name[256];
+    int ikz, iwf=0, ii;
+    int nwfip = myuidx-mylidx;
+
+    char file_name_u[512];
+    char file_name_v[512];
+    char file_name_kkz[512];
+    char file_name_fbeta[512];
+    
+    FILE *fu;
+    FILE *fv;
+    FILE *fkkz;
+    FILE *ffbeta;
+    
+    int lNdim;
+    if(codedim==1) lNdim=NX; else lNdim=lNdim;
+    
+//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+    
+    for(ikz=0; ikz<kvecs_to_consder; ikz++)
+    {
+        // reset pointer to file
+        fu=NULL;
+        
+        for(ii=0; ii<nwf_per_kyz[ikz]; ii++)
+        {
+            if(iwf>=mylidx && iwf<myuidx)
+            {
+//                 printf("loading iwf=%d %d\n", iwf, ikz);
+                
+                if(fu==NULL) // open files
+                {
+//                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+                    sprintf(file_name_u, "%s/s%ddpca.%04d.wfu", prefix, codedim, ikz);
+                    sprintf(file_name_v, "%s/s%ddpca.%04d.wfv", prefix, codedim, ikz);
+                    if(codedim==1)
+                        sprintf(file_name_kkz, "%s/s%ddpca.%04d.kkyz", prefix, codedim, ikz);
+                    else
+                        sprintf(file_name_kkz, "%s/s%ddpca.%04d.kkz", prefix, codedim, ikz);
+                    sprintf(file_name_fbeta, "%s/s%ddpca.%04d.en", prefix, codedim, ikz);
+                    
+                    fu = fopen(file_name_u, "rb");
+                    fv = fopen(file_name_v, "rb");
+                    fkkz = fopen(file_name_kkz, "rb");
+                    ffbeta = fopen(file_name_fbeta, "rb");
+                    
+                    if (fu==NULL)  return -1; // cannot open  
+                    if (fv==NULL)  return -2; // cannot open  
+                    if (fkkz==NULL)  return -3; // cannot open  
+                    if (ffbeta==NULL)  return -4; // cannot open        
+                    
+                    // shift pointer to correct position
+                    if(fseek ( fu, sizeof(double complex)*lNdim*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
+                    if(fseek ( fv, sizeof(double complex)*lNdim*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
+                    if(codedim==1)
+                        if(fseek ( fkkz, sizeof(double)*ii*2, SEEK_SET ) != 0 ) return -13; // cannot seek pointer
+                    else
+                        if(fseek ( fkkz, sizeof(double)*ii, SEEK_SET ) != 0 ) return -13; // cannot seek pointer
+                    if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
+                }
+                
+                if( fread(h_wavefun + lNdim*(iwf-mylidx)            , sizeof(double complex)*lNdim, 1 , fu) != 1) return -21;
+                if( fread(h_wavefun + lNdim*(iwf-mylidx) + lNdim*nwfip, sizeof(double complex)*lNdim, 1 , fv) != 1) return -22;
+                if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
+                if( fread(h_kkyz     + (iwf-mylidx) , sizeof(double), 1 , fkkz)   != 1) return -23;
+                if(codedim==1)
+                    if( fread(h_kkyz     + (iwf-mylidx) + nwfip , sizeof(double), 1 , fkkz)   != 1) return -24;
+            }
+            
+            iwf++;
+        }
+        
+        // close files if opened
+        if(fu!=NULL)
+        {
+            fclose(fu);
+            fclose(fv);
+            fclose(fkkz);
+            fclose(ffbeta);
+//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+        }
+    }
+    
+    return 0;
+}
 #undef _BSHIFT
 
 // ---------------------------------------- s3dpca IO -------------------------------------------

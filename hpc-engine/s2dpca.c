@@ -1304,6 +1304,7 @@ int main( int argc , char ** argv )
         
         // global reduction
         b_t();
+        fflush(stdout); // for nice printing
         MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( MPI_IN_PLACE, &nwf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
         if(iam==0) printf("# NWF=%d\n", nwf);

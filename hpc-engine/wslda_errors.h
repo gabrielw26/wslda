@@ -16,5 +16,8 @@ void report_error(int errcode, FILE *stream);
 
 // errors
 #define WSLDA_ERR_CANNOT_CREATE_DIR 10001
+#define WSLDA_ERR_CANNOT_OPEN_FILE 10002
+#define WSLDA_ERR_CANNOT_OVERWRITE 10003
+#define WSLDA_ERR_BINARY_FILE_CORRUPTED 10004
 
 #endif

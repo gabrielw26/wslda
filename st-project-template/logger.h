@@ -55,7 +55,7 @@ int logger(FILE *log,
         fprintf(log,"# ========================= COLUMNS ========================\n");
         fprintf(log,"#  1: iteration number\n");
         fprintf(log,"#  2: npart[SPINA]\n");
-        fprintf(log,"#  3: npart[SPINA]\n");
+        fprintf(log,"#  3: npart[SPINB]\n");
         fprintf(log,"#  4: npart[SPINA]+npart[SPINB]\n");
         fprintf(log,"#  5: E_tot/Effg\n");
         fprintf(log,"#  6: energy[EKIN]/Effg\n");
