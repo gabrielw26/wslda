@@ -21,6 +21,7 @@
 #include "pca_dens.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
+#include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
@@ -151,6 +152,7 @@ int main( int argc , char ** argv )
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
         file_operation( assure_reproducibility(md.outprefix) );
+        file_operation( create_directory(md.outprefix) );
     }
     
     // Broadcast input parameter
@@ -269,7 +271,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
     // ====================================================================================
-    if(md.inittype==0 || md.inittype==1) // Start from uniform solution
+    if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
         {
@@ -339,7 +341,7 @@ int main( int argc , char ** argv )
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
         Effg = 0.6*__md_pca_uniform.n0_a*eF_a*NXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*NXYZ; 
     }
-    else if(md.inittype==2) 
+    else if(md.inittype==5) 
     {
         // allocate memory for my wf
         load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
@@ -347,7 +349,139 @@ int main( int argc , char ** argv )
         cppmallocl(h_fbetaEn, nwfip,double);
 //         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
     }        
-    else if(md.inittype==3) // Start from solution of s2dpca solver (newer version of kzsolver)
+    else if(md.inittype==1) // Start from solution of st-wslda-1d solver
+    {
+        // Load data from info file
+        int _nx, _ny, _nz;
+        double _dx, _dy, _dz;
+        int *nwf_per_kyz;
+        int nwf_s1dpca;
+        int kvecs_to_consder = 0;    
+        double beta;
+        double * kkx , * kky , * kkz ; /* values */
+        cppmallocl(kkx,NX,double); create_kkx(kkx);
+        cppmallocl(kky,NY,double); create_kky(kky);
+        cppmallocl(kkz,NZ,double); create_kkz(kkz);
+        count_number_of_k_modes(kkx, kky, kkz, 1, &kvecs_to_consder);
+        wslda_kmode *kvecs;
+        cppmallocl(kvecs,kvecs_to_consder,wslda_kmode);
+        create_k_modes(kkx, kky, kkz, 1, kvecs);
+        cppmallocl(nwf_per_kyz, kvecs_to_consder,int);
+        time=0.0;
+        sprintf(file_name, "%s/s1dpca.info", md.inprefix);
+        if(ip==0)
+        {
+            file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
+            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=DX || _dy!=DY || _dz!=DZ)
+            {
+                printf("# ST-WSLDA-1D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                printf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                printf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
+                ABORT;
+            }
+            printf("# ST-WSLDA-1D: file_name=`%s`\n",file_name);
+            printf("# ST-WSLDA-1D: nwf (all modes)=%d\n",nwf);
+            printf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            printf("# ST-WSLDA-1D: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            fflush(stdout);
+            
+            // scan files and determine nwf in each of them
+            nwf_s1dpca=nwf;
+            file_operation( scan_stwslda1d_info_files(md.inprefix, 3, kvecs_to_consder, kvecs, &nwf_s1dpca, nwf_per_kyz) ); 
+            printf("# ST-WSLDA-1D: nwf in binary files=%d\n",nwf_s1dpca);
+            nwf=nwf_s1dpca;
+        }
+        MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
+        MPI_Bcast( &kF , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ; eF=0.5*kF*kF;
+        MPI_Bcast( mu , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
+        MPI_Bcast( &ec , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
+        MPI_Bcast( &beta , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  it=0; t0=0.0;
+        MPI_Bcast( nwf_per_kyz , kvecs_to_consder , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
+        MPI_Bcast( kvecs , sizeof(wslda_kmode)*kvecs_to_consder , MPI_BYTE , 0 , MPI_COMM_WORLD ) ; 
+                
+        // divide wf over processes
+        if(ip==0) printf("# INIT1: nwf=%d wave-functions to scatter\n", nwf);
+        if ( np > nwf )
+        {
+            if(ip==0) printf("# INIT1: np[%d] > nwf[%d]!\n", np, nwf);
+            ABORT;
+        }
+        getnwfip( ip , np , nwf , &nwfip ) ;
+        MPI_Gather( &nwfip , 1 , MPI_INT , wf_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
+        MPI_Bcast( wf_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
+        
+        // my range of wf to manage
+        int myuidx=0, mylidx=0;
+        for(i=0; i<=ip; i++)
+            myuidx+=wf_tbl[i];
+        mylidx=myuidx-nwfip;
+        
+        // allocate memory for my wf
+        cppmallocl(h_wavefun, NXYZ*nwfip*2,double complex);
+        cppmallocl(h_fbetaEn, nwfip,double);
+        
+        // read data
+        int _4_max_readers = md.iogroups;
+        int _4_nblocks = (int)ceil((float)(np)/_4_max_readers);
+        for(i=0; i<_4_nblocks; i++)
+        {
+            if(ip==0) { printf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
+            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 3, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, NULL) );
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+        
+        for(i=0; i<nwfip; i++) h_fbetaEn[i]=fbeta(h_fbetaEn[i],beta); // convert quasiparticle energies into weights
+        
+        // load u and delta
+        if(ip==0)
+        {
+            sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
+            printf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
+            double *_buf;
+            cppmallocl(_buf, NX*4, double);
+            file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, _buf) ); 
+            double complex *_bufC = (double complex*)(_buf+NX*2);
+            double complex *_h_potentialsC = (double complex*)(h_potentials+NXYZ*2);
+            ixyz=0;
+            for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++) 
+            {
+                 h_potentials [ixyz+0*NXYZ]=_buf [ix+0*NX]; 
+                 h_potentials [ixyz+1*NXYZ]=_buf [ix+1*NX]; 
+                _h_potentialsC[ixyz       ]=_bufC[ix     ];
+                ixyz++;
+            }
+            
+            free(_buf);
+        }
+        
+        MPI_Bcast(h_potentials, 4*NXYZ, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        
+        // compute particle number and set Effg;
+        double Ntota=0.0, Nmya=0.0;
+        double Ntotb=0.0, Nmyb=0.0; 
+        for(iwf=0; iwf<nwfip; iwf++)
+        {
+            ixyz=0;
+            for( ix = 0 ; ix < NX ; ix++ ) for( iy = 0 ; iy < NY ; iy++ ) for(iz=0; iz<NZ; iz++) 
+            {
+                Nmya+=(pow(creal(h_wavefun[           iwf*NXYZ+ixyz]),2)+pow(cimag(h_wavefun[           iwf*NXYZ+ixyz]),2))*h_fbetaEn[iwf];
+                Nmyb+=(pow(creal(h_wavefun[nwfip*NXYZ+iwf*NXYZ+ixyz]),2)+pow(cimag(h_wavefun[nwfip*NXYZ+iwf*NXYZ+ixyz]),2))*(1.0-h_fbetaEn[iwf]);
+                ixyz++;
+            }  
+        }
+        MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        if(ip==0) printf("# INIT1: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
+        if(md.spinsymmetry==1) Ntota = Ntota+Ntotb; 
+        Effg = 0.6 * Ntota * eF;
+        fflush(stdout);
+        
+        // free memory
+        free(kkx); free(kky); free(kkz);
+        free(nwf_per_kyz); free(kvecs);
+
+    }
+    else if(md.inittype==2) // Start from solution of st-wslda-2d
     {
         // Load data from info file
         int _nx, _ny, _nz;
@@ -357,27 +491,27 @@ int main( int argc , char ** argv )
         int nwf_s2dpca;
         cppmallocl(nwf_per_kz, NZ/2,int);
         time=0.0;
-        sprintf(file_name, "%s_s2dpca.info", md.inprefix);
+        sprintf(file_name, "%s/s2dpca.info", md.inprefix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
-            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=1.0 || _dy!=1.0 || _dz!=1.0)
+            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=DX || _dy!=DY || _dz!=DZ)
             {
-                printf("S2D-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-                printf("SETTINGS  : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, 1.0, 1.0, 1.0);
+                printf("# ST-WSLDA-2D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                printf("# ST-WSLDA-2D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                printf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
                 ABORT_NOBARRIER;
             }
-            printf("S2D-SOLVER: file_name=`%s`\n",file_name);
-            printf("S2D-SOLVER: nwf=%d\n",nwf);
-            printf("S2D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("S2D-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            printf("# ST-WSLDA-2D: file_name=`%s`\n",file_name);
+            printf("# ST-WSLDA-2D: nwf=%d\n",nwf);
+            printf("# ST-WSLDA-2D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            printf("# ST-WSLDA-2D: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
             fflush(stdout);
             
             // scan files and determine nwf in each of them
             nwf_s2dpca=nwf;
             file_operation( scan_kzpca_info_files(md.inprefix, NZ, &nwf_s2dpca, nwf_per_kz) );
-            printf("S2D-SOLVER: nwf in binary files=%d\n",nwf_s2dpca);
+            printf("# ST-WSLDA-2D: nwf in binary files=%d\n",nwf_s2dpca);
         }
         MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &kF , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ; eF=0.5*kF*kF;
@@ -387,10 +521,10 @@ int main( int argc , char ** argv )
         MPI_Bcast( nwf_per_kz , NZ/2 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
         
         // divide wf over processes
-        if(ip==0) printf("# INIT3: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) printf("# INIT2: nwf=%d wave-functions to scatter\n", nwf);
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT3: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) printf("# INIT2: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -416,11 +550,11 @@ int main( int argc , char ** argv )
         cppmallocl(kzEn,nwfip, double);
         
         // read data
-        int _4_max_readers = 32;
+        int _4_max_readers = md.iogroups;
         int _4_nblocks = (int)ceil((float)(np)/_4_max_readers);
         for(i=0; i<_4_nblocks; i++)
         {
-            if(ip==0) { printf("# INIT3: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
+            if(ip==0) { printf("# INIT2: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
             if(ip%_4_nblocks == i) file_operation( read_kzSLpca_wf_with_doubling(md.inprefix, NZ, nwf_per_kz, mylidx, myuidx, wavf2dc, kzEn, kzvec) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
@@ -434,7 +568,7 @@ int main( int argc , char ** argv )
             shift=i*NXYZ;
             for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
             {
-                h_wavefun[shift+ixyz]=cexp( I * kzvec[i] * ( double ) iz )*wavf2dc[(ix*NY + iy)+i*NX*NY]/sqrt(1.*NZ);
+                h_wavefun[shift+ixyz]=cexp( I * kzvec[i] * ( double ) iz )*wavf2dc[(ix*NY + iy)+i*NX*NY]/sqrt(LZ);
                 ixyz++;
             }                
             // form wave-function - v component
@@ -442,7 +576,7 @@ int main( int argc , char ** argv )
             shift=nwfip*NXYZ + i*NXYZ;
             for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ )
             {
-                h_wavefun[shift+ixyz]=cexp( I * kzvec[i] * ( double ) iz )*wavf2dc[nwfip*NX*NY + (ix*NY + iy)+i*NX*NY]/sqrt(1.*NZ);
+                h_wavefun[shift+ixyz]=cexp( I * kzvec[i] * ( double ) iz )*wavf2dc[nwfip*NX*NY + (ix*NY + iy)+i*NX*NY]/sqrt(LZ);
                 ixyz++;
             }        
             
@@ -453,8 +587,8 @@ int main( int argc , char ** argv )
         // load u and delta
         double *kzpot = (double *)(wavf2dc);
         double complex *kzdelta = (double complex *) (kzpot + 2*NX*NY);
-        sprintf(file_name, "%s_s2dpca.pud", md.inprefix);
-        if(ip==0) printf("# INIT22: LOADING POTENTIALS `%s`...\n", file_name);
+        sprintf(file_name, "%s/s2dpca.pud", md.inprefix);
+        if(ip==0) printf("# INIT2: LOADING POTENTIALS `%s`...\n", file_name);
         if(ip==0)
         {
             file_operation( read_binary_file(file_name, NX*NY*4*sizeof(double), 0, (void *)kzpot) );
@@ -490,13 +624,13 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT3: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
+        if(ip==0) printf("# INIT2: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g\n", Ntota, Ntotb); 
         if(md.spinsymmetry==1) Ntota = Ntota+Ntotb;
         Effg = 0.6 * Ntota * eF;
         fflush(stdout);
         
     }
-    else if(md.inittype==5) // Start from s3dpca solution
+    else if(md.inittype==3) // Start from st-wslda-3d solution
     {
         // Load data from info file
         int _nx, _ny, _nz;
@@ -508,21 +642,21 @@ int main( int argc , char ** argv )
         
         time=0.0;
         b_t();
-        sprintf(file_name, "%s_s3dpca.info", md.inprefix);
+        sprintf(file_name, "%s/s3dpca.info", md.inprefix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
-            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=1.0 || _dy!=1.0 || _dz!=1.0)
+            if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=DX || _dy!=DY || _dz!=DZ)
             {
-                printf("S3D-SOLVER INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("S3D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-                printf("SETTINGS  : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, 1.0, 1.0, 1.0);
+                printf("# ST-WSLDA-3D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                printf("# ST-WSLDA-3D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                printf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
                 ABORT_NOBARRIER;
             }
-            printf("S3D-SOLVER: file_name=`%s`\n",file_name);
-            printf("S3D-SOLVER: nwf=%d\n",nwf);
-            printf("S3D-SOLVER: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("S3D-SOLVER: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            printf("# ST-WSLDA-3D: file_name=`%s`\n",file_name);
+            printf("# ST-WSLDA-3D: nwf=%d\n",nwf);
+            printf("# ST-WSLDA-3D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            printf("# ST-WSLDA-3D: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
             fflush(stdout);
             
             // scan files and determine nwf in each of them
@@ -536,10 +670,10 @@ int main( int argc , char ** argv )
         MPI_Bcast( nwf_per_file , md.iogroups , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
                 
         // divide wf over processes
-        if(ip==0) printf("# INIT5: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) printf("# INIT3: nwf=%d wave-functions to scatter\n", nwf);
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT5: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) printf("# INIT3: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -557,9 +691,9 @@ int main( int argc , char ** argv )
         cppmallocl(h_fbetaEn, nwfip,double);
         
         // read data
-        int _5_max_readers = 32;
+        int _5_max_readers = md.iogroups;
         int _5_nblocks = (int)ceil((float)(np)/_5_max_readers);
-        if(ip==0) { printf("# INIT5: BLOCKS [%d] CONSITING WITH %d PROCESSES READS DATA...\n", _5_nblocks, _5_max_readers); fflush(stdout);}
+        if(ip==0) { printf("# INIT3: BLOCKS [%d] CONSITING WITH %d PROCESSES READS DATA...\n", _5_nblocks, _5_max_readers); fflush(stdout);}
         for(i=0; i<_5_nblocks; i++)
         {
             if(ip%_5_nblocks == i) file_operation( read_s3dpca_wf(md.inprefix, md.iogroups, nwf_per_file, mylidx, myuidx, h_wavefun, h_fbetaEn) );
@@ -573,8 +707,8 @@ int main( int argc , char ** argv )
         // load u and delta
         if(ip==0)
         {
-            sprintf(file_name, "%s_s3dpca.pud", md.inprefix);
-            printf("# INIT5: LOADING POTENTIALS `%s`...\n", file_name);
+            sprintf(file_name, "%s/s3dpca.pud", md.inprefix);
+            printf("# INIT3: LOADING POTENTIALS `%s`...\n", file_name);
             file_operation( read_binary_file(file_name, NXYZ*4*sizeof(double), 0, h_potentials) );           
         }
         
@@ -593,12 +727,12 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT5: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g TOTAL\n", Ntota, Ntotb, Ntota+Ntotb); 
+        if(ip==0) printf("# INIT3: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
         if(md.spinsymmetry==1) Ntota = Ntota+Ntotb;
         Effg = 0.6 * Ntota * eF;
         
         rt=e_t(0);
-        if(ip==0) printf("# INIT5: INITIALIZING TIME: %.2f SEC.\n", rt); 
+        if(ip==0) printf("# INIT3: INITIALIZING TIME: %.2f SEC.\n", rt); 
         fflush(stdout);
     }
     else
@@ -607,9 +741,7 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
-    // Write info about distribution of wf
-    MPI_Barrier(MPI_COMM_WORLD);
-//     printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+    // wait till loading is done
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -644,11 +776,8 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ==================================== COPY DATA TO GPU ==============================
     // ====================================================================================    
-#ifdef TDWSLDA
-    dt/=eF; // time step
-#endif
 
-    if(md.inittype==2){
+    if(md.inittype==5){
         if(ip==0) printf("# LOADING CHECKPOINT\n");
         b_t();
         size_t memsize;
@@ -684,9 +813,13 @@ int main( int argc , char ** argv )
         }
     }
     
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+    
     if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
-    if(md.inittype!=2)
+    if(md.inittype!=5)
     { 
         // copy wave-functions
         gpu_exec( memcopy_host2gpu(h_wavefun, d_wf,  (size_t)2*nwfip*NXYZ*sizeof(cufftDoubleComplex)) );   
@@ -764,7 +897,7 @@ int main( int argc , char ** argv )
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
     // potentials
-//     if(md.inittype!=2) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
+//     if(md.inittype!=5) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
     // energy
     gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) );
     
@@ -775,7 +908,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXYZ*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[5]+h_energy[6]; // save initial value of particle number
-    if(md.inittype!=2) Effg = 0.6 * (N_tot_init) * eF; // set correct value of Effg
+    if(md.inittype!=5) Effg = 0.6 * (N_tot_init) * eF; // set correct value of Effg
     
     // report result
     if(ip==0)
@@ -852,7 +985,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     int i_meas, i_step;
     
-    if(md.inittype!=2 && md.selfstart==1)
+    if(md.inittype!=5 && md.selfstart==1)
     { 
         // NOTE: I assume that potential is constant during first steps
         // NOTE: I assume there is no quantum friction during the first steps

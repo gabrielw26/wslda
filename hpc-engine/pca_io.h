@@ -709,13 +709,13 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
 /**
  * Function determines number of wave-functions in each kmode,
  * @param prefix for construction file names (INPUT)
- * @param codedim codes dimensonality
+ * @param codedim codes dimensonality that calls it
  * @param kvecs_to_consder number of k-modes
  * @param kvecs k-modes
  * @param nwf total number of wf, for checking correctness of input set (INPUT/OUTPUT)
  * @param nwf_per_kxy number of wf for each k-mode, of size kvecs_to_consder (OUTPUT)
  * */
-int scan_stwslda_info_files(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf, int *nwf_per_kyz)
+int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf, int *nwf_per_kyz)
 {
     char file_name[256];
     int ikz;
@@ -724,7 +724,7 @@ int scan_stwslda_info_files(const char * prefix, int codedim, int kvecs_to_consd
     
     for(ikz=0; ikz<kvecs_to_consder; ikz++)
     {
-        sprintf(file_name, "%s/s%ddpca.%04d.info", prefix, codedim, ikz);
+        sprintf(file_name, "%s/s1dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return WSLDA_ERR_CANNOT_OPEN_FILE;
@@ -740,7 +740,18 @@ int scan_stwslda_info_files(const char * prefix, int codedim, int kvecs_to_consd
     if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
     
     tnwf=0;
-    for(ikz=0; ikz<kvecs_to_consder; ikz++)  tnwf+=nwf_per_kyz[ikz];
+    if(codedim==1)
+    {
+        for(ikz=0; ikz<kvecs_to_consder; ikz++)  tnwf+=nwf_per_kyz[ikz];
+    }
+    else if(codedim==2)
+    {
+        for(ikz=0; ikz<kvecs_to_consder; ikz++)  if(fabs(kvecs[ikz].ky)>1.0e-12) tnwf+=nwf_per_kyz[ikz]*2; else tnwf+=nwf_per_kyz[ikz]*1; 
+    }
+    else if(codedim==3)
+    {
+        for(ikz=0; ikz<kvecs_to_consder; ikz++)  tnwf+=nwf_per_kyz[ikz]*kvecs[ikz].weight;
+    }
     *nwf=tnwf;
     
     return WSLDA_OK;
@@ -930,7 +941,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
 /**
  * Function reads wf from kzSLpca standard
  * */
-int read_stwslda_wf(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf_per_kyz, int mylidx, int myuidx, 
+int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf_per_kyz, int mylidx, int myuidx, 
                     double complex *h_wavefun, double *h_fbetaEn, double *h_kkyz)
 {
     char file_name[256];
@@ -947,8 +958,13 @@ int read_stwslda_wf(const char * prefix, int codedim, int kvecs_to_consder, wsld
     FILE *fkkz;
     FILE *ffbeta;
     
-    int lNdim;
-    if(codedim==1) lNdim=NX; else lNdim=lNdim;
+    double complex *_u, *_v;
+    double _ky, _kz, _en; 
+    cppmallocl(_u,NX,double complex);
+    cppmallocl(_v,NX,double complex);
+    
+    int lNdim, dcoeff, dd;
+    int ix, iy, iz, ixyz;
     
 //     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
@@ -957,52 +973,123 @@ int read_stwslda_wf(const char * prefix, int codedim, int kvecs_to_consder, wsld
         // reset pointer to file
         fu=NULL;
         
-        for(ii=0; ii<nwf_per_kyz[ikz]; ii++)
+        if(codedim==1) 
         {
-            if(iwf>=mylidx && iwf<myuidx)
+            dcoeff=1;
+            lNdim=NX;
+        }
+        else if(codedim==2)
+        {
+            dcoeff=1;
+            if(fabs(kvecs[ikz].ky)>1.0e-12) dcoeff*=2;
+            lNdim=NX*NY;
+        }
+        else if(codedim==3)
+        {
+            dcoeff=1;
+            if(fabs(kvecs[ikz].ky)>1.0e-12) dcoeff*=2;
+            if(fabs(kvecs[ikz].kz)>1.0e-12) dcoeff*=2;
+            lNdim=NX*NY*NZ;
+            if(dcoeff!=kvecs[ikz].weight) return -122;
+        }
+
+        
+        for(dd=0; dd<dcoeff; dd++)
+        {
+            if(fu!=NULL && dd>=1) // reset pointer to the beginning
             {
-//                 printf("loading iwf=%d %d\n", iwf, ikz);
-                
-                if(fu==NULL) // open files
+                // shift pointer to correct position
+                if(fseek ( fu, 0, SEEK_SET ) != 0 ) return -111; // cannot seek pointer
+                if(fseek ( fv, 0, SEEK_SET ) != 0 ) return -112; // cannot seek pointer
+                if(fseek ( fkkz, 0, SEEK_SET ) != 0 ) return -113; // cannot seek pointer
+                if(fseek ( ffbeta, 0, SEEK_SET ) != 0 ) return -114; // cannot seek pointer
+            } 
+
+            
+            for(ii=0; ii<nwf_per_kyz[ikz]; ii++)
+            {
+                if(iwf>=mylidx && iwf<myuidx)
                 {
-//                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s/s%ddpca.%04d.wfu", prefix, codedim, ikz);
-                    sprintf(file_name_v, "%s/s%ddpca.%04d.wfv", prefix, codedim, ikz);
-                    if(codedim==1)
-                        sprintf(file_name_kkz, "%s/s%ddpca.%04d.kkyz", prefix, codedim, ikz);
-                    else
-                        sprintf(file_name_kkz, "%s/s%ddpca.%04d.kkz", prefix, codedim, ikz);
-                    sprintf(file_name_fbeta, "%s/s%ddpca.%04d.en", prefix, codedim, ikz);
+//                     printf("loading iwf=%d %d\n", iwf, ikz);
                     
-                    fu = fopen(file_name_u, "rb");
-                    fv = fopen(file_name_v, "rb");
-                    fkkz = fopen(file_name_kkz, "rb");
-                    ffbeta = fopen(file_name_fbeta, "rb");
-                    
-                    if (fu==NULL)  return -1; // cannot open  
-                    if (fv==NULL)  return -2; // cannot open  
-                    if (fkkz==NULL)  return -3; // cannot open  
-                    if (ffbeta==NULL)  return -4; // cannot open        
-                    
-                    // shift pointer to correct position
-                    if(fseek ( fu, sizeof(double complex)*lNdim*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
-                    if(fseek ( fv, sizeof(double complex)*lNdim*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
-                    if(codedim==1)
+                    if(fu==NULL) // open files
+                    {
+//                         printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+                        sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
+                        sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
+                        sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+                        
+                        fu = fopen(file_name_u, "rb");
+                        fv = fopen(file_name_v, "rb");
+                        fkkz = fopen(file_name_kkz, "rb");
+                        ffbeta = fopen(file_name_fbeta, "rb");
+                        
+                        if (fu==NULL)  return -1; // cannot open  
+                        if (fv==NULL)  return -2; // cannot open  
+                        if (fkkz==NULL)  return -3; // cannot open  
+                        if (ffbeta==NULL)  return -4; // cannot open        
+                        
+                        // shift pointer to correct position
+                        if(fseek ( fu, sizeof(double complex)*NX*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
+                        if(fseek ( fv, sizeof(double complex)*NX*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
                         if(fseek ( fkkz, sizeof(double)*ii*2, SEEK_SET ) != 0 ) return -13; // cannot seek pointer
-                    else
-                        if(fseek ( fkkz, sizeof(double)*ii, SEEK_SET ) != 0 ) return -13; // cannot seek pointer
-                    if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
+                        if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
+                    }
+                    
+                    if( fread(_u, sizeof(double complex)*NX, 1 , fu) != 1) return -21;
+                    if( fread(_v, sizeof(double complex)*NX, 1 , fv) != 1) return -22;
+                    if( fread(&_en , sizeof(double), 1 , ffbeta) != 1) return -23;
+                    if( fread(&_ky, sizeof(double), 1 , fkkz)   != 1) return -23;
+                    if( fread(&_kz, sizeof(double), 1 , fkkz)   != 1) return -24;
+                    
+                    if(codedim==1)
+                    {
+                        ixyz=0;
+                        for(ix=0; ix<NX; ix++) 
+                        {
+                            h_wavefun[NX*(iwf-mylidx)            + ixyz] = _u[ix];
+                            h_wavefun[NX*(iwf-mylidx) + NX*nwfip + ixyz] = _v[ix];
+                            ixyz++;
+                        }
+                        h_fbetaEn[iwf-mylidx]=_en;
+                        h_kkyz[iwf-mylidx      ]=_ky;
+                        h_kkyz[iwf-mylidx+nwfip]=_kz;
+                        
+                    }
+                    else if(codedim==2)
+                    {
+                        if(dd==1) _ky*=-1.0; // revert sign of ky vector
+                        ixyz=0;
+                        for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) 
+                        {
+                            h_wavefun[NXY*(iwf-mylidx)             + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
+                            h_wavefun[NXY*(iwf-mylidx) + NXY*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
+                            ixyz++;
+                        }
+                        h_fbetaEn[iwf-mylidx]=_en;
+                        h_kkyz[iwf-mylidx]=_kz;
+                    }
+                    else if(codedim==3)
+                    {
+                        // revert sign of ky vector
+                        if(dd==1) {_ky*=-1.0; _kz*=-1.0;}
+                        else if(dd==2) _ky*=-1.0;
+                        else if(dd==3) _kz*=-1.0;
+                        ixyz=0;
+                        for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++) 
+                        {
+                            h_wavefun[NXYZ*(iwf-mylidx)              + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
+                            h_wavefun[NXYZ*(iwf-mylidx) + NXYZ*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
+                            ixyz++;
+                        }
+                        h_fbetaEn[iwf-mylidx]=_en;
+                    }
+                    
                 }
                 
-                if( fread(h_wavefun + lNdim*(iwf-mylidx)            , sizeof(double complex)*lNdim, 1 , fu) != 1) return -21;
-                if( fread(h_wavefun + lNdim*(iwf-mylidx) + lNdim*nwfip, sizeof(double complex)*lNdim, 1 , fv) != 1) return -22;
-                if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
-                if( fread(h_kkyz     + (iwf-mylidx) , sizeof(double), 1 , fkkz)   != 1) return -23;
-                if(codedim==1)
-                    if( fread(h_kkyz     + (iwf-mylidx) + nwfip , sizeof(double), 1 , fkkz)   != 1) return -24;
+                iwf++;
             }
-            
-            iwf++;
         }
         
         // close files if opened
@@ -1015,6 +1102,8 @@ int read_stwslda_wf(const char * prefix, int codedim, int kvecs_to_consder, wsld
 //             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
         }
     }
+    
+    free(_u); free(_v);
     
     return 0;
 }

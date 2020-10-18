@@ -155,6 +155,7 @@ int main( int argc , char ** argv )
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
         file_operation( assure_reproducibility(md.outprefix) );
+        file_operation( create_directory(md.outprefix) );
     }
     
     // Broadcast input parameter
@@ -385,7 +386,7 @@ int main( int argc , char ** argv )
             
             // scan files and determine nwf in each of them
             nwf_s1dpca=nwf;
-            file_operation( scan_stwslda_info_files(md.inprefix, 1, kvecs_to_consder, kvecs, &nwf_s1dpca, nwf_per_kyz) );
+            file_operation( scan_stwslda1d_info_files(md.inprefix, 1, kvecs_to_consder, kvecs, &nwf_s1dpca, nwf_per_kyz) );
             printf("# ST-WSLDA-1D: nwf in binary files=%d\n",nwf_s1dpca);
             nwf=nwf_s1dpca;
         }
@@ -425,7 +426,7 @@ int main( int argc , char ** argv )
         for(i=0; i<_4_nblocks; i++)
         {
             if(ip==0) { printf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
-            if(ip%_4_nblocks == i) file_operation( read_stwslda_wf(md.inprefix, 1, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkyz) );
+            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 1, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkyz) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
         
@@ -457,7 +458,7 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT1: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g SUM=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
+        if(ip==0) printf("# INIT1: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
         if(md.spinsymmetry==1) Ntota = Ntota+Ntotb; 
         Effg = 0.6 * Ntota * eF;
         fflush(stdout);
@@ -472,9 +473,7 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
-    // Write info about distribution of wf
-    MPI_Barrier(MPI_COMM_WORLD);
-//     printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+    // wait till loading is done
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -509,10 +508,6 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ==================================== COPY DATA TO GPU ==============================
     // ====================================================================================    
-#ifdef TDWSLDA
-    dt/=eF; // time step
-#endif
-
     if(md.inittype==5){ 
 
         if(ip==0) printf("# LOADING CHECKPOINT\n");
@@ -549,6 +544,10 @@ int main( int argc , char ** argv )
             printf("# CHECKPOINT INFO: READ SPEED=%12.3f GB/sec\n", memsize_gb/rt);
         }
     }
+    
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
     
     if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     

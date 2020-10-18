@@ -44,7 +44,7 @@ int load_nwf (MPI_Comm comm, char* inprefix,
  MPI_Comm_rank(comm, &comm_rank);
  nr = comm_rank / HowMany;
 
- sprintf(file_name, "%s_save_%d", inprefix, nr);
+ sprintf(file_name, "%s/checkpoint_%d", inprefix, nr);
 
  MPI_Comm_split(comm, nr, comm_rank, &comm_io);
 
@@ -95,7 +95,7 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
 
  nr = comm_rank / HowMany;
 
- sprintf(file_name, "%s_save_%d", inprefix, nr);
+ sprintf(file_name, "%s/checkpoint_%d", inprefix, nr);
 
  MPI_Comm_split(comm, nr, comm_rank, &comm_io);
  MPI_Comm_rank(comm_io, &ip);
@@ -216,7 +216,7 @@ int save_all(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
 
  nr = comm_rank / HowMany;
 
- sprintf(file_name, "%s_save_%d", outprefix, nr);
+ sprintf(file_name, "%s/checkpoint_%d", outprefix, nr);
     
  MPI_Comm_split(comm, nr, comm_rank, &comm_io);
  MPI_Comm_rank(comm_io, &ip);
@@ -335,7 +335,7 @@ char file_name[256];
 
  nr = comm_rank / HowMany;
 
- sprintf(file_name, "%s_save_%d", inprefix, nr);
+ sprintf(file_name, "%s/checkpoint_%d", inprefix, nr);
 
  MPI_Comm_split(comm, nr, comm_rank, &comm_io);
  MPI_Comm_rank(comm_io, &ip);
@@ -464,7 +464,7 @@ int save_all_45(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
 
  nr = comm_rank / HowMany;
 
- sprintf(file_name, "%s_save_%d", outprefix, nr);
+ sprintf(file_name, "%s/checkpoint_%d", outprefix, nr);
 
  MPI_Comm_split(comm, nr, comm_rank, &comm_io);
  MPI_Comm_rank(comm_io, &ip);

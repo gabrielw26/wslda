@@ -159,5 +159,15 @@ int get_weight_1d(double ky, double kz)
     return wcnt;
 }
 
+/**
+ * Get weight for density computation in 1d
+ * */
+int get_weight_2d(double kz)
+{
+    int wcnt = 1;  
+    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    return wcnt;
+}
+
 #endif
 
