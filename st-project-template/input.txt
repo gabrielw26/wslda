@@ -1,12 +1,12 @@
-# ------------------- INITIALIZATION ------------------
-inittype                0      # 0 - create uniform solution;
-                               # 1 - read uniform solution from file `inprefix`_uniform.solution
-                               # 2 - start from checkpoint
-                               # 22- start from interpolated checkpoint
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  5 - start from sd-wslda checkpoint, inprefix points to folder with checkpoint binary file
 
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test
-inprefix                none
+outprefix               test    # all output file with start with this prefix
+inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # allow for overwriting results
 checkpoint              1       # do checkpoints after each iteration
 resetit                 1       # if 1 then reset iterations counter
@@ -27,31 +27,47 @@ Nb                      28.  # Requested number of particles b-type
 # ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*(pi/DX)^2
 energyconveps           1.0e-6   # energy convergence epsilon
 npartconveps            1.0e-6   # number of particles convergence epsilon
-linearmixing            0.5      # mixing parameter for densities, default=0.5
-muchange                0.5      # coefficient for changing chemical potential, default=0.5
+linearmixing            0.5      # mixing parameter (alpha) for linear mixing, default=0.5
+muchange                0.5      # mixing parameter (alpha) for Broyden mixing, default=0.75
 maxiters                1000     # maximum number of iterations, default=10000
 temperature             0.1      # requested temperature in units of eF
-# referencekF             1.0    # reference kF
-# aBdG                    -0.9   # akF about 0.9
-spinsymmetry            0       # set to 1 if you want to impose Na=Nb
-nocurrents              1       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
-nomixstart              0       # do not do mixing for starting iteration
-mumaxchange             0.05 # in units of Fermi energy
+# referencekF             1.0      # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
+# aBdG                    -0.9     # scattering length for BDG mode, used only when FUNCTIONAL==BDG
+spinsymmetry            0        # set to 1 if you want to impose Na=Nb, default=0
+nocurrents              0        # set to 1 if you want to impose ja=jb=0 (solution has no currents), default=0
+nomixstart              0        # do not do mixing for the first iteration
+mumaxchange             0.05     # maximum amount chemical potential can change between iterations, in units of Fermi energy
 
-broyden                 1 # use 1 if to activate Broyden mixing
-Mbroyden                5
-broydenmixing           0.75
-# startbroyden            3
-# stopbroyden             10
+broyden                 1        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
+Mbroyden                5        # number of previous iterations used by Broyden, default=5 
+
+startbroyden            5        # iteration number (it) for which Broyden should be activated,
+                                 # for it<startbroyden algorithm proceeds with linear mixing 
+                                 # and used linearmixing value for mixing
+                                 # NOTE: for it in [startbroyden, startbroyden+Mbroyden] the algorithm
+                                 #       still continue wit linear mixing, and it stores only data
+                                 # Broyden starts to operate for iteration it = startbroyden+Mbroyden+1
+                                 # and used broydenmixing value for mixing
+                                 # default=0
+stopbroyden             100      # Broyden is deactivated for iteration it=stopbroyden
+                                 # starting from iteration it = stopbroyden+1 the algorithm again proceeds
+                                 # with linear mixing and used linearmixing value for mixing
+                                 # default=999999
+# Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
+#                 According experience of our collaborators, there are cases (physical problems)
+#                 where activating Broyden only for some number of iteration provides the best performance 
 
 # -------------- PARALLELIZATION SETTINGS --------------
 # NOTE: all matrices are processed collectively by p*q processes
 # Following condition must be satisfied:
 #   for 3D code: p*q=np
-#   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
+#   for 2D code: np/(p*q)=i where i is INTEGER number smaller or equal than NZ/2
+#   for 1D code: np/(p*q)=i where i is INTEGER number smaller or equal than NY/2 x NZ/2
 # where np is total number of processes utilized for computation
-p                       2
-q                       2
+# If p i q is not provided (commented out) code will attempt to set them automatically,
+#    in some case this procedure fails.
+# p                       2
+# q                       2
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended

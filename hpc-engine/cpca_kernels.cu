@@ -592,10 +592,8 @@ __global__ void kernel_compute_energy(int it,
     double na, nb;
     double p;
     double taua, taub;
-#ifdef CURRENT_CORRECTIONS
     double tx1, ty1, tz1, tx2, ty2, tz2;
-#endif
-    
+
     if(ixyz<NXY)
     {
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
@@ -613,17 +611,16 @@ __global__ void kernel_compute_energy(int it,
         taub=tau_b[ixyz]; // tau_b    
         
         // current corrections
-#ifdef CURRENT_CORRECTIONS
         tx1=j_a_x[ixyz];
         ty1=j_a_y[ixyz];
-        tz1=j_a_z[ixyz];
+        tz1=0.0;
         tx2=j_b_x[ixyz];
         ty2=j_b_y[ixyz];
-        tz2=j_b_z[ixyz];
+        tz2=0.0;
         taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
         taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
-#endif
 
+        // galilean invariant contribution
         E_kin[ixyz]=0.5*(alpha_a(p)*taua + alpha_b(p)*taub)*NZ;
         
         // potential energy
@@ -632,14 +629,9 @@ __global__ void kernel_compute_energy(int it,
         // pairing energy
         E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*NZ;
         
-        // center of mass motion energy
-#ifdef CURRENT_CORRECTIONS
-//         E_CM[ixyz]=p_regularization(na+nb)*((tx1+tx2)*(tx1+tx2) + (ty1+ty2)*(ty1+ty2) + (tz1+tz2)*(tz1+tz2))/(2.0*(na+nb));
+        // flow energy
         E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)*NZ  
                     + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb)*NZ;  
-#else
-        E_CM[ixyz]=0.0;
-#endif
     }
 }
 
@@ -653,6 +645,7 @@ __global__ void kernel_compute_energy_bdg(int it,
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy;
+    double tx1, ty1, tz1, tx2, ty2, tz2;
     
     double na, nb;
     double taua, taub;
@@ -671,6 +664,18 @@ __global__ void kernel_compute_energy_bdg(int it,
         // kinetic energy
         taua=tau_a[ixyz]; // tau_a
         taub=tau_b[ixyz]; // tau_b  
+        
+        // current corrections
+        tx1=j_a_x[ixyz];
+        ty1=j_a_y[ixyz];
+        tz1=0.0;
+        tx2=j_b_x[ixyz];
+        ty2=j_b_y[ixyz];
+        tz2=0.0;
+        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
+        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
+
+        // galilean invariant contribution
         E_kin[ixyz]=0.5*(taua + taub)*NZ;
         
         // potential energy
@@ -679,8 +684,9 @@ __global__ void kernel_compute_energy_bdg(int it,
         // pairing energy
         E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*NZ;
         
-        // center of mass motion energy
-        E_CM[ixyz]=0.0;
+        // flow energy
+        E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)*NZ  
+                    + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb)*NZ;
 
     }
 }

@@ -34,6 +34,7 @@
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
+#include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
@@ -213,6 +214,7 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
+    if(iam==0) printf("# CODE: ST-WSLDA-3D\n");
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -357,7 +359,11 @@ int main( int argc , char ** argv )
     Cblacs_get( MONE , ZERO , &ictxt ) ; 
     Cblacs_gridinit( &ictxt , b_order , md.p , md.q ) ;  /* 'Row-Major' */
     Cblacs_gridinfo( ictxt , &p , &q , &ip , &iq ) ; /* ip,iq: the process row,column id */ 
-    if(p!=md.p || q!=md.q) error_msg_mpi_abort(iam, p!=md.p || q!=md.q);       
+    if(p!=md.p || q!=md.q) 
+    {
+        report_error(WSLDA_ERR_INOCRRECT_PQ, stderr);
+        error_msg_mpi_abort(iam, p!=md.p || q!=md.q);
+    }
     nip = numroc_( &Hsize, &md.mb, &ip, &ZERO, &p );
     niq = numroc_( &Hsize, &md.nb, &iq, &ZERO, &q );
 #ifdef VERBOSE
@@ -486,7 +492,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
     // ===================================================================================
-    if(md.inittype==0 || md.inittype==1) // Start from uniform solution
+    if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
         {
@@ -559,7 +565,7 @@ int main( int argc , char ** argv )
         energy[EPOT]=__md_pca_uniform.epot;
         energy[EPAIR]=__md_pca_uniform.epair;
     }
-    else if(md.inittype==2 || md.inittype==22) // start from checkpoint
+    else if(md.inittype==5) // start from checkpoint
     {
         if(iam==0)
         {

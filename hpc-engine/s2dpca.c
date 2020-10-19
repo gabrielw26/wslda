@@ -21,6 +21,7 @@
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
+#include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
@@ -38,8 +39,7 @@
 #include "sxdpca_broyden.h"
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
-#include "wslda_reproducibility.h"
-#include "wslda_wavevectors.h" 
+#include "wslda_reproducibility.h" 
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -229,6 +229,11 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
+#if CODEDIM==1
+    if(iam==0) printf("# CODE: ST-WSLDA-1D\n");
+#else
+    if(iam==0) printf("# CODE: ST-WSLDA-2D\n");
+#endif
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -486,14 +491,7 @@ int main( int argc , char ** argv )
     
     if(gr_iam==0) printf("# GROUP %d COMPUTES FOR %d k-values [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
-    
-// #if CODEDIM==1 // TODO - remove
-//     // To avoid to many files in each file I store all waves for given kz
-//     MPI_Comm_split(MPI_COMM_WORLD, idgroup, iam, &mpi_comm_group);
-//     MPI_Comm_rank(mpi_comm_group, &gr_iam);
-//     MPI_Comm_size(mpi_comm_group, &gr_np);   
-// #endif
-    
+        
     // ====================================================================================
     // ==================================== BLACS GRID ====================================
     // ====================================================================================
@@ -578,7 +576,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
     // ===================================================================================
-    if(md.inittype==0 || md.inittype==1) // Start from uniform solution
+    if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
         {
@@ -651,7 +649,7 @@ int main( int argc , char ** argv )
         energy[EPOT]=__md_pca_uniform.epot;
         energy[EPAIR]=__md_pca_uniform.epair;
     }
-    else if(md.inittype==2  || md.inittype==22) // start from checkpoint
+    else if(md.inittype==5) // start from checkpoint
     {
         if(iam==0)
         {

@@ -1260,7 +1260,7 @@ int scan_s3dpca_info_files(const char * prefix, int number_of_files, int *nwf, i
         sprintf(file_name, "%s/s3dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
-        if(pFile==NULL) return 1000+ikz;
+        if(pFile==NULL) return WSLDA_ERR_S3DPCA_INFO_FILES_MISSING_FILE;
         fread(&i          , sizeof(int)         , 1 , pFile); // percision
         fread(&i          , sizeof(int)         , 1 , pFile); // nwf
         fclose(pFile);
@@ -1271,7 +1271,7 @@ int scan_s3dpca_info_files(const char * prefix, int number_of_files, int *nwf, i
     }
     
 
-    if(tnwf!=*nwf) return -1; // files are not consistent with excepted nwf
+    if(tnwf!=*nwf) return WSLDA_ERR_S3DPCA_INFO_FILES; // files are not consistent with excepted nwf
     
     return 0;
 }

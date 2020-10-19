@@ -37,6 +37,31 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tInput binary files do not satisfy expected sum-rules.\n");
             fprintf(stream, "\tThey seems to be damaged.\n");
             break;
+            
+        case WSLDA_ERR_INOCRRECT_PQ:
+            fprintf(stream, "\tParameters p and q in input file are set incorrectly.\n");
+            fprintf(stream, "\tCorrect input file.\n");
+            break;
+            
+        case WSLDA_ERR_S3DPCA_INFO_FILES:
+            fprintf(stream, "\tInput binary files do not satisfy expected sum-rules.\n");
+            fprintf(stream, "\tThis situation may occur if value of iogroups used in static code (st)\n");
+            fprintf(stream, "\t   is different from value of iogroups provided for time-dependent (td) code.\n");
+            fprintf(stream, "\tCorrect iogropus in input file.\n");
+            fprintf(stream, "\tIf iogroups is set correctly this error indicates that binary files\n");
+            fprintf(stream, "\t   with wave-functions from static code may to be damaged.\n");
+            break;
+            
+        case WSLDA_ERR_S3DPCA_INFO_FILES_MISSING_FILE:
+            fprintf(stream, "\tInput binary files do not satisfy expected sum-rules.\n");
+            fprintf(stream, "\tThis situation may occur if value of iogroups is set incorrectly.\n");
+            fprintf(stream, "\tIn general it should have the same value as used in static code (st).\n");
+            fprintf(stream, "\tIn some cases static code (st) cannot generate requested iogroups (problem is too small).\n");
+            fprintf(stream, "\tCheck maximum value of number appearing in file names `inprefix`\\s3dpca.????.info\n");
+            fprintf(stream, "\t  and in input file set iogroups as (maximum value+1).\n");
+            fprintf(stream, "\tIf iogroups is set correctly this error indicates that binary files\n");
+            fprintf(stream, "\t   with wave-functions from static code may to be damaged.\n");
+            break;
         
         default: 
             fprintf(stream, "\tThis error doesn not have description.\n");
