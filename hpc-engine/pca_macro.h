@@ -1,9 +1,11 @@
+#include "wslda_errors.h"
+
 // allocation of memory, not involving MPI
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
     {                                                                           \
-        fprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
-        fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        fprintf( stderr , "ERROR: cannot malloc()! Exiting!\n") ;               \
+        fprintf( stderr , "ERROR: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
         return -1 ;                                                             \
     } 
 
@@ -37,6 +39,7 @@
         fprintf( stderr , "GPU ERROR: ip[%d]: cannot execute: %s\n" ,ip, #cmd) ;\
         fprintf( stderr , "file=`%s`, line=%d\n" ,__FILE__,__LINE__) ;          \
         fprintf( stderr , "Error=%d\nExiting!\n" ,ierr) ;                       \
+        report_error(ierr, stderr);                                             \
         ierr=-1;                                                                \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \
@@ -49,6 +52,7 @@
         fprintf( stderr , "FILE ERROR: ip[%d]: cannot execute: %s\n" ,ip, #cmd);\
         fprintf( stderr , "file=`%s`, line=%d\n" ,__FILE__,__LINE__) ;          \
         fprintf( stderr , "Error=%d\nExiting!\n" ,ierr) ;                       \
+        report_error(ierr, stderr);                                             \
         ierr=-1;                                                                \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \
@@ -61,6 +65,7 @@
         fprintf( stderr , "CPU ERROR: ip[%d]: cannot execute: %s\n" ,ip, #cmd) ;\
         fprintf( stderr , "file=`%s`, line=%d\n" ,__FILE__,__LINE__) ;          \
         fprintf( stderr , "Error=%d\nExiting!\n" ,ierr) ;                       \
+        report_error(ierr, stderr);                                             \
         ierr=-1;                                                                \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \

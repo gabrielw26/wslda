@@ -59,7 +59,7 @@
  * In such case, the evolves only wave-functions for single spin component
  * and in consequence computing time decreases by factor of two
  * */
-// #define SPINSYMMETRY_MODE
+#define SPINSYMMETRY_MODE
 
 /**
  * Active this flag in order to store quasi-particle energies for each measurement.

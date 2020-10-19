@@ -419,7 +419,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
 int save_uniform()
 {
     char filename[512];
-    sprintf(filename, "%s_uniform.solution", md.outprefix);
+    sprintf(filename, "%s/uniform.solution", md.outprefix);
     printf("# UNIFORM SAVE: Creating file with solution: `%s`\n", filename);
     int fexist = exists(filename); 
     if(fexist)
@@ -457,7 +457,7 @@ int save_uniform()
 int read_uniform(int *nwf, int printout)
 {
     char filename[512];
-    sprintf(filename, "%s_uniform.solution", md.inprefix);
+    sprintf(filename, "%s/uniform.solution", md.inprefix);
     printf("# UNIFORM READ: Reading data from file: `%s`\n", filename);
     int fexist = exists(filename); 
     if(!fexist) return 1;
@@ -1808,7 +1808,7 @@ int get_nwf_to_evolve_1d(int *nwf)
         if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
         {
             if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
-            else *nwf+=2; // thera are two solutions for each momentum
+            else *nwf+=2; // there are two solutions for each momentum
         }
             
         // make test for correctness

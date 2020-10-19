@@ -70,7 +70,7 @@ int logger(FILE *log,
         fprintf(log,"#  1: measurement id\n");
         fprintf(log,"#  2: time*eF\n");
         fprintf(log,"#  3: npart[SPINA]\n");
-        fprintf(log,"#  4: npart[SPINA]\n");
+        fprintf(log,"#  4: npart[SPINB]\n");
         fprintf(log,"#  5: npart[SPINA]+npart[SPINB]\n");
         fprintf(log,"#  6: E_tot/Effg\n");
         fprintf(log,"#  7: energy[EKIN]/Effg\n");

@@ -1,11 +1,11 @@
 # -------------------- CUSTOM PARAMS ------------------
 params31            0.0 # add noise
 
-# ------------------- INITIALIZATION ------------------
-inittype                0      # 0 - create uniform solution;
-                               # 1 - read uniform solution from file `inprefix`_uniform.solution
-                               # 2 - start from checkpoint
-                               # 22- start from interpolated checkpoint
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  5 - start from sd-wslda checkpoint, inprefix points to folder with checkpoint binary file
 
 # ------------------- INPUT/OUTPUT ------------------
 outprefix               test
@@ -32,12 +32,12 @@ energyconveps           1.0e-6   # energy convergence epsilon
 npartconveps            1.0e-6   # number of particles convergence epsilon
 linearmixing            0.5      # mixing parameter for densities, default=0.5
 muchange                0.5      # coefficient for changing chemical potential, default=0.5
-maxiters                1000     # maximum number of iterations, default=10000
+maxiters                200     # maximum number of iterations, default=10000
 temperature             0.1      # requested temperature in units of eF
 # referencekF             1.0    # reference kF
 aBdG                    -0.9   # akF about 0.9
-spinsymmetry            0       # set to 1 if you want to impose Na=Nb
-nocurrents              1       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
+spinsymmetry            1       # set to 1 if you want to impose Na=Nb
+nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
 
@@ -53,8 +53,8 @@ startbroyden            5
 #   for 3D code: p*q=np
 #   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
 # where np is total number of processes utilized for computation
-p                       2
-q                       2
+#p                       2
+#q                       2
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended

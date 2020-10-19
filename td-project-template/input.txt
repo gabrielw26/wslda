@@ -1,24 +1,28 @@
 # ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0      # 0 - create uniform solution;                                                                                                                                                     
-                               # 1 - read uniform solution from file `inprefix`_uniform.solution                                                                                                                  
-                               # 2 - start from td-wslda checkpoint                                                                                                                                                    
-                               # 3 - start from st-wslda-2d solution                                                                                                                                            
-                               # 5 - start from st-wslda-3d solution                                                                                                                                                   
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #                                                                                                                   
+                                #  1 - start from st-wslda-1d solution, inprefix points to folder with s1dpca binary files 
+                                #  2 - start from st-wslda-2d solution, inprefix points to folder with s2dpca binary files 
+                                #  3 - start from st-wslda-3d solution, inprefix points to folder with s3dpca binary files 
+                                #  
+                                #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                    
        
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test
-inprefix                none
-overwrite               1
-iogroups                32      # number of IO groups
-checkpoint              1       # do checkpoint at the end of calculation?
-walltime                11.9    # after this time force checkpoint [hr]
+outprefix               test    # all output file with start with this prefix
+inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
+overwrite               1       # 1 - allow for overwriting existing files, 0 - do not allow for overwriting existing files
+iogroups                32      # number of IO groups used for parallel reading of data
+                                # in case of inittype==3 it must be the same as value used for static caculations.
+checkpoint              1       # do checkpoint at the end of calculation: 1-yes, 0-no
+walltime                11.9    # after this time force the checkpoint [hr]
 
 # list of variables for writing
 # all = density delta current nu tau u v_ext delta_ext velocity_ext
 # default = density delta current
 writevar           default
 
-# aBdG                -0.9 # scattering length for BDG mode 
+# aBdG                -0.9 # scattering length for BDG mode, used only when FUNCTIONAL==BDG
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1

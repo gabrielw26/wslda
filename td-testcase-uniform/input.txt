@@ -1,15 +1,18 @@
 # ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0      # 0 - create uniform solution;                                                                                                                                                     
-                               # 1 - read uniform solution from file `inprefix`_uniform.solution                                                                                                                  
-                               # 2 - start from td-wslda checkpoint                                                                                                                                                    
-                               # 3 - start from st-wslda-2d solution                                                                                                                                            
-                               # 5 - start from st-wslda-3d solution                                                                                                                                                   
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  1 - start from st-wslda-1d solution, inprefix points to folder with s1dpca binary files 
+                                #  2 - start from st-wslda-2d solution, inprefix points to folder with s2dpca binary files 
+                                #  3 - start from st-wslda-3d solution, inprefix points to folder with s3dpca binary files 
+                                #  
+                                #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                  
        
 # ------------------- INPUT/OUTPUT ------------------
 outprefix               test
 inprefix                none
 overwrite               1
-iogroups                32      # number of IO groups
+iogroups                8      # number of IO groups
 checkpoint              0       # do checkpoint at the end of calculation?
 walltime                11.9    # after this time force checkpoint [hr]
 

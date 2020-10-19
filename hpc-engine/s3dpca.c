@@ -34,6 +34,7 @@
 #include "pca_macro.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
+#include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
@@ -213,6 +214,7 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
+    if(iam==0) printf("# CODE: ST-WSLDA-3D\n");
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -357,7 +359,11 @@ int main( int argc , char ** argv )
     Cblacs_get( MONE , ZERO , &ictxt ) ; 
     Cblacs_gridinit( &ictxt , b_order , md.p , md.q ) ;  /* 'Row-Major' */
     Cblacs_gridinfo( ictxt , &p , &q , &ip , &iq ) ; /* ip,iq: the process row,column id */ 
-    if(p!=md.p || q!=md.q) error_msg_mpi_abort(iam, p!=md.p || q!=md.q);       
+    if(p!=md.p || q!=md.q) 
+    {
+        report_error(WSLDA_ERR_INOCRRECT_PQ, stderr);
+        error_msg_mpi_abort(iam, p!=md.p || q!=md.q);
+    }
     nip = numroc_( &Hsize, &md.mb, &ip, &ZERO, &p );
     niq = numroc_( &Hsize, &md.nb, &iq, &ZERO, &q );
 #ifdef VERBOSE
@@ -429,6 +435,8 @@ int main( int argc , char ** argv )
     double *UR = hR + nip*niq;
 #endif
     
+    if(iam==0) cpu_exec( create_directory(md.outprefix) );
+    
     // ====================================================================================
     // ================================ CREATE WAVE VECTORS ===============================
     // ====================================================================================
@@ -484,7 +492,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
     // ===================================================================================
-    if(md.inittype==0 || md.inittype==1) // Start from uniform solution
+    if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
         {
@@ -557,11 +565,11 @@ int main( int argc , char ** argv )
         energy[EPOT]=__md_pca_uniform.epot;
         energy[EPAIR]=__md_pca_uniform.epair;
     }
-    else if(md.inittype==2 || md.inittype==22) // start from checkpoint
+    else if(md.inittype==5) // start from checkpoint
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.s3dpca", md.inprefix);
+            sprintf(file_name, "%s/checkpoint.s3dpca", md.inprefix);
             printf("# READING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "rb");
             if(pFile==NULL)
@@ -1087,13 +1095,13 @@ int main( int argc , char ** argv )
             if(gr_iam==0)
             {
                 // Create empty files
-                sprintf(file_name, "%s_s3dpca.%04d.wfu", md.outprefix, idgroup);
+                sprintf(file_name, "%s/s3dpca.%04d.wfu", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
             
-                sprintf(file_name, "%s_s3dpca.%04d.wfv", md.outprefix, idgroup);
+                sprintf(file_name, "%s/s3dpca.%04d.wfv", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s_s3dpca.%04d.en", md.outprefix, idgroup);
+                sprintf(file_name, "%s/s3dpca.%04d.en", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
             }
             
@@ -1136,7 +1144,7 @@ int main( int argc , char ** argv )
             MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
             
             // create info file by each group
-            sprintf(file_name, "%s_s3dpca.%04d.info", md.outprefix, idgroup);
+            sprintf(file_name, "%s/s3dpca.%04d.info", md.outprefix, idgroup);
             mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
             if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
@@ -1346,7 +1354,7 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
-            sprintf(file_name, "%s_checkpoint.s3dpca", md.outprefix);
+            sprintf(file_name, "%s/checkpoint.s3dpca", md.outprefix);
             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "wb");
             
@@ -1387,12 +1395,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s_s3dpca.info", md.outprefix);
+                sprintf(file_name, "%s/s3dpca.info", md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
                 
                 // write potentials
-                sprintf(file_name, "%s_s3dpca.pud", md.outprefix);
+                sprintf(file_name, "%s/s3dpca.pud", md.outprefix);
                 file_operation( checkpoint_save_u_and_delta_kzpca(file_name, NX*NY*NZ, potsall.V_a, potsall.delta) );
             }
             

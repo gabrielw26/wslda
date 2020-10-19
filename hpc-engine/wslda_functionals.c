@@ -359,9 +359,7 @@ int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_po
     
     double na, nb;
     double taua, taub;
-#ifdef CURRENT_CORRECTIONS
     double tx1, ty1, tz1, tx2, ty2, tz2;
-#endif
     
     int ix, iy, iz;
     int ixyz=0;
@@ -381,7 +379,6 @@ int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_po
         taub=h_densities.tau_b[ixyz]; // tau_b    
         
         // current corrections
-#ifdef CURRENT_CORRECTIONS
         tx1=h_densities.j_a_x[ixyz];
         ty1=h_densities.j_a_y[ixyz];
         tz1=h_densities.j_a_z[ixyz];
@@ -390,8 +387,8 @@ int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_po
         tz2=h_densities.j_b_z[ixyz];
         taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
         taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
-#endif
 
+        // kinetic energy, only aglilean invariant contribution
         energy[EKIN]+=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub);
         
         // potential energy
@@ -400,14 +397,10 @@ int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_po
         // pairing energy
         energy[EPAIR]-=creal(h_potentials.delta[ixyz]*conj(h_densities.nu[ixyz]));
         
-        // center of mass motion energy
-#ifdef CURRENT_CORRECTIONS
-//         E_CM[ixyz]=p_regularization(na+nb)*((tx1+tx2)*(tx1+tx2) + (ty1+ty2)*(ty1+ty2) + (tz1+tz2)*(tz1+tz2))/(2.0*(na+nb));
+        // energy related to currents (j^2/2n)
         energy[ECURRENT]+=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
                            + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb);  
-#else
-        energy[ECURRENT]+=0.0;
-#endif
+
         ixyz++;
     }
     
@@ -550,7 +543,7 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
     energy[ECURRENT]=0.0;   // 
     npart[SPINA]=0.0; npart[SPINB]=0.0;
     
-
+    double tx1, ty1, tz1, tx2, ty2, tz2;
     double na, nb, taua, taub;    
     int ix, iy, iz;
     int ixyz=0;
@@ -567,7 +560,19 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
                                  
         // kinetic energy
         taua=h_densities.tau_a[ixyz]; // tau_a
-        taub=h_densities.tau_b[ixyz]; // tau_b    
+        taub=h_densities.tau_b[ixyz]; // tau_b
+        
+        // current corrections
+        tx1=h_densities.j_a_x[ixyz];
+        ty1=h_densities.j_a_y[ixyz];
+        tz1=h_densities.j_a_z[ixyz];
+        tx2=h_densities.j_b_x[ixyz];
+        ty2=h_densities.j_b_y[ixyz];
+        tz2=h_densities.j_b_z[ixyz];
+        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
+        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
+        
+        // galilean invariant contribution
         energy[EKIN]+=0.5*(taua + taub);
         
         // potential energy
@@ -576,8 +581,9 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
         // pairing energy
         energy[EPAIR]-=creal(h_potentials.delta[ixyz]*conj(h_densities.nu[ixyz]));
         
-        // current contribution
-        energy[ECURRENT]+=0.0;
+        // energy related to currents (j^2/2n)
+        energy[ECURRENT]+=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
+                           + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb); 
         
         ixyz++;
     }
