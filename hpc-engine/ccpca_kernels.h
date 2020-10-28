@@ -71,7 +71,7 @@ int local_reductionR(double *array, int size, double *partial_sums, int threads,
 // physics
 int compute_potentials(int it, double *d_densities, double *d_potentials, double cccoeff, int nthreads);
 int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads);
-int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
+int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, double *d_kkyz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
                             int nthreads);

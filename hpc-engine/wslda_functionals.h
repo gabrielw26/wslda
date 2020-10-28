@@ -23,15 +23,6 @@
 
 #include "aslda_edf.h"
 
-#define ENERGYITEMS 7
-#define EKIN        0
-#define EPOT        1
-#define EPAIR       2
-#define ECURRENT    3
-#define EPOTEXT     4
-#define EPAIREXT    5
-#define EVELEXT     6
-
 /**
  * Function computes potentials for selected functional
  * @param it iteration number

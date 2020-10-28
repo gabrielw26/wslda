@@ -37,8 +37,8 @@ int logger(FILE *log,
     
     double eF = 0.5 * kF*kF;
     double Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
-    double E_tot = energy[0]+energy[1]+energy[2]+energy[3]+energy[4];    
-    double Emax =  M_PI*M_PI/2.;
+    double E_tot = energy[EKIN]+energy[EPOT]+energy[EPAIR]+energy[ECURRENT]+energy[EPOTEXT]+energy[EPAIREXT]+energy[EVELEXT];     
+    double Emax =  M_PI*M_PI/(2.*DX*DX);
     
     if(lineid==0) // HEADER
     {
@@ -93,13 +93,13 @@ int logger(FILE *log,
         npart[SPINB], // 3
         npart[SPINA]+npart[SPINB], // 4
         E_tot/Effg, // 5
-        energy[0]/Effg, // 6
-        energy[1]/Effg, // 7
-        energy[2]/Effg, // 8
-        energy[3]/Effg, // 9
-        energy[4]/Effg, //10
-        0.0/Effg, //11
-        0.0/Effg, //12
+        energy[EKIN]/Effg, // 6
+        energy[EPOT]/Effg, // 7
+        energy[EPAIR]/Effg, // 8
+        energy[ECURRENT]/Effg, // 9
+        energy[EPOTEXT]/Effg, //10
+        energy[EPAIREXT]/Effg, //11
+        energy[EVELEXT]/Effg, //12
         logger_get_time_from_last_entry(), //13
         buffer
     );

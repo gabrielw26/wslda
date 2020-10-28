@@ -122,18 +122,18 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
         jaz=jbz; 
 #endif
         
-        // save result to global memory and add missing NZ factor from 1/sqrt(NZ) * exp(i*kz*z)
-        rho_a[ixyz]=na/DENS_FACTOR_M/(double)NZ;
-        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)NZ;
-        tau_a[ixyz]=taua/DENS_FACTOR_M/(double)NZ;
-        tau_b[ixyz]=taub/DENS_FACTOR_M/(double)NZ;
-        nu[ixyz]=_nu/DENS_FACTOR_M/(double)NZ;
-        j_a_x[ixyz]=jax/DENS_FACTOR_M/(double)NZ;
-        j_a_y[ixyz]=jay/DENS_FACTOR_M/(double)NZ;
-        j_a_z[ixyz]=jaz/DENS_FACTOR_M/(double)NZ;
-        j_b_x[ixyz]=jbx/DENS_FACTOR_M/(double)NZ;
-        j_b_y[ixyz]=jby/DENS_FACTOR_M/(double)NZ;
-        j_b_z[ixyz]=jbz/DENS_FACTOR_M/(double)NZ;
+        // save result to global memory and add missing LZ factor from 1/sqrt(LZ) * exp(i*kz*z)
+        rho_a[ixyz]=na/DENS_FACTOR_M/(double)LZ;
+        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)LZ;
+        tau_a[ixyz]=taua/DENS_FACTOR_M/(double)LZ;
+        tau_b[ixyz]=taub/DENS_FACTOR_M/(double)LZ;
+        nu[ixyz]=_nu/DENS_FACTOR_M/(double)LZ;
+        j_a_x[ixyz]=jax/DENS_FACTOR_M/(double)LZ;
+        j_a_y[ixyz]=jay/DENS_FACTOR_M/(double)LZ;
+        j_a_z[ixyz]=jaz/DENS_FACTOR_M/(double)LZ;
+        j_b_x[ixyz]=jbx/DENS_FACTOR_M/(double)LZ;
+        j_b_y[ixyz]=jby/DENS_FACTOR_M/(double)LZ;
+        j_b_z[ixyz]=jbz/DENS_FACTOR_M/(double)LZ;
     }
 }
 
@@ -189,11 +189,11 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
 #endif
         
         // save result to global memory
-        rho_a[ixyz]=na/DENS_FACTOR_M/(double)NZ;
-        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)NZ;
+        rho_a[ixyz]=na/DENS_FACTOR_M/(double)LZ;
+        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)LZ;
         tau_a[ixyz]=0.0;
         tau_b[ixyz]=0.0;
-        nu[ixyz]=_nu/DENS_FACTOR_M/(double)NZ;
+        nu[ixyz]=_nu/DENS_FACTOR_M/(double)LZ;
         j_a_x[ixyz]=0.0;
         j_a_y[ixyz]=0.0;
         j_a_z[ixyz]=0.0;
@@ -317,8 +317,8 @@ __global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, doubl
         }
         
         // save result to global memory
-        rho_a[ixyz]=na/DENS_FACTOR_M/(double)NZ;
-        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)NZ;
+        rho_a[ixyz]=na/DENS_FACTOR_M/(double)LZ;
+        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)LZ;
         tau_a[ixyz]=0.0;
         tau_b[ixyz]=0.0;
         nu[ixyz]=0.0;
