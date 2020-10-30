@@ -154,8 +154,8 @@ __global__ void kernel_compute_derivatives(int nwf, cufftDoubleComplex *in, cuff
         ix = ixyz; // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
         
         k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
@@ -268,8 +268,8 @@ __global__ void kernel_compute_laplace(int nwf, cufftDoubleComplex *inout)
         ix = ixyz; // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
         k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
         
@@ -362,8 +362,8 @@ __global__ void kernel_compute_gradient_real_f(cufftDoubleComplex *in, cufftDoub
         ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix   ); // note: normalization factor is included
-        else        kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
+        if(ix<NX/2) kx=2.*M_PI/( double )LX/( double )NX * ( double )(ix   ); // note: normalization factor is included
+        else        kx=2.*M_PI/( double )LX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
         
         /*k2 = -1.0*(kx*kx + ky*ky)/NX; // note: normalization factor is included */
         
@@ -436,8 +436,8 @@ __global__ void kernel_compute_derivative_real_vector_f(cufftDoubleComplex *wf_d
         ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix   ); // note: normalization factor is included
-        else        kx=2.*M_PI/( double )NX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
+        if(ix<NX/2) kx=2.*M_PI/( double )LX/( double )NX * ( double )(ix   ); // note: normalization factor is included
+        else        kx=2.*M_PI/( double )LX/( double )NX * ( double )(ix-NX); // note: normalization factor is included
         
         /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NX; // note: normalization factor is included */
                                 
@@ -503,8 +503,8 @@ __global__ void kernel_compute_laplace_real_f(cufftDoubleComplex *wf_d)
         ix = ixyz; // decode cartesian coordinates 
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
         k2 = -1.0*(kx*kx)/NX; // note: normalization factor is included
                                 

@@ -93,7 +93,7 @@ int main( int argc , char ** argv )
     // for reporting
     double eF_a, eF_b, eF, Effg;
     double time;
-    double energy_kin, energy_pot, energy_pair, energy_CM, energy_uext, energy_tot;   
+    double energy_kin, energy_pot, energy_pair, energy_current, energy_uext, energy_dext, energy_vext, energy_tot;   
     double Na, Nb;
     double Laz, Lbz; // angular momentum
     char file_name[256];
@@ -177,7 +177,7 @@ int main( int argc , char ** argv )
 #endif
     
 #ifdef UNIFORM_TEST_MODE
-    md.Na = ceil(1.0/(6.0*M_PI*M_PI) * NXYZ);
+    md.Na = ceil(1.0/(6.0*M_PI*M_PI) * LXYZ);
 #ifdef SPINSYMMETRY_MODE
     md.Nb = md.Na;
 #else
@@ -259,7 +259,7 @@ int main( int argc , char ** argv )
     gpu_exec(     gpu_malloc((size_t)4*NX*sizeof(double), (void **)&d_potentials) );   
     
     // energy
-    gpu_exec( host_malloc_pl((size_t)9*sizeof(double), (void **)&h_energy) );
+    gpu_exec( host_malloc_pl((size_t)TDWSLDAITEMS*sizeof(double), (void **)&h_energy) );
     
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NX);
@@ -276,9 +276,9 @@ int main( int argc , char ** argv )
             
             // Generate initial state for testing
 #ifdef BDG_MODE
-            cpu_exec( solve_uniform_problem_bdg(md.init0Na/NXYZ, md.init0Nb/NXYZ, &nwf, ip==0) );
+            cpu_exec( solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
 #else
-            cpu_exec( solve_uniform_problem(md.init0Na/NXYZ, md.init0Nb/NXYZ, &nwf, ip==0) );
+            cpu_exec( solve_uniform_problem(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
 #endif
             cpu_exec( get_nwf_to_evolve_1d(&nwf) ); // correct number of states to evolve
             
@@ -337,7 +337,7 @@ int main( int argc , char ** argv )
         kF=pow(3.0*M_PI*M_PI*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b), 1.0/3.0);
         eF_a=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*NXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*NXYZ; 
+        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ; 
     }
     else if(md.inittype==5) 
     {
@@ -376,7 +376,7 @@ int main( int argc , char ** argv )
                 printf("# ST-WSLDA-1D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
                 printf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
                 printf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
-                ABORT;
+                ABORT_NOBARRIER;
             }
             printf("# ST-WSLDA-1D: file_name=`%s`\n",file_name);
             printf("# ST-WSLDA-1D: nwf (all modes)=%d\n",nwf);
@@ -638,29 +638,32 @@ int main( int argc , char ** argv )
     
     // get data for reporting
     // energy
-    gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)9*sizeof(double)) );   
+    gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)TDWSLDAITEMS*sizeof(double)) );   
     // potentials
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
-    double N_tot_init = h_energy[5]+h_energy[6]; // save initial value of particle number
-    if(md.inittype!=5) Effg = 0.6 * (N_tot_init*NY*NZ) * eF; // set correct value of Effg
+    double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+    if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
     
     // report result
     if(ip==0)
     {
         time=t0+it*dt;
-        energy_kin = h_energy[0];
-        energy_pot = h_energy[1];
-        energy_pair = h_energy[2];
-        energy_CM = h_energy[3];
-        energy_uext = h_energy[4];
-        energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-        Na=h_energy[5]*(NY*NZ);
-        Nb=h_energy[6]*(NY*NZ);
-        Laz=h_energy[7];
-        Lbz=h_energy[8];
+        energy_kin = h_energy[EKIN];
+        energy_pot = h_energy[EPOT];
+        energy_pair = h_energy[EPAIR];
+        energy_current = h_energy[ECURRENT];
+        energy_uext = h_energy[EPOTEXT];
+        energy_dext = h_energy[EPAIREXT];
+        energy_vext = h_energy[EVELEXT];
+        energy_tot = 0.0;
+        for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+        Na=h_energy[NPARTA];
+        Nb=h_energy[NPARTB];
+        Laz=h_energy[LZA];
+        Lbz=h_energy[LZB];
         
-        printf("# GPU ENERGY      : energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f, energy_CM=%16.12f, energy_uext=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg, energy_CM/Effg, energy_uext/Effg);  
+        printf("# GPU ENERGY     : ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); 
         
         // Create check stamp file
         sprintf(file_name, "%s_check.stamp", md.outprefix);
@@ -668,13 +671,14 @@ int main( int argc , char ** argv )
         file_operation( touch_file(file_name) );
         // Take densities from device
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
-        file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*(NY*NZ)) ); 
+        file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) ); 
         
-        printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
+        printf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "rt"); 
+        printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
         
         // Create run log and add entry
         cpu_exec( logger_create_header(execcmd) );
-        double _npart[2]={h_energy[5]*(NY*NZ),h_energy[6]*(NY*NZ)};
+        double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
         cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
     }    
 
@@ -782,7 +786,7 @@ int main( int argc , char ** argv )
             // executing exp[-i*H(t)*dt]*psi
             // H*psi - first execution, d_fkm3 as working buffer
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) );
-            gpu_exec( apply_hamiltonian(nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
+            gpu_exec( apply_hamiltonian(0, nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
@@ -814,7 +818,7 @@ int main( int argc , char ** argv )
 #endif
             
                 // H*psi
-                gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
+                gpu_exec( apply_hamiltonian(0, nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
@@ -883,7 +887,7 @@ int main( int argc , char ** argv )
            
             // executing exp[-i*H(t+dt/2)*dt]*psi
             // H*psi - first execution
-            gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
+            gpu_exec( apply_hamiltonian(0, nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );
@@ -912,7 +916,7 @@ int main( int argc , char ** argv )
 #endif                
            
                 // H*psi
-                gpu_exec( apply_hamiltonian(nwfip, d_fkm2, d_fkm1,
+                gpu_exec( apply_hamiltonian(0, nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                         d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
                                         md.nthreads) );
@@ -964,7 +968,7 @@ int main( int argc , char ** argv )
     
         // get data for reporting
         // energy
-        gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)9*sizeof(double)) );   
+        gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)TDWSLDAITEMS*sizeof(double)) );   
         // potentials
         gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
         // densities - they are in h_densities
@@ -973,19 +977,23 @@ int main( int argc , char ** argv )
         if(ip==0)
         {
             time=t0+it*dt;
-            energy_kin = h_energy[0];
-            energy_pot = h_energy[1];
-            energy_pair = h_energy[2];
-            energy_CM = h_energy[3];
-            energy_uext = h_energy[4];
-            energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-            Na=h_energy[5]*(NY*NZ);
-            Nb=h_energy[6]*(NY*NZ);
-            Laz=h_energy[7];
-            Lbz=h_energy[8];
+            energy_kin = h_energy[EKIN];
+            energy_pot = h_energy[EPOT];
+            energy_pair = h_energy[EPAIR];
+            energy_current = h_energy[ECURRENT];
+            energy_uext = h_energy[EPOTEXT];
+            energy_dext = h_energy[EPAIREXT];
+            energy_vext = h_energy[EVELEXT];
+            energy_tot = 0.0;
+            for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+            Na=h_energy[NPARTA];
+            Nb=h_energy[NPARTB];
+            Laz=h_energy[LZA];
+            Lbz=h_energy[LZB];
             
-            printf("# AFTER SELFSTART : energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f, energy_CM=%16.12f, energy_uext=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg, energy_CM/Effg, energy_uext/Effg);  
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb);     
+            printf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
+             
+            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
         }    
     
     }
@@ -1047,7 +1055,7 @@ int main( int argc , char ** argv )
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
             // H*psi
-            gpu_exec( apply_hamiltonian(nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
+            gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) ); 
@@ -1114,7 +1122,7 @@ int main( int argc , char ** argv )
             CHECK PCA_SETTINGS.H
 #endif
             // H*psi
-            gpu_exec( apply_hamiltonian(nwfip, d_wf, d_fkm1, 
+            gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_fkm1, 
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );            
@@ -1139,7 +1147,7 @@ int main( int argc , char ** argv )
         
         // get data for reporting
         // energy
-        gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)9*sizeof(double)) );   
+        gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)TDWSLDAITEMS*sizeof(double)) );   
         // potentials
         gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
         // densities - they are in h_densities
@@ -1150,20 +1158,23 @@ int main( int argc , char ** argv )
         if(ip==0)
         {
             time=t0+it*dt;
-            energy_kin = h_energy[0];
-            energy_pot = h_energy[1];
-            energy_pair = h_energy[2];
-            energy_CM = h_energy[3];
-            energy_uext = h_energy[4];
-            energy_tot = energy_kin+energy_pot+energy_pair+energy_CM+energy_uext;
-            Na=h_energy[5]*(NY*NZ);
-            Nb=h_energy[6]*(NY*NZ);
-            Laz=h_energy[7];
-            Lbz=h_energy[8];
+            energy_kin = h_energy[EKIN];
+            energy_pot = h_energy[EPOT];
+            energy_pair = h_energy[EPAIR];
+            energy_current = h_energy[ECURRENT];
+            energy_uext = h_energy[EPOTEXT];
+            energy_dext = h_energy[EPAIREXT];
+            energy_vext = h_energy[EVELEXT];
+            energy_tot = 0.0;
+            for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+            Na=h_energy[NPARTA];
+            Nb=h_energy[NPARTB];
+            Laz=h_energy[LZA];
+            Lbz=h_energy[LZB];
             
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %6.3f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_CM/Effg, energy_uext/Effg, Laz/Na, Lbz/Nb, qfalpha, rt);        
+            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, rt);        
             
-            double _npart[2]={h_energy[5]*(NY*NZ),h_energy[6]*(NY*NZ)};
+            double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
             cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
         } 
         
@@ -1193,7 +1204,7 @@ int main( int argc , char ** argv )
         if(forceCP==1) break;
         
         // Check if siulation is stable
-        if( fabs( (h_energy[5]+h_energy[6]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
+        if( fabs( (h_energy[NPARTA]+h_energy[NPARTB]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
         {
             if(ip==0) printf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n");
             break;
@@ -1239,7 +1250,7 @@ int main( int argc , char ** argv )
             printf("# CREATING CHECK STAMP: `%s`\n",file_name);
             // Take densities from device
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
-            file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, 5, h_energy, 1.0*(NY*NZ)) );   
+            file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );   
         }
     }
     /* messy exit here */

@@ -154,15 +154,15 @@ __global__ void kernel_compute_derivatives(int nwf, cufftDoubleComplex *in, cuff
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   );
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY);
+        if(iy<NY/2) ky=2.*M_PI/( double )LY * ( double )(iy   );
+        else        ky=2.*M_PI/( double )LY * ( double )(iy-NY);
         
 
-        if(iz<NZ/2) kz=2.*M_PI/( double )NZ * ( double )(iz   );
-        else        kz=2.*M_PI/( double )NZ * ( double )(iz-NZ);
+        if(iz<NZ/2) kz=2.*M_PI/( double )LZ * ( double )(iz   );
+        else        kz=2.*M_PI/( double )LZ * ( double )(iz-NZ);
         
         
         k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included
@@ -297,15 +297,15 @@ __global__ void kernel_compute_laplace(int nwf, cufftDoubleComplex *inout)
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   );
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY);
+        if(iy<NY/2) ky=2.*M_PI/( double )LY * ( double )(iy   );
+        else        ky=2.*M_PI/( double )LY * ( double )(iy-NY);
         
 
-        if(iz<NZ/2) kz=2.*M_PI/( double )NZ * ( double )(iz   );
-        else        kz=2.*M_PI/( double )NZ * ( double )(iz-NZ);
+        if(iz<NZ/2) kz=2.*M_PI/( double )LZ * ( double )(iz   );
+        else        kz=2.*M_PI/( double )LZ * ( double )(iz-NZ);
         
         
         k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included
@@ -399,15 +399,15 @@ __global__ void kernel_compute_gradient_real_f(cufftDoubleComplex *in, cufftDoub
         ixyz2ixiyizD2Z(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
-        else        kx=2.*M_PI/( double )NX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
+        if(ix<NX/2) kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
+        else        kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
-        else        ky=2.*M_PI/( double )NY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
+        if(iy<NY/2) ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
+        else        ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
         
 
-        if(iz<NZ/2) kz=2.*M_PI/( double )NZ/( double )NXYZ * ( double )(iz   ); // note: normalization factor is included
-        else        kz=2.*M_PI/( double )NZ/( double )NXYZ * ( double )(iz-NZ); // note: normalization factor is included
+        if(iz<NZ/2) kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz   ); // note: normalization factor is included
+        else        kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz-NZ); // note: normalization factor is included
         
         
         /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included */
@@ -499,15 +499,15 @@ __global__ void kernel_compute_derivative_real_vector_f(cufftDoubleComplex *wf_d
         ixyz2ixiyizD2Z(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
-        else        kx=2.*M_PI/( double )NX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
+        if(ix<NX/2) kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
+        else        kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
-        else        ky=2.*M_PI/( double )NY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
+        if(iy<NY/2) ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
+        else        ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
         
 
-        if(iz<NZ/2) kz=2.*M_PI/( double )NZ/( double )NXYZ * ( double )(iz   ); // note: normalization factor is included
-        else        kz=2.*M_PI/( double )NZ/( double )NXYZ * ( double )(iz-NZ); // note: normalization factor is included
+        if(iz<NZ/2) kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz   ); // note: normalization factor is included
+        else        kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz-NZ); // note: normalization factor is included
         
         
         /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included */
@@ -598,15 +598,15 @@ __global__ void kernel_compute_laplace_real_f(cufftDoubleComplex *wf_d)
         ixyz2ixiyizD2Z(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2) kx=2.*M_PI/( double )NX * ( double )(ix   );
-        else        kx=2.*M_PI/( double )NX * ( double )(ix-NX);
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
         
-        if(iy<NY/2) ky=2.*M_PI/( double )NY * ( double )(iy   );
-        else        ky=2.*M_PI/( double )NY * ( double )(iy-NY);
+        if(iy<NY/2) ky=2.*M_PI/( double )LY * ( double )(iy   );
+        else        ky=2.*M_PI/( double )LY * ( double )(iy-NY);
         
 
-        if(iz<NZ/2) kz=2.*M_PI/( double )NZ * ( double )(iz   );
-        else        kz=2.*M_PI/( double )NZ * ( double )(iz-NZ);
+        if(iz<NZ/2) kz=2.*M_PI/( double )LZ * ( double )(iz   );
+        else        kz=2.*M_PI/( double )LZ * ( double )(iz-NZ);
         
         
         k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included

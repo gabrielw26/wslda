@@ -17,11 +17,6 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
-// HARD SET - TODO 
-#define DX 1.0
-#define DY 1.0                                                                                                                                       
-#define DZ 1.0
-
 // // To switch to cubic cut-off mode
 // #define USE_CUBIC_CUTOFF
 
@@ -171,6 +166,24 @@
 #define XAXIS 0
 #define YAXIS 1
 #define ZAXIS 2
+
+// energy contributions
+#define ENERGYITEMS 7
+#define EKIN        0
+#define EPOT        1
+#define EPAIR       2
+#define ECURRENT    3
+#define EPOTEXT     4
+#define EPAIREXT    5
+#define EVELEXT     6
+// other contributions
+#define NPARTA      7
+#define NPARTB      8
+#define LZA         9
+#define LZB         10
+// total number of items in TDWSLDA codes
+#define TDWSLDAITEMS 11
+
 
 // cufft plans
 #define CUFFT_NUMBER_OF_PLANS 4

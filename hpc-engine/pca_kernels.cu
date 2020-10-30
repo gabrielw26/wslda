@@ -11,6 +11,7 @@ typedef thrust::complex<double> Complex;
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "pca_edf.h"
+#include "wslda_cuda_utils.h"
 
 // ===========================================================================
 // ============================ CONSTANTS ====================================
@@ -441,9 +442,6 @@ __global__ void kernel_compute_potentials(int it,
         // save results to global memory
         V_a[ixyz]=Va;
         V_b[ixyz]=Vb;   
-        
-        ldelta += macro_delta_ext(ix, iy, iz, it, ldelta);
-        
         delta[ixyz]=ldelta;
     }
 }
@@ -494,9 +492,6 @@ __global__ void kernel_compute_potentials_bdg(int it,
         // save results to global memory
         V_a[ixyz]=Va;
         V_b[ixyz]=Vb;
-  
-        ldelta += macro_delta_ext(ix, iy, iz, it, ldelta);
-        
         delta[ixyz]=ldelta;
     }
 }
@@ -589,12 +584,82 @@ int zero_array(int asize, double *array)
 // =======================================================================================
 // ================================== compute_energy =====================================
 // =======================================================================================
+__global__ void kernel_compute_energy_v_ext(int it, 
+                                      double *rho_a, double *rho_b, Complex *nu,
+                                      double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
+                                      double *tau_a, double *tau_b, 
+                                      Complex *delta,
+                                      double *E_ext
+                                      )
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+    if(ixyz<NXYZ)
+    {
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+        
+        // External potential energy
+        E_ext[ixyz]=(rho_a[ixyz]*u_ext(ix,iy,iz,it,SPINA) + rho_b[ixyz]*u_ext(ix,iy,iz,it,SPINB))*DXYZ;
+    }
+}
+
+__global__ void kernel_compute_energy_delta_ext(int it, 
+                                      double *rho_a, double *rho_b, Complex *nu,
+                                      double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
+                                      double *tau_a, double *tau_b, 
+                                      Complex *delta,
+                                      double *E_ext
+                                      )
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+    double na, nb;
+    
+    if(ixyz<NXYZ)
+    {
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+        
+        // External potential energy
+        E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, iz, it, delta[ixyz])).real()*(-2.0)*DXYZ;
+    }
+}
+
+__global__ void kernel_compute_energy_velocity_ext(int it, 
+                                      double *rho_a, double *rho_b, Complex *nu,
+                                      double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
+                                      double *tau_a, double *tau_b, 
+                                      Complex *delta,
+                                      double *E_ext
+                                      )
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+    if(ixyz<NXYZ)
+    {
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+        
+        // External potential energy
+        E_ext[ixyz]=  (
+                         j_a_x[ixyz]*velocity_ext(ix, iy, iz, it, SPINA, XAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                        +j_a_y[ixyz]*velocity_ext(ix, iy, iz, it, SPINA, YAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                        +j_a_z[ixyz]*velocity_ext(ix, iy, iz, it, SPINA, ZAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                        +j_b_x[ixyz]*velocity_ext(ix, iy, iz, it, SPINB, XAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                        +j_b_y[ixyz]*velocity_ext(ix, iy, iz, it, SPINB, YAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                        +j_b_z[ixyz]*velocity_ext(ix, iy, iz, it, SPINB, ZAXIS, dc_params, dc_extra_data_size, dc_extra_data)
+                       )*(-1.0)*DXYZ;
+        
+    }
+}
+    
 __global__ void kernel_compute_energy(int it, 
                                       double *rho_a, double *rho_b, Complex *nu,
                                       double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
                                       double *tau_a, double *tau_b, 
                                       Complex *delta,
-                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM, double *E_ext
+                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM
                                       )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -614,9 +679,6 @@ __global__ void kernel_compute_energy(int it,
         na=rho_a[ixyz];
         nb=rho_b[ixyz];
         
-        // External potential energy
-        E_ext[ixyz]=na*u_ext(ix,iy,iz,it,SPINA) + nb*u_ext(ix,iy,iz,it,SPINB);
-        
         // kinetic energy
         p=polarization(na, nb);
         taua=tau_a[ixyz]; // tau_a
@@ -633,17 +695,17 @@ __global__ void kernel_compute_energy(int it,
         taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
 
         // galilean invariant contribution
-        E_kin[ixyz]=0.5*(alpha_a(p)*taua + alpha_b(p)*taub);
+        E_kin[ixyz]=0.5*(alpha_a(p)*taua + alpha_b(p)*taub)*DXYZ;
         
         // potential energy
-        E_pot[ixyz]=funD(na, nb);
+        E_pot[ixyz]=funD(na, nb)*DXYZ;
         
         // pairing energy
-        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0);
+        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*DXYZ;
         
         // flow energy
-        E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
-                    + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb);  
+        E_CM[ixyz]= (  p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
+                     + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb))*DXYZ;  
 
     }
 }
@@ -654,7 +716,7 @@ __global__ void kernel_compute_energy_bdg(int it,
                                       double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
                                       double *tau_a, double *tau_b, 
                                       Complex *delta,
-                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM, double *E_ext
+                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM
                                       )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -671,9 +733,6 @@ __global__ void kernel_compute_energy_bdg(int it,
         // densities, and correct them
         na=rho_a[ixyz];
         nb=rho_b[ixyz];
-        
-        // External potential energy
-        E_ext[ixyz]=na*u_ext(ix,iy,iz,it,SPINA) + nb*u_ext(ix,iy,iz,it,SPINB);
 
         // kinetic energy
         taua=tau_a[ixyz]; // tau_a
@@ -690,17 +749,17 @@ __global__ void kernel_compute_energy_bdg(int it,
         taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
         
         // galilean invariant contribution
-        E_kin[ixyz]=0.5*(taua + taub);
+        E_kin[ixyz]=0.5*(taua + taub)*DXYZ;
         
         // potential energy
         E_pot[ixyz]=0.0;
         
         // pairing energy
-        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0);
+        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*DXYZ;
         
         // flow energy
-        E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
-                    + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb); 
+        E_CM[ixyz]= (  p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)  
+                     + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb))*DXYZ; 
 
     }
 }
@@ -717,11 +776,11 @@ __global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, 
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
         
-        _x = (double)(ix-NX/2);
-        _y = (double)(iy-NY/2);
+        _x = (double)(ix-NX/2)*DX;
+        _y = (double)(iy-NY/2)*DY;
         
-        Laz[ixyz] = _x*j_a_y[ixyz] - _y*j_a_x[ixyz];
-        Lbz[ixyz] = _x*j_b_y[ixyz] - _y*j_b_x[ixyz];
+        Laz[ixyz] = (_x*j_a_y[ixyz] - _y*j_a_x[ixyz])*DXYZ;
+        Lbz[ixyz] = (_x*j_b_y[ixyz] - _y*j_b_x[ixyz])*DXYZ;
     }
 }
     
@@ -792,7 +851,7 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
                                                  j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
                                                  tau_a, tau_b, 
                                                  delta,
-                                                 E_kin, E_pot, E_pair, E_CM, E_ext
+                                                 E_kin, E_pot, E_pair, E_CM
                                                  );
 
 #else
@@ -801,34 +860,82 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
                                                  j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
                                                  tau_a, tau_b, 
                                                  delta,
-                                                 E_kin, E_pot, E_pair, E_CM, E_ext
+                                                 E_kin, E_pot, E_pair, E_CM
                                                  );
 #endif    
     // Step 2: do local reductions
     int ierr, i;
-    for(i=0; i<5; i++)
+    for(i=0; i<4; i++)
     {
         ierr = local_reductionR(d_workarea +  i*NXYZ, NXYZ, d_workarea +  i*NXYZ, nthreads, 0);
         if(ierr!=0) return ierr;
     }
     
     // Step 3: copy data to correct elements of d_workarea
-    for(i=1; i<5; i++)
-    {
-        if( cudaMemcpy( d_workarea+i , d_workarea +  i*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -i-100;
-    }
+    if( cudaMemcpy( d_workarea+EKIN     , d_workarea +  0*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -100;
+    if( cudaMemcpy( d_workarea+EPOT     , d_workarea +  1*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -101;
+    if( cudaMemcpy( d_workarea+EPAIR    , d_workarea +  2*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -102;
+    if( cudaMemcpy( d_workarea+ECURRENT , d_workarea +  3*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -103;
     
-    // Step 4: compute particle number
-    ierr = local_reductionR(rho_a, NXYZ, d_workarea +  5, nthreads, 0);
-    if(ierr!=0) return ierr;  
-    ierr = local_reductionR(rho_b, NXYZ, d_workarea +  6, nthreads, 0);
+    // Step 4: external energies
+#ifdef ENABLE_V_EXT
+    kernel_compute_energy_v_ext<<<nblocks, nthreads>>>(it,
+                                                    rho_a, rho_b, nu, 
+                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
+                                                    tau_a, tau_b, 
+                                                    delta,
+                                                    E_ext
+                                                    );
+    ierr = local_reductionR(d_workarea +  4*NXYZ, NXYZ, d_workarea +  4*NXYZ, nthreads, 0);
     if(ierr!=0) return ierr;
+    if( cudaMemcpy( d_workarea+EPOTEXT , d_workarea +  4*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -104;
+#else
+    cuda_set_array_elements(1, d_workarea+EPOTEXT,  0.0, 1); // set this contribution to 0.0
+#endif
     
-    // Step 5: commpute angular momentum
-    kernel_compute_angular_momentum_z<<<nblocks, nthreads>>>(j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z, d_workarea + 7, d_workarea + 8 + NXYZ);
-    ierr = local_reductionR(d_workarea + 7,        NXYZ, d_workarea + 7, nthreads, 0);
+#ifdef ENABLE_DELTA_EXT
+    kernel_compute_energy_delta_ext<<<nblocks, nthreads>>>(it,
+                                                    rho_a, rho_b, nu, 
+                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
+                                                    tau_a, tau_b, 
+                                                    delta,
+                                                    E_ext
+                                                    );
+    ierr = local_reductionR(d_workarea +  4*NXYZ, NXYZ, d_workarea +  4*NXYZ, nthreads, 0);
+    if(ierr!=0) return ierr;
+    if( cudaMemcpy( d_workarea+EPAIREXT , d_workarea +  4*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -105;
+#else
+    cuda_set_array_elements(1, d_workarea+EPAIREXT,  0.0, 1); // set this contribution to 0.0
+#endif
+    
+#ifdef ENABLE_VELOCITY_EXT
+    kernel_compute_energy_velocity_ext<<<nblocks, nthreads>>>(it,
+                                                    rho_a, rho_b, nu, 
+                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
+                                                    tau_a, tau_b, 
+                                                    delta,
+                                                    E_ext
+                                                    );
+    ierr = local_reductionR(d_workarea +  4*NXYZ, NXYZ, d_workarea +  4*NXYZ, nthreads, 0);
+    if(ierr!=0) return ierr;
+    if( cudaMemcpy( d_workarea+EVELEXT , d_workarea +  4*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -105;
+#else
+    cuda_set_array_elements(1, d_workarea+EVELEXT,  0.0, 1); // set this contribution to 0.0
+#endif
+
+    
+    // Step 5: compute particle number
+    ierr = local_reductionR(rho_a, NXYZ, d_workarea +  NPARTA, nthreads, 0);
     if(ierr!=0) return ierr;  
-    ierr = local_reductionR(d_workarea + 8 + NXYZ, NXYZ, d_workarea + 8, nthreads, 0);
+    ierr = local_reductionR(rho_b, NXYZ, d_workarea +  NPARTB, nthreads, 0);
+    if(ierr!=0) return ierr;
+    cuda_scale_array_elements(2, d_workarea +  NPARTA,  DXYZ, 1); // add missing volume element 
+    
+    // Step 6: commpute angular momentum
+    kernel_compute_angular_momentum_z<<<nblocks, nthreads>>>(j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z, d_workarea + LZA, d_workarea + LZB + NXYZ);
+    ierr = local_reductionR(d_workarea + LZA,        NXYZ, d_workarea + LZA, nthreads, 0);
+    if(ierr!=0) return ierr;  
+    ierr = local_reductionR(d_workarea + LZB + NXYZ, NXYZ, d_workarea + LZB, nthreads, 0);
     if(ierr!=0) return ierr;
     
     return 0;
@@ -919,7 +1026,7 @@ __global__ void kernel_form_alpha_j_corr(double *rho_a, double *rho_b,
 }
 
 
-__global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
+__global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
                                          double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
                                          double *alph_a_x, double *alph_a_y, double *alph_a_z, double *alph_b_x, double *alph_b_y, double *alph_b_z, double * laplace_alpha_a, double *laplace_alpha_b,
                                          double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
@@ -940,7 +1047,7 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
     double ja, jb/*, jp*/;
     double /*fr,*/ fra, frb; // regularization functions
 #endif
-#ifdef WORK_IN_ROTATING_FRAME
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
     int ix, iy, iz, i; // need to decode coordinate
 #endif
     
@@ -949,6 +1056,10 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
     
     if(ixyz<NXYZ)
     {
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+#endif
+
         // densities, and correct them
         na=rho_a[ixyz];
         nb=rho_b[ixyz];
@@ -961,6 +1072,10 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
         Va=V_a[ixyz];
         Vb=V_b[ixyz];
         D=delta[ixyz];
+        
+#ifdef ENABLE_DELTA_EXT
+        D = D + macro_delta_ext(ix, iy, iz, it, D);
+#endif
         
         // read gradient corrections
 #ifdef CURRENT_CORRECTIONS
@@ -1104,7 +1219,7 @@ __global__ void kernel_apply_hamiltonian(double *rho_a, double *rho_b,
     }
 }
 
-__global__ void kernel_apply_hamiltonian_bdg(
+__global__ void kernel_apply_hamiltonian_bdg(int it, 
                                          double *V_a, double *V_b, Complex *delta, 
                                          size_t n, Complex *wf_in, Complex *wf_out, 
                                          Complex *wf_d_dx, Complex *wf_d_dy, Complex *wf_laplace
@@ -1115,10 +1230,14 @@ __global__ void kernel_apply_hamiltonian_bdg(
     double Va, Vb;
     Complex D;
 
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+    int ix, iy, iz, i; // need to decode coordinate
+#endif
+        
 #ifdef WORK_IN_ROTATING_FRAME
     Complex gax, gay;
     Complex gbx, gby;
-    int ix, iy; // need to decode coordinate
+    
 #endif
     
     size_t iwf;
@@ -1126,15 +1245,19 @@ __global__ void kernel_apply_hamiltonian_bdg(
     
     if(ixyz<NXYZ)
     {
-        
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+#endif
         // read potentials
         Va=V_a[ixyz];
         Vb=V_b[ixyz];
         D=delta[ixyz];
+      
+#ifdef ENABLE_DELTA_EXT
+        D = D + macro_delta_ext(ix, iy, iz, it, D);
+#endif
         
 #ifdef WORK_IN_ROTATING_FRAME
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        
         gax=Complex(0.0,     dc_Omega_a*(double)(iy-NY/2));
         gbx=Complex(0.0,-1.0*dc_Omega_b*(double)(iy-NY/2)); // NOTE: complex conjugate included
         
@@ -1197,7 +1320,7 @@ __global__ void kernel_compute_qpe(Complex *wf1_u, Complex *wf2_u, Complex *wf1_
     if(ixyz<NXYZ)
     {
         p=thrust::conj(wf1_u[ixyz])*wf2_u[ixyz] + thrust::conj(wf1_v[ixyz])*wf2_v[ixyz];
-        re[ixyz]=p.real();
+        re[ixyz]=p.real()*DXYZ;
     }
 }
 
@@ -1212,9 +1335,9 @@ __global__ void kernel_compute_qpe_norm(Complex *wf1_u, Complex *wf2_u, Complex 
         _wf1_u=wf1_u[ixyz];
         _wf1_v=wf1_v[ixyz];
         p=thrust::conj(_wf1_u)*wf2_u[ixyz] + thrust::conj(_wf1_v)*wf2_v[ixyz];
-        qpe_re[ixyz]=p.real();
+        qpe_re[ixyz]=p.real()*DXYZ;
         // norm
-        norm_re[ixyz]=thrust::norm(_wf1_u)+thrust::norm(_wf1_v);
+        norm_re[ixyz]=(thrust::norm(_wf1_u)+thrust::norm(_wf1_v))*DXYZ;
     }
 }
 
@@ -1265,6 +1388,7 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
 /**
  * Function applies hamiltonian (H-<H>)*Psi.
  * NOTE: this function executes cuFFT
+ * @param it  iteration number
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf_in array with wave-functions (INPUT)
  * @param wf_out array with wave-functions (OUTPUT),
@@ -1293,7 +1417,7 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR 
  * */
-extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
+extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
                             int nthreads)
@@ -1346,7 +1470,7 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
     
 #ifdef BDG_MODE
     // Step 3: apply hamiltonian
-    kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>( 
+    kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>(it,  
                                             V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, (Complex *)wf_laplace
@@ -1376,7 +1500,7 @@ extern "C" int apply_hamiltonian(int n, cufftDoubleComplex *wf_in, cufftDoubleCo
 #endif
     
     // Step 3: apply hamiltonian
-    kernel_apply_hamiltonian<<<nblocks, nthreads>>>(rho_a, rho_b,
+    kernel_apply_hamiltonian<<<nblocks, nthreads>>>(it, rho_a, rho_b,
                                             j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
                                             grad_alpha_a, grad_alpha_a+NXYZ, grad_alpha_a+NXYZ*2, grad_alpha_b, grad_alpha_b+NXYZ, grad_alpha_b+NXYZ*2, laplace_alpha_a, laplace_alpha_b,
                                             grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, 
@@ -1432,8 +1556,8 @@ __global__ void kernel_compute_ovelap(Complex *wf1_u, Complex *wf2_u, Complex *w
     if(ixyz<NXYZ)
     {
         p=thrust::conj(wf1_u[ixyz])*wf2_u[ixyz] + thrust::conj(wf1_v[ixyz])*wf2_v[ixyz];
-        re[ixyz]=p.real();
-        im[ixyz]=p.imag();
+        re[ixyz]=p.real()*DXYZ;
+        im[ixyz]=p.imag()*DXYZ;
     }
 }
 /**
@@ -1668,7 +1792,7 @@ __global__ void kernel_compute_norm(Complex *wf_u, Complex *wf_v, double *norm)
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     if(ixyz<NXYZ)
     {
-        norm[ixyz]=thrust::norm(wf_u[ixyz])+thrust::norm(wf_v[ixyz]);
+        norm[ixyz]=(thrust::norm(wf_u[ixyz])+thrust::norm(wf_v[ixyz]))*DXYZ;
     }
 }
 
@@ -1918,7 +2042,7 @@ extern "C" int get_delta_ext(int datadim, int it, void *deltain, void *data)
     return 0;
 }
 
-__global__ void get_velocity_ext(int it, int spin, double *datax, double *datay, double *dataz)
+__global__ void kernel_get_velocity_ext(int it, int spin, double *datax, double *datay, double *dataz)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
@@ -1945,7 +2069,7 @@ extern "C" int get_velocity_ext(int datadim, int spin, int it, double *data)
     double *vy = wrkspace + 1*NXYZ;
     double *vz = wrkspace + 2*NXYZ;
     
-    get_velocity_ext<<<nblocks, nthreads>>>(it, spin, vx, vy, vz);
+    kernel_get_velocity_ext<<<nblocks, nthreads>>>(it, spin, vx, vy, vz);
     
     if( cudaMemcpy( data , wrkspace, sizeof(double)*NXYZ*3, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;    
     
