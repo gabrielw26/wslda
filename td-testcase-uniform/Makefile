@@ -7,7 +7,7 @@ CXX=mpicc
 NVCC = nvcc 
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=/home2/archive/wslda
+WSLDADIR=/home2/archive/wslda/
 OBJDIR=./obj/
 BINDIR=./
 
