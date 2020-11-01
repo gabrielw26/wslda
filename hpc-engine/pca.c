@@ -87,6 +87,9 @@ int main( int argc , char ** argv )
     size_t  workarea_size=(size_t)5*NXYZ*sizeof(double); // minimal size of workarea
     int mpipackagesize;
     
+    void *extra_data = NULL, *d_extra_data = NULL;
+    size_t extra_data_size;
+    
     // for reporting
     double eF_a, eF_b, eF, Effg;
     double time;
@@ -845,9 +848,36 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
     md.ec=ec; dc_ec=ec; dc_t0=t0; dc_np=np; dc_nwfip=nwfip;
     
+    // ===================================================================================
+    // ================================== EXTRA DATA =====================================
+    // ===================================================================================
+    if(ip==0) extra_data_size = get_extra_data_size(md.params);
+    MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+    if(extra_data_size>0)
+    {
+        if(ip==0) printf("# EXTRA_DATA IS ACTIVE.\n");
+        if(ip==0) printf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+        if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+        {                                                             
+            fprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+            fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            MPI_Finalize() ;
+            /* Arrays will be cleared automatically */
+            return( EXIT_FAILURE ) ; 
+        }
+        
+        if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
+        MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+        
+        // copy extra data to GPU
+        gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
+        gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
+        gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
+    }
+    
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
-    process_params(md.params, kF, mu, 0, NULL); // TODO: Issue #46
+    process_params(md.params, kF, mu, extra_data_size, extra_data); 
 #else
     process_params(md.params, kF, mu);
 #endif
@@ -946,7 +976,7 @@ int main( int argc , char ** argv )
         // Create run log and add entry
         cpu_exec( logger_create_header(execcmd) );
         double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
-        cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
+        cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
     }    
     
     // Create binary files and add initial measurement
@@ -1445,7 +1475,7 @@ int main( int argc , char ** argv )
             printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb, rt);        
             
             double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
-            cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, 0, NULL) ); // TODO: Issue #46
+            cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
         } 
         
         // add binary data
