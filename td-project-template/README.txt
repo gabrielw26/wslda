@@ -14,6 +14,7 @@ STEP 2: Set up compilation environment
     ssh66
     cd name-of-your-project
     source env.sh
+    make 1d or make 2d or make 3d
 
 STEP 3: Set up your problem
 
@@ -23,12 +24,14 @@ STEP 3: Set up your problem
         logger.h (optionally)
         input.txt
         
+    NOTE: You MUST recompile code after each modification of *.h files
+        
 STEP 4: Prepare job submission script & submit
 
-    Edit
-        job.sh
+    Edit job script
+        emacs job.sh
 
-    Submit
+    Submit script
         qsub job.sh
         
     NOTE: qsub can be executed only from login node (2072) 
