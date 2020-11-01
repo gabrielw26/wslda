@@ -34,15 +34,15 @@ __constant__ double dc_Omega_b;
 __constant__ double dc_gBdG;
 #endif
 
-__constant__ double *dc_extra_data;
+__constant__ void *dc_extra_data;
 __constant__ size_t dc_extra_data_size;
 
-// extern "C" int memcopy_H0_UD(RCUNUMBER *U, RCUNUMBER *delta)
-// {
-//     if( cudaMemcpyToSymbol(d_H0_U, &U,     sizeof(RCUNUMBER *))!= cudaSuccess ) return 1;
-//     if( cudaMemcpyToSymbol(d_H0_D, &delta, sizeof(RCUNUMBER *))!= cudaSuccess ) return 2;
-//     return 0;
-// }
+extern "C" int memcopy_extra_data(size_t extra_data_size, void *extra_data)
+{
+    if( cudaMemcpyToSymbol(dc_extra_data,      &extra_data,      sizeof(void *))!= cudaSuccess ) return 1;
+    if( cudaMemcpyToSymbol(dc_extra_data_size, &extra_data_size, sizeof(size_t))!= cudaSuccess ) return 2;
+    return 0;
+}
 
 #ifdef TDWSLDA
 
