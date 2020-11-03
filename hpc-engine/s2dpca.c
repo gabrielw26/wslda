@@ -821,6 +821,7 @@ int main( int argc , char ** argv )
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+    dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
@@ -999,7 +1000,8 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
-        process_params(dc_params, &kF, mu, extra_data_size, extra_data);        
+        process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+        dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
         rt_other+=e_t(0);
         
         // ------------------ diagonalize for each kz ------------------
