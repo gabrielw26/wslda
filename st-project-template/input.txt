@@ -2,7 +2,7 @@
 inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #  
-                                #  5 - start from sd-wslda checkpoint, inprefix points to folder with checkpoint binary file
+                                #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
 
 # ------------------- INPUT/OUTPUT ------------------
 outprefix               test    # all output file with start with this prefix
