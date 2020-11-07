@@ -740,11 +740,6 @@ int main( int argc , char ** argv )
 #endif
     gpu_exec( memcopy_const_params(md.params) );
     
-#ifdef WORK_IN_ROTATING_FRAME
-    double Omega_a=0.0; // reset angular momentum
-    double Omega_b=0.0; // reset angular momentum
-    gpu_exec( memcopy_const_Omega(Omega_a, Omega_b) );
-#endif
 #ifdef BDG_MODE   
     gpu_exec( memcopy_const_BdG(md.aBdG) );
 #endif
@@ -906,10 +901,7 @@ int main( int argc , char ** argv )
             // compute value of quantum friction coefficient
             qfalpha = 0.0; // NOTE: I assume there is no quantum friction during the first steps
             cccoeff = h_smooth_step(t0+it*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
-#ifdef WORK_IN_ROTATING_FRAME
-            // compute rotation velocity
-            gpu_exec( set_Omega(md.params, kF, t0, &Omega_a, &Omega_b) );
-#endif
+
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
@@ -992,10 +984,7 @@ int main( int argc , char ** argv )
             // compute value of quantum friction coefficient
             qfalpha = 0.0; // NOTE: I assume there is no quantum friction during the first steps
             cccoeff = h_smooth_step(t0+it*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
-#ifdef WORK_IN_ROTATING_FRAME
-            // compute rotation velocity
-            gpu_exec( set_Omega(md.params, kF, t0, &Omega_a, &Omega_b) );
-#endif
+
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
             if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
@@ -1168,10 +1157,7 @@ int main( int argc , char ** argv )
             // compute value of quantum friction coefficient and current corrections coeff
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
-#ifdef WORK_IN_ROTATING_FRAME
-            // compute rotation velocity
-            gpu_exec( set_Omega(md.params, kF, t0+(it+1)*dt, &Omega_a, &Omega_b) );
-#endif
+
 #if INTEGRATION_SCHEME==AB3AM4
             gpu_exec( amb_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, md.nthreads) );
 #elif INTEGRATION_SCHEME==AB4AM5
