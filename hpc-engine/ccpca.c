@@ -87,7 +87,7 @@ int main( int argc , char ** argv )
 
     // other technical variables
     int *wf_tbl, *wf_idx_tbl; // table of size np, keeps number of managed wf by each process
-    size_t  workarea_size=(size_t)5*NX*sizeof(double); // minimal size of workarea 
+    size_t  workarea_size=(size_t)PCA_WORKSPACE_SHIFT*NX*sizeof(double)*2; // minimal size of workarea 
     int mpipackagesize;
     
     void *extra_data = NULL, *d_extra_data = NULL;

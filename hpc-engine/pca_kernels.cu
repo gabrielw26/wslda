@@ -1521,7 +1521,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     ierr=compute_divergence_real_vector_f(vecvext_a, vecvext_a+NXYZ, vecvext_a+2*NXYZ, divvext_a, nthreads);
     if(ierr!=0) return ierr+300;
     
-    kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINA, vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ); // NOTE - only SPINA
+    kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINB, vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ); // NOTE - only SPINB
     ierr=compute_divergence_real_vector_f(vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ, divvext_b, nthreads);
     if(ierr!=0) return ierr+400;
 #endif
