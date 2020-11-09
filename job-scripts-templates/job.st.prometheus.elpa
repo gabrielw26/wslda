@@ -1,0 +1,38 @@
+#!/bin/bash -l
+#SBATCH -J test # name that will be displayed in queue system
+#SBATCH --output="test.out" # stdout will be saved here
+#SBATCH -N 2 # here set number of nodes 
+#SBATCH -n 48 # must be N*24
+#SBATCH -A plgtdslda
+#SBATCH --mem-per-cpu=4GB  
+#SBATCH --time=00:30:00 # here set walltime hh:mm:ss
+#SBATCH --mail-type=BEGIN,END,FAIL # notifications for job started, done & fail
+#SBATCH --mail-user=your@email # send-to address
+#SBATCH -p plgrid-large  # or plgrid if your job is small (a few nodes)
+
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/summit
+## 
+## ------ QUEUE SYSTEM ------
+## For submission use:
+##      sbatch job.sh
+## For checking status use:
+##      squeue
+## To kill job use:
+##      scancel pid
+## 
+## ------ COMPUTATION -------     
+## For computation it is recomended to use location:
+## /gpfs/alpine/proj-shared/nph139
+
+cd $SLURM_SUBMIT_DIR 
+
+module load plgrid/libs/elpa/2019.05.001
+module load plgrid/libs/fftw
+
+export I_MPI_FABRICS=shm:dapl
+export I_MPI_DAPL_UD=enable
+
+
+## NOTE: YOU MUST ASSURE: -n=-N*24
+mpiexec -n 48 ./st-wslda-2d input.txt

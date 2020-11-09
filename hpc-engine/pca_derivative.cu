@@ -12,10 +12,6 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 
-// Technical variable - amount of memory that is locked for axiliary array used in apply_hamiltonian
-// i.e: sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT
-#define PCA_WORKSPACE_SHIFT 7
-
 // structure that contains info needed to fast reconstruct the solution
 typedef struct
 {
@@ -650,3 +646,101 @@ extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads
     return 0;
 }
 
+// ================================================================================================
+// =============================== compute_divergence_real_vector_f ===============================
+// ================================================================================================
+__global__ void kernel_compute_divergence_real_vector_f(cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    double kx, ky, kz/*, k2*/;
+    cufftDoubleComplex z, zz, res;
+
+    if(ixyz<NX*NY*(NZ/2+1))
+    {
+        ixyz2ixiyizD2Z(ixyz,ix,iy,iz,i); // decode cartesian coordinates
+        
+        // extract momentum
+        if(ix<NX/2)  kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
+        else         kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
+        
+        if(iy<NY/2)  ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
+        else         ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
+        
+
+        if(iz<NZ/2)  kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz   ); // note: normalization factor is included
+        else         kz=2.*M_PI/( double )LZ/( double )NXYZ * ( double )(iz-NZ); // note: normalization factor is included
+        
+        
+        /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included */
+                                
+        res.x=0.0; res.y=0.0;
+        
+        // dx
+        if(ix==NX/2) kx=0.0; 
+        z=wf_d_dx[ixyz];
+        zz.x=-1.0*kx*z.y;
+        zz.y=     kx*z.x;
+        res.x+=zz.x; res.y+=zz.y;
+            
+        // dy
+        if(iy==NY/2) ky=0.0; 
+        z=wf_d_dy[ixyz];
+        zz.x=-1.0*ky*z.y;
+        zz.y=     ky*z.x;
+        res.x+=zz.x; res.y+=zz.y;
+            
+        // dz
+        if(iz==NZ/2) kz=0.0; 
+        z=wf_d_dz[ixyz];
+        zz.x=-1.0*kz*z.y;
+        zz.y=     kz*z.x;
+        res.x+=zz.x; res.y+=zz.y;
+        
+        wf_d_dz[ixyz]=res; // save result
+                     
+    }
+}
+
+/**
+ * Function computes derivatives of real vector function: dfx/dx,  dfy/dy , dfz/dz
+ * @param fx pointer to real function, x coordinate (INPUT)
+ * @param fy pointer to real function, y coordinate (INPUT)
+ * @param fz pointer to real function, z coordinate (INPUT)
+ * @param divf divergence of vector (fx,fy,fz), ie divf = dfx/dx + dfy/dy + dfz/dz (OUTPUT)
+ *             can be the same as one of input pointers
+ * @return 0-OK, otherwise PROBLEM
+ * */
+extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, 
+                                                double *divf,
+                                                int nthreads)
+{
+    cufftResult cufft_result;
+    
+    // number of blocks
+    int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
+
+    // get pointer to workspace
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
+    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fy = p_fx+NX*NY*(NZ/2+1);
+    cufftDoubleComplex * p_fz = p_fy+NX*NY*(NZ/2+1);
+    
+    // Step 1: go to momentum space
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fx, p_fx);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fy, p_fy);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fz, p_fz);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
+        
+    // Step 2: Multiply by momentum
+    // (ikx*p_fx + iky*p_fy + ikz*p_fz) -> p_fz
+    kernel_compute_divergence_real_vector_f<<<nblocks, nthreads>>>(p_fx, p_fy, p_fz);
+
+    // Step 3: go back to coordinate space
+    cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_fz, divf);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result; 
+    
+    return 0;
+}

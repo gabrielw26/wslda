@@ -176,4 +176,7 @@ double h_smooth_step(double t, double step_start, double step_stop, double T, do
 void symmetrize_densities(double *h_densities);
 
 int copy_input_file(char * input_file, char * file_name);
+
+int wslda_check_settings();
+
 #endif

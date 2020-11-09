@@ -25,11 +25,6 @@ __constant__ double dc_kF; // reference kF
 __constant__ double dc_eF; // reference eF (=kF^2/2)
 __constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2)) 
 
-#ifdef WORK_IN_ROTATING_FRAME
-__constant__ double dc_Omega_a;
-__constant__ double dc_Omega_b;
-#endif
-
 #ifdef BDG_MODE
 __constant__ double dc_gBdG;
 #endif
@@ -102,19 +97,6 @@ extern "C" int memcopy_const_params(double *params)
     
     return 0;
 }
-
-#ifdef WORK_IN_ROTATING_FRAME
-/**
- * This function copies rotating frame velocity
- * */
-extern "C" int memcopy_const_Omega(double Omega_a, double Omega_b)
-{
-    if( cudaMemcpyToSymbol(dc_Omega_a, &Omega_a, sizeof(double))!= cudaSuccess ) return 1;
-    if( cudaMemcpyToSymbol(dc_Omega_b, &Omega_b, sizeof(double))!= cudaSuccess ) return 2;
-    
-    return 0;
-}
-#endif
 
 #ifdef BDG_MODE
 /**
@@ -941,6 +923,7 @@ extern "C" void *pca_cufft_work_area;
 extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, double *df_dz, int nthreads);
 extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double *dfx_dx, double *dfy_dy, double *dfz_dz,int nthreads);
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
+extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
 
 __global__ void kernel_form_alpha_j_corr(double *rho_a, double *rho_b,
                                          double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
@@ -1024,7 +1007,8 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
                                          double *V_a, double *V_b, Complex *delta, 
                                          size_t n, Complex *wf_in, Complex *wf_out, 
                                          Complex *wf_d_dx, Complex *wf_d_dy, double *d_kkz, Complex *wf_laplace, Complex *alphawf_laplace,
-                                         double cccoeff
+                                         double cccoeff,
+                                         double *vx_a, double *vy_a, double *divv_a, double *vx_b, double *vy_b, double *divv_b
                                         )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -1032,13 +1016,13 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
     double na, nb, p;
     double Va, Vb;
     Complex D;
-    double cja, cjb;  
+    double cja=0.0, cjb=0.0;  
     double ja, jb/*, jp*/;
 #ifdef CURRENT_CORRECTIONS
     Complex gax, gay, gbx, gby;
     double /*fr,*/ fra, frb; // regularization functions
 #endif
-#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
     int ix, iy; // need to decode coordinate
 #endif
     
@@ -1047,7 +1031,7 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
     
     if(ixyz<NXY)
     {
-#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
 #endif
         
@@ -1068,10 +1052,18 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         D = D + macro_delta_ext(ix, iy, 0, it, D);
 #endif
         
-        // read gradient corrections
 #ifdef CURRENT_CORRECTIONS
-        cja=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]);
-        cjb=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]);
+        // reset
+        gax=Complex(0.0, 0.0);
+        gay=Complex(0.0, 0.0);
+        gbx=Complex(0.0, 0.0);
+        gby=Complex(0.0, 0.0);
+#endif
+        
+        // read gradient corrections
+#if FUNCTIONAL==ASLDA
+        cja+=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]);
+        cjb+=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]);
         
 //         p=na+nb;
 //         fr =p_regularization(p );
@@ -1080,17 +1072,17 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         fra=p_regularization(na) * cccoeff;
         if(fra==0.0)
         {
-            gax=Complex(0.0, 0.0);
-            gay=Complex(0.0, 0.0);
+            gax+=Complex(0.0, 0.0);
+            gay+=Complex(0.0, 0.0);
         }
         else
         {
             // x-coordinate
             ja=j_a_x[ixyz];
-            gax=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
+            gax+=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
             // y-coordinate
             ja=j_a_y[ixyz];
-            gay=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
+            gay+=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
             // z-coordinate - no current
         }
         
@@ -1098,22 +1090,19 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         frb=p_regularization(nb) * cccoeff;
         if(frb==0.0)
         {
-            gbx=Complex(0.0, 0.0);
-            gby=Complex(0.0, 0.0);
+            gbx+=Complex(0.0, 0.0);
+            gby+=Complex(0.0, 0.0);
         }
         else
         {
             // x-coordinate
             jb=j_b_x[ixyz];
-            gbx=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
+            gbx+=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
             // y-coordinate
             jb=j_b_y[ixyz];
-            gby=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
+            gby+=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
             // z-coordinate - no current
         }
-#else       
-        cja=0.0;
-        cjb=0.0;
 #endif
 
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE    
@@ -1130,14 +1119,15 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         nb=0.25*laplace_alpha_b[ixyz];
 #endif
         
-#ifdef WORK_IN_ROTATING_FRAME
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
+#ifdef ENABLE_VELOCITY_EXT
+        gax+=Complex(0.0, 1.0*vx_a[ixyz]);
+        gbx+=Complex(0.0,-1.0*vx_b[ixyz]); // NOTE: complex conjugate included
         
-        gax+=Complex(0.0,-1.0*dc_Omega_a*(double)(iy-NY/2));
-        gbx+=Complex(0.0,     dc_Omega_b*(double)(iy-NY/2)); // NOTE: complex conjugate included
-        
-        gay+=Complex(0.0,     dc_Omega_a*(double)(ix-NX/2));
-        gby+=Complex(0.0,-1.0*dc_Omega_b*(double)(ix-NX/2)); // NOTE: complex conjugate included
+        gay+=Complex(0.0, 1.0*vy_a[ixyz]);
+        gby+=Complex(0.0,-1.0*vy_b[ixyz]); // NOTE: complex conjugate included
+                
+        cja+=  0.5*divv_a[ixyz];
+        cjb+=  0.5*divv_b[ixyz];
 #endif
         
         // apply to each wave-function
@@ -1214,7 +1204,8 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
 __global__ void kernel_apply_hamiltonian_bdg(int it,
                                          double *V_a, double *V_b, Complex *delta, 
                                          size_t n, Complex *wf_in, Complex *wf_out, 
-                                         Complex *wf_d_dx, Complex *wf_d_dy, double *d_kkz, Complex *wf_laplace
+                                         Complex *wf_d_dx, Complex *wf_d_dy, double *d_kkz, Complex *wf_laplace,
+                                         double *vx_a, double *vy_a, double *divv_a, double *vx_b, double *vy_b, double *divv_b
                                         )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -1223,12 +1214,14 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     double Va, Vb;
     Complex D;
 
-#ifdef WORK_IN_ROTATING_FRAME
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
+    int ix, iy; // need to decode coordinate
+#endif
+
+    double cja=0.0, cjb=0.0;
+#ifdef CURRENT_CORRECTIONS
     Complex gax, gay;
     Complex gbx, gby;
-#endif
-#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
-    int ix, iy; // need to decode coordinate
 #endif
     
     size_t iwf;
@@ -1236,7 +1229,7 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     
     if(ixyz<NXY)
     {
-#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT) || defined(WORK_IN_ROTATING_FRAME)
+#if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
 #endif        
         // read potentials
@@ -1248,14 +1241,15 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
         D = D + macro_delta_ext(ix, iy, 0, it, D);
 #endif
         
-#ifdef WORK_IN_ROTATING_FRAME
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
+#ifdef ENABLE_VELOCITY_EXT
+        gax=Complex(0.0, 1.0*vx_a[ixyz]);
+        gbx=Complex(0.0,-1.0*vx_b[ixyz]); // NOTE: complex conjugate included
         
-        gax=Complex(0.0,-1.0*dc_Omega_a*(double)(iy-NY/2));
-        gbx=Complex(0.0,     dc_Omega_b*(double)(iy-NY/2)); // NOTE: complex conjugate included
-        
-        gay=Complex(0.0,     dc_Omega_a*(double)(ix-NX/2));
-        gby=Complex(0.0,-1.0*dc_Omega_b*(double)(ix-NX/2)); // NOTE: complex conjugate included
+        gay=Complex(0.0, 1.0*vy_a[ixyz]);
+        gby=Complex(0.0,-1.0*vy_b[ixyz]); // NOTE: complex conjugate included
+                
+        cja=  0.5*divv_a[ixyz];
+        cjb=  0.5*divv_b[ixyz];
 #endif
         
         // apply to each wave-function
@@ -1273,12 +1267,25 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
             p = d_kkz[iwf]; // kz
             p = 0.5*p*p;    // kz^2/2
 
-            u+=tu*Complex(Va-dc_mu_a+p, 0.0); // V_a*u
-            v-=tv*Complex(Vb-dc_mu_b+p, 0.0); // V_b*v, note conjugate of complex number (beacuse of "-h*" operator)
+            u+=tu*Complex(Va-dc_mu_a+p,       cja); // V_a*u
+            v-=tv*Complex(Vb-dc_mu_b+p,  -1.0*cjb); // V_b*v, note conjugate of complex number (beacuse of "-h*" operator)
             
             u+=tv*D;                // delta   * v
             v+=tu*thrust::conj(D);  // delta^* * u
 
+#ifdef CURRENT_CORRECTIONS            
+            // read gradients of wf: x-coordinate
+            tu=wf_d_dx[       iwf*NXY+ixyz];
+            tv=wf_d_dx[n*NXY +iwf*NXY+ixyz];
+            u+=tu*gax; 
+            v-=tv*gbx;
+
+            // read gradients of wf: y-coordinate
+            tu=wf_d_dy[       iwf*NXY+ixyz];
+            tv=wf_d_dy[n*NXY +iwf*NXY+ixyz];
+            u+=tu*gay;
+            v-=tv*gby;
+#endif
             
             // kinetic part
             
@@ -1287,8 +1294,6 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
             tv=wf_laplace[n*NXY +iwf*NXY+ixyz];          
             u+=tu*(-0.5); // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_a is given by aa
             v-=tv*(-0.5); // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_b is given by ab    
-            
-            // NOTE: WORK_IN_ROTATING_FRAME is not implemented!!!
      
             // save to global memory wf 
             wf_out[       iwf*NXY+ixyz]=u;
@@ -1386,6 +1391,24 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
     }
 }
 
+#ifdef ENABLE_VELOCITY_EXT
+__global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy;
+    
+    if(ixyz<NXY)
+    {
+        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
+      
+        vx[ixyz]=velocity_ext(ix, iy, 0, it, spin, XAXIS, dc_params, dc_extra_data_size, dc_extra_data);
+        vy[ixyz]=velocity_ext(ix, iy, 0, it, spin, YAXIS, dc_params, dc_extra_data_size, dc_extra_data);
+        
+//         if(ixyz==0) printf("TEST1: %12.6f %12.6f %12.6f %12.6f\n", 0.1*it, vx[ixyz], vy[ixyz], vz[ixyz]);
+    }
+}
+#endif
+
 /**
  * Function applies hamiltonian (H-<H>)*Psi.
  * NOTE: this function executes cuFFT
@@ -1470,12 +1493,34 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                                     V_a, V_b, qfalpha);        
     }
     
+    double *vecvext_a    = NULL;
+    double *divvext_a    = NULL;
+    double *vecvext_b    = NULL;
+    double *divvext_b    = NULL;   
+#ifdef ENABLE_VELOCITY_EXT
+    // set pointers
+    vecvext_a    = (double *)(grad_alpha_a + 14*NXY); // storage for keeping vext=[vx(r),vy(r),vz(r)]
+    divvext_a    = (double *)(grad_alpha_a + 17*NXY); // storage for keeping div(vext) 
+    vecvext_b    = (double *)(grad_alpha_a + 18*NXY); // storage for keeping vext=[vx(r),vy(r),vz(r)]
+    divvext_b    = (double *)(grad_alpha_a + 21*NXY); // storage for keeping div(vext)
+    
+    // fill arrays with data
+    kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINA, vecvext_a, vecvext_a+NXY); // NOTE - only SPINA
+    ierr=compute_divergence_real_vector_f(vecvext_a, vecvext_a+NXY, NULL, divvext_a, nthreads);
+    if(ierr!=0) return ierr+300;
+    
+    kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINB, vecvext_b, vecvext_b+NXY); // NOTE - only SPINB
+    ierr=compute_divergence_real_vector_f(vecvext_b, vecvext_b+NXY, NULL, divvext_b, nthreads);
+    if(ierr!=0) return ierr+400;
+#endif
+    
 #ifdef BDG_MODE
     // Step 3: apply hamiltonian
     kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>(it, 
                                             V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
-                                            (Complex *)wf_d_dx, (Complex *)wf_d_dy, d_kkz, (Complex *)wf_laplace
+                                            (Complex *)wf_d_dx, (Complex *)wf_d_dy, d_kkz, (Complex *)wf_laplace,
+                                            vecvext_a, vecvext_a+NXY, divvext_a, vecvext_b, vecvext_b+NXY, divvext_b
                                                    ); 
 #else
     // Step 2: Prepare data neded for current corrections and effective mass handling
@@ -1509,7 +1554,8 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                             V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
-                                            cccoeff
+                                            cccoeff,
+                                            vecvext_a, vecvext_a+NXY, divvext_a, vecvext_b, vecvext_b+NXY, divvext_b
                                                    );    
 #endif
     

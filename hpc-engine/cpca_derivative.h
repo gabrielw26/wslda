@@ -12,4 +12,5 @@ int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, double *df_
 int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double *dfx_dx, double *dfy_dy, double *dfz_dz,int nthreads);
 int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 int compute_laplace(int n, cufftDoubleComplex *wf, cufftDoubleComplex *wf_laplace, int nthreads);
+int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
 #endif

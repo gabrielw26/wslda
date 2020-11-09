@@ -13,6 +13,7 @@
 
 #define ALLOCATE_MD_STRUCTURE
 #include "pca_utils.h"
+#include "wslda_errors.h"
 
 // allocate global metadata structure
 metadata_t md = 
@@ -525,5 +526,13 @@ int copy_input_file(char * input_file, char * file_name)
     fclose(inp);
     fclose(log);
     
+    return 0;
+}
+
+int wslda_check_settings()
+{
+#if FUNCTIONAL==BDG
+    if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+#endif
     return 0;
 }
