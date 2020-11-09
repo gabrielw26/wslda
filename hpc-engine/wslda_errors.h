@@ -22,5 +22,6 @@ void report_error(int errcode, FILE *stream);
 #define WSLDA_ERR_INOCRRECT_PQ 10005
 #define WSLDA_ERR_S3DPCA_INFO_FILES 10006
 #define WSLDA_ERR_S3DPCA_INFO_FILES_MISSING_FILE 10007
+#define WSLDA_ERR_ABDG_NOT_SET 10008
 
 #endif

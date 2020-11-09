@@ -192,6 +192,8 @@ int main( int argc , char ** argv )
     
     if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NX*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
     
+    cpu_exec( wslda_check_settings() );
+    
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================
     // ====================================================================================    

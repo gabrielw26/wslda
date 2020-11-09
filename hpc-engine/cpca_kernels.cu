@@ -1016,7 +1016,7 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
     double na, nb, p;
     double Va, Vb;
     Complex D;
-    double cja, cjb;  
+    double cja=0.0, cjb=0.0;  
     double ja, jb/*, jp*/;
 #ifdef CURRENT_CORRECTIONS
     Complex gax, gay, gbx, gby;
@@ -1052,13 +1052,13 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         D = D + macro_delta_ext(ix, iy, 0, it, D);
 #endif
         
+#ifdef CURRENT_CORRECTIONS
         // reset
-        cja=0.0;
-        cjb=0.0;
         gax=Complex(0.0, 0.0);
         gay=Complex(0.0, 0.0);
         gbx=Complex(0.0, 0.0);
         gby=Complex(0.0, 0.0);
+#endif
         
         // read gradient corrections
 #if FUNCTIONAL==ASLDA

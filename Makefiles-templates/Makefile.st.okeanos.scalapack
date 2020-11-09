@@ -1,0 +1,18 @@
+# LOAD MODULES BEFORE COMPILATION
+# 
+# setenv LD_LIBRARY_PATH /opt/cray/diag/lib
+# module load cray-fftw
+
+# COMPILER
+CXX=cc
+
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
+OBJDIR=./obj/
+BINDIR=./
+
+# COMPILER FLAGS
+CFLAGS= -O3 
+LIBS=-lfftw3 -lm -L/opt/cray/diag/lib
+
+include mk.st
