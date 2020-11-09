@@ -70,11 +70,6 @@
 // This is less acurate method than default, but we keep it for compability with older results
 // #define TAU_COMPUTATION_VIA_GRADIENTS
 
-// active rotating frame framework
-// NOTE: in rotating frame the code uses constant variables dc_Omega_a and dc_Omega_b
-// NOTE: the systems rotates along z-axis
-// #define WORK_IN_ROTATING_FRAME
-
 #endif
 
 // Number of self-consistent iterations for U and delta computation
@@ -192,6 +187,14 @@
 #define PLAN_D2Z_ONE 2
 #define PLAN_Z2D_ONE 3
 
+// Technical variable - amount of memory that is locked for axiliary array used in apply_hamiltonian
+// i.e: sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT
+#define PCA_WORKSPACE_SHIFT 7
+#ifdef ENABLE_VELOCITY_EXT
+#undef PCA_WORKSPACE_SHIFT
+#define PCA_WORKSPACE_SHIFT 11
+#endif
+
 // Target machine
 // #define TARGET_MACHINE TITAN
 // #define TARGET_MACHINE DWARF
@@ -213,7 +216,7 @@
 #define FAST_CONST_EFFECTIVE_MASS_MODE
 #endif
 
-#ifdef WORK_IN_ROTATING_FRAME
+#ifdef ENABLE_VELOCITY_EXT
 #define CURRENT_CORRECTIONS
 #undef FAST_CONST_EFFECTIVE_MASS_MODE
 #endif

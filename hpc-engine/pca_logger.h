@@ -53,11 +53,6 @@ int create_header_of_runlog(const char *execcmd, double kF, double Effg, double 
     fprintf(log,"# UD_MIX_COEFF=%f\n", UD_MIX_COEFF);
     fprintf(log,"# DENSEPSILON=%g\n", DENSEPSILON);
     fprintf(log,"# N_STABILITY_CRITERIA=%f\n", N_STABILITY_CRITERIA);
-#ifdef WORK_IN_ROTATING_FRAME
-    fprintf(log,"# WORK_IN_ROTATING_FRAME: YES\n");
-#else
-    fprintf(log,"# WORK_IN_ROTATING_FRAME: NO\n");
-#endif 
 #ifdef STORE_QPE
     fprintf(log,"# STORE_QPE: YES\n");
 #else

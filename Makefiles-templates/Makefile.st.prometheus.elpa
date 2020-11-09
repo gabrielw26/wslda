@@ -1,0 +1,18 @@
+# LOAD MODULES BEFORE COMPILATION
+# 
+# module load plgrid/libs/elpa/2019.05.001
+# module load plgrid/libs/fftw
+
+# COMPILER
+CXX=mpiicc
+
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=../
+OBJDIR=./obj/
+BINDIR=./
+
+# COMPILER FLAGS
+CFLAGS= -O3 -I/net/software/local/elpa/2019.05.001/include/elpa-2019.05.001/
+LIBS=-lfftw3 -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lstdc++ -ldl -lelpa
+
+include mk.st

@@ -35,10 +35,6 @@ void process_params(double *params, double kF, double *mu);
 #endif
 int memcopy_const_params(double *params);
 
-#ifdef WORK_IN_ROTATING_FRAME
-int memcopy_const_Omega(double Omega_a, double Omega_b);
-int set_Omega(double *params, double kF, double time, double *Omega_a, double *Omega_b);
-#endif
 #ifdef BDG_MODE
 int memcopy_const_BdG(double aBdG);
 #endif

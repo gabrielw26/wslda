@@ -62,6 +62,11 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tIf iogroups is set correctly this error indicates that binary files\n");
             fprintf(stream, "\t   with wave-functions from static code may to be damaged.\n");
             break;
+            
+        case WSLDA_ERR_ABDG_NOT_SET:
+            fprintf(stream, "\tFor calculations with FUNCTIONAL==BDG\n");
+            fprintf(stream, "\tit is required to set aBdG in input file!\n");
+            break;
         
         default: 
             fprintf(stream, "\tThis error doesn not have description.\n");
