@@ -67,6 +67,22 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tFor calculations with FUNCTIONAL==BDG\n");
             fprintf(stream, "\tit is required to set aBdG in input file!\n");
             break;
+            
+        case WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA:
+            fprintf(stream, "\tTD code cannot load data from checkpoint files!\n");
+            fprintf(stream, "\tSuggestions that may help to solve the problem:\n");
+            fprintf(stream, "\t\t- inprefix should point to folder with checkpoint files\n");
+            fprintf(stream, "\t\t- you should have read permission to checkpoint files\n");
+            fprintf(stream, "\t\t- make sure you use the same value of MPI_NP_PER_IO_GROUP as you used for writing\n");
+            break;
+            
+        case WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_NWF:
+            fprintf(stream, "\tTD code cannot read header of checkpoint files!\n");
+            fprintf(stream, "\tSuggestions that may help to solve the problem:\n");
+            fprintf(stream, "\t\t- inprefix should point to folder with checkpoint files\n");
+            fprintf(stream, "\t\t- you should have read permission to checkpoint files\n");
+            fprintf(stream, "\t\t- make sure you use the same value of MPI_NP_PER_IO_GROUP as you used for writing\n");
+            break;
         
         default: 
             fprintf(stream, "\tThis error doesn not have description.\n");

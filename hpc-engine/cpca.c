@@ -349,7 +349,7 @@ int main( int argc , char ** argv )
     else if(md.inittype==5) 
     {
         // allocate memory for my wf
-        load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany);
+        cpu_exec( load_nwf (MPI_COMM_WORLD, md.inprefix, &nwf, &nwfip, HowMany) );
         cppmallocl(h_wavefun, NXY*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkz, nwfip,double);
@@ -645,20 +645,20 @@ int main( int argc , char ** argv )
         b_t();
         size_t memsize;
 #if INTEGRATION_SCHEME==AB3AM4
-        load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
+         cpu_exec( load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                   d_wf, d_fkm1, d_fkm2, d_fkm3, 
 		  d_potentials, &t0, 
                   &nwf, &nwfip,
                   h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,		  
-		  HowMany);
+		  HowMany) );
         memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
-        load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
+        cpu_exec( load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
                      d_potentials, &t0,
                      &nwf, &nwfip,
                      h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg,
-                     HowMany);
+                     HowMany) );
         memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #else
         CHECK PCA_SETTINGS.H
