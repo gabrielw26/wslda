@@ -54,6 +54,9 @@ int main( int argc , char ** argv )
     double kF;
 
     int HowMany = 24;
+#ifdef MPI_NP_PER_IO_GROUP
+    HowMany=MPI_NP_PER_IO_GROUP;
+#endif
     int gradients_computed = 1; // flag indicating if code uses gradients in computaation, by default equal 1
     
     // arrays

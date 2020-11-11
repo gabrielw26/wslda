@@ -1,13 +1,12 @@
 /**
  * Define lattice size and lattice spacing.
- * NOTE: presently only DX=DY=DZ=1 is implemented. 
  * */
 #define NX 8
 #define NY 10
 #define NZ 12
 
 #define DX 1.0
-#define DY 1.0                                                                                                                                       
+#define DY 1.0
 #define DZ 1.0
 
 /**
@@ -60,6 +59,14 @@
  * and in consequence computing time decreases by factor of two
  * */
 // #define SPINSYMMETRY_MODE
+
+/**
+ * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
+ * Performance of read/write checkpoint depends on the number of writes involved in IO process,
+ * and optimal value depends on the computer. 
+ * Use the default value (24) unless you are not satisfied with IO performance. 
+ * */
+#define MPI_NP_PER_IO_GROUP 24
 
 /**
  * Active this flag in order to store quasi-particle energies for each measurement.
