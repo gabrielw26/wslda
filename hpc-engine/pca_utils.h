@@ -67,8 +67,8 @@ typedef struct
     int mb;                             // CBLACS grid, default mb=32
     int nb;                             // CBLACS grid, default nb=32
     
-    // TSUBAME parameter
-    int tsubamenodes; // number of nodes used in calculations on tsubame computer
+    // GPUS distribution
+    int gpuspernode; // number of gpus per node, defualt=1 
     
     // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
