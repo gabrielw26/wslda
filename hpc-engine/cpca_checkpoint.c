@@ -32,6 +32,7 @@ int load_nwf (MPI_Comm comm, char* inprefix,
 
  int comm_size, comm_rank;
  int nr, ierr;
+ *nwf=-1;
 
  size_t shift_0;
 
@@ -51,9 +52,7 @@ int load_nwf (MPI_Comm comm, char* inprefix,
  MPI_File_open (comm_io, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
 
  if ( in == NULL ) {
-      perror ( "Unable to open the file" );
-      MPI_Abort( MPI_COMM_WORLD , -1 );
-      exit ( EXIT_FAILURE );
+    return WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_NWF;
  }
 
  shift_0 = sizeof(double);
@@ -65,6 +64,8 @@ int load_nwf (MPI_Comm comm, char* inprefix,
  getnwfip( comm_rank , comm_size , *nwf , nwfip_out );
 
  MPI_File_close (&in);
+ 
+ if(*nwf<=0) return WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_NWF;
 
  return 0;
 }         
@@ -104,9 +105,7 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
  MPI_File_open (comm_io, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
 
  if ( in == NULL ) {
-    perror ( "Unable to open the file" );
-    MPI_Abort( MPI_COMM_WORLD , -1 ); 
-    exit ( EXIT_FAILURE );
+    return WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA;
  }
 
  MPI_File_read_at(in, 0, t0, 1, MPI_DOUBLE, &status);
@@ -344,9 +343,7 @@ char file_name[256];
  MPI_File_open (comm_io, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
 
  if ( in == NULL ) {
-    perror ( "Unable to open the file" );
-    MPI_Abort( MPI_COMM_WORLD , -1 );
-    exit ( EXIT_FAILURE );
+    return WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA;
  }
 
  MPI_File_read_at(in, 0, t0, 1, MPI_DOUBLE, &status);

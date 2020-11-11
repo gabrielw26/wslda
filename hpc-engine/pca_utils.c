@@ -54,7 +54,7 @@ metadata_t md =
 0, // q;                    
 32, // mb;                   
 32, // nb;    
-0, // tsubamenodes
+1, // gpuspernode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 0.5, // linearmixing
@@ -207,8 +207,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.mb);
         else if (strcmp (tag,"nb") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nb);
-        else if (strcmp (tag,"tsubamenodes") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.tsubamenodes);
+        else if (strcmp (tag,"gpuspernode") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
         // kz-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
