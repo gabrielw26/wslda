@@ -74,6 +74,41 @@
  * */
 // #define STORE_QPE
 
+/**
+ * Activate this flag in order to print to stdout
+ * applied mapping mpi-process <==> device-id.
+ * */
+// #define PRINT_GPU_DISTRIBUTION
+
+/**
+ * Activate this flag if target machine has non-standard distribution of GPUs. 
+ * In such case you need to provide body of function `assign_deviceid_to_mpi_process`.
+ * If this flag is commented-out it is assumed that code is running on a machine 
+ * with uniformly distributed GPU cards accross the nodes, 
+ * and each node has `gpuspernode` (input file paramater) cards.
+ * */
+// #define CUSTOM_GPU_DISTRIBUTION
+
+/**
+ * This function is used to assign unique device-id to mpi process.
+ * @param comm MPI communicator
+ * @return device-id assign to the process extracted by function MPI_Comm_rank(...)
+ * DO NOT REMOVE STATEMENT `#if ... BELOW !!!
+ * */
+#if defined(CUSTOM_GPU_DISTRIBUTION) && defined(TDWSLDA_MAIN)
+int assign_deviceid_to_mpi_process(MPI_Comm comm)
+{
+    int np, ip;
+    MPI_Comm_size(comm, &np);
+    MPI_Comm_rank(comm, &ip);
+    
+    // assign here deviceid to process with ip=iam
+    int deviceid=0;
+    
+    return deviceid;
+}
+#endif
+
 // setting code in testing mode with uniform system
 #define UNIFORM_TEST_MODE
 

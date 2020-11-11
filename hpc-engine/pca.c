@@ -3,6 +3,8 @@
 // Authors:
 // Gabriel Wlazlowski <gabriel.wlazlowski@pw.edu.pl>
 
+#define TDWSLDA_MAIN
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -197,66 +199,34 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================
     // ====================================================================================    
-#if TARGET_MACHINE == TITAN
-    if(ip==0) printf("# MACHINE: TITAN\n");
     int deviceId=0;
-//     printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
-    gpu_exec( set_gpu(deviceId) );
+#ifdef CUSTOM_GPU_DISTRIBUTION
+    if(ip==0) printf("# EXECUTING `assign_deviceid_to_mpi_process` TO GET GPUS DISTRIBUTION ACROSS THE SYSTEM\n");
+    deviceId = assign_deviceid_to_mpi_process(MPI_COMM_WORLD);
+#else
+    if(ip==0) printf("# ASSUMING STANDARD DISTRIBUTION OF GPUS ACROSS THE SYSTEM [gpuspernode=%d]\n", md.gpuspernode);
+    deviceId = ip % md.gpuspernode;
 #endif
     
-#if TARGET_MACHINE == TSUBAME
-    if(ip==0) printf("# MACHINE: TSUBAME\n");
+#ifdef PRINT_GPU_DISTRIBUTION
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    int deviceId = ip % 4;
-//     printf("# Process ip=%d on node %s uses deviceId=%d\n", ip, processor_name, deviceId);
-    gpu_exec( set_gpu(deviceId) );
+    printf("# PROCESS ip=%d RUNNING ON NODE %s USES device-id=%d\n", ip, processor_name, deviceId);
 #endif
-    
-#if TARGET_MACHINE == DWARF
-    if(ip==0) printf("# MACHINE: DWARF\n");
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-    int *ompi_local_rank;
-    ompi_local_rank = (int *)malloc(sizeof(int)*np);
-    int ompi_ppn=4;
-    if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    MPI_Allgather(&ompi_ppn,1,MPI_INT,ompi_local_rank,1,MPI_INT,MPI_COMM_WORLD);
-    int ompi_i=0, ompi_j;
-    while(ompi_i<np)
-    {
-        if(ompi_local_rank[ompi_i]==8)
-        {
-            for(ompi_j=0; ompi_j<8; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=8;
-        }
-        else
-        {
-            for(ompi_j=0; ompi_j<4; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=4;
-        }
-    }
-
-    int deviceId=ompi_local_rank[ip];
-    printf("ip=%d running on machine `%s` uses device number %d\n",ip, processor_name, deviceId);
-    free(ompi_local_rank);
-
-    // now you can use deviceId for set device
     gpu_exec( set_gpu(deviceId) );
-#endif
-    
-#if TARGET_MACHINE == DWARF_ONE_NODE
-    if(ip==0) printf("# MACHINE: DWARF_ONE_NODE\n");
-    int deviceId=ip;
-//     printf("# Process ip=%d uses deviceId=%d\n", ip, deviceId);
-    gpu_exec( set_gpu(deviceId) );
-#endif
-    
+        
     if(ip==0) printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(ip==0) printf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+#if FUNCTIONAL==BDG
+    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA    
+    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA    
+    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+#elif FUNCTIONAL==CUSTOMEDF    
+    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
+#endif
     
     // ====================================================================================
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================
@@ -817,7 +787,7 @@ int main( int argc , char ** argv )
         {
             double memsize_gb = (double)(memsize) / pow(2,30);
             printf("# CHECKPOINT INFO: MODE=READ: DATA SIZE=%12.2f GB\n",  memsize_gb);
-            printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
+            printf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
             printf("# CHECKPOINT INFO: READ TIME=%12.2f sec\n", rt);
             printf("# CHECKPOINT INFO: READ SPEED=%12.3f GB/sec\n", memsize_gb/rt);
         }
@@ -1535,7 +1505,7 @@ int main( int argc , char ** argv )
         {
             double memsize_gb = (double)(memsize) / pow(2,30);
             printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
-            printf("# CHECKPOINT INFO: HowMany=%d.\n", HowMany);
+            printf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
             printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
             printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
             sprintf(file_name, "%s_check.stamp", md.outprefix);
