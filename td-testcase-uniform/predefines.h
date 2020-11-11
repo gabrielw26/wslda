@@ -78,7 +78,7 @@
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-// #define PRINT_GPU_DISTRIBUTION
+#define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 
@@ -87,7 +87,7 @@
  * with uniformly distributed GPU cards accross the nodes, 
  * and each node has `gpuspernode` (input file paramater) cards.
  * */
-// #define CUSTOM_GPU_DISTRIBUTION
+#define CUSTOM_GPU_DISTRIBUTION
 
 /**
  * This function is used to assign unique device-id to mpi process.
@@ -104,6 +104,35 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     
     // assign here deviceid to process with ip=iam
     int deviceid=0;
+    
+    if(ip==0) printf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name, &name_len);
+    int *ompi_local_rank;
+    ompi_local_rank = (int *)malloc(sizeof(int)*np);
+    int ompi_ppn=4;
+    if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
+    if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
+    if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
+    MPI_Allgather(&ompi_ppn,1,MPI_INT,ompi_local_rank,1,MPI_INT,MPI_COMM_WORLD);
+    int ompi_i=0, ompi_j;
+    while(ompi_i<np)
+    {
+        if(ompi_local_rank[ompi_i]==8)
+        {
+            for(ompi_j=0; ompi_j<8; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
+            ompi_i+=8;
+        }
+        else
+        {
+            for(ompi_j=0; ompi_j<4; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
+            ompi_i+=4;
+        }
+    }
+
+    deviceid=ompi_local_rank[ip];
+    free(ompi_local_rank);
     
     return deviceid;
 }
