@@ -22,10 +22,10 @@ metadata_t md =
 1, //measurements;         
 1, // timesteps;            
 0.01, //dt;                
-0.0, // kc;                
-0.0, //ec;                
+M_PI/DX, // kc;                
+M_PI*M_PI/(2.*DX*DX), //ec;                
 "none", // inprefix
-"pca", // outprefix
+"wslda", // outprefix
 512, // nthreads;             
 1000000, // batch;                
 0, // overwrite;            
