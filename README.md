@@ -29,4 +29,4 @@ For more details go to [Wiki Pages](http://git2.if.pw.edu.pl/gabrielw/cold-atoms
 ### Authors
 * Gabriel Wlazłowski, Warsaw University of Technology,<br/> Main developer
 * Maciej Marchwiany, Interdisciplinary Centre for Mathematical and Computational Modelling (ICM), <br/> contribution to _td-wslda-3d_ code (2016-2018)
-* Wojciech Pudełko, Warsaw University of Technology,<br/> Implmentation of Broyden algorithm (engineer thesis, 2020)
+* Wojciech Pudełko, Warsaw University of Technology,<br/> Implementation of Broyden algorithm (engineer thesis, 2020)
