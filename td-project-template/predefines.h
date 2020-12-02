@@ -84,8 +84,8 @@
  * Activate this flag if target machine has non-standard distribution of GPUs. 
  * In such case you need to provide body of function `assign_deviceid_to_mpi_process`.
  * If this flag is commented-out it is assumed that code is running on a machine 
- * with uniformly distributed GPU cards accross the nodes, 
- * and each node has `gpuspernode` (input file paramater) cards.
+ * with uniformly distributed GPU cards across the nodes, 
+ * and each node has `gpuspernode` (input file parameter) cards.
  * */
 #define CUSTOM_GPU_DISTRIBUTION
 

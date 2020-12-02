@@ -902,9 +902,10 @@ int main( int argc , char ** argv )
             for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) if(densall.rho_a[ixyz]+densall.rho_b[ixyz]>_max_dens) _max_dens=densall.rho_a[ixyz]+densall.rho_b[ixyz];
             kF = pow(3.*M_PI*M_PI*_max_dens,1./3.);
         }
-        
+#ifndef UNIFORM_TEST_MODE        
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
+#endif
         if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
