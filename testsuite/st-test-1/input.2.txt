@@ -8,7 +8,7 @@ inittype                0       #  0 - create uniform solution and evolve it
                                 #  5 - start from sd-wslda checkpoint, inprefix points to folder with checkpoint binary file
 
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test1
+outprefix               test2
 inprefix                none
 overwrite               1       # allow for overwriting results
 checkpoint              1       # do checkpoints after each iteration
@@ -36,7 +36,7 @@ maxiters                200     # maximum number of iterations, default=10000
 temperature             0.1      # requested temperature in units of eF
 # referencekF             1.0    # reference kF
 aBdG                    -0.9   # akF about 0.9
-spinsymmetry            1       # set to 1 if you want to impose Na=Nb
+spinsymmetry            0       # set to 1 if you want to impose Na=Nb
 nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy

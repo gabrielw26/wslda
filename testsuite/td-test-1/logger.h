@@ -105,5 +105,23 @@ int logger(FILE *log,
     );
     
     lineid++; // new line 
+    
+    // for testsuite
+    char fname [512];
+    sprintf(fname,"%s.cmp", md.outprefix);
+    FILE *fcmp = fopen(fname, "w");
+    fprintf(fcmp,"npart[SPINA]: %20.10g\n", npart[SPINA]);
+    fprintf(fcmp,"npart[SPINB]: %20.10g\n", npart[SPINB]);
+    fprintf(fcmp,"energy[EKIN]: %20.10g\n", energy[EKIN]/Effg);
+    fprintf(fcmp,"energy[EPOT]: %20.10g\n", energy[EPOT]/Effg);
+    fprintf(fcmp,"energy[EPAIR]: %20.10g\n", energy[EPAIR]/Effg);
+    fprintf(fcmp,"energy[ECURRENT]: %20.10g\n", energy[ECURRENT]/Effg);
+    fprintf(fcmp,"energy[EPOTEXT]: %20.10g\n", energy[EPOTEXT]/Effg);
+    fprintf(fcmp,"energy[EPAIREXT]: %20.10g\n", energy[EPAIREXT]/Effg);
+    fprintf(fcmp,"energy[EVELEXT]: %20.10g\n", energy[EVELEXT]/Effg);
+    fprintf(fcmp,"mu[SPINA]: %20.10g\n",mu[SPINA]/eF);
+    fprintf(fcmp,"mu[SPINB]: %20.10g\n",mu[SPINB]/eF); 
+    fclose(fcmp);
+    
     return 0;
 }

@@ -9,12 +9,13 @@ inittype                0       #  0 - create uniform solution and evolve it
                                 #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                  
        
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test
+outprefix               test1
 inprefix                none
 overwrite               1
 iogroups                8      # number of IO groups
 checkpoint              0       # do checkpoint at the end of calculation?
 walltime                11.9    # after this time force checkpoint [hr]
+gpuspernode             4
 
 # list of variables for writing
 # all = density delta current nu tau u v_ext delta_ext velocity_ext

@@ -1,13 +1,13 @@
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 8
-#define NY 10
-#define NZ 12
+#define NX 12
+#define NY 14
+#define NZ 16
 
-#define DX 1.0
-#define DY 1.0                                                                                                                                       
-#define DZ 1.0
+#define DX 1.2
+#define DY 1.2                                                                                                                                       
+#define DZ 1.2
 
 /**
  * Select functional:

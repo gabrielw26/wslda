@@ -1,13 +1,13 @@
 /**
  * Define lattice size and lattice spacing.
  * */
-#define NX 8
-#define NY 10
-#define NZ 12
+#define NX 12
+#define NY 14
+#define NZ 16
 
-#define DX 1.0
-#define DY 1.0
-#define DZ 1.0
+#define DX 1.2
+#define DY 1.2
+#define DZ 1.2
 
 /**
  * Select functional:
@@ -58,7 +58,7 @@
  * In such case, the evolves only wave-functions for single spin component
  * and in consequence computing time decreases by factor of two
  * */
-// #define SPINSYMMETRY_MODE
+#define SPINSYMMETRY_MODE
 
 /**
  * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
@@ -87,7 +87,7 @@
  * with uniformly distributed GPU cards across the nodes, 
  * and each node has `gpuspernode` (input file parameter) cards.
  * */
-#define CUSTOM_GPU_DISTRIBUTION
+// #define CUSTOM_GPU_DISTRIBUTION
 
 /**
  * This function is used to assign unique device-id to mpi process.

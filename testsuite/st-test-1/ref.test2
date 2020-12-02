@@ -1,0 +1,13 @@
+# spodziwane wyniki dla testu
+# Zmienna              liczba               tolerancja
+npart[SPINA]:          79.00000349              1.0e-3
+npart[SPINB]:           80.0000019              1.0e-3
+energy[EKIN]:          1.796382188              1.0e-3
+energy[EPOT]:        -0.5272708008              1.0e-3
+energy[EPAIR]:        -0.8583979913             1.0e-3
+energy[ECURRENT]:                    0          1.0e-3
+energy[EPOTEXT]:                    0           1.0e-3
+energy[EPAIREXT]:                    0          1.0e-3
+energy[EVELEXT]:                    0           1.0e-3
+mu[SPINA]:          0.325018229                 1.0e-3
+mu[SPINB]:         0.5657278448                 1.0e-3
