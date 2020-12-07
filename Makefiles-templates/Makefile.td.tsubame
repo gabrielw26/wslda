@@ -1,0 +1,22 @@
+# LOAD BEFORE COMPILATION
+# 
+# source env.sh
+
+# COMPILERS
+CXX=mpicc
+NVCC = nvcc 
+
+# DIRECTORY SETTINGS (must end with /)
+WSLDADIR=/gs/hs1/hp190063/share/wslda/
+OBJDIR=./obj/
+BINDIR=./
+
+# COMPILER FLAGS
+CFLAGS= -O3 
+NVCCFLAGS = -arch sm_60 -O3 
+
+# LIBRARIES
+LIBS=-lcudart -lcufft -lm
+
+
+include mk.td
