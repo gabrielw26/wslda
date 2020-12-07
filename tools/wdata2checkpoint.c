@@ -83,7 +83,7 @@ int main( int argc , char ** argv )
     for(i=0; i<DENSDIM; i++) h_densities[i]=0.0;
     for(i=0; i<POTDIM;  i++) h_potentials[i]=0.0;
     for(i=0; i< ENERGYITEMS; i++) energy[i] = 0.0;
-    
+        
     int blocklength = wdata_get_blocklength(&md);
     double complex *nu = (double complex *)(h_densities +  0*blocklength);
     
@@ -112,6 +112,10 @@ int main( int argc , char ** argv )
     double *A_b_x = (double *)(h_potentials +  9*blocklength);
     double *A_b_y = (double *)(h_potentials + 10*blocklength);
     double *A_b_z = (double *)(h_potentials + 11*blocklength);
+    
+    // alpha is special case
+    for(i=0; i<blocklength; i++) alpha_a[i]=1.0;
+    for(i=0; i<blocklength; i++) alpha_b[i]=1.0;
     
     // fill data
     wdata_read_cycle(&md, "density_a", cycleid, rho_a);
