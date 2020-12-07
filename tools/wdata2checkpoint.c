@@ -30,11 +30,14 @@ int main( int argc , char ** argv )
 {
     printf("CONVERTER OF WDATA TO CHECKPOINT FILE\n");
     
-    if(argc!=3)
+    if(argc!=3 && argc!=4)
     {
         printf("Usage: %s file.wtxt outprefix\n", argv[0]);
+        printf("\tor\n");
+        printf("Usage: %s file.wtxt outprefix cycleid\n", argv[0]);
         printf("\tfile.wtxt    - metadata file\n");
-        printf("\toutprefix    - for new files, metadata file will be written to outprefix.wtxt\n");
+        printf("\toutprefix    - checkpoint will be written to outprefix\n");
+        printf("\tcycleid       - use given cycleid to create checkpoint file, default: cycleid=last cycle \n");
         return 0;
     }
     
@@ -46,6 +49,10 @@ int main( int argc , char ** argv )
     printf("READING FILE: `%s`\n", argv[1]);
     ierr = wdata_parse_metadata_file(argv[1], &md);
     if(ierr!=0) {printf("Cannot read metadata file!\n"); return 1;} 
+    
+    int cycleid = md.cycles-1;
+    if(argc==4) cycleid = atoi(argv[3]);
+    printf("USING cycleid=%d AS INPUT DATA\n", cycleid);
     
     // prepare forlder for checkpoint
     char cmd[1024];
@@ -76,7 +83,7 @@ int main( int argc , char ** argv )
     for(i=0; i<DENSDIM; i++) h_densities[i]=0.0;
     for(i=0; i<POTDIM;  i++) h_potentials[i]=0.0;
     for(i=0; i< ENERGYITEMS; i++) energy[i] = 0.0;
-    
+        
     int blocklength = wdata_get_blocklength(&md);
     double complex *nu = (double complex *)(h_densities +  0*blocklength);
     
@@ -106,22 +113,26 @@ int main( int argc , char ** argv )
     double *A_b_y = (double *)(h_potentials + 10*blocklength);
     double *A_b_z = (double *)(h_potentials + 11*blocklength);
     
-    // fill data
-    wdata_read_cycle(&md, "density_a", md.cycles-1, rho_a);
-    wdata_read_cycle(&md, "density_b", md.cycles-1, rho_b);
-    wdata_read_cycle(&md, "tau_a", md.cycles-1, tau_a);
-    wdata_read_cycle(&md, "tau_b", md.cycles-1, tau_b);
-    wdata_read_cycle(&md, "current_a", md.cycles-1, j_a_x);
-    wdata_read_cycle(&md, "current_b", md.cycles-1, j_b_x);
-    wdata_read_cycle(&md, "nu", md.cycles-1, nu);
+    // alpha is special case
+    for(i=0; i<blocklength; i++) alpha_a[i]=1.0;
+    for(i=0; i<blocklength; i++) alpha_b[i]=1.0;
     
-    wdata_read_cycle(&md, "u_a", md.cycles-1, V_a);
-    wdata_read_cycle(&md, "u_b", md.cycles-1, V_b);
-    wdata_read_cycle(&md, "alpha_a", md.cycles-1, alpha_a);
-    wdata_read_cycle(&md, "alpha_b", md.cycles-1, alpha_b);
-    wdata_read_cycle(&md, "A_a", md.cycles-1, A_a_x);
-    wdata_read_cycle(&md, "A_b", md.cycles-1, A_b_x);
-    wdata_read_cycle(&md, "delta", md.cycles-1, delta);
+    // fill data
+    wdata_read_cycle(&md, "density_a", cycleid, rho_a);
+    wdata_read_cycle(&md, "density_b", cycleid, rho_b);
+    wdata_read_cycle(&md, "tau_a", cycleid, tau_a);
+    wdata_read_cycle(&md, "tau_b", cycleid, tau_b);
+    wdata_read_cycle(&md, "current_a", cycleid, j_a_x);
+    wdata_read_cycle(&md, "current_b", cycleid, j_b_x);
+    wdata_read_cycle(&md, "nu", cycleid, nu);
+    
+    wdata_read_cycle(&md, "u_a", cycleid, V_a);
+    wdata_read_cycle(&md, "u_b", cycleid, V_b);
+    wdata_read_cycle(&md, "alpha_a", cycleid, alpha_a);
+    wdata_read_cycle(&md, "alpha_b", cycleid, alpha_b);
+    wdata_read_cycle(&md, "A_a", cycleid, A_a_x);
+    wdata_read_cycle(&md, "A_b", cycleid, A_b_x);
+    wdata_read_cycle(&md, "delta", cycleid, delta);
     
     sprintf(file_name, "%s/checkpoint.%s", argv[2], suffix);
     printf("CREATING CHECKPOINT FILE `%s`\n", file_name);
