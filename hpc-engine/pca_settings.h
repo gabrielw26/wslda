@@ -119,6 +119,12 @@
 #define A2 0.0
 #endif
 
+#ifndef A0
+#define A0 1.000
+#define A1 0.0
+#define A2 0.0
+#endif
+
 // normal part
 #define G0 0.357
 #define G1 0.642
