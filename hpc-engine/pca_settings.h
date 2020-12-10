@@ -147,6 +147,7 @@
 // ===================================================================================
 
 #define DXYZ (DX*DY*DZ)
+#define DXY (DX*DY)
 
 // Volume settings
 #define LX (DX*NX)
