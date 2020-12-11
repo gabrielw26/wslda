@@ -341,6 +341,10 @@ int parse_input_file(char * file_name)
         sprintf(md.writevar[md.nwritevar],"delta"); md.nwritevar++;
         sprintf(md.writevar[md.nwritevar],"current"); md.nwritevar++;
     }
+    
+    // additional corrections
+    // temperature
+    if(md.temperature<1.0e-9) md.temperature=1.0e-9; // to avoid division by zero when computing beta=1/T
         
     fclose(fp);
     return 1;
