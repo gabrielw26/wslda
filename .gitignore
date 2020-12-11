@@ -101,3 +101,7 @@ td-testcase-uniform/obj/
 st-testcase-uniform/st-wslda-1d
 
 tools/bin/
+
+td-project-template/obj/
+
+td-project-template/td-wslda-2d
