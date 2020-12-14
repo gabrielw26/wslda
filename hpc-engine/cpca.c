@@ -123,7 +123,7 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
     
-    if(ip==0) printf("# CODE: TD-WSLDA-2D\n");
+    if(ip==0) printf("# CODE: TD-WSLDA-2D\n"); fflush(stdout);
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -199,6 +199,7 @@ int main( int argc , char ** argv )
     if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NXY*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
     
     cpu_exec( wslda_check_settings() );
+    fflush(stdout);
     
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================
@@ -231,6 +232,7 @@ int main( int argc , char ** argv )
 #elif FUNCTIONAL==CUSTOMEDF    
     if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
 #endif
+    fflush(stdout);
     
     // ====================================================================================
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================
@@ -582,6 +584,7 @@ int main( int argc , char ** argv )
     }
     
     // wait till loading is done
+    fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -619,7 +622,7 @@ int main( int argc , char ** argv )
     // ====================================================================================  
     if(md.inittype==5){ 
 
-        if(ip==0) printf("# LOADING CHECKPOINT\n");
+        if(ip==0) printf("# LOADING CHECKPOINT\n"); fflush(stdout);
         b_t();
         size_t memsize;
 #if INTEGRATION_SCHEME==AB3AM4
@@ -658,7 +661,7 @@ int main( int argc , char ** argv )
     dt/=eF; // time step
 #endif
     
-    if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
+    if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n"); fflush(stdout);
     
     if(md.inittype!=5)
     { 
@@ -724,7 +727,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_const_BdG(md.aBdG) );
 #endif
     
-    if(ip==0) printf("# DONE.\n");
+    if(ip==0) printf("# DONE.\n"); fflush(stdout);
     
     
     // CUFFT plans
@@ -747,7 +750,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================= INITIAL MEASUREMENT ==============================
     // ====================================================================================
-    if(ip==0) printf("# INITIAL MEASUREMENT\n");
+    if(ip==0) printf("# INITIAL MEASUREMENT\n"); fflush(stdout);
     // normalize wf 
     gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
@@ -794,18 +797,18 @@ int main( int argc , char ** argv )
         Laz=h_energy[LZA];
         Lbz=h_energy[LZB];
         
-        printf("# GPU ENERGY     : ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
+        printf("# GPU ENERGY     : ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  fflush(stdout);
         
         // Create check stamp filegpu_exec( host_malloc_pl((size_t)12*NXYZ
         sprintf(file_name, "%s_check.stamp", md.outprefix);
         printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
-        file_operation( touch_file(file_name) );
+        file_operation( touch_file(file_name) ); fflush(stdout);
         // Take densities from device
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
         file_operation( check_stamp_entry_coeff(file_name, 12, NXY, h_densities, TDWSLDAITEMS, h_energy, LZ) ); 
         
         printf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "Laz/Na", "Lbz/Nb", "rt"); 
-        printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb);     
+        printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb); fflush(stdout);
         
         // Create run log and add entry
         cpu_exec( logger_create_header(execcmd) );
@@ -859,7 +862,7 @@ int main( int argc , char ** argv )
     { 
         // NOTE: I assume that potential is constant during first steps
         // NOTE: I assume there is no quantum friction during the first steps
-        if(ip==0) printf("# SELFSTART: EXECUTING TAYLOR EXPANSION OF THE EVOLUTION OPERATOR.\n");
+        if(ip==0) printf("# SELFSTART: EXECUTING TAYLOR EXPANSION OF THE EVOLUTION OPERATOR.\n"); fflush(stdout);
         
         double *d_qpe; // buffers for quasiparticle energies
         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_qpe) );
@@ -1072,7 +1075,7 @@ int main( int argc , char ** argv )
         // clear memory
         gpu_exec( gpu_free(d_qpe) );
         free(h_fkm);
-        if(ip==0) printf("# SELFSTART: DONE.\n");
+        if(ip==0) printf("# SELFSTART: DONE.\n"); fflush(stdout);
          
         // derivatives
         gradients_computed=1;
@@ -1117,9 +1120,9 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            printf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
+            printf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); fflush(stdout);
              
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb);                
+            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb); fflush(stdout);                
         }    
     
     }
@@ -1295,7 +1298,7 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb, rt);        
+            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb, rt); fflush(stdout);       
             
             double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
             cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
@@ -1318,18 +1321,18 @@ int main( int argc , char ** argv )
             if(rt>md.walltime*3600) 
             {
                 forceCP = 1;
-                printf("# WALLTIME REACHED!\n");
+                printf("# WALLTIME REACHED!\n"); fflush(stdout);
             }
         }
         MPI_Bcast(&forceCP, 1, MPI_INT , 0 , MPI_COMM_WORLD );
         if(forceCP==1) md.checkpoint = 1;
-        if(forceCP==1 && ip==0) printf("# CONDUCTING EMERGENCY CHECKPOINT!\n");
-        if(forceCP==1) break;
+        if(forceCP==1 && ip==0) printf("# CONDUCTING EMERGENCY CHECKPOINT!\n"); fflush(stdout);
+        if(forceCP==1) break; 
         
         // Check if siulation is stable
         if( fabs( (h_energy[NPARTA]+h_energy[NPARTB]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
         {
-            if(ip==0) printf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n");
+            if(ip==0) printf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n"); fflush(stdout);
             break;
         }
 
@@ -1374,6 +1377,7 @@ int main( int argc , char ** argv )
             // Take densities from device
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
             file_operation( check_stamp_entry_coeff(file_name, 12, NXY, h_densities, TDWSLDAITEMS, h_energy, LZ) );   
+            fflush(stdout);
         }
     }
     /* messy exit here */

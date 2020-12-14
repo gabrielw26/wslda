@@ -61,6 +61,19 @@
  * */
 #define DENSEPSILON 1.0e-8
 
+/**
+ * Meaningful only in case of ASLDA.
+ * Parameters defining stabilization procedure of ASLDA functional. 
+ * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
+ * contribution from current term j^2/2n is assumed to be zero. 
+ * For regions with density above ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
+ * the contribution is assumed to be intact by stabilization procedure. 
+ * For more info see: 
+ * https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
+ * */
+#define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
+#define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
+
 
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
