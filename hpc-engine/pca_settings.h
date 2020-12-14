@@ -134,8 +134,18 @@
 // #define GAMMA0 -0.000001
 
 // regularization function parameters
+#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#else
 #define P_NMIN 1.0e-7
+#endif
+
+#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define P_NMAX ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#else
 #define P_NMAX 1.0e-5
+#endif
+
 #define P_ALPHA 1.0
 
 // #define P_NMIN 1.0e-8
