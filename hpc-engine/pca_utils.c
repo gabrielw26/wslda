@@ -70,6 +70,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // aBdG
 0, // nocurrents
 0, // nomixstart
+'p', // mixingtype
 0, // broyden
 5, // Mbroyden
 0, // startbroyden
@@ -240,6 +241,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nocurrents);
         else if (strcmp (tag,"nomixstart") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nomixstart);
+        else if (strcmp (tag,"mixingtype") == 0)
+            sscanf (s,"%s %c %*s",tag,&md.mixingtype);
         // broyden
         else if (strcmp (tag,"broyden") == 0)
             sscanf (s,"%s %d %*s",tag,&md.broyden);      
