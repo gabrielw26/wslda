@@ -191,6 +191,7 @@ int main( int argc , char ** argv )
     double *h_densities_old; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
+    double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
     double energy[ENERGYITEMS], energy_old[ENERGYITEMS];
     string energy_labels[ENERGYITEMS];
@@ -339,12 +340,25 @@ int main( int argc , char ** argv )
     cppmallocl(h_densities_old,DENSDIM,double);
     cppmallocl(h_densities_partial,DENSDIM,double);
     cppmallocl(h_potentials,POTDIM,double);
+    cppmallocl(h_potentials_old,POTDIM,double);
     cppmallocl(dc_params, MAX_USER_PARAMS, double);
     
+    // solution buffers
+    int SOLDIM;
+    double *h_solution; // pointer to array with solution
+    double *h_solution_old; // pointer to array with solution
+    if(md.mixingtype=='d') { SOLDIM = DENSDIM; h_solution = h_densities ; h_solution_old = h_densities_old ; }
+    else                   { SOLDIM = POTDIM ; h_solution = h_potentials; h_solution_old = h_potentials_old; }
+
+    if(iam==0)
+    {
+        if(md.mixingtype=='d') printf("# MIXING TYPE: (d)ensities.\n");
+        else                   printf("# MIXING TYPE: (p)otentials.\n");      
+    }
+
     // For easier access to data
     // densities 
     wslda_density densall = convert_into_wslda_density(h_densities, BLOCKLENGTH);
-    wslda_density densall_old = convert_into_wslda_density(h_densities_old, BLOCKLENGTH);
     wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, BLOCKLENGTH);
     wslda_potential potsall = convert_into_wslda_potential(h_potentials, BLOCKLENGTH);
     
@@ -978,8 +992,9 @@ int main( int argc , char ** argv )
         }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
         b_t();
-        // Make copy of densities
+        // Make copy of densities and potentials
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
+        for(ixyz=0; ixyz<POTDIM ; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_partial[ixyz] = 0.0; // reset
         for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
@@ -1333,7 +1348,17 @@ int main( int argc , char ** argv )
         cpu_exec( density_caculate_tau(densall, &mdfft) );
 #endif
         
+        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
+        rt_other+=e_t(0);
+        
+        // ------------------ compute new potentials ------------------
+        b_t();
+        cpu_exec( compute_potentials(it, densall, potsall) ); 
+        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
+        rt_pot+=e_t(0);
+        
         // ------------------ update chemical potentials ------------------
+        b_t();
         if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
         for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
@@ -1383,10 +1408,10 @@ int main( int argc , char ** argv )
         else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
         {
             int rkziter=it-md.startbroyden;
-            for(ixyz = 0; ixyz < DENSDIM; ixyz++) {
-				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
-				dens_out[rkziter][ixyz] = h_densities[ixyz];
-            	h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0 - md.linearmixing) * h_densities_old[ixyz];
+            for(ixyz = 0; ixyz < SOLDIM; ixyz++) {
+				dens_in[rkziter][ixyz] = h_solution_old[ixyz];
+				dens_out[rkziter][ixyz] = h_solution[ixyz];
+            	h_solution[ixyz] = md.linearmixing * h_solution[ixyz] + (1.0 - md.linearmixing) * h_solution_old[ixyz];
             }
 			dens_in[rkziter][ixyz+0] = dc_mu_a_old;
 			dens_out[rkziter][ixyz+0] = dc_mu_a;
@@ -1396,8 +1421,8 @@ int main( int argc , char ** argv )
         }
         else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
         {
-        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, DENSDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
-        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, DENSDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+        	update_mu(dens_in, dens_out, h_solution_old, h_solution, md.Mbroyden, SOLDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_solution, dens_in, dens_out, md.Mbroyden, SOLDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
             
             if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
             else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
@@ -1412,7 +1437,7 @@ int main( int argc , char ** argv )
         }
         else
         {
-        	for(ixyz = 0; ixyz < DENSDIM; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
+        	for(ixyz = 0; ixyz < SOLDIM; ixyz++) h_solution[ixyz] = md.linearmixing * h_solution[ixyz] + (1.0-md.linearmixing) * h_solution_old[ixyz];
             if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
         }
         
@@ -1425,16 +1450,8 @@ int main( int argc , char ** argv )
         	if (densall.tau_a[ixyz] < 0.) densall.tau_a[ixyz] = dens_min;
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
-        
-        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
         rt_other+=e_t(0);
-        
-        // ------------------ compute new potentials ------------------
-        b_t();
-        cpu_exec( compute_potentials(it, densall, potsall) ); 
-        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
-        rt_pot+=e_t(0);
-        
+                
         // ------------------ angular momentum ------------------
         b_t();
 #if CODEDIM==1

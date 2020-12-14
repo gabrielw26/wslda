@@ -119,6 +119,12 @@
 #define A2 0.0
 #endif
 
+#ifndef A0
+#define A0 1.000
+#define A1 0.0
+#define A2 0.0
+#endif
+
 // normal part
 #define G0 0.357
 #define G1 0.642
@@ -128,8 +134,18 @@
 // #define GAMMA0 -0.000001
 
 // regularization function parameters
+#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#else
 #define P_NMIN 1.0e-7
+#endif
+
+#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define P_NMAX ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#else
 #define P_NMAX 1.0e-5
+#endif
+
 #define P_ALPHA 1.0
 
 // #define P_NMIN 1.0e-8
@@ -141,6 +157,7 @@
 // ===================================================================================
 
 #define DXYZ (DX*DY*DZ)
+#define DXY (DX*DY)
 
 // Volume settings
 #define LX (DX*NX)

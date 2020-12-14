@@ -42,6 +42,6 @@ export HFI_UNIT=0
 
 #   <- SET: set path to computation folder
 cd MY_PATH
-#                         <-NOTE n must be equal 24*f_node
-mpiexec.hydra -ppn 24 -n 96 ./st-wslda-3d input.txt 
+#                         <-NOTE n must be equal 28*f_node
+mpiexec.hydra -ppn 28 -n 112 ./st-wslda-3d input.txt 
 

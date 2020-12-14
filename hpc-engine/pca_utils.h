@@ -86,6 +86,7 @@ typedef struct
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
     int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0
     int nomixstart; // if 1 then in the first iteration do not do mixing, default nomixstart=0
+    char mixingtype; // 'd' - mix densities, 'p' - mix potentials (default)
     
     // broyden mixing parameters
     int broyden; // 0 - linear mixing, 1 - update densities with Broyden, default=0
