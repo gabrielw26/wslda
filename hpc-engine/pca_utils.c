@@ -60,7 +60,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.5, // linearmixing
 0.5, // muchange
 10000, // maxiters
-0.01, // temperature
+1.0e-9, // temperature
 0.0, // referencekF
 0, // spinsymmetry
 0.1, // mumaxchange
