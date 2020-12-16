@@ -335,6 +335,19 @@ int main( int argc , char ** argv )
         
     }
     
+    if(md.p==0 || md.q==0) 
+    {
+        if(iam==0) printf("ERROR: CANNOT SET p AND q VALUES! CHECK INPUT FILE SETTINGS!\n"); fflush(stdout);
+        ABORTip(iam);
+    }
+    
+    // check if input parameters are ok
+    if(md.p*md.q!=np) 
+    {
+        if(iam==0) printf("ERROR: md.p*md.q!=np: CHECK INPUT FILE SETTINGS!\n"); fflush(stdout);
+        ABORTip(iam);
+    }
+    
     // for hamiltonian diagonalization
     int iam_blacs, nprocs_blacs, ictxt;
     char * b_order ;
