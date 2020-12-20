@@ -88,10 +88,10 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tThis error doesn not have description.\n");
     }
     fprintf(stream, "IF THIS INFORMATION IS NOT SUFFICIENT TO SOLVE YOUR PROBLEM\n");
-    fprintf(stream, "\tCheck wikipages: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/home\n");
+    fprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home\n");
     fprintf(stream, "\tAsk for help WSLDA developers:\n");
-    fprintf(stream, "\t\tusing Issues reporting system: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/issues\n");
-    fprintf(stream, "\t\tor by e-mail: wslda@pw.edu.pl\n");
+    fprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/issues\n");
+    fprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
     fprintf(stream, "==========================================================================\n");
     
 }
