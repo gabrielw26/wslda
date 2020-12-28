@@ -18,6 +18,15 @@
         return( EXIT_FAILURE ) ;                                                \
     }
     
+#define ABORTip(ip) \
+    {                                                                           \
+        MPI_Barrier( MPI_COMM_WORLD );                                          \
+        fprintf( stderr , "ABORT!!! [ip=%d, file=`%s`, line=%d]\n", ip, __FILE__, __LINE__) ; \
+        ierr = -1 ;                                                             \
+        MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
+        return( EXIT_FAILURE ) ;                                                \
+    }
+    
 #define ABORT_NOBARRIER \
     {                                                                           \
         fprintf( stderr , "ABORT!!! [ip=%d, file=`%s`, line=%d]\n", ip, __FILE__, __LINE__) ; \
