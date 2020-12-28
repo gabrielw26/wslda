@@ -33,10 +33,10 @@ npartconveps            1.0e-6   # number of particles convergence epsilon
 linearmixing            0.5      # mixing parameter for densities, default=0.5
 muchange                0.5      # coefficient for changing chemical potential, default=0.5
 maxiters                200     # maximum number of iterations, default=10000
-temperature             0.1      # requested temperature in units of eF
+# temperature             0.1      # requested temperature in units of eF, default T=0
 # referencekF             1.0    # reference kF
 aBdG                    -0.9   # akF about 0.9
-spinsymmetry            1       # set to 1 if you want to impose Na=Nb
+spinsymmetry            0       # set to 1 if you want to impose Na=Nb
 nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
