@@ -479,7 +479,8 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         v_ext_b=v_ext(ix,iy,iz,it,SPINB,params,extra_data_size,extra_data);     
         
         // start computation of delta
-        t5 = 1.0/ (4.0*M_PI*aBdG);
+        alph_plus = 0.5*(alpha_a[ixyz]+alpha_b[ixyz]);
+        t5 = 1.0/ (4.0*M_PI*aBdG*alph_plus);
         Va = V_a[ixyz]+v_ext_a; // initial values
         Vb = V_b[ixyz]+v_ext_b; // initial values
         lnu = nu[ixyz];
@@ -487,7 +488,6 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         
         // pairing
         t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
-        alph_plus = 0.5*(alpha_a[ixyz]+alpha_b[ixyz]);
         p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
         if(cimag(p0)<0.) p0 *= -1. ;
         kc = csqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
