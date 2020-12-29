@@ -485,7 +485,7 @@ int main( int argc , char ** argv )
     // assing number of kz values taken by each group
     if ( kzgroups > kvecs_to_consder  )
     {
-        if(iam==0) printf("ERROR: TOO MUCH RESOURCES! (%d>%d)\n", kzgroups, NZ);
+        if(iam==0) printf("ERROR: TOO MUCH RESOURCES! (kzgroups[%d]>kvecs_to_consder[%d])\n", kzgroups, kvecs_to_consder);
         ABORT;
     }
     getnwfip( idgroup , kzgroups , kvecs_to_consder , &nwfip ) ;
