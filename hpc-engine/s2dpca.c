@@ -366,12 +366,12 @@ int main( int argc , char ** argv )
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
     cppmallocl(dens_out, (md.Mbroyden + 1), double*);
     for (i = 0; i < (md.Mbroyden + 1); i++){
-        cppmallocl(dens_in[i], DENSDIM + 2, double);
-        cppmallocl(dens_out[i], DENSDIM + 2, double);
+        cppmallocl(dens_in[i], SOLDIM + 2, double);
+        cppmallocl(dens_out[i], SOLDIM + 2, double);
         
         // reset values
-        for(j=0; j<DENSDIM + 2; j++) dens_in[i][j]=0.0;
-        for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_out[i][j]=0.0;
     }
     
     if(iam==0) cpu_exec( create_directory(md.outprefix) );
@@ -691,8 +691,8 @@ int main( int argc , char ** argv )
             fread(npart        , sizeof(double)      , 2 , pFile);
             fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
                   
             fclose(pFile);
             
@@ -734,8 +734,8 @@ int main( int argc , char ** argv )
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
     }
     else
     {
@@ -1541,8 +1541,8 @@ int main( int argc , char ** argv )
             fwrite(npart        , sizeof(double)      , 2 , pFile);
             fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
                   
             fclose(pFile);
         }
