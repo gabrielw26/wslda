@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-// globa variables
+// global variables
 extern double *dc_params; /* Declaration of the variable */
 extern size_t dc_extra_data_size;
 extern void *dc_extra_data;
@@ -12,17 +12,14 @@ extern double dc_mu_a;
 extern double dc_mu_b;
 extern double dc_ec;
 
-// rotating frame
-
 extern int wsldapid; // process id - global variable
 
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "s3dpca_me.h"
-// #include "s3dpca_uext.h"
 
 #include "pca_utils.h"
-#include "s3dpca_me.h"
+
 #define BLOCKSIZE (NX*NY*NZ)
 
 // List of functions from "problem-definition.h"
@@ -460,4 +457,3 @@ int compute_vext_dot_j(int it, int spin, double *jx, double *jy, double *jz, dou
     
     return 0;
 }
-
