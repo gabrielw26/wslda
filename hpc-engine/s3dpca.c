@@ -672,6 +672,8 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
+    cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
+    
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
@@ -1373,6 +1375,7 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
         
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);

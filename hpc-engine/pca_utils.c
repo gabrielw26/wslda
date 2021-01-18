@@ -543,3 +543,18 @@ int wslda_check_settings()
 #endif
     return 0;
 }
+
+/**
+ * Function checks array againts NaN and Inf.
+ * @return 0: WSLDA_OK, WSLDA_ERR_NAN_DETECTED, WSLDA_INF_NAN_DETECTED
+ * */
+int wslda_check_array_against_naninf(int n, double *array)
+{
+    int i;
+    for(i=0; i<n; i++) 
+    {
+        if(isnan(array[i])) return WSLDA_ERR_NAN_DETECTED;
+        if(isinf(array[i])) return WSLDA_ERR_INF_DETECTED;
+    }
+    return WSLDA_OK;
+}
