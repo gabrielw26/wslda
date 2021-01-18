@@ -687,6 +687,8 @@ int main( int argc , char ** argv )
         double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
         cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
     }    
+    
+    cpu_exec( wslda_check_array_against_naninf(TDWSLDAITEMS, h_energy) );
 
     // Create binary files and add initial measurement
     wdata_metadata wdmd; 
@@ -1174,6 +1176,8 @@ int main( int argc , char ** argv )
             double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
             cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
         } 
+        
+        cpu_exec( wslda_check_array_against_naninf(TDWSLDAITEMS, h_energy) );
         
         // add binary data
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
