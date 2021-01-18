@@ -180,4 +180,6 @@ int copy_input_file(char * input_file, char * file_name);
 
 int wslda_check_settings();
 
+int wslda_check_array_against_naninf(int n, double *array);
+
 #endif

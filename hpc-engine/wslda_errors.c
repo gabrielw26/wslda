@@ -83,6 +83,16 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\t\t- you should have read permission to checkpoint files\n");
             fprintf(stream, "\t\t- make sure you use the same value of MPI_NP_PER_IO_GROUP as you used for writing\n");
             break;
+            
+        case WSLDA_ERR_NAN_DETECTED:
+            fprintf(stream, "\tNot a Number (NaN) has been detected!\n");
+            fprintf(stream, "\tCheck settings of the code!\n");
+            break;
+            
+        case WSLDA_ERR_INF_DETECTED:
+            fprintf(stream, "\tInfinite (Inf) has been detected!\n");
+            fprintf(stream, "\tCheck settings of the code!\n");
+            break;
         
         default: 
             fprintf(stream, "\tThis error doesn not have description.\n");
