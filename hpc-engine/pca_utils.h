@@ -120,6 +120,7 @@ typedef struct
 
 #ifndef ALLOCATE_MD_STRUCTURE
 extern metadata_t md;
+extern metadata_t *input;
 #endif
 
 #define MAX_REC_LEN 1024

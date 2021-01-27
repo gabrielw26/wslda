@@ -53,6 +53,9 @@ typedef struct
     double *A_b_x;
     double *A_b_y;
     double *A_b_z;
+    
+    // chemical potentials
+    double *mu;
 } wslda_potential; 
 
 
@@ -64,6 +67,6 @@ wslda_density convert_into_wslda_density(double *h_densities, int blocklength);
 /**
  * Converts array into wslda_potential structure
  * */
-wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength);
+wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength, double *mu);
 
 #endif
