@@ -250,7 +250,7 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXY);
-    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY, mu);
         
     // ====================================================================================
     // ================================ INITIAL STATE =====================================

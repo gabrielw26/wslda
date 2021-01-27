@@ -95,7 +95,7 @@ void report_error(int errcode, FILE *stream)
             break;
         
         default: 
-            fprintf(stream, "\tThis error doesn not have description.\n");
+            fprintf(stream, "\tThis error does not have description.\n");
     }
     fprintf(stream, "IF THIS INFORMATION IS NOT SUFFICIENT TO SOLVE YOUR PROBLEM\n");
     fprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home\n");

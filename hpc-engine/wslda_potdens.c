@@ -40,7 +40,7 @@ wslda_density convert_into_wslda_density(double *h_densities, int blocklength)
 /**
  * Converts array into wslda_potential structure
  * */
-wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength)
+wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength, double *mu)
 {
     wslda_potential d;
     
@@ -63,6 +63,8 @@ wslda_potential convert_into_wslda_potential(double *h_potentials, int blockleng
     d.A_b_x = (double *)(h_potentials +  9*blocklength);
     d.A_b_y = (double *)(h_potentials + 10*blocklength);
     d.A_b_z = (double *)(h_potentials + 11*blocklength);
+    
+    d.mu=mu;
     
     return d;
 }

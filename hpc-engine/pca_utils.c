@@ -39,15 +39,15 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // qfswitch;          
 100.0, // Na;                
 100.0, // Nb;         
-100.0, // init0Na;                
-100.0, // init0Nb; 
-1.0e-4, // init0muchange;   
-0.2, // init0Tstart;
-0.05, // init0Tstop;
+-1.0, // init0Na;                
+-1.0, // init0Nb; 
+-1.0, // init0muchange;   
+-1.0, // init0Tstart;
+-1.0, // init0Tstop;
 0.01, // init0DeltaT;
-1.0e-6, // init0eps;
-0.25, // init0scmix
-100000, // init0maxiter;
+1.0e-9, // init0eps;
+-1.0, // init0scmix
+10000, // init0maxiter;
 0, // init0debug
 0, // init0save
 0, // p;                    
@@ -86,6 +86,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 1, // iogroups
 "wdat", // dataformat
 };
+
+metadata_t *input = &md; // additional handler;
 
 // Taken from:
 // https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
@@ -345,9 +347,15 @@ int parse_input_file(char * file_name)
         sprintf(md.writevar[md.nwritevar],"current"); md.nwritevar++;
     }
     
-    // additional corrections
-    // temperature
+    // defult values
     if(md.temperature<1.0e-9) md.temperature=1.0e-9; // to avoid division by zero when computing beta=1/T
+    if(md.init0Na<0.0) md.init0Na=md.Na;
+    if(md.init0Nb<0.0) md.init0Nb=md.Nb;
+    if(md.init0muchange<0.0) md.init0muchange=md.muchange;
+    if(md.init0Tstop<0.0) md.init0Tstop = md.temperature; 
+    if(md.init0Tstart<0.0) md.init0Tstart=md.init0Tstop;
+    if(md.init0scmix<0.0) md.init0scmix=md.linearmixing;
+    if(md.init0maxiter<0) md.init0maxiter=md.maxiters;
         
     fclose(fp);
     return 1;
