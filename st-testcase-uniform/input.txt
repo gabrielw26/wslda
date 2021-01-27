@@ -2,10 +2,12 @@
 params31            0.0 # add noise
 
 # ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+inittype                0       #  0 - create uniform solution and start from it                                                                                                                                                
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #  
                                 #  5 - start from sd-wslda checkpoint, inprefix points to folder with checkpoint binary file
+                                #  
+                                # -1 - custom initialization, see wiki pages: Initilization of the st-wslda solvers 
 
 # ------------------- INPUT/OUTPUT ------------------
 outprefix               test

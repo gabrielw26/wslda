@@ -87,6 +87,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 "wdat", // dataformat
 };
 
+metadata_t *input = &md; // additional handler;
+
 // Taken from:
 // https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
 void replace_str(char *str,char *org,char *rep)
