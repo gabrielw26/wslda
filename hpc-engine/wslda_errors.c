@@ -105,3 +105,36 @@ void report_error(int errcode, FILE *stream)
     fprintf(stream, "==========================================================================\n");
     
 }
+
+void report_warning(int errcode, FILE *stream)
+{
+    if(errcode==WSLDA_OK) return; // no reporting
+    
+    fprintf(stream, "# !!! --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- !!!\n");
+
+    switch(errcode)
+    {
+        case WSLDA_WRN_SPINSYMMETRY0:
+            fprintf(stream, "#\t Input file setting: `spinsymmetry 0` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            fprintf(stream, "#\t Check if it is intended!\n");
+            fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            break;
+            
+        case WSLDA_WRN_SPINSYMMETRY1:
+            fprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            fprintf(stream, "#\t Check if it is intended!\n");
+            fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            break;
+            
+        default: 
+            fprintf(stream, "#\tThis warning does not have description.\n");
+    }
+    fprintf(stream, "# !!! --- ------- --- ------- --- ------- --- ------- --- ------- --- ------- --- !!!\n");
+ 
+}
+
+void print_warning(int errcode)
+{
+    report_warning(errcode, stdout); // to output 
+    report_warning(errcode, stderr); // and to error process
+}
