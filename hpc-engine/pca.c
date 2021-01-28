@@ -174,20 +174,19 @@ int main( int argc , char ** argv )
 #endif
     
 #ifdef SPINSYMMETRY_MODE
-    if(ip==0) printf("# IMPOSING: spinsymmetry=1\n");
+    if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
     md.spinsymmetry=1;
 #else
-    if(ip==0 && md.spinsymmetry==1) printf("RECOMPILE CODE WITH ACTIVE SPINSYMMETRY_MODE MODE!!!\n");
-    if(md.spinsymmetry==1) ABORT;
+    if(ip==0 && md.spinsymmetry==1) print_warning(WSLDA_WRN_SPINSYMMETRY1);
+    md.spinsymmetry=0;
 #endif
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * LXYZ);
-#ifdef SPINSYMMETRY_MODE
-    md.Nb = md.Na;
-#else
-    md.Nb = md.Na +1; 
-#endif
+    
+    if(md.spinsymmetry==1) md.Nb = md.Na;
+    else md.Nb = md.Na +1; 
+
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f Nb=%f\n", md.Na, md.Nb);
     md.init0Na=md.Na; md.init0Nb=md.Nb;
 #endif
