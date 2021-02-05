@@ -13,7 +13,7 @@ outprefix               test    # all output file with start with this prefix
 inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # 1 - allow for overwriting existing files, 0 - do not allow for overwriting existing files
 iogroups                32      # number of IO groups used for parallel reading of data
-                                # in case of inittype==3 it must be the same as value used for static caculations.
+                                # it must be the same as the value used for static calculations.
 checkpoint              1       # do checkpoint at the end of calculation: 1-yes, 0-no
 walltime                11.9    # after this time force the checkpoint [hr]
 
