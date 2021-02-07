@@ -307,9 +307,9 @@ int parse_input_file(char * file_name)
                     if (strcmp (ptag,"all") == 0) 
                     {
 #ifdef WSLDA
-                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext alpha A");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #else
-                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
 #endif
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
@@ -317,7 +317,7 @@ int parse_input_file(char * file_name)
                     
                     if (strcmp (ptag,"default") == 0) 
                     {
-                        replace_str(s,ptag,"density delta current");
+                        replace_str(s,ptag,"rho delta j");
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
@@ -342,9 +342,9 @@ int parse_input_file(char * file_name)
     // add default variables - if not added 
     if(md.nwritevar==0)
     {
-        sprintf(md.writevar[md.nwritevar],"density"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"rho"); md.nwritevar++;
         sprintf(md.writevar[md.nwritevar],"delta"); md.nwritevar++;
-        sprintf(md.writevar[md.nwritevar],"current"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"j"); md.nwritevar++;
     }
     
     // defult values
