@@ -65,6 +65,12 @@ typedef struct
 } wdata_metadata; 
 
 /** 
+ * Function sets lattice size in struct wdata_metadata
+ * @return 0: ok, 1: error,
+ * */
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz);
+
+/** 
  * Function reads metadata
  * and puts values into struct wdata_metadata
  * @return 0: ok, 1: Cannot open metadata file,

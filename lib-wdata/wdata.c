@@ -14,6 +14,17 @@
 
 #define WRKDIR_SET 123987
 
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz)
+{
+    md->NX=nx;
+    md->NY=ny;
+    md->NZ=nz;
+    md->DX=dx;
+    md->DZ=dy;
+    md->DY=dz;
+    return 0;
+}
+
 char __wdata__basedir[MAX_REC_LEN];
 void wdata_goto_wrkdir(wdata_metadata *md)
 {

@@ -111,3 +111,9 @@ post-processing/st-processwf-2d
 post-processing/examples/st-Lz-quantum-numbers-2d
 
 post-processing/parse-input
+
+lib-wdata/libwdatac\.a
+
+extensions/st-test-external-potentials
+
+extensions/solve-uniform

@@ -30,5 +30,7 @@
 #include "wslda_potdens.h"
 #include "wslda_wavevectors.h"
 #include "pca_io.h"
+#include "s2dpca_edf.h"
+#include "pca_uniform.h"
 
 #endif
