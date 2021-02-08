@@ -212,6 +212,12 @@ int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link);
 int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const);
 
 /**
+ * Function adds at the end of file new comment
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment);
+
+/**
  * Function checks if dataset has variable of name varname
  * @return 1: dataset has this variable, 0: no variable in given dataset
  * */

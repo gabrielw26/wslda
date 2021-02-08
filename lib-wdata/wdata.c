@@ -528,6 +528,16 @@ int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const
     return 0;
 }
 
+
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment)
+{
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    fprintf(fout, "# %s\n", comment);
+    fclose(fout);
+    return 0;    
+}
+
 int wdata_has_variable(wdata_metadata *md, const char *varname)
 {
     int i;
