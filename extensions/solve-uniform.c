@@ -73,7 +73,7 @@ int main( int argc , char ** argv )
 
     printf("# CREATING UNIFORM SOLUTION...\n");
     
-    // Generate uniform initial
+    // Generate uniform solution
     int nwf;
     if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (input->init0Na/LXYZ, input->init0Nb/LXYZ, &nwf, 1);
     else                   solve_uniform_problem_bdg(input->init0Na/LXYZ, input->init0Nb/LXYZ, &nwf, 1);
