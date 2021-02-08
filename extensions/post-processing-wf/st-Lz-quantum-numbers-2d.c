@@ -4,7 +4,7 @@
  * This script extracts expectation value of angular momentum for each quasi-particle orbital.
  * 
  * Copy this file to your project folder and compile using:
- *    gcc st-Lz-quantum-numbers-2d.c -I. -I$WSLDA/hpc-engine -o st-Lz-quantum-numbers-2d -lm -lfftw3
+ *    gcc -std=gnu99 st-Lz-quantum-numbers-2d.c -I. -I$WSLDA/hpc-engine -o st-Lz-quantum-numbers-2d -lm -lfftw3
  * 
  * */ 
 
