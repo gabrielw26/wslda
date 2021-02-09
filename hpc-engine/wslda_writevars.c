@@ -125,23 +125,56 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
     
     for(i=0; i<lnvars; i++)
     {        
-        if(strcmp (lvars[i],"density") == 0)
+        if(strcmp (lvars[i],"density") == 0 || strcmp (lvars[i],"rho") == 0)
         {
-            wdata_variable va = {"density_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"density_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
-            wdata_link l = {"density_b", "density_a"};
+            wdata_variable va = {"rho_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"rho_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"rho_b", "rho_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
+            
+//             // legacy mode
+//             if(spinsymmetry==0)
+//             {
+//                 wdata_link l1 = {"density_a", "rho_a"};
+//                 wdata_link l2 = {"density_b", "rho_b"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
+//             else
+//             {
+//                 wdata_link l1 = {"density_a", "rho_a"};
+//                 wdata_link l2 = {"density_b", "rho_a"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
+
         }
-        else if(strcmp (lvars[i],"current") == 0)
+        else if(strcmp (lvars[i],"current") == 0 || strcmp (lvars[i],"j") == 0)
         {
-            wdata_variable va = {"current_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"current_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
-            wdata_link l = {"current_b", "current_a"};
+            wdata_variable va = {"j_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"j_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"j_b", "j_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
+            
+//             // legacy mode
+//             if(spinsymmetry==0)
+//             {
+//                 wdata_link l1 = {"current_a", "j_a"};
+//                 wdata_link l2 = {"current_b", "j_b"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
+//             else
+//             {
+//                 wdata_link l1 = {"current_a", "j_a"};
+//                 wdata_link l2 = {"current_b", "j_a"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
         }
         else if(strcmp (lvars[i],"tau") == 0)
         {
@@ -152,20 +185,20 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
         }
-        else if(strcmp (lvars[i],"u") == 0)
+        else if(strcmp (lvars[i],"V") == 0)
         {
-            wdata_variable va = {"u_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"u_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
-            wdata_link l = {"u_b", "u_a"};
+            wdata_variable va = {"V_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"V_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"V_b", "V_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
         }
-        else if(strcmp (lvars[i],"v_ext") == 0)
+        else if(strcmp (lvars[i],"V_ext") == 0)
         {
-            wdata_variable va = {"v_ext_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"v_ext_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
-            wdata_link l = {"v_ext_b", "v_ext_a"};
+            wdata_variable va = {"V_ext_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable vb = {"V_ext_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_link l = {"V_ext_b", "V_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
@@ -248,7 +281,7 @@ int write_wdata_metadata_file(metadata_t *input, wdata_metadata *wdmd, char *cod
     timeinfo = localtime ( &rawtime );
     strftime (buffer,20,"%x-%X",timeinfo);
     
-    fprintf(f,"# Generated by %s [%s]\n\n", codename, buffer);
+    fprintf(f,"# Generated by %s, engine version %s [%s]\n\n", codename, VERSION, buffer);
     wdata_print_metadata(wdmd, f);
     
     fclose(f);
@@ -299,56 +332,56 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
     {
 
         ierr=0;
-        if      (strcmp (wdmd->var[ivar].name,"density_a") == 0) ierr = wdata_write_cycle(wdmd, "density_a", rho_a);
-        else if (strcmp (wdmd->var[ivar].name,"density_b") == 0) ierr = wdata_write_cycle(wdmd, "density_b", rho_b);
+        if      (strcmp (wdmd->var[ivar].name,"rho_a") == 0) ierr = wdata_write_cycle(wdmd, "rho_a", rho_a);
+        else if (strcmp (wdmd->var[ivar].name,"rho_b") == 0) ierr = wdata_write_cycle(wdmd, "rho_b", rho_b);
         else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
-        else if (strcmp (wdmd->var[ivar].name,"current_a") == 0) ierr = wdata_write_cycle(wdmd, "current_a", j_a_x);
-        else if (strcmp (wdmd->var[ivar].name,"current_b") == 0) ierr = wdata_write_cycle(wdmd, "current_b", j_b_x);
+        else if (strcmp (wdmd->var[ivar].name,"j_a") == 0) ierr = wdata_write_cycle(wdmd, "j_a", j_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"j_b") == 0) ierr = wdata_write_cycle(wdmd, "j_b", j_b_x);
         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
-        else if (strcmp (wdmd->var[ivar].name,"u_a") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"V_a") == 0) 
         {
 #ifdef WSLDA
-            ierr = wdata_write_cycle(wdmd, "u_a", V_a);
+            ierr = wdata_write_cycle(wdmd, "V_a", V_a);
 #else
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
             int ixyz=0;
             for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
-            ierr = wdata_write_cycle(wdmd, "u_a", towrt);
+            ierr = wdata_write_cycle(wdmd, "V_a", towrt);
             free(towrt);
 #endif
         }
-        else if (strcmp (wdmd->var[ivar].name,"u_b") == 0)
+        else if (strcmp (wdmd->var[ivar].name,"V_b") == 0)
         {
 #ifdef WSLDA
-            ierr = wdata_write_cycle(wdmd, "u_b", V_b);
+            ierr = wdata_write_cycle(wdmd, "V_b", V_b);
 #else
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
             int ixyz=0;
             for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
-            ierr = wdata_write_cycle(wdmd, "u_b", towrt);
+            ierr = wdata_write_cycle(wdmd, "V_b", towrt);
             free(towrt);
 #endif
         }
-        else if (strcmp (wdmd->var[ivar].name,"v_ext_a") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"V_ext_a") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "v_ext_a", towrt);
+            ierr = wdata_write_cycle(wdmd, "V_ext_a", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->var[ivar].name,"v_ext_b") == 0) 
+        else if (strcmp (wdmd->var[ivar].name,"V_ext_b") == 0) 
         {
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "v_ext_b", towrt);
+            ierr = wdata_write_cycle(wdmd, "V_ext_b", towrt);
             free(towrt);
         }
         else if (strcmp (wdmd->var[ivar].name,"delta_ext") == 0) 

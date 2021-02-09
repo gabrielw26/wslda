@@ -120,6 +120,7 @@ typedef struct
 
 #ifndef ALLOCATE_MD_STRUCTURE
 extern metadata_t md;
+extern metadata_t *input;
 #endif
 
 #define MAX_REC_LEN 1024
@@ -179,5 +180,7 @@ void symmetrize_densities(double *h_densities);
 int copy_input_file(char * input_file, char * file_name);
 
 int wslda_check_settings();
+
+int wslda_check_array_against_naninf(int n, double *array);
 
 #endif

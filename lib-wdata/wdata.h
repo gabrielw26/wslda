@@ -65,6 +65,12 @@ typedef struct
 } wdata_metadata; 
 
 /** 
+ * Function sets lattice size in struct wdata_metadata
+ * @return 0: ok, 1: error,
+ * */
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz);
+
+/** 
  * Function reads metadata
  * and puts values into struct wdata_metadata
  * @return 0: ok, 1: Cannot open metadata file,
@@ -204,6 +210,12 @@ int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link);
  * @return 0: ok, 1: cannot add entry to file
  * */
 int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const);
+
+/**
+ * Function adds at the end of file new comment
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment);
 
 /**
  * Function checks if dataset has variable of name varname

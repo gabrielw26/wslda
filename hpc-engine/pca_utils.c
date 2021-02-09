@@ -39,15 +39,15 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // qfswitch;          
 100.0, // Na;                
 100.0, // Nb;         
-100.0, // init0Na;                
-100.0, // init0Nb; 
-1.0e-4, // init0muchange;   
-0.2, // init0Tstart;
-0.05, // init0Tstop;
+-1.0, // init0Na;                
+-1.0, // init0Nb; 
+-1.0, // init0muchange;   
+-1.0, // init0Tstart;
+-1.0, // init0Tstop;
 0.01, // init0DeltaT;
-1.0e-6, // init0eps;
-0.25, // init0scmix
-100000, // init0maxiter;
+1.0e-9, // init0eps;
+-1.0, // init0scmix
+10000, // init0maxiter;
 0, // init0debug
 0, // init0save
 0, // p;                    
@@ -86,6 +86,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 1, // iogroups
 "wdat", // dataformat
 };
+
+metadata_t *input = &md; // additional handler;
 
 // Taken from:
 // https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
@@ -305,9 +307,9 @@ int parse_input_file(char * file_name)
                     if (strcmp (ptag,"all") == 0) 
                     {
 #ifdef WSLDA
-                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext alpha A");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #else
-                        replace_str(s,ptag,"density delta current nu tau u v_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
 #endif
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
@@ -315,7 +317,7 @@ int parse_input_file(char * file_name)
                     
                     if (strcmp (ptag,"default") == 0) 
                     {
-                        replace_str(s,ptag,"density delta current");
+                        replace_str(s,ptag,"rho delta j");
 //                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
@@ -340,14 +342,20 @@ int parse_input_file(char * file_name)
     // add default variables - if not added 
     if(md.nwritevar==0)
     {
-        sprintf(md.writevar[md.nwritevar],"density"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"rho"); md.nwritevar++;
         sprintf(md.writevar[md.nwritevar],"delta"); md.nwritevar++;
-        sprintf(md.writevar[md.nwritevar],"current"); md.nwritevar++;
+        sprintf(md.writevar[md.nwritevar],"j"); md.nwritevar++;
     }
     
-    // additional corrections
-    // temperature
+    // defult values
     if(md.temperature<1.0e-9) md.temperature=1.0e-9; // to avoid division by zero when computing beta=1/T
+    if(md.init0Na<0.0) md.init0Na=md.Na;
+    if(md.init0Nb<0.0) md.init0Nb=md.Nb;
+    if(md.init0muchange<0.0) md.init0muchange=md.muchange;
+    if(md.init0Tstop<0.0) md.init0Tstop = md.temperature; 
+    if(md.init0Tstart<0.0) md.init0Tstart=md.init0Tstop;
+    if(md.init0scmix<0.0) md.init0scmix=md.linearmixing;
+    if(md.init0maxiter<0) md.init0maxiter=md.maxiters;
         
     fclose(fp);
     return 1;
@@ -542,4 +550,19 @@ int wslda_check_settings()
     if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
 #endif
     return 0;
+}
+
+/**
+ * Function checks array againts NaN and Inf.
+ * @return 0: WSLDA_OK, WSLDA_ERR_NAN_DETECTED, WSLDA_INF_NAN_DETECTED
+ * */
+int wslda_check_array_against_naninf(int n, double *array)
+{
+    int i;
+    for(i=0; i<n; i++) 
+    {
+        if(isnan(array[i])) return WSLDA_ERR_NAN_DETECTED;
+        if(isinf(array[i])) return WSLDA_ERR_INF_DETECTED;
+    }
+    return WSLDA_OK;
 }

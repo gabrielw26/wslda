@@ -124,6 +124,7 @@ int main( int argc , char ** argv )
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
     
     if(ip==0) printf("# CODE: TD-WSLDA-2D\n"); fflush(stdout);
+    if(ip==0) printf("# VERSION: %s\n", VERSION); fflush(stdout);
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -178,20 +179,19 @@ int main( int argc , char ** argv )
 #endif
     
 #ifdef SPINSYMMETRY_MODE
-    if(ip==0) printf("# IMPOSING: spinsymmetry=1\n");
+    if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
     md.spinsymmetry=1;
 #else
-    if(ip==0 && md.spinsymmetry==1) printf("RECOMPILE CODE WITH ACTIVE SPINSYMMETRY_MODE MODE!!!\n");
-    if(md.spinsymmetry==1) ABORT;
+    if(ip==0 && md.spinsymmetry==1) print_warning(WSLDA_WRN_SPINSYMMETRY1);
+    md.spinsymmetry=0;
 #endif
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.0*M_PI*M_PI) * LXYZ);
-#ifdef SPINSYMMETRY_MODE
-    md.Nb = md.Na;
-#else
-    md.Nb = md.Na +1; 
-#endif
+    
+    if(md.spinsymmetry==1) md.Nb = md.Na;
+    else md.Nb = md.Na +1; 
+
     if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f Nb=%f\n", md.Na, md.Nb);
     md.init0Na=md.Na; md.init0Nb=md.Nb;
 #endif
@@ -250,7 +250,7 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXY);
-    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY, mu);
         
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
@@ -815,6 +815,8 @@ int main( int argc , char ** argv )
         double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
         cpu_exec( logger_add_entry(0, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
     }    
+    
+    cpu_exec( wslda_check_array_against_naninf(TDWSLDAITEMS, h_energy) );
 
     // Create binary files and add initial measurement
     wdata_metadata wdmd; 
@@ -1303,6 +1305,8 @@ int main( int argc , char ** argv )
             double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
             cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
         } 
+        
+        cpu_exec( wslda_check_array_against_naninf(TDWSLDAITEMS, h_energy) );
         
         // add binary data
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );

@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 void report_error(int errcode, FILE *stream);
+void report_warning(int errcode, FILE *stream);
+void print_warning(int errcode);
 
 // no error
 #define WSLDA_OK  0
@@ -25,5 +27,9 @@ void report_error(int errcode, FILE *stream);
 #define WSLDA_ERR_ABDG_NOT_SET 10008
 #define WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA 10009 
 #define WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_NWF 10010
+#define WSLDA_ERR_NAN_DETECTED 10011
+#define WSLDA_ERR_INF_DETECTED 10012
+#define WSLDA_WRN_SPINSYMMETRY0 10013
+#define WSLDA_WRN_SPINSYMMETRY1 10014
 
 #endif

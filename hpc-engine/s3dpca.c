@@ -216,6 +216,7 @@ int main( int argc , char ** argv )
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
     if(iam==0) printf("# CODE: ST-WSLDA-3D\n");
+    if(iam==0) printf("# VERSION: %s\n", VERSION);
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -427,18 +428,18 @@ int main( int argc , char ** argv )
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXYZ);
     wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NXYZ);
-    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ, mu);
             
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
     cppmallocl(dens_out, (md.Mbroyden + 1), double*);
     for (i = 0; i < (md.Mbroyden + 1); i++){
-        cppmallocl(dens_in[i], DENSDIM + 2, double);
-        cppmallocl(dens_out[i], DENSDIM + 2, double);
+        cppmallocl(dens_in[i], SOLDIM + 2, double);
+        cppmallocl(dens_out[i], SOLDIM + 2, double);
         
         // reset values
-        for(j=0; j<DENSDIM + 2; j++) dens_in[i][j]=0.0;
-        for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_out[i][j]=0.0;
     }
 
     // ---------------- HAMILTONIAN ----------------
@@ -620,8 +621,8 @@ int main( int argc , char ** argv )
             fread(npart        , sizeof(double)      , 2 , pFile);
             fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
                   
             fclose(pFile);
             
@@ -663,14 +664,24 @@ int main( int argc , char ** argv )
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+    }
+    else if(md.inittype==-1) // start from checkpoint
+    {
+        if(iam==0) printf("# BUFFERS WILL BE INITIALIZED VIA modify_densities AND modify_potentials FUNCTIONS\n");
+        if(iam==0) printf("# FORCING: resetit=1 AND nomixstart=1\n");
+        if(iam==0) printf("# FORCING: ITERATION NUMBER: it=-1\n");
+        md.resetit=1;
+        md.nomixstart=1;
     }
     else
     {
         if(iam==0) printf("NOT SUPPORTED INITTYPE=%d!\n", md.inittype);
         ABORT;
     }
+    
+    if(md.inittype>=0) cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
     
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
@@ -760,6 +771,7 @@ int main( int argc , char ** argv )
     dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
+    dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     ECHOLINE;
@@ -1230,7 +1242,9 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( compute_potentials(it, densall, potsall) ); 
+        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
+        dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
         rt_pot+=e_t(0);
         
         // ------------------ update chemical potentials ------------------
@@ -1373,6 +1387,7 @@ int main( int argc , char ** argv )
         if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
         
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
@@ -1405,8 +1420,8 @@ int main( int argc , char ** argv )
             fwrite(npart        , sizeof(double)      , 2 , pFile);
             fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
             fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
                   
             fclose(pFile);
         }

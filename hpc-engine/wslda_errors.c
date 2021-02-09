@@ -83,9 +83,19 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\t\t- you should have read permission to checkpoint files\n");
             fprintf(stream, "\t\t- make sure you use the same value of MPI_NP_PER_IO_GROUP as you used for writing\n");
             break;
+            
+        case WSLDA_ERR_NAN_DETECTED:
+            fprintf(stream, "\tNot a Number (NaN) has been detected!\n");
+            fprintf(stream, "\tCheck settings of the code!\n");
+            break;
+            
+        case WSLDA_ERR_INF_DETECTED:
+            fprintf(stream, "\tInfinite (Inf) has been detected!\n");
+            fprintf(stream, "\tCheck settings of the code!\n");
+            break;
         
         default: 
-            fprintf(stream, "\tThis error doesn not have description.\n");
+            fprintf(stream, "\tThis error does not have description.\n");
     }
     fprintf(stream, "IF THIS INFORMATION IS NOT SUFFICIENT TO SOLVE YOUR PROBLEM\n");
     fprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home\n");
@@ -94,4 +104,37 @@ void report_error(int errcode, FILE *stream)
     fprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
     fprintf(stream, "==========================================================================\n");
     
+}
+
+void report_warning(int errcode, FILE *stream)
+{
+    if(errcode==WSLDA_OK) return; // no reporting
+    
+    fprintf(stream, "# !!! --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- !!!\n");
+
+    switch(errcode)
+    {
+        case WSLDA_WRN_SPINSYMMETRY0:
+            fprintf(stream, "#\t Input file setting: `spinsymmetry 0` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            fprintf(stream, "#\t Check if it is intended!\n");
+            fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            break;
+            
+        case WSLDA_WRN_SPINSYMMETRY1:
+            fprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            fprintf(stream, "#\t Check if it is intended!\n");
+            fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            break;
+            
+        default: 
+            fprintf(stream, "#\tThis warning does not have description.\n");
+    }
+    fprintf(stream, "# !!! --- ------- --- ------- --- ------- --- ------- --- ------- --- ------- --- !!!\n");
+ 
+}
+
+void print_warning(int errcode)
+{
+    report_warning(errcode, stdout); // to output 
+    report_warning(errcode, stderr); // and to error process
 }
