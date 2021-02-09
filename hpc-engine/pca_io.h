@@ -1380,7 +1380,7 @@ int check_stamp_entry(const char *file_name, int idens, int ndens, double *densi
     {
         sum=0.0;
         for(n=0; n<ndens; n++) sum+=densities[i*ndens + n];
-        fprintf(check_stamp, "SUM(DESNITY[%2d])=%16.8g\n", i, sum);
+        fprintf(check_stamp, "SUM(DENSITY[%2d])=%16.8g\n", i, sum);
     }
     
     for(i=0; i<ienergies; i++)
@@ -1424,7 +1424,7 @@ int check_stamp_entry_coeff(const char *file_name, int idens, int ndens, double 
     {
         sum=0.0;
         for(n=0; n<ndens; n++) sum+=densities[i*ndens + n];
-        fprintf(check_stamp, "SUM(DESNITY[%2d])=%16.8g\n", i, sum*dens_coeff);
+        fprintf(check_stamp, "SUM(DENSITY[%2d])=%16.8g\n", i, sum*dens_coeff);
     }
     
     for(i=0; i<ienergies; i++)

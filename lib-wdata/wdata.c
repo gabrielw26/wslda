@@ -14,6 +14,17 @@
 
 #define WRKDIR_SET 123987
 
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz)
+{
+    md->NX=nx;
+    md->NY=ny;
+    md->NZ=nz;
+    md->DX=dx;
+    md->DZ=dy;
+    md->DY=dz;
+    return 0;
+}
+
 char __wdata__basedir[MAX_REC_LEN];
 void wdata_goto_wrkdir(wdata_metadata *md)
 {
@@ -515,6 +526,16 @@ int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const
     wdata_print_const(_const, fout);
     fclose(fout);
     return 0;
+}
+
+
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment)
+{
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    fprintf(fout, "# %s\n", comment);
+    fclose(fout);
+    return 0;    
 }
 
 int wdata_has_variable(wdata_metadata *md, const char *varname)

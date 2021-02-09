@@ -17,8 +17,8 @@ checkpoint              0       # do checkpoint at the end of calculation?
 walltime                11.9    # after this time force checkpoint [hr]
 
 # list of variables for writing
-# all = density delta current nu tau u v_ext delta_ext velocity_ext
-# default = density delta current
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext
+# default = rho delta j
 writevar           default
 
 # aBdG                -0.9 # scattering length for BDG mode 

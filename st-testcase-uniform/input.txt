@@ -20,8 +20,8 @@ writewf                 0       # write wf at the end of computation yes=1, no=0
 iogroups                8       # number of IO groups used for parallel wf writing, default=1
 
 # list of variables for writing
-# all = density delta current nu tau u v_ext delta_ext velocity_ext
-# default = density delta current
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
+# default = rho delta j
 writevar           default all
 
 # ----------------- PARTICLE NUMBERS -----------------
@@ -38,7 +38,7 @@ maxiters                200     # maximum number of iterations, default=10000
 temperature             0.01      # requested temperature in units of eF, default T=0
 # referencekF             1.0    # reference kF
 aBdG                    -0.9   # akF about 0.9
-spinsymmetry            0       # set to 1 if you want to impose Na=Nb
+spinsymmetry            1       # set to 1 if you want to impose Na=Nb
 nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
