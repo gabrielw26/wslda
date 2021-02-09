@@ -235,6 +235,7 @@ int main( int argc , char ** argv )
 #else
     if(iam==0) printf("# CODE: ST-WSLDA-2D\n");
 #endif
+    if(iam==0) printf("# VERSION: %s\n", VERSION);
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);

@@ -216,6 +216,7 @@ int main( int argc , char ** argv )
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
     if(iam==0) printf("# CODE: ST-WSLDA-3D\n");
+    if(iam==0) printf("# VERSION: %s\n", VERSION);
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);

@@ -67,6 +67,18 @@
         return( EXIT_FAILURE ) ;                                                \
     } }
     
+#define file_operationl(cmd)                                             \
+    {                                                                    \
+        ierr = cmd;                                                      \
+        if (ierr)                                                        \
+        {                                                                \
+            fprintf(stderr, "FILE ERROR:: cannot execute: %s\n", #cmd);  \
+            fprintf(stderr, "file=`%s`, line=%d\n", __FILE__, __LINE__); \
+            fprintf(stderr, "Error=%d\nExiting!\n", ierr);               \
+            return (EXIT_FAILURE);                                       \
+        }                                                                \
+    }
+    
 #define cpu_exec( cmd )                                                         \
     { ierr=cmd;                                                                 \
     if(ierr)                                                                    \
@@ -80,6 +92,17 @@
         return( EXIT_FAILURE ) ;                                                \
     } }
     
+#define cpu_execl( cmd )                                                        \
+    { ierr=cmd;                                                                 \
+    if(ierr)                                                                    \
+    {                                                                           \
+        fprintf( stderr , "CPU ERROR: cannot execute: %s\n", #cmd) ;            \
+        fprintf( stderr , "file=`%s`, line=%d\n" ,__FILE__,__LINE__) ;          \
+        fprintf( stderr , "Error=%d\nExiting!\n" ,ierr) ;                       \
+        report_error(ierr, stderr);                                             \
+        ierr=-1;                                                                \
+        return( EXIT_FAILURE ) ;                                                \
+    } }
     
 #define error_msg_mpi_abort(ip,msg)                                             \
     {                                                                           \
