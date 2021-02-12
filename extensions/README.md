@@ -6,4 +6,5 @@ Codes:
 * `parse-input-template.c`: This file demonstrate how to parse input file.
 * `extend-dataset-template.c`: This file provides template of code that adds new variable to existing w-dataset.
 * `st-test-external-potentials.c`: This file provides simple code that can be used for testing of correctness of implementation of external potentials. 
-* `solve-uniform.c`:  * This code solves uniform problem according settings from input file. It can be used for checking of correctness of solver parameters.
+* `solve-uniform.c`:  This code solves uniform problem according settings from input file. It can be used for checking of correctness of solver parameters.
+* `compare-datasets.c`: This tool compares two different datasets and creates a new dataset where differences of all variables are saved. 
