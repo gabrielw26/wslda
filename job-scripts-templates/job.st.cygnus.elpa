@@ -1,22 +1,22 @@
 #!/bin/bash                                                                                          
 #---------- qsub option ----------                                                                   
-#PBS -N JOB_NAME                  # YOUR JOB NAME  
+#PBS -N JOB_NAME                  # YOUR JOB NAME
 #PBS -A TDSLDA20                                                                                     
 #PBS -q gpu                                                                                          
 #PBS -l elapstim_req=00:10:00     # SET WALLTIME                                                                     
 
 #---------- MPI option ----------                                                                    
-#PBS -b 2                         # SET NUMBER OF NODES                                                               
-#PBS -T openmpi                                                                                      
-#PBS -v NQSV_MPI_VER=3.1.6/intel19.0.5-cuda10.2                                                       
+#PBS -b 1                         # SET NUMBER OF NODES                                                               
+#PBS -T intmpi                                                                                      
+#PBS -v NQSV_MPI_VER=19.0.5                                                       
 
 #---------- Others (optional) ----------                                                             
 #PBS -o output.o                  # SET NAME OF OUTPUT FILE                                                                    
 #PBS -e error.e                   # SET NAME OF ERROR FILE                                                                    
-#PBS -M your@mail                 # SET YOUR E-MAIL FOR NOTIFICATION
+#PBS -M your@email                # SET YOUR E-MAIL FOR NOTIFICATION
 
 ## -------- WIKI INFO -------
-## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/cygnus
+## https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home
 ## 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
@@ -31,13 +31,13 @@
 ##      cd /work/TDSLDA20/
 
 
-#---------- Program execution ----------
+#---------- Program execution ----------                                                             
 cd $PBS_O_WORKDIR
 pwd
 source env.sh
 
-## NOTE: HERE YOU PROVIDE YOUR COMMANDS TO EXECUTE 
-##   YOU MUST ASSURE: -np=-b*4 (each node has 4 GPUs)
-##   do NOT modify other parameters except np value!
-mpirun ${NQSII_MPIOPTS} -np 8 -npernode 4 -x UCX_MAX_RNDV_RAILS=4 ./td-wslda-3d input.txt > out.txt
+
+## NOTE: YOU MUST ASSURE: -np=-b*24 (each node has 24 CPUs)
+##       do NOT modify parameters except `-np` value!
+mpirun ${NQSII_MPIOPTS} -np 48 -ppn 24 ./st-wslda-3d input.txt 
 
