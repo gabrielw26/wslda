@@ -51,6 +51,8 @@ int main( int argc , char ** argv )
         return( EXIT_FAILURE ) ;      
     }
         
+    printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    printf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #if FUNCTIONAL==BDG
     printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA    
