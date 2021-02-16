@@ -119,3 +119,11 @@ extensions/st-test-external-potentials
 extensions/solve-uniform
 
 extensions/extend-dataset-template
+
+extensions/compare-datasets
+
+st-testcase-uniform/test-external-potentials
+
+st-testcase-uniform/solve-uniform
+
+td-testcase-uniform/

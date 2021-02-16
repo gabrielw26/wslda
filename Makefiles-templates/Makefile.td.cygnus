@@ -1,19 +1,21 @@
 # LOAD BEFORE COMPILATION
 # 
-# module load openmpi/3.1.6/gcc4.8.5-cuda10.1.2
-# module load cuda/10.1.2
+# module load openmpi/3.1.6/intel19.0.5-cuda10.2
+# module load cuda/10.2
+# export LD_LIBRARY_PATH=/work/TDSLDA20/share/elpa/lib:/work/TDSLDA20/share/FFTW3/lib/:$LD_LIBRARY_PATH
+
 
 # COMPILERS
 CXX=mpicc
 NVCC = nvcc 
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=../
+WSLDADIR=/work/TDSLDA20/share/wslda/
 OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3 -DTARGET_MACHINE=TSUBAME
+CFLAGS= -O3 
 NVCCFLAGS = -arch sm_60 -O3 
 
 # LIBRARIES

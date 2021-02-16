@@ -66,6 +66,9 @@ d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
+	
+tools: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm
 
 $(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
