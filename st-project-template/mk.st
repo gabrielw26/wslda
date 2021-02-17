@@ -45,7 +45,7 @@ d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS)
 d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-3d $^
 	
-tools: $(WDATAOBJS) $(DEPSLOCAL)
+ext: $(WDATAOBJS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm
 	$(CXX) $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -o $(BINDIR)test-external-potentials -lm
 	
