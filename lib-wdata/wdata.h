@@ -64,6 +64,24 @@ typedef struct
     
 } wdata_metadata; 
 
+/**
+ * Basic functions for extracting lattice
+ * */
+int wdata_getNX(wdata_metadata *md);
+int wdata_getNY(wdata_metadata *md);
+int wdata_getNZ(wdata_metadata *md);
+double wdata_getDX(wdata_metadata *md);
+double wdata_getDY(wdata_metadata *md);
+double wdata_getDZ(wdata_metadata *md);
+
+void wdata_setNX(wdata_metadata *md, int NX);
+void wdata_setNY(wdata_metadata *md, int NY);
+void wdata_setNZ(wdata_metadata *md, int NZ);
+void wdata_setDX(wdata_metadata *md, double DX);
+void wdata_setDY(wdata_metadata *md, double DY);
+void wdata_setDZ(wdata_metadata *md, double DZ);
+void wdata_setprefix(wdata_metadata *md, const char *prefix);
+
 /** 
  * Function sets lattice size in struct wdata_metadata
  * @return 0: ok, 1: error,

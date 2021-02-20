@@ -93,7 +93,12 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tInfinite (Inf) has been detected!\n");
             fprintf(stream, "\tCheck settings of the code!\n");
             break;
-        
+            
+        case WSLDA_ERR_INTERPOLATION_NOT_IMPLEMENTED:
+            fprintf(stream, "\tUnsupported case of interpolation!\n");
+            fprintf(stream, "\tSupported cases for 3D -- ALL sizes bigger/smaller then the imput sizes.\n");
+            break;
+            
         default: 
             fprintf(stream, "\tThis error does not have description.\n");
     }
