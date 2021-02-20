@@ -29,7 +29,7 @@ void report_error(int errcode, FILE *stream)
             
         case WSLDA_ERR_CANNOT_OVERWRITE:
             fprintf(stream, "\tAttempt of overwriting existing file has taken.\n");
-            fprintf(stream, "\tInput file tag overwrite=1 does not allow for this.\n");
+            fprintf(stream, "\tInput file tag overwrite=0 does not allow for this.\n");
             fprintf(stream, "\tChange overwrite tag or outprefix tag in input file.\n");
             break;
             
@@ -98,6 +98,17 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tUnsupported case of interpolation!\n");
             fprintf(stream, "\tSupported cases for 3D -- ALL sizes bigger/smaller then the imput sizes.\n");
             break;
+            
+        case WSLDA_ERR_CANNOT_CREATE_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot create checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have write permission to the target location.\n");
+            break;
+    
+        case WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot add entry to checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have disk space in the target location.\n");
+            break;
+            
             
         default: 
             fprintf(stream, "\tThis error does not have description.\n");

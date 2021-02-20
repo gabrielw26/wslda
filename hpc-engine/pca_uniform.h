@@ -432,7 +432,7 @@ int save_uniform()
         else
         {
             printf("# UNIFORM SAVE: Error: File `%s` exists. [overwrite=%d] \n", filename, md.overwrite);
-            return 1;
+            return WSLDA_ERR_CANNOT_OVERWRITE;
         }
     }
 

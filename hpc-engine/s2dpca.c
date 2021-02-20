@@ -40,6 +40,8 @@
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h" 
+#include "wslda_interpolation.h"
+#include "wslda_st_checkpoint.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -1537,6 +1539,7 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
+            // TODO - remove later old method of writing checkpoint
             sprintf(file_name, "%s/checkpoint.%s", md.outprefix, suffix);
             printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
             FILE * pFile = fopen(file_name, "wb");
@@ -1561,6 +1564,13 @@ int main( int argc , char ** argv )
             for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
                   
             fclose(pFile);
+            
+            // prepare data info for writing
+            double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
+            // write checkpoint
+            file_operation(
+                wslda_st_write_checkpoint(CODEDIM, it, 11, twrt_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+            );
         }
         
         rt_other+=e_t(0);
