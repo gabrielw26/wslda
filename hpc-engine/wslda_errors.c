@@ -169,12 +169,12 @@ void report_warning(int errcode, FILE *stream)
             
         case WSLDA_WRN_CHECKPOINT_DOINTERPOLATION:
             fprintf(stream, "#\t Resolution of the lattice has changed!\n");
-            fprintf(stream, "#\t The code will interpolate given checkpoint file to the new resolution.\n");
+            fprintf(stream, "#\t The code will interpolate given checkpoint data to the new resolution.\n");
             break;
             
         case WSLDA_WRN_CHECKPOINT_DORESIZE:
             fprintf(stream, "#\t Dimensonality of the lattice has changed!\n");
-            fprintf(stream, "#\t The code will change dimensonality of given checkpoint file to the new latice.\n");
+            fprintf(stream, "#\t The code will change dimensonality of given checkpoint data to the new latice.\n");
             break;
             
         default: 
