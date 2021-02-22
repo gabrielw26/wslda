@@ -129,3 +129,5 @@ st-testcase-uniform/solve-uniform
 td-testcase-uniform/
 
 extensions/interpolate-dataset
+
+extensions/resize-dataset

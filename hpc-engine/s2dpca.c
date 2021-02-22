@@ -150,18 +150,6 @@ int wsldapid; // process id - global variable
 
 typedef char * string;
 
-#if CODEDIM==1
-#define DENSDIM 12*NX
-#define POTDIM  12*NX
-#define BLOCKLENGTH (NX)
-#else
-#define DENSDIM 12*NX*NY
-#define POTDIM  12*NX*NY
-#define BLOCKLENGTH (NX*NY)
-#endif
-
-// make -f Makefile.kzsolver
-
 int main( int argc , char ** argv ) 
 {   
 

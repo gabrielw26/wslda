@@ -95,20 +95,34 @@ void report_error(int errcode, FILE *stream)
             break;
             
         case WSLDA_ERR_INTERPOLATION_NOT_IMPLEMENTED:
-            fprintf(stream, "\tUnsupported case of interpolation!\n");
+            fprintf(stream, "\tUnsupported case of the interpolation!\n");
             fprintf(stream, "\tSupported cases for 3D -- ALL sizes bigger/smaller then the imput sizes.\n");
             break;
             
         case WSLDA_ERR_CANNOT_CREATE_CHECKPOINT_FILE:
-            fprintf(stream, "\tCannot create checkpoint file!\n");
+            fprintf(stream, "\tCannot create the checkpoint file!\n");
             fprintf(stream, "\tCheck if you have write permission to the target location.\n");
             break;
     
         case WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE:
-            fprintf(stream, "\tCannot add entry to checkpoint file!\n");
+            fprintf(stream, "\tCannot add entry to the checkpoint file!\n");
             fprintf(stream, "\tCheck if you have disk space in the target location.\n");
             break;
+
+        case WSLDA_ERR_CANNOT_OPEN_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot open the checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have read permission to the target location.\n");
+            break;    
             
+        case WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot read entry from the checkpoint file!\n");
+            fprintf(stream, "\tCheck the correctness of the checkpoint file. It may be corrupted.\n");
+            break;
+            
+        case WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE:
+            fprintf(stream, "\tThe checkpoint file is incompatible with the code settings!\n");
+            fprintf(stream, "\tYou cannot use provided checkpoint file to initialize the code!\n");
+            break;
             
         default: 
             fprintf(stream, "\tThis error does not have description.\n");
@@ -141,6 +155,10 @@ void report_warning(int errcode, FILE *stream)
             fprintf(stream, "#\t Check if it is intended!\n");
             fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
             break;
+            
+        case WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN:
+            fprintf(stream, "#\t Binary data for Boyden algorithm not consistent with current settings!\n");
+            fprintf(stream, "#\t The data will NOT be loaded!\n");
             
         default: 
             fprintf(stream, "#\tThis warning does not have description.\n");

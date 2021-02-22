@@ -150,9 +150,6 @@ int wsldapid; // process id - global variable
 #include "logger.h"
 
 typedef char * string;
-#define DENSDIM 12*NXYZ
-#define POTDIM  12*NXYZ
-#define BLOCKLENGTH (NXYZ) 
 
 int main( int argc , char ** argv ) 
 {    
@@ -599,35 +596,72 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s/checkpoint.s3dpca", md.inprefix);
-            printf("# READING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "rb");
-            if(pFile==NULL)
+            // Check format of checkpoint
+            i = wslda_stcheckpoint_format(3);
+            if(i==WSLDA_ST_CHECKPOINT_DAT)
             {
+                // this format supports extansions and interpolatons
+
+                // prepare for reading
+                double trd_consts[11];
+                j=0; // file idx
+
+                // convert checkpoint
+                // TODO
+                file_operation(
+                    wslda_st_checkpoint_convert(ST_CHECKPOINT_2D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                );
+                
+                // read checkpoint
+                file_operation(
+                    wslda_st_read_checkpoint(j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                );
+                
+                // decode constants
+                dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+            }
+            else if(i==WSLDA_ST_CHECKPOINT_OLD)
+            {
+                // NOTE: It wll be removed in future
+                // here I keep it only to be compatible with our past caculations
+                sprintf(file_name, "%s/checkpoint.s3dpca", md.inprefix);
+                printf("# READING CHECKPOINT FILE `%s`\n", file_name);
+                printf("# !!! !!! YOU ARE USING OLD CHECKPOINT FORMAT !!! !!! SUPPORT OF THIS FORMAT WILL BE REMOVED IN FUTURE!\n");
+                FILE * pFile = fopen(file_name, "rb");
+                if(pFile==NULL)
+                {
+                    printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
+                    ABORT_NOBARRIER;
+                }
+                
+                // write all nescesary data to file
+                fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
+                fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
+                fread(&beta        , sizeof(double)      , 1 , pFile); 
+                fread(&eF          , sizeof(double)      , 1 , pFile); 
+                fread(&kF          , sizeof(double)      , 1 , pFile);
+                fread(&Effg        , sizeof(double)      , 1 , pFile);
+                fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
+                fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
+                fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
+                fread(npart        , sizeof(double)      , 2 , pFile);
+                fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
+                    
+                fclose(pFile);
+
+            }
+            else
+            {
+                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
                 printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }
-            
-            // write all nescesary data to file
-            fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
-            fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fread(&beta        , sizeof(double)      , 1 , pFile); 
-            fread(&eF          , sizeof(double)      , 1 , pFile); 
-            fread(&kF          , sizeof(double)      , 1 , pFile);
-            fread(&Effg        , sizeof(double)      , 1 , pFile);
-            fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
-            fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
-            fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fread(npart        , sizeof(double)      , 2 , pFile);
-            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
-                  
-            fclose(pFile);
-            
+                        
             printf("# CHECKPOINT READ: it=%d\n", it);
             printf("# CHECKPOINT READ: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
             printf("# CHECKPOINT READ: dc_ec=%16.8g  beta=%16.8g\n", dc_ec, beta);

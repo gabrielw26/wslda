@@ -1,12 +1,11 @@
 /**
  * W-SLDA Toolkit
  * 
- * This code converts existing wdata set into new one defined on lattice with different resolution. 
- * Use this code to learn how to use interpolation routines. 
- * New lattice it taken from corresponding predefines.h file
+ * This tool increases dimensionality of wdata set. 
+ * Use this code to learn how to use resize routines. 
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o interpolate-dataset -lm -lfftw3
+ *    gcc -std=gnu99 resize-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o resize-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
  *    cd $WSLDA/lib-wdata
@@ -34,9 +33,9 @@ int main( int argc , char ** argv )
 {
     int ierr;
     
-    if(argc!=3)
+    if(argc!=4)
     {
-        printf("Usage: %s input-dataset.wtxt outprefix\n", argv[0]);
+        printf("Usage: %s input-dataset.wtxt outprefix target-dim\n", argv[0]);
         
         return( EXIT_FAILURE ) ; 
     }
@@ -51,18 +50,17 @@ int main( int argc , char ** argv )
     int inNX=wdata_getNX(&wdmd), inNY=wdata_getNY(&wdmd), inNZ=wdata_getNZ(&wdmd);
     double inDX=wdata_getDX(&wdmd), inDY=wdata_getDY(&wdmd), inDZ=wdata_getDZ(&wdmd);
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;
-    printf("# **********************  INPUT LATTICE **********************\n");
+    int newdim = atoi(argv[3]);
+    printf("# ************************ LATTICE ***************************\n");
     printf("# LATTICE: %d x %d x %d\n", inNX, inNY, inNZ);
     printf("# SPACING: %f x %f x %f\n", inDX, inDY, inDZ);
     printf("# VOLUME : %f x %f x %f\n", inLX, inLY, inLZ);
-    printf("# ********************** OUTPUT LATTICE **********************\n");
-    printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    printf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
-    printf("# VOLUME : %f x %f x %f\n", LX, LY, LZ);
+    printf("# DIM-IN : %d\n", wdmd.datadim);
+    printf("# DIM-OUT: %d\n", newdim);
     
-    if(wdmd.datadim>=1 && fabs(LX-inLX)>0.001) {printf("# ERROR: LX FOR INPUT AND TARGET LATTICE INCOMPATIBLE!\n"); return( EXIT_FAILURE ) ;}
-    if(wdmd.datadim>=2 && fabs(LY-inLY)>0.001) {printf("# ERROR: LY FOR INPUT AND TARGET LATTICE INCOMPATIBLE!\n"); return( EXIT_FAILURE ) ;}
-    if(wdmd.datadim>=3 && fabs(LZ-inLZ)>0.001) {printf("# ERROR: LZ FOR INPUT AND TARGET LATTICE INCOMPATIBLE!\n"); return( EXIT_FAILURE ) ;}
+    if(newdim>3) {printf("# ERROR: TARGET DIM >3! ERROR!\n"); return( EXIT_FAILURE ) ;}
+    if(wdmd.datadim>newdim) {printf("# ERROR: TARGET DIM < PRESENT DIM! CANNOT DECREASE DIMENSONALITY!\n"); return( EXIT_FAILURE ) ;}
+    if(wdmd.datadim==newdim) {printf("# ERROR: TARGET DIM == PRESENT DIM! NO NEED FOR CONVERSION!\n"); return( EXIT_FAILURE ) ;}
     
     // storage for input variable
     int bdim = wdata_get_blocklength(&wdmd); // get block size
@@ -71,13 +69,12 @@ int main( int argc , char ** argv )
     
     // prepare set output set
     wdata_metadata wdmdo = wdmd;
-    wdata_setNX(&wdmdo,NX); wdata_setNY(&wdmdo,NY); wdata_setNZ(&wdmdo,NZ); 
-    wdata_setDX(&wdmdo,DX); wdata_setDY(&wdmdo,DY); wdata_setDZ(&wdmdo,DZ); 
     wdata_setprefix(&wdmdo,argv[2]);
     wdmdo.issetwrkdir=0;
     wdata_clear_database(&wdmdo);
     wdmdo.cycles=wdmd.cycles; // there will be same number of cycles as in dataset-1.wtxt
     wdmdo.issetwrkdir=0;
+    wdmdo.datadim=newdim;
     
     int bdimo = wdata_get_blocklength(&wdmdo); // get block size
     double *outdata;
@@ -91,9 +88,9 @@ int main( int argc , char ** argv )
         for(icycle=0; icycle<wdmdo.cycles; icycle++) // for each cycle
         {
             file_operationl( wdata_read_cycle(&wdmd, wdmdo.var[ivar].name, icycle, indata) );
-            if     (wdmdo.datadim==3) wslda_interpolation_3d(wdmdo.var[ivar].type[0], inNX, inNY, inNZ, indata, NX, NY, NZ, outdata);
-            else if(wdmdo.datadim==2) wslda_interpolation_2d(wdmdo.var[ivar].type[0], inNX, inNY,       indata, NX, NY,     outdata);
-            else                      wslda_interpolation_1d(wdmdo.var[ivar].type[0], inNX,             indata, NX,         outdata);
+            if     (wdmd.datadim==1 && wdmdo.datadim==3) wslda_resize_array_1d_to_3d(wdmdo.var[ivar].type[0], inNX, indata, inNY, inNZ, outdata);
+            else if(wdmd.datadim==2 && wdmdo.datadim==3) wslda_resize_array_2d_to_3d(wdmdo.var[ivar].type[0], inNX, inNY, indata, inNZ, outdata);
+            else                                         wslda_resize_array_1d_to_2d(wdmdo.var[ivar].type[0], inNX, indata, inNY, outdata);
             file_operationl( wdata_write_cycle(&wdmdo, wdmdo.var[ivar].name, outdata) );
         }
     }

@@ -28,13 +28,19 @@
 /**********************************************************************/
 
 int wslda_interpolation_1dr(int nxi, double *funIn, int nxo, double *funOut);
+int wslda_interpolation_1dv(int nxi, double *funIn, int nxo, double *funOut);
 int wslda_interpolation_1dc(int nxi, double complex *funIn, int nxo, double complex *funOut);
+int wslda_interpolation_1d(char type, int nxi, void *funIn, int nxo, void *funOut);
 
 int wslda_interpolation_2dr(int nxi, int nyi, double *funIn, int nxo, int nyo, double *funOut);
+int wslda_interpolation_2dv(int nxi, int nyi, double *funIn, int nxo, int nyo, double *funOut);
 int wslda_interpolation_2dc(int nxi, int nyi, double complex *funIn, int nxo, int nyo, double complex *funOut);
+int wslda_interpolation_2d(char type, int nxi, int nyi, void *funIn, int nxo, int nyo, void *funOut);
 
 int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, int nyo, int nzo, double *funOut);
+int wslda_interpolation_3dv(int nxi, int nyi, int nzi, double *funIn, int nxo, int nyo, int nzo, double *funOut);
 int wslda_interpolation_3dc(int nxi, int nyi, int nzi, double complex *funIn, int nxo, int nyo, int nzo, double complex *funOut);  
+int wslda_interpolation_3d(char type, int nxi, int nyi, int nzi, void *funIn, int nxo, int nyo, int nzo, void *funOut);
  
 
 /**********************************************************************/
@@ -201,6 +207,18 @@ int wslda_interpolation_1dr(int nxi, double *funIn, int nxo, double *funOut){
     return WSLDA_OK;
 }
 
+int wslda_interpolation_1dv(int nxi, double *funIn, int nxo, double *funOut){ 
+    wslda_interpolation_1dr(nxi, funIn+0*nxi, nxo, funOut+0*nxo);
+    wslda_interpolation_1dr(nxi, funIn+1*nxi, nxo, funOut+1*nxo);
+    wslda_interpolation_1dr(nxi, funIn+2*nxi, nxo, funOut+2*nxo);
+    return WSLDA_OK;
+} 
+
+int wslda_interpolation_1d(char type, int nxi, void *funIn, int nxo, void *funOut){
+    if(type=='c')      return wslda_interpolation_1dc(nxi, (double complex *)funIn, nxo, (double complex *)funOut);
+    else if(type=='v') return wslda_interpolation_1dv(nxi, (double *)funIn, nxo, (double *)funOut);
+    else               return wslda_interpolation_1dr(nxi, (double *)funIn, nxo, (double *)funOut);
+}    
 
 /**********************************************************************/
 /**********************************2D**********************************/
@@ -378,6 +396,20 @@ int wslda_interpolation_2dr(int nxi, int nyi, double *funIn, int nxo, int nyo, d
     
     return WSLDA_OK;
 }
+
+int wslda_interpolation_2dv(int nxi, int nyi, double *funIn, int nxo, int nyo, double *funOut){ 
+    wslda_interpolation_2dr(nxi, nyi, funIn+0*nxi*nyi, nxo, nyo, funOut+0*nxo*nyo);
+    wslda_interpolation_2dr(nxi, nyi, funIn+1*nxi*nyi, nxo, nyo, funOut+1*nxo*nyo);
+    wslda_interpolation_2dr(nxi, nyi, funIn+2*nxi*nyi, nxo, nyo, funOut+2*nxo*nyo);
+    return WSLDA_OK;
+} 
+
+int wslda_interpolation_2d(char type, int nxi, int nyi, void *funIn, int nxo, int nyo, void *funOut){
+    if(type=='c')      return wslda_interpolation_2dc(nxi, nyi, (double complex *)funIn, nxo, nyo, (double complex *)funOut);
+    else if(type=='v') return wslda_interpolation_2dv(nxi, nyi, (double *)funIn, nxo, nyo, (double *)funOut);
+    else               return wslda_interpolation_2dr(nxi, nyi, (double *)funIn, nxo, nyo, (double *)funOut);
+}    
+
 
 /**********************************************************************/
 /**********************************3D**********************************/
@@ -570,5 +602,17 @@ int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, i
     return WSLDA_OK;
 }
 
+int wslda_interpolation_3dv(int nxi, int nyi, int nzi, double *funIn, int nxo, int nyo, int nzo, double *funOut){ 
+    wslda_interpolation_3dr(nxi, nyi, nzi, funIn+0*nxi*nyi*nzi, nxo, nyo, nzo, funOut+0*nxo*nyo*nzo);
+    wslda_interpolation_3dr(nxi, nyi, nzi, funIn+1*nxi*nyi*nzi, nxo, nyo, nzo, funOut+1*nxo*nyo*nzo);
+    wslda_interpolation_3dr(nxi, nyi, nzi, funIn+2*nxi*nyi*nzi, nxo, nyo, nzo, funOut+2*nxo*nyo*nzo);
+    return WSLDA_OK;
+} 
+
+int wslda_interpolation_3d(char type, int nxi, int nyi, int nzi, void *funIn, int nxo, int nyo, int nzo, void *funOut){
+    if(type=='c')      return wslda_interpolation_3dc(nxi, nyi, nzi, (double complex *)funIn, nxo, nyo, nzo, (double complex *)funOut);
+    else if(type=='v') return wslda_interpolation_3dv(nxi, nyi, nzi, (double *)funIn, nxo, nyo, nzo, (double *)funOut);
+    else               return wslda_interpolation_3dr(nxi, nyi, nzi, (double *)funIn, nxo, nyo, nzo, (double *)funOut);
+} 
 
 #endif

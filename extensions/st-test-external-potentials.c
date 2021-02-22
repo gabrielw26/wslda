@@ -9,7 +9,7 @@
  * Next, they can be inspected by VisIt. 
  * 
  * Copy this file to your project folder and compile using (select CODEDIM from 1, 2 or 3):
- *    gcc -std=gnu99 st-test-external-potentials.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o st-test-external-potentials -lm -DCODEDIM=2
+ *    gcc -std=gnu99 st-test-external-potentials.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o st-test-external-potentials -lm -lfftw3 -DCODEDIM=2
  * 
  * NOTE: you need before generate wdata lib for C compiler:
  *    cd $WSLDA/lib-wdata

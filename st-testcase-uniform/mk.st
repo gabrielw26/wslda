@@ -5,7 +5,7 @@ SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
 WDATAINC=$(WSLDADIR)lib-wdata/
 WDATASRC=$(WSLDADIR)lib-wdata/
-DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h s3dpca_inittype4.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h ../VERSION.h
+DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h s3dpca_inittype4.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_interpolation.h wslda_resize.h ../VERSION.h
 WDATADEPS = wdata.h
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
 SRCS = wslda_functionals.o wslda_potdens.o sxdpca_broyden.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o wslda_st_checkpoint.o
@@ -46,8 +46,8 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-3d $^
 	
 ext: $(WDATAOBJS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm
-	$(CXX) $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -o $(BINDIR)test-external-potentials -lm
+	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
+	$(CXX) $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -o $(BINDIR)test-external-potentials -lm -lfftw3
 	
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
 	python $(SRCDIR)reproducibility.py $(OBJDIR)
