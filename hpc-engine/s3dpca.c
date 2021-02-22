@@ -48,6 +48,7 @@
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h"
 #include "wslda_interpolation.h"
+#include "wslda_resize.h"
 #include "wslda_st_checkpoint.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
@@ -601,16 +602,36 @@ int main( int argc , char ** argv )
             if(i==WSLDA_ST_CHECKPOINT_DAT)
             {
                 // this format supports extansions and interpolatons
-
+                int _interop, _resop;
+                file_operation( wslda_st_required_operations(3, &_interop, &_resop) );
+                
                 // prepare for reading
                 double trd_consts[11];
                 j=0; // file idx
 
                 // convert checkpoint
-                // TODO
-                file_operation(
-                    wslda_st_checkpoint_convert(ST_CHECKPOINT_2D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
-                );
+                if(_interop>0)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_RESIZE, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                
+                if(_resop==23)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_2D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                if(_resop==13)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_1D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
                 
                 // read checkpoint
                 file_operation(

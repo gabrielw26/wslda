@@ -160,9 +160,19 @@ int wslda_interpolation_1dr(int nxi, double *funIn, int nxo, double *funOut){
             if(ixi<nxi/2) ixo=ixi;
             else          ixo=ixi+(nxo-nxi);
             
-            ixyzo = ixo;
+            if(ixo>nxi/2) // special case - utilize symmetry
+            {
+                ixyzo = (ixo-(nxo-nxi));
+                in_backward[ixyzo] =  conj(out_forward[ixyzi]);
+            }
+            else
+            {
+                ixyzo = ixo;
+                in_backward[ixyzo] =  out_forward[ixyzi];
+            }
             
-            in_backward[ixyzo] =  out_forward[ixyzi];
+            if(ixyzi>=(nxi/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
+            if(ixyzo>=(nxo/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
             
             ixyzi++;
         }
@@ -346,9 +356,19 @@ int wslda_interpolation_2dr(int nxi, int nyi, double *funIn, int nxo, int nyo, d
             if(iyi<nyi/2) iyo=iyi;
             else          iyo=iyi+(nyo-nyi);
             
-            ixyzo = iyo + (nyo/2+1)*ixo;
+            if(iyo>nyi/2) // special case - utilize symmetry
+            {
+                ixyzo = (iyo-(nyo-nyi)) + (nyo/2+1)*ixo;
+                in_backward[ixyzo] =  conj(out_forward[ixyzi]);
+            }
+            else
+            {
+                ixyzo = iyo + (nyo/2+1)*ixo;
+                in_backward[ixyzo] =  out_forward[ixyzi];
+            }
             
-            in_backward[ixyzo] =  out_forward[ixyzi];
+            if(ixyzi>=nxi*(nyi/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
+            if(ixyzo>=nxo*(nyo/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
             
             ixyzi++;
         }
@@ -509,11 +529,10 @@ int wslda_interpolation_3dc(int nxi, int nyi, int nzi, double complex *funIn, in
 }
 
 int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, int nyo, int nzo, double *funOut){    
-
     double complex *out_forward, *in_backward;
     out_forward = (double complex *) malloc(sizeof(double complex)*nxi*nyi*(nzi/2+1));
     in_backward = (double complex *) malloc(sizeof(double complex)*nxo*nyo*(nzo/2+1));
-
+    
     //set up fourier plans (creating plans for the direction of transform of a given array)
     fftw_plan plan_forward, plan_backward;
     plan_forward = fftw_plan_dft_r2c_3d(nxi, nyi, nzi, funIn, out_forward, FFTW_ESTIMATE);
@@ -521,7 +540,6 @@ int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, i
 
     //computing the forward fourier transform 
     fftw_execute(plan_forward);
-
 
     int ixyzi, ixi, iyi, izi;
     int ixyzo, ixo, iyo, izo;
@@ -548,9 +566,20 @@ int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, i
             if(izi<nzi/2) izo=izi;
             else          izo=izi+(nzo-nzi);
             
-            ixyzo = izo + (nzo/2+1)*iyo + (nzo/2+1)*nyo*ixo;
+            if(izo>nzi/2) // special case - utilize symmetry
+            {
+                ixyzo = (izo-(nzo-nzi)) + (nzo/2+1)*iyo + (nzo/2+1)*nyo*ixo;
+                in_backward[ixyzo] =  conj(out_forward[ixyzi]);
+//                 printf("SC: %d --> %d\n", izo, (izo-(nzo-nzi)));
+            }
+            else
+            {
+                ixyzo = izo + (nzo/2+1)*iyo + (nzo/2+1)*nyo*ixo;
+                in_backward[ixyzo] =  out_forward[ixyzi];
+            }
             
-            in_backward[ixyzo] =  out_forward[ixyzi];
+            if(ixyzi>=nxi*nyi*(nzi/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
+            if(ixyzo>=nxo*nyo*(nzo/2+1)) return WSLDA_ERR_INTRISTIC_ERROR;
             
             ixyzi++;
         }

@@ -17,9 +17,14 @@
 #define WSLDA_ST_CHECKPOINT_NOFILE 2
 
 #define ST_CHECKPOINT_2D_TO_3D 33
+#define ST_CHECKPOINT_1D_TO_3D 34
+#define ST_CHECKPOINT_1D_TO_2D 35
+#define ST_CHECKPOINT_RESIZE 36
 
 
 int wslda_stcheckpoint_format(int codedim);
+
+int wslda_st_required_operations(int codedim, int *intepolation, int *resize);
 
 int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it, 
                               int nconsts, double *consts, 

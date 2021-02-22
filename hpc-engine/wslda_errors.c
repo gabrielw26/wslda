@@ -124,6 +124,12 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tYou cannot use provided checkpoint file to initialize the code!\n");
             break;
             
+        case WSLDA_ERR_INTRISTIC_ERROR:
+            fprintf(stream, "\tIt is intrinsic error of W-SLDA Toolkit.\n");
+            fprintf(stream, "\tIt shouldn't have happened, but it did :-(\n");
+            fprintf(stream, "\tPlease report this error to W-SLDA Teams and help us to improve the Toolkit.\n");
+            break;
+            
         default: 
             fprintf(stream, "\tThis error does not have description.\n");
     }
@@ -159,6 +165,17 @@ void report_warning(int errcode, FILE *stream)
         case WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN:
             fprintf(stream, "#\t Binary data for Boyden algorithm not consistent with current settings!\n");
             fprintf(stream, "#\t The data will NOT be loaded!\n");
+            break;
+            
+        case WSLDA_WRN_CHECKPOINT_DOINTERPOLATION:
+            fprintf(stream, "#\t Resolution of the lattice has changed!\n");
+            fprintf(stream, "#\t The code will interpolate given checkpoint file to the new resolution.\n");
+            break;
+            
+        case WSLDA_WRN_CHECKPOINT_DORESIZE:
+            fprintf(stream, "#\t Dimensonality of the lattice has changed!\n");
+            fprintf(stream, "#\t The code will change dimensonality of given checkpoint file to the new latice.\n");
+            break;
             
         default: 
             fprintf(stream, "#\tThis warning does not have description.\n");
