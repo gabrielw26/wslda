@@ -1457,32 +1457,6 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0) 
         {
-            // TODO : remove!!!!
-            sprintf(file_name, "%s/checkpoint.s3dpca", md.outprefix);
-            printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "wb");
-            
-            // write all nescesary data to file
-            i=it+1;
-            fwrite(&i           , sizeof(int)         , 1 , pFile); // iteration number
-            fwrite(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fwrite(&beta        , sizeof(double)      , 1 , pFile); 
-            fwrite(&eF          , sizeof(double)      , 1 , pFile); 
-            fwrite(&kF          , sizeof(double)      , 1 , pFile);
-            fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-            fwrite(h_potentials , sizeof(double)*POTDIM , 1 , pFile);
-            fwrite(h_densities  , sizeof(double)*DENSDIM, 1 , pFile);
-            fwrite(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fwrite(npart        , sizeof(double)      , 2 , pFile);
-            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
-                  
-            fclose(pFile);
-            
             // prepare data info for writing
             double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
             // write checkpoint
