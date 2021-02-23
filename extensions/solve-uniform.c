@@ -5,7 +5,7 @@
  * It can be used for checking of correctness of solver parameters.
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 solve-uniform.c -I. -I$WSLDA/hpc-engine -o solve-uniform -lm
+ *    gcc -std=gnu99 solve-uniform.c -I. -I$WSLDA/hpc-engine -o solve-uniform -lm -lfftw3
  * 
  * */  
 

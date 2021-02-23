@@ -11,6 +11,38 @@
 
 #ifndef _WSLDA_POTDENS_
 #define _WSLDA_POTDENS_
+
+// ordering arrays in h_densities, 
+// c - complex, r- real
+#define DENSCNT 12
+#define DENSTYPE "crrrrrrrrrr"
+
+// ordering arrays in h_potentials, 
+// c - complex, r- real
+#define POTCNT 12
+#define POTTYPE "rrcrrrrrrrr"
+
+#if CODEDIM==1
+
+#define DENSDIM (DENSCNT*NX)
+#define POTDIM  (POTCNT*NX)
+#define BLOCKLENGTH (NX)
+
+#elif CODEDIM==2
+
+#define DENSDIM (DENSCNT*NX*NY)
+#define POTDIM  (POTCNT*NX*NY)
+#define BLOCKLENGTH (NX*NY)
+
+#else
+
+#define DENSDIM (DENSCNT*NXYZ)
+#define POTDIM  (POTCNT*NXYZ)
+#define BLOCKLENGTH (NXYZ) 
+
+#endif
+
+
 typedef struct
 {
     int nx;             

@@ -8,3 +8,5 @@ Codes:
 * `st-test-external-potentials.c`: This file provides simple code that can be used for testing of correctness of implementation of external potentials. 
 * `solve-uniform.c`:  This code solves uniform problem according settings from input file. It can be used for checking of correctness of solver parameters.
 * `compare-datasets.c`: This tool compares two different datasets and creates a new dataset where differences of all variables are saved. 
+* `interpolate-dataset.c`: This code converts existing wdata set into new one defined on lattice with different resolution. Use this code to learn how to use interpolation routines. 
+* `resize-dataset.c`: This tool increases dimensionality of wdata set. Use this code to learn how to use resize routines. 

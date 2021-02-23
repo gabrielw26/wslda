@@ -29,7 +29,7 @@ void report_error(int errcode, FILE *stream)
             
         case WSLDA_ERR_CANNOT_OVERWRITE:
             fprintf(stream, "\tAttempt of overwriting existing file has taken.\n");
-            fprintf(stream, "\tInput file tag overwrite=1 does not allow for this.\n");
+            fprintf(stream, "\tInput file tag overwrite=0 does not allow for this.\n");
             fprintf(stream, "\tChange overwrite tag or outprefix tag in input file.\n");
             break;
             
@@ -93,7 +93,43 @@ void report_error(int errcode, FILE *stream)
             fprintf(stream, "\tInfinite (Inf) has been detected!\n");
             fprintf(stream, "\tCheck settings of the code!\n");
             break;
-        
+            
+        case WSLDA_ERR_INTERPOLATION_NOT_IMPLEMENTED:
+            fprintf(stream, "\tUnsupported case of the interpolation!\n");
+            fprintf(stream, "\tSupported cases for 3D -- ALL sizes bigger/smaller then the imput sizes.\n");
+            break;
+            
+        case WSLDA_ERR_CANNOT_CREATE_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot create the checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have write permission to the target location.\n");
+            break;
+    
+        case WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot add entry to the checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have disk space in the target location.\n");
+            break;
+
+        case WSLDA_ERR_CANNOT_OPEN_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot open the checkpoint file!\n");
+            fprintf(stream, "\tCheck if you have read permission to the target location.\n");
+            break;    
+            
+        case WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE:
+            fprintf(stream, "\tCannot read entry from the checkpoint file!\n");
+            fprintf(stream, "\tCheck the correctness of the checkpoint file. It may be corrupted.\n");
+            break;
+            
+        case WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE:
+            fprintf(stream, "\tThe checkpoint file is incompatible with the code settings!\n");
+            fprintf(stream, "\tYou cannot use provided checkpoint file to initialize the code!\n");
+            break;
+            
+        case WSLDA_ERR_INTRISTIC_ERROR:
+            fprintf(stream, "\tIt is intrinsic error of W-SLDA Toolkit.\n");
+            fprintf(stream, "\tIt shouldn't have happened, but it did :-(\n");
+            fprintf(stream, "\tPlease report this error to W-SLDA Teams and help us to improve the Toolkit.\n");
+            break;
+            
         default: 
             fprintf(stream, "\tThis error does not have description.\n");
     }
@@ -124,6 +160,21 @@ void report_warning(int errcode, FILE *stream)
             fprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
             fprintf(stream, "#\t Check if it is intended!\n");
             fprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            break;
+            
+        case WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN:
+            fprintf(stream, "#\t Binary data for Boyden algorithm not consistent with current settings!\n");
+            fprintf(stream, "#\t The data will NOT be loaded!\n");
+            break;
+            
+        case WSLDA_WRN_CHECKPOINT_DOINTERPOLATION:
+            fprintf(stream, "#\t Resolution of the lattice has changed!\n");
+            fprintf(stream, "#\t The code will interpolate given checkpoint data to the new resolution.\n");
+            break;
+            
+        case WSLDA_WRN_CHECKPOINT_DORESIZE:
+            fprintf(stream, "#\t Dimensonality of the lattice has changed!\n");
+            fprintf(stream, "#\t The code will change dimensionality of given checkpoint data to the new lattice.\n");
             break;
             
         default: 

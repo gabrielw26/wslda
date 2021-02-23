@@ -930,7 +930,7 @@ int main( int argc , char ** argv )
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             
             // NOTE: d_wf keeps wave-function for t+dt
-            if(ip==0) { printf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
+//             if(ip==0) { printf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
         }
         
         // Copy fkm1, ..., fkm4 back to gpu

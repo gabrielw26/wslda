@@ -4,7 +4,7 @@
  * This file demonstrate how to parse input file
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 parse-input-template.c -I. -I$WSLDA/hpc-engine -o parse-input-template -lm
+ *    gcc -std=gnu99 parse-input-template.c -I. -I$WSLDA/hpc-engine -o parse-input-template -lm -lfftw3
  * 
  * */  
 
