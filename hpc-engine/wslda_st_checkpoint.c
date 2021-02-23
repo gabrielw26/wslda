@@ -73,7 +73,7 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     int inNX=lattice1[1], inNY=lattice1[2], inNZ=lattice1[3];
     double inDX=lattice2[0], inDY=lattice2[1], inDZ=lattice2[2];
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;  
-    printf("# CHECKPOINT FOR %dD LATTICE: [NX,NY,NZ]=[%d,%d,%d], [DX,DY,DZ]=[%.3f,%.3f,%.3f] [LX,LY,LZ]=[%.3f,%.3f,%.3f]\n", 
+    printf("# CHECKPOINT FOR %dD LATTICE: [NX,NY,NZ]=[%d,%d,%d], [DX,DY,DZ]=[%.3f,%.3f,%.3f], [LX,LY,LZ]=[%.3f,%.3f,%.3f]\n", 
     incodedim, inNX, inNY, inNZ, inDX, inDY, inDZ, inLX, inLY, inLZ);
     if(incodedim==codedim && inNX==NX && inNY==NY && inNZ==NZ && inDX==DX && inDY==DY && inDZ==DZ)
     {
