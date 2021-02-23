@@ -32,5 +32,8 @@
 #include "pca_io.h"
 #include "s2dpca_edf.h"
 #include "pca_uniform.h"
+#include "wslda_interpolation.h"
+#include "wslda_resize.h"
+
 
 #endif
