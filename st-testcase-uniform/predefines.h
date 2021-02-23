@@ -6,7 +6,7 @@
 #define NZ 12
 
 #define DX 1.0
-#define DY 1.0x
+#define DY 1.0
 #define DZ 1.0
 
 /**
