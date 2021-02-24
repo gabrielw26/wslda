@@ -356,7 +356,17 @@ int parse_input_file(char * file_name)
     if(md.init0Tstart<0.0) md.init0Tstart=md.init0Tstop;
     if(md.init0scmix<0.0) md.init0scmix=md.linearmixing;
     if(md.init0maxiter<0) md.init0maxiter=md.maxiters;
-        
+    
+#ifdef WSLDA
+    if(md.muchange>0 && md.Na!=md.Nb && md.spinsymmetry==1) 
+    {
+        warn_head(stdout);
+        fprintf(stdout, "#\tForcing spinsymmetry=0 since Na!=Nb and muchange>0 (fixed particle number mode). \n");
+        warn_foot(stdout);
+        md.spinsymmetry=0;
+    }
+#endif
+
     fclose(fp);
     return 1;
 }
