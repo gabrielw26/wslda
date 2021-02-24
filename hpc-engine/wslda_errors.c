@@ -142,11 +142,20 @@ void report_error(int errcode, FILE *stream)
     
 }
 
+void warn_head(FILE *stream)
+{
+    fprintf(stream, "# !!! --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- !!!\n");
+}
+void warn_foot(FILE *stream)
+{
+    fprintf(stream, "# !!! --- ------- --- ------- --- ------- --- ------- --- ------- --- ------- --- !!!\n");
+}
+
 void report_warning(int errcode, FILE *stream)
 {
     if(errcode==WSLDA_OK) return; // no reporting
     
-    fprintf(stream, "# !!! --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- WARNING --- !!!\n");
+    warn_head(stream);
 
     switch(errcode)
     {
@@ -180,7 +189,7 @@ void report_warning(int errcode, FILE *stream)
         default: 
             fprintf(stream, "#\tThis warning does not have description.\n");
     }
-    fprintf(stream, "# !!! --- ------- --- ------- --- ------- --- ------- --- ------- --- ------- --- !!!\n");
+    warn_foot(stream);
  
 }
 

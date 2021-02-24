@@ -6,7 +6,7 @@
 #define NZ 12
 
 #define DX 1.0
-#define DY 1.0                                                                                                                                       
+#define DY 1.0
 #define DZ 1.0
 
 /**
@@ -35,7 +35,7 @@
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 
- * the code will utilize it in order to speed-up the calculations
+ * the code will utilize it in order to speed-up the calculations by factor 4x (approximately)
  * */
 // #define MATRIX_IS_REAL
 
