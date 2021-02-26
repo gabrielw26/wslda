@@ -131,3 +131,5 @@ td-testcase-uniform/
 extensions/interpolate-dataset
 
 extensions/resize-dataset
+
+*.eps
