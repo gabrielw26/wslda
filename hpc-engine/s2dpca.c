@@ -94,6 +94,8 @@ NOT TESTED
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 // #define VERBOSE
+// #define VERBOSEDIG
+
 
 /* Auxiliary routine: printing a real matrix */
 void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
@@ -1089,7 +1091,11 @@ int main( int argc , char ** argv )
             
             // diagonalize
             b_t();
+#ifdef VERBOSEDIG
             if(gr_iam==0) printf("# DIAGONALIZATION %d %d...\n", it, ikz); fflush(stdout);
+#else
+            if(iam==0) printf("# DIAGONALIZATION %d %d...\n", it, ikz); fflush(stdout);
+#endif 
 #ifdef MATRIX_IS_REAL
         // convert matrix to real version
 //         for(ixyz=0; ixyz<nip*niq; ixyz++) if(fabs(cimag(h[ixyz]))>1.0e-12) {printf("# ERROR: matrix has imginary components!\n"); ABORT_NOBARRIER;}
@@ -1185,7 +1191,11 @@ int main( int argc , char ** argv )
             pzheevr_m=iy-ix;
 #endif
             rt_zheev+=e_t(0);
+#ifdef VERBOSEDIG
             if(gr_iam==0) printf("# DIAGONALIZATION %d %d DONE [%.0f sec] (EXTRACTED %d STATES)\n", it, ikz, rt_zheev/(ikz-mylidx+1), pzheevr_m); fflush(stdout);
+#else
+            if(iam==0) printf("# DIAGONALIZATION %d %d DONE [%.0f sec] (EXTRACTED %d STATES)\n", it, ikz, rt_zheev/(ikz-mylidx+1), pzheevr_m); fflush(stdout);            
+#endif
             
             
             if(pzheevr_m==0)
