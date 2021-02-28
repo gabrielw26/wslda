@@ -8,6 +8,93 @@
 
 #ifndef __WSLDA_WAVEVECTORS__
 #define __WSLDA_WAVEVECTORS__
+
+
+// ------------------------------- IMPROVED INTERFACE FOR 1D CODES -------------------------------
+typedef struct
+{
+    int cnt; // number of unique modes for 1d case
+    double *ky; 
+    double *kz;
+    int *weight; // degeneracy of the mode
+} wslda_kmodes_1d;
+
+static wslda_kmodes_1d _kmodes_1d = {0, NULL, NULL, NULL}; // local structure
+
+int fill_wslda_kmodes_1d(double *kky, double *kkz)
+{
+    double *lky, *lkz, *lk2;
+    int *lweight;
+    int lcnt=0;
+    
+    // take memory
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkz,NY*NZ,double);
+    cppmallocl(lk2,NY*NZ,double);
+    cppmallocl(lweight,NY*NZ,int);
+    
+    // take only unique kx^2+ky^2
+    int iz, iy, i;
+    int hasit;
+    double k2;
+    for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
+        
+        if(iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        
+        hasit=0;
+        for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<1.0e-9) {hasit=1; break;}
+        
+        if(hasit==1)
+        {
+            lweight[i]++;
+//             if(wsldapid==0) printf("->>>> HAS %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, i);
+        }
+        else
+        {
+            lweight[lcnt]=1;
+            lky[lcnt]=kky[iy];
+            lkz[lcnt]=kkz[iz];
+            lk2[lcnt]=k2;
+            lcnt++;
+//             if(wsldapid==0) printf("->>>> NEW %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, lcnt-1);
+        }
+    }
+    
+    // copy to destination buffer
+    cppmallocl(_kmodes_1d.ky,lcnt,double);
+    cppmallocl(_kmodes_1d.kz,lcnt,double);
+    cppmallocl(_kmodes_1d.weight,lcnt,int);
+    _kmodes_1d.cnt=lcnt;
+        
+    int isum=0;
+    for(i=0; i<lcnt; i++)
+    {
+        _kmodes_1d.ky[i]=lky[i];
+        _kmodes_1d.kz[i]=lkz[i];
+        _kmodes_1d.weight[i]=lweight[i];
+        
+        // check internal sum
+        isum+=lweight[i];
+    }
+    
+    // free memory
+    free(lky);
+    free(lkz);
+    free(lk2);
+    free(lweight);
+    
+//     printf("->>>> lcnt=%d isum=%d NY*NZ=%d\n", lcnt, isum, (NY-1)*(NZ-1));
+    if(isum!=(NY-1)*(NZ-1)) return WSLDA_ERR_INTRISTIC_ERROR;
+    
+    return WSLDA_OK;
+}
+
+
+// ------------------------------- OLD INTERFACE FOR 1D AND 2D CODES -------------------------------
+
 /**
  * Structure containg info about k mode for 2D and 1D codes only
  * */
@@ -28,6 +115,18 @@ int count_number_of_k_modes(double *kkx, double *kky, double *kkz, int codedim, 
     int iz=0;
     int lNZ=NZ;
     int lNY=NY;
+    
+    if(codedim==1) // apply improved interface
+    {
+        int ierr=WSLDA_OK;
+        if(_kmodes_1d.cnt==0) ierr=fill_wslda_kmodes_1d(kky, kkz); 
+        kvecs_to_consder = _kmodes_1d.cnt;
+        
+        *k_modes = kvecs_to_consder; // save result
+        return ierr;
+    }
+    
+    // otherwise, use old method
     if(codedim==2) lNY=1;
     
     // take only positive energy states
@@ -53,6 +152,24 @@ int create_k_modes(double *kkx, double *kky, double *kkz, int codedim, wslda_kmo
     int iz=0;
     int lNZ=NZ;
     int lNY=NY;
+    
+    if(codedim==1) // apply improved interface
+    {
+        int ierr=WSLDA_OK;
+        if(_kmodes_1d.cnt==0) ierr=fill_wslda_kmodes_1d(kky, kkz); 
+
+        int i;
+        for(i=0; i<_kmodes_1d.cnt; i++)
+        {
+            k_modes[i].ky=_kmodes_1d.ky[i];
+            k_modes[i].kz=_kmodes_1d.kz[i];
+            k_modes[i].weight=_kmodes_1d.weight[i];
+        }
+            
+        return ierr;
+    }
+    
+    // otherwise, use old method
     if(codedim==2) lNY=1;
     
     // take only positive energy states
@@ -168,6 +285,7 @@ int get_weight_2d(double kz)
     if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
     return wcnt;
 }
+
 
 #endif
 

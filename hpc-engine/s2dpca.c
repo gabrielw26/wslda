@@ -14,6 +14,8 @@
 #include <complex.h>
 #include <mpi.h>
 
+int wsldapid; // process id - global variable
+
 #include "wdata.h"
 
 #include "pca_settings.h"
@@ -146,8 +148,6 @@ double dc_ec;
 
 // BdG mode
 double aBdG;
-
-int wsldapid; // process id - global variable
 
 #include "logger.h"
 
