@@ -1802,13 +1802,16 @@ int get_nwf_to_evolve_1d(int *nwf)
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
+    int deg;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
             
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        if(kk2[ixyz]<kc2) // 
         {
-            if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
-            else *nwf+=2; // there are two solutions for each momentum
+            deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+            if(deg>0) deg=1; else deg=0;
+            if(md.spinsymmetry==1) *nwf+=1*deg; // only positive energy state
+            else *nwf+=2*deg; // there are two solutions for each momentum
         }
             
         // make test for correctness
@@ -1817,25 +1820,17 @@ int get_nwf_to_evolve_1d(int *nwf)
             if(kk2[ixyz]<kc2) 
             {
                 // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
-                                
-                total_nwf2+=1;
+                total_nwf += 1*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+                total_nwf2+= 1;
             }
         }
         else
         {
             if(kk2[ixyz]<kc2)
             {
-                // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
-                
-                total_nwf2+=2;
+                // there are two solutions for each momentum
+                total_nwf += 2*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+                total_nwf2+= 2;
             }
         }
              
@@ -1868,11 +1863,12 @@ int get_nwf_to_evolve_1d(int *nwf)
  * @param ec energy cut-off for the solution (OUTPUT)
  * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param cnt degenerecies of states (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param printout, function prints on output info if printout is true
  * @return 0 - OK, otherwise error
  * */
-int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_a, double *mu_b, double *ec, double *fEn, double *kkyzvals, double *En, int printout)
+int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_a, double *mu_b, double *ec, double *fEn, double *kkyzvals, int *cnt, double *En, int printout)
 {
     int i,j;
     int ix, iy, iz, ixyz; 
@@ -1931,13 +1927,16 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
     int nwf=0;
     int total_nwf=0;
     int takeit;
+    int deg; 
     
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        if(kk2[ixyz]<kc2) // take only from sphere and for non-negative ky and non-negative kz values 
         {
-            if(md.spinsymmetry==1) nwf+=1; // only positive energy state
-            else nwf+=2; // thera are two solutions for each momentum
+            deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+            if(deg>0) deg=1; else deg=0;
+            if(md.spinsymmetry==1) nwf+=1*deg; // only positive energy state
+            else nwf+=2*deg; // there are two solutions for each momentum
         }
         
         // make test for correctness
@@ -1946,21 +1945,15 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
             if(kk2[ixyz]<kc2)
             {
                 // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
+                total_nwf += 1*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
             }
         }
         else 
         {
             if(kk2[ixyz]<kc2)
             {
-                // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
+                // there are two solutions for each momentum
+                total_nwf += 2*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
             }
         }
         
@@ -1991,7 +1984,8 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere
+        deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+        if(kk2[ixyz]<kc2 && deg>0) // take only from sphere
         {
             eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
             eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
@@ -2044,6 +2038,9 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
                 // kkz value
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
                 kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
+                
+                // degeneracy
+                cnt[nwf-idxfrom]=deg;
                 
                 // eigen energy
                 En[nwf-idxfrom]=ek;
@@ -2103,6 +2100,9 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
                 // kkz value
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
                 kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
+                
+                // degeneracy
+                cnt[nwf-idxfrom]=deg;
                 
                 // eigen energy
                 En[nwf-idxfrom]=ek;
