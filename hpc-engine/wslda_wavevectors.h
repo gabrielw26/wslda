@@ -42,8 +42,8 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
     {
         k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
         
-        if(iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
-        if(iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
         
         hasit=0;
         for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<CMP_EPS) {hasit=1; break;}
@@ -356,8 +356,8 @@ int wslda_kmodes_1d_get_modes(double ky, double kz, int *cnt, double *mkky, doub
     double k2;
     for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
     {
-        if(iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
-        if(iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
         
         k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
         
