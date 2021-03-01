@@ -9,6 +9,7 @@
 #ifndef __WSLDA_WAVEVECTORS__
 #define __WSLDA_WAVEVECTORS__
 
+#define CMP_EPS 1.0e-12
 
 // ------------------------------- IMPROVED INTERFACE FOR 1D CODES -------------------------------
 typedef struct
@@ -45,7 +46,7 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
         if(iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
         
         hasit=0;
-        for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<1.0e-9) {hasit=1; break;}
+        for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<CMP_EPS) {hasit=1; break;}
         
         if(hasit==1)
         {
@@ -132,10 +133,10 @@ int count_number_of_k_modes(double *kkx, double *kky, double *kkz, int codedim, 
     // take only positive energy states
     for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
         {
-            if     (kky[iy]>1.0e-12       && kkz[iz]>1.0e-12      ) kvecs_to_consder += 1; // 2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-            else if(kky[iy]>1.0e-12       && fabs(kkz[iz])<1.0e-12) kvecs_to_consder += 1; // 2*1; // one solution x (-ky, +ky) x (  kz=0  )
-            else if(fabs(kky[iy])<1.0e-12 && kkz[iz]>1.0e-12      ) kvecs_to_consder += 1; // 1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-            else if(fabs(kky[iy])<1.0e-12 && fabs(kkz[iz])<1.0e-12) kvecs_to_consder += 1; // 1*1; // one solution x (  ky=0  ) x (  kz=0  )
+            if     (kky[iy]>CMP_EPS       && kkz[iz]>CMP_EPS      ) kvecs_to_consder += 1; // 2*2; // one solution x (-ky, +ky) x (-kz, +kz)
+            else if(kky[iy]>CMP_EPS       && fabs(kkz[iz])<CMP_EPS) kvecs_to_consder += 1; // 2*1; // one solution x (-ky, +ky) x (  kz=0  )
+            else if(fabs(kky[iy])<CMP_EPS && kkz[iz]>CMP_EPS      ) kvecs_to_consder += 1; // 1*2; // one solution x (  ky=0  ) x (-kz, +kz)
+            else if(fabs(kky[iy])<CMP_EPS && fabs(kkz[iz])<CMP_EPS) kvecs_to_consder += 1; // 1*1; // one solution x (  ky=0  ) x (  kz=0  )
         }
         
     *k_modes = kvecs_to_consder; // save result
@@ -175,28 +176,28 @@ int create_k_modes(double *kkx, double *kky, double *kkz, int codedim, wslda_kmo
     // take only positive energy states
     for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
         {
-            if     (kky[iy]>1.0e-12       && kkz[iz]>1.0e-12      ) 
+            if     (kky[iy]>CMP_EPS       && kkz[iz]>CMP_EPS      ) 
             {
                 kvecs_to_consder += 1; 
                 k_modes[kvecs_to_consder].ky=kky[iy];
                 k_modes[kvecs_to_consder].kz=kkz[iz];
                 k_modes[kvecs_to_consder].weight=2*2; // (-ky, +ky) x (-kz, +kz)
             }
-            else if(kky[iy]>1.0e-12       && fabs(kkz[iz])<1.0e-12)
+            else if(kky[iy]>CMP_EPS       && fabs(kkz[iz])<CMP_EPS)
             {
                 kvecs_to_consder += 1; 
                 k_modes[kvecs_to_consder].ky=kky[iy];
                 k_modes[kvecs_to_consder].kz=kkz[iz];
                 k_modes[kvecs_to_consder].weight=2*1; // (-ky, +ky) x (  kz=0  )
             }
-            else if(fabs(kky[iy])<1.0e-12 && kkz[iz]>1.0e-12      )
+            else if(fabs(kky[iy])<CMP_EPS && kkz[iz]>CMP_EPS      )
             {
                 kvecs_to_consder += 1; 
                 k_modes[kvecs_to_consder].ky=kky[iy];
                 k_modes[kvecs_to_consder].kz=kkz[iz];
                 k_modes[kvecs_to_consder].weight=1*2; //  (  ky=0  ) x (-kz, +kz)
             }
-            else if(fabs(kky[iy])<1.0e-12 && fabs(kkz[iz])<1.0e-12)
+            else if(fabs(kky[iy])<CMP_EPS && fabs(kkz[iz])<CMP_EPS)
             {
                 kvecs_to_consder += 1; 
                 k_modes[kvecs_to_consder].ky=kky[iy];
@@ -271,8 +272,8 @@ int create_kkz(double *kkz)
 int get_weight_1d(double ky, double kz)
 {
     int wcnt = 1; 
-    if(fabs(ky)>1.0e-12) wcnt*=2; // account for -ky and +ky 
-    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    if(fabs(ky)>CMP_EPS) wcnt*=2; // account for -ky and +ky 
+    if(fabs(kz)>CMP_EPS) wcnt*=2; // account for -kz and +kz 
     return wcnt;
 }
 
@@ -282,10 +283,177 @@ int get_weight_1d(double ky, double kz)
 int get_weight_2d(double kz)
 {
     int wcnt = 1;  
-    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    if(fabs(kz)>CMP_EPS) wcnt*=2; // account for -kz and +kz 
     return wcnt;
 }
 
+int td_fill_wslda_kmodes_1d()
+{
+    double *kky, *kkz;
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    create_kky(kky);
+    create_kkz(kkz);
+    int ierr=fill_wslda_kmodes_1d(kky,kkz);
+    
+    free(kky);
+    free(kkz);
+    
+    return ierr;
+}
+
+int wslda_kmodes_1d_get_weight2(double ky, double kz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    double k2, lk2; 
+    k2 = ky*ky + kz*kz;
+    
+    int i;
+    for(i=0; i<_kmodes_1d.cnt; i++)
+    {
+        lk2 = _kmodes_1d.ky[i]*_kmodes_1d.ky[i] + _kmodes_1d.kz[i]*_kmodes_1d.kz[i];
+        if(fabs(k2-lk2)<CMP_EPS) return _kmodes_1d.weight[i];
+    }
+    
+    return 0;
+}
+
+int wslda_kmodes_1d_get_weight(double ky, double kz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    int i;
+    for(i=0; i<_kmodes_1d.cnt; i++)
+    {
+        if(fabs(_kmodes_1d.ky[i]-ky)<CMP_EPS && fabs(_kmodes_1d.kz[i]-kz)<CMP_EPS) return _kmodes_1d.weight[i];
+    }
+    
+    return 0;
+}
+
+
+int wslda_kmodes_1d_get_modes(double ky, double kz, int *cnt, double *mkky, double *mkkz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    double *kky, *kkz;
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    create_kky(kky);
+    create_kkz(kkz);
+    
+    // take only unique kx^2+ky^2
+    int iz, iy, i;
+    double ink2 = ky*ky + kz*kz;
+    *cnt=0;
+    
+    double k2;
+    for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        if(iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        
+        k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
+        
+        if(fabs(k2-ink2)<CMP_EPS)
+        {
+            mkky[*cnt]=kky[iy];
+            mkkz[*cnt]=kkz[iz];
+            (*cnt)=(*cnt)+1;
+        }
+    }
+    
+    free(kky);
+    free(kkz);
+
+    return 0;
+}
+
+/**
+ * Converts 1D modes into 2D modes
+ * */
+int wslda_kmodes_1d_to_2d(double ky, double kz, int *cnt, double *kkz, int *kzcnt, double *kky)
+{
+    double *lky, *lkz;
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkz,NY*NZ,double);    
+
+    int lcnt;
+    
+    wslda_kmodes_1d_get_modes(ky, kz, &lcnt, lky, lkz);
+    
+    // scan versus unique |kz| values
+    *cnt=0;
+    int i,j, hasit;
+    for(i=0; i<lcnt; i++)
+    {
+//         printf("AAA: %12.8f %12.8f %6d %6d %12.8f %12.8f\n",ky,kz, lcnt, i, lky[i],lkz[i]);
+        hasit=0;
+        for(j=0; j<*cnt; j++) if(fabs(lkz[i]-kkz[j])<CMP_EPS) {hasit=1; break;}
+        
+        if(hasit==0)
+        {
+            kkz[*cnt]=lkz[i];
+            kzcnt[*cnt]=1;
+            kky[*cnt*NY+0]=lky[i];
+            *cnt=*cnt+1;
+        }
+        else
+        {
+            kky[j*NY+kzcnt[j]]=lky[i];
+            kzcnt[j]++;
+        }
+    }
+    
+//     for(i=0; i<*cnt; i++)
+//         printf("BBB: %12.8f %12.8f %6d %6d %12.8f %6d\n",ky,kz, *cnt, i, kkz[i],kzcnt[i]);
+
+    free(lky);
+    free(lkz);
+
+    return 0;
+}
+
+int wslda_kmodes_1d_getcnt2d(double ky, double kz, double *kky, double *kkz)
+{
+    double *lky, *lkz;
+    int *lkzcnt;
+    cppmallocl(lkz,NZ,double);
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkzcnt,NZ,int);
+    
+    int lcnt;
+    wslda_kmodes_1d_to_2d(ky, kz, &lcnt, lkz, lkzcnt, lky);
+    
+    int i,j;
+    int isum=0;
+    for(i=0; i<lcnt; i++) 
+    {
+        if(lkz[i]>-CMP_EPS) 
+        {
+            for(j=0; j<lkzcnt[i]; j++)
+            {
+                kkz[isum]=lkz[i];
+                kky[isum]=lky[i*NY+j];
+                isum++;
+            }
+        }
+    }
+    
+    free(lky);
+    free(lkz);
+    free(lkzcnt);
+    
+    return isum;
+}
+
+#undef CMP_EPS
 
 #endif
 
