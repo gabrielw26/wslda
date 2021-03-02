@@ -1,18 +1,22 @@
 # W-SLDA Toolkit
-Self-consistent solver of mathematical problems which have structure formally equivalent to Bogoliubov-de Gennes equations.
+Self-consistent solver of mathematical problems which have structure formally equivalent to Bogoliubov-de Gennes equations.  
+
+The toolkit allows for simulating fermionic superfluids like ultracold atomic gases. Both static and time-depend phenomena can be investigated by means of W-SLDA. The software is optimized towards simulations of large systems, consisting of thousands of particles.   
 
 ## [Official webpage](https://wslda.fizyka.pw.edu.pl/)
 
 ## Implemented functionalities
-* Solvers: static equations and time dependent equations
+* Solvers: static equations and time-dependent equations
 * Dimensionality: 3D and 2D and 1D
-* Functionals: BdG, (A)SLDA
+* Functionals: BdG, (A)SLDA, custom functional (static codes only)
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
-* User defined external potential, external pairing potential, external velocity field
-* Broyden mixing
-* Quantum friction
-* Integration with VisIt tool
+* Mass imbalanced systems
+* User-defined external potential, external pairing potential, external velocity field
+* Integration with visualization tool (VisIt)
+* Extensions: templates for codes supporting data analysis, python lib for working with and manipulating data
+* Speeding up of convergence: Broyden mixing, automatic interpolations, quantum friction
+
 
 ## Codes
 * **td-wslda-3d** - code for solving time-dependent density functional equations in 3D Cartesian mesh.
