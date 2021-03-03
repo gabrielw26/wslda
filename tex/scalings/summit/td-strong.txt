@@ -1,0 +1,24 @@
+# CODE: TD-WSLDA-3D					
+# VERSION: 2021.02.22					
+# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=6303.000000 Nb=6303.000000					
+# MPI EXCHANGE PACKAGE SIZE=8.543 MB [3]					
+# ASSUMING STANDARD DISTRIBUTION OF GPUS ACROSS THE SYSTEM [gpuspernode=1]					
+# LATTICE: 72 x 72 x 72					
+# SPACING: 1.000000 x 1.000000 x 1.000000					
+# ENERGY DENSITY FUNCTIONAL: SLDA					
+# CREATING UNIFORM SOLUTION...									
+# SPIN SYMMETRY MODE!					
+# INIT0-1: nwf=195167 wave-functions to scatter
+#
+#
+# Columns:
+# 1: nodes	
+# 2: time per t*eF=1	
+# 3: measured speed-up	
+# 4: ideal speed-up
+256	    52.9	1.000	1.000
+300	    49.0	1.080	1.172
+400	    42.5	1.245	1.563
+512	    37.6	1.407	2.000
+1024	29.8	1.775	4.000
+2048	27.1	1.952	8.000 
