@@ -740,6 +740,10 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
     
     if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
     
+    double *kytmp, *kztmp;
+    cppmallocl(kytmp,NY*NZ,double);
+    cppmallocl(kztmp,   NZ,double);
+    
     tnwf=0;
     if(codedim==1)
     {
@@ -747,13 +751,24 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
     }
     else if(codedim==2)
     {
-        for(ikz=0; ikz<kvecs_to_consder; ikz++)  if(fabs(kvecs[ikz].ky)>1.0e-12) tnwf+=nwf_per_kyz[ikz]*2; else tnwf+=nwf_per_kyz[ikz]*1; 
+        for(ikz=0; ikz<kvecs_to_consder; ikz++) 
+        {
+            i=wslda_kmodes_1d_getcnt2d(kvecs[ikz].ky,kvecs[ikz].kz, kytmp, kztmp);
+            tnwf+=nwf_per_kyz[ikz]*i;
+            
+//             int ii;
+//             for(ii=0; ii<i; ii++)
+//                 printf("TTT: %6d %12.8f %12.8f %6d %6d %12.8f %12.8f\n", ikz, kvecs[ikz].ky,kvecs[ikz].kz, i, ii, kytmp[ii], kztmp[ii]); // TODO
+        }
     }
     else if(codedim==3)
     {
         for(ikz=0; ikz<kvecs_to_consder; ikz++)  tnwf+=nwf_per_kyz[ikz]*kvecs[ikz].weight;
     }
     *nwf=tnwf;
+    
+    free(kytmp);
+    free(kztmp);
     
     return WSLDA_OK;
 }
@@ -943,7 +958,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
  * Function reads wf from kzSLpca standard
  * */
 int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, wslda_kmode *kvecs, int *nwf_per_kyz, int mylidx, int myuidx, 
-                    double complex *h_wavefun, double *h_fbetaEn, double *h_kkyz)
+                    double complex *h_wavefun, double *h_fbetaEn, double *h_kkyz, int *h_cnt)
 {
     char file_name[256];
     int ikz, iwf=0, ii;
@@ -964,6 +979,10 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
     cppmallocl(_u,NX,double complex);
     cppmallocl(_v,NX,double complex);
     
+    double *kytmp, *kztmp;
+    cppmallocl(kytmp,NY*NZ,double);
+    cppmallocl(kztmp,NY*NZ,double);
+    
     int lNdim, dcoeff, dd;
     int ix, iy, iz, ixyz;
     
@@ -981,16 +1000,15 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
         }
         else if(codedim==2)
         {
-            dcoeff=1;
-            if(fabs(kvecs[ikz].ky)>1.0e-12) dcoeff*=2;
+            dcoeff=wslda_kmodes_1d_getcnt2d(kvecs[ikz].ky, kvecs[ikz].kz, kytmp, kztmp);
             lNdim=NX*NY;
         }
         else if(codedim==3)
         {
             dcoeff=1;
-            if(fabs(kvecs[ikz].ky)>1.0e-12) dcoeff*=2;
-            if(fabs(kvecs[ikz].kz)>1.0e-12) dcoeff*=2;
+            wslda_kmodes_1d_get_modes(kvecs[ikz].ky, kvecs[ikz].kz, &dcoeff, kytmp, kztmp);
             lNdim=NX*NY*NZ;
+//             printf("CCC: %6d %6d %6d\n", ikz, dcoeff, kvecs[ikz].weight);
             if(dcoeff!=kvecs[ikz].weight) return -122;
         }
 
@@ -1056,11 +1074,13 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                         h_fbetaEn[iwf-mylidx]=_en;
                         h_kkyz[iwf-mylidx      ]=_ky;
                         h_kkyz[iwf-mylidx+nwfip]=_kz;
-                        
+                        h_cnt [iwf-mylidx      ]= wslda_kmodes_1d_get_weight(_ky, _kz);
                     }
                     else if(codedim==2)
                     {
-                        if(dd==1) _ky*=-1.0; // revert sign of ky vector
+                        if(_ky!=kvecs[ikz].ky) return -44;
+                        if(_kz!=kvecs[ikz].kz) return -45;
+                        _ky=kytmp[dd];
                         ixyz=0;
                         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) 
                         {
@@ -1069,14 +1089,15 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                             ixyz++;
                         }
                         h_fbetaEn[iwf-mylidx]=_en;
-                        h_kkyz[iwf-mylidx]=_kz;
+                        h_kkyz[iwf-mylidx]=kztmp[dd];
                     }
                     else if(codedim==3)
                     {
+                        if(_ky!=kvecs[ikz].ky) return -54;
+                        if(_kz!=kvecs[ikz].kz) return -55; 
                         // revert sign of ky vector
-                        if(dd==1) {_ky*=-1.0; _kz*=-1.0;}
-                        else if(dd==2) _ky*=-1.0;
-                        else if(dd==3) _kz*=-1.0;
+                        _ky=kytmp[dd];
+                        _kz=kztmp[dd];
                         ixyz=0;
                         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++) 
                         {
@@ -1105,6 +1126,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
     }
     
     free(_u); free(_v);
+    free(kytmp); free(kztmp);
     
     return 0;
 }

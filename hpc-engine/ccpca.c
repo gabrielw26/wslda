@@ -70,6 +70,8 @@ int main( int argc , char ** argv )
     double *d_fbetaEn; // pointer to weights of wave-functions on device (gpu) side
     double *h_kkyz; // pointer to ky and kz wave-vector values on host (cpu) side
     double *d_kkyz; // pointer to ky and kz wave-vector values on device (gpu) side
+    int    *h_cnt; // pointer to degenerecy of the state on host (cpu) side
+    int    *d_cnt; // pointer to degenerecy of the state on device (gpu) side
     double *h_En; // pointer to eigen-values of wave-functions on host (cpu) side
     double *h_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *d_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
@@ -251,7 +253,7 @@ int main( int argc , char ** argv )
         
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
-    // ====================================================================================
+    // ====================================================================================    
     if(md.inittype==0 || md.inittype==10) // Start from uniform solution
     {
         if(md.inittype==0)
@@ -264,7 +266,7 @@ int main( int argc , char ** argv )
 #else
             cpu_exec( solve_uniform_problem(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
 #endif
-            cpu_exec( get_nwf_to_evolve_1d(&nwf) ); // correct number of states to evolve
+            cpu_exec( get_nwf_to_evolve_1d(&nwf) ); // correct number of states to evolve 
             
             // Save solution
             if(ip==0 && md.init0save)
@@ -303,10 +305,11 @@ int main( int argc , char ** argv )
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
+        cppmallocl(h_cnt, nwfip,int);
         cppmallocl(h_En, nwfip,double);
         
         // initialize wf
-        cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_En, ip==0) );
+        cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_cnt, h_En, ip==0) );
         
         // initialize potentials
         for(ixyz=0; ixyz<NX; ixyz++)
@@ -330,6 +333,7 @@ int main( int argc , char ** argv )
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
+        cppmallocl(h_cnt, nwfip,int);
 //         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
@@ -403,6 +407,7 @@ int main( int argc , char ** argv )
         cppmallocl(h_wavefun, NX*nwfip*2,double complex);
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkyz,    nwfip*2,double);
+        cppmallocl(h_cnt,     nwfip,int);
         
         // read data
         int _4_max_readers = md.iogroups;
@@ -410,7 +415,7 @@ int main( int argc , char ** argv )
         for(i=0; i<_4_nblocks; i++)
         {
             if(ip==0) { printf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
-            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 1, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkyz) );
+            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 1, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkyz, h_cnt) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
         
@@ -431,7 +436,7 @@ int main( int argc , char ** argv )
         double Ntotb=0.0, Nmyb=0.0; 
         for(iwf=0; iwf<nwfip; iwf++)
         {
-            int wcnt=get_weight_1d(h_kkyz[iwf], h_kkyz[iwf+nwfip]);
+            int wcnt=h_cnt[iwf];
             ixyz=0;
             for ( ix = 0 ; ix < NX ; ix++ )
             {
@@ -478,6 +483,7 @@ int main( int argc , char ** argv )
 #endif
     gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_fbetaEn) );
     gpu_exec( gpu_malloc(nwfip*2*sizeof(double), (void **)&d_kkyz) ); // 2 accounts for ky and kz
+    gpu_exec( gpu_malloc(nwfip*sizeof(int), (void **)&d_cnt) ); 
     gpu_exec( host_malloc_pl(nwfip*sizeof(double), (void **)&h_qpe_nwfip) );
     cppmallocl(h_qpe_nwf, nwf,double);
     // aditional data needed for saving qpe
@@ -516,7 +522,6 @@ int main( int argc , char ** argv )
 #else
         CHECK PCA_SETTINGS.H
 #endif
-
         MPI_Barrier( MPI_COMM_WORLD ) ;
         rt = e_t(0);
         if(ip==0)
@@ -527,6 +532,9 @@ int main( int argc , char ** argv )
             printf("# CHECKPOINT INFO: READ TIME=%12.2f sec\n", rt);
             printf("# CHECKPOINT INFO: READ SPEED=%12.3f GB/sec\n", memsize_gb/rt);
         }
+        
+         // fill h_cnt with data
+         for(i=0; i<nwfip; i++) h_cnt[i]=wslda_kmodes_1d_get_weight(h_kkyz[i], h_kkyz[i+nwfip]);
     }
     
 #ifdef TDWSLDA
@@ -555,6 +563,7 @@ int main( int argc , char ** argv )
     // copy weights
     gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
+    gpu_exec( memcopy_host2gpu(h_cnt    , d_cnt    ,  (size_t)nwfip  *sizeof(int)) );
     
     // Set constants
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
@@ -628,7 +637,7 @@ int main( int argc , char ** argv )
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
-    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -771,7 +780,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -854,7 +863,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_fkm3, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -954,7 +963,7 @@ int main( int argc , char ** argv )
         gradients_computed=1;
         gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
         // densities - local reduction
-        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1036,7 +1045,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1087,7 +1096,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 

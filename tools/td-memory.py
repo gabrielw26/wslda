@@ -12,10 +12,30 @@ import matplotlib.pyplot as plt
 NX = 100
 NY = 100
 NZ = 100
-
-nwf = 0.5*NX*NY*NZ # or use simple estimate
+codedim=3 # dimensonality of code
+nwf=None # provide here number if you know it, otherwise the code will use simple estimate
 mem_per_gpu = 16.0 # in GB
 min_mem_utilization = 2.0 # in GB
+
+
+# ----------------------------------------------------------------
+# --------------------- DO NOT MODIFY HERE -----------------------
+# ----------------------------------------------------------------
+if nwf==None:
+    if codedim==3: nwf = 0.5*NX*NY*NZ # or use simple estimate
+    elif codedim==2: nwf = 0.5*NX*NY*NZ
+    elif codedim==2: nwf = 0.5*NX*NY*NZ
+    else: raise NameError, 'incorrect codedim'
+
+if codedim==3:
+    pass
+elif codedim==2:
+    NZ=1
+elif codedim==2:
+    NZ=1
+    NY=1
+else: 
+    raise NameError, 'incorrect codedim'
 
 def find_mem_per_gpu(ngpus):
     """

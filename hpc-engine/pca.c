@@ -396,7 +396,7 @@ int main( int argc , char ** argv )
         
         // allocate memory for my wf
         cppmallocl(h_wavefun, NXYZ*nwfip*2,double complex);
-        cppmallocl(h_fbetaEn, nwfip,double);
+        cppmallocl(h_fbetaEn, nwfip,double); 
         
         // read data
         int _4_max_readers = md.iogroups;
@@ -404,7 +404,7 @@ int main( int argc , char ** argv )
         for(i=0; i<_4_nblocks; i++)
         {
             if(ip==0) { printf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
-            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 3, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, NULL) );
+            if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 3, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, NULL, NULL) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
         
@@ -458,7 +458,6 @@ int main( int argc , char ** argv )
         // free memory
         free(kkx); free(kky); free(kkz);
         free(nwf_per_kyz); free(kvecs);
-
     }
     else if(md.inittype==2) // Start from solution of st-wslda-2d
     {
