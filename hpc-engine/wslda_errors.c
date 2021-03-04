@@ -186,6 +186,12 @@ void report_warning(int errcode, FILE *stream)
             fprintf(stream, "#\t The code will change dimensionality of given checkpoint data to the new lattice.\n");
             break;
             
+        case WSLDA_WRN_CHECKPOINT_UNPREDICTED:
+            fprintf(stream, "#\t Checkpoint files is incompatible with code settings!\n");
+            fprintf(stream, "#\t The code will upload the data however the results may be unpredictable!\n");
+            fprintf(stream, "#\t Make sure you understand what you are doing!\n");
+            break;
+            
         default: 
             fprintf(stream, "#\tThis warning does not have description.\n");
     }
