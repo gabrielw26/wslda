@@ -22,7 +22,7 @@ metadata_t md =
 1, //measurements;         
 1, // timesteps;            
 0.01, //dt;                
-M_PI/DX, // kc;                
+0.999999*M_PI/DX, // kc;                
 M_PI*M_PI/(2.*DX*DX), //ec;                
 "none", // inprefix
 "wslda", // outprefix
@@ -365,6 +365,12 @@ int parse_input_file(char * file_name)
         warn_foot(stdout);
         md.spinsymmetry=0;
     }
+#endif
+
+#ifdef USE_CUBIC_CUTOFF
+    fprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
+    md.ec=1.0e16;
+    md.kc=1.0e16;
 #endif
 
     fclose(fp);

@@ -188,7 +188,7 @@ void report_warning(int errcode, FILE *stream)
             
         case WSLDA_WRN_CHECKPOINT_UNPREDICTED:
             fprintf(stream, "#\t Checkpoint files is incompatible with code settings!\n");
-            fprintf(stream, "#\t The code will upload the data however the results may be unpredictable!\n");
+            fprintf(stream, "#\t The code will upload the data however the result of this operation may be unpredictable!\n");
             fprintf(stream, "#\t Make sure you understand what you are doing!\n");
             break;
             
