@@ -61,6 +61,16 @@
 // #define SPINSYMMETRY_MODE
 
 /**
+ * Scheme of pairing field renormalization procedure. 
+ * For more info see: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Regularization%20schemes%20of%20the%20pairing%20field
+ * Select one:
+ * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
+ * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
+ * */
+#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME CUBIC_CUTOFF
+
+/**
  * Meaningful only in case of ASLDA.
  * Parameters defining stabilization procedure of ASLDA functional. 
  * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 

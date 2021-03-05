@@ -102,10 +102,12 @@ dirs:
 	mkdir -p $(BINDIR)
 
 clean:
-	rm -f $(OBJDIR)*
+	rm -f $(OBJDIR)*.o
+	rm -f $(OBJDIR)reproducibility.h
 	rm -f $(BINDIR)td-wslda-1d
 	rm -f $(BINDIR)td-wslda-2d
 	rm -f $(BINDIR)td-wslda-3d
+	rm -f $(BINDIR)solve-uniform
 	
 ver:
 	$(CXX) --version 

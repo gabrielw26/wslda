@@ -85,7 +85,9 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     if(inLX!=LX || inLY!=LY || inLZ!=LZ)
     {
         printf("# ERORR: [LX,LY,LZ]=[%.3f,%.3f,%.3f] FOR THE TARGET LATTICE DIFFERS FROM INPUT LATTICE!\n", LX, LY, LZ);
-        return WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE;
+//         return WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE;
+        report_warning(WSLDA_WRN_CHECKPOINT_UNPREDICTED, stdout);
+        intepolation[0]=incodedim; 
     }
     else if(inNX!=NX || inNY!=NY || inNZ!=NZ)
     {

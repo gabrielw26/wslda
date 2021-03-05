@@ -257,6 +257,9 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
             // pairing
+#ifdef USE_CUBIC_CUTOFF
+            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
+#else
             t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
             p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
             if(cimag(p0)<0.) p0 *= -1. ;
@@ -266,7 +269,9 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
             wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
             wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
+
             // g_eff = wz_0.real(); 
             ldelta = lnu*(-1.0*creal(wz_0));
             
@@ -487,16 +492,21 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         Zone = Complex(1.0, 0.0);
         
         // pairing
+#ifdef USE_CUBIC_CUTOFF
+        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*alph_plus*M_PI*DX), 0.0);
+#else
         t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
         p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
         if(cimag(p0)<0.) p0 *= -1. ;
         kc = csqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
         if(cimag(kc)<0.) kc *= -1. ;
-        
+    
         wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
         if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
         wz_0= kc / ( 2. * M_PI * M_PI * alph_plus) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
         wz_0 = Zone / (Zone*t5 - wz_0);
+        
         // g_eff = wz_0.real(); 
         ldelta = lnu*(-1.0*creal(wz_0));
         
