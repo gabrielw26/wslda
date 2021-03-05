@@ -137,15 +137,9 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
-    double kc=0.999999*M_PI/DX;
-//     double kc=M_PI*sqrt(3.);
-//     double kc=0.80*M_PI/DX;
+    double kc=md.kc;
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
-    
-#ifdef USE_CUBIC_CUTOFF
-    kc=sqrt( pow(kkx[NX/2],2) + pow(kky[NY/2],2) + pow(kkz[NZ/2],2)) * 1.000000000001; // go with maximal momentum cutoff
-#endif
     
     if(printout && md.init0debug>0) printf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
     if(printout && md.init0debug>0) printf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
@@ -218,7 +212,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             
             // pairing
 #ifdef USE_CUBIC_CUTOFF
-            wz_0=2.442/(4.0*M_PI*DX) + I*0.0;
+            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
 #else
             mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
             p0 = csqrt( 2.0*mu_p/ alph_plus) ;
@@ -1096,10 +1090,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
     double gbare=4.0*M_PI*md.aBdG;
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double alph_a=1.0;
     double alph_b=1.0;
-//     double kc=M_PI*sqrt(3.);
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
     
@@ -1168,6 +1161,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             V_b = 0.0;
             
             // pairing
+#ifdef USE_CUBIC_CUTOFF
+            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
+#else
             mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
             p0 = csqrt( 2.0*mu_p) ;
             if ( cimag(p0) < 0. ) p0 *= -1. ;
@@ -1177,6 +1173,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;    
                     
             wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
             g_eff = creal( Zone / (Zone/gbare - wz_0) );
             delta = -1.0*g_eff*nu;
 //             printf("AAA: %f %f \n", delta, g_eff);
@@ -1427,8 +1424,8 @@ int get_nwf_to_evolve_2d(int *nwf)
     // extract number of wave-functions
     ixyz=0;
     *nwf=0;
-//     double kc=__md_pca_uniform.kc;
-    double kc=0.999999*M_PI/DX;
+
+    double kc=md.kc;
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
@@ -1547,7 +1544,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     } 
     
     // extract number of wave-functions and check consistency
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double kc2=kc*kc;
     ixyz=0;
     int nwf=0;
@@ -1797,8 +1794,8 @@ int get_nwf_to_evolve_1d(int *nwf)
     // extract number of wave-functions
     ixyz=0;
     *nwf=0;
-//     double kc=__md_pca_uniform.kc;
-    double kc=0.999999*M_PI/DX;
+
+    double kc=md.kc;
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
@@ -1921,7 +1918,7 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
     } 
     
     // extract number of wave-functions and check consistency
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double kc2=kc*kc;
     ixyz=0;
     int nwf=0;

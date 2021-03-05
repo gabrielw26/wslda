@@ -129,10 +129,6 @@
 #define G0 0.357
 #define G1 0.642
 
-// pairing
-#define GAMMA0 -11.11
-// #define GAMMA0 -0.000001
-
 // regularization function parameters
 #ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
 #define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
@@ -268,5 +264,21 @@
 #define PZHEEVR 1
 #define PZHEEVD 2
 #define ELPA 3
+
+#define SPHERICAL_CUTOFF 88
+#define CUBIC_CUTOFF 89
+
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define USE_CUBIC_CUTOFF
+#endif
+// otherwise use speherical cutoff
+#define REGULARIZATION_SCHEME_K_CONST 2.442749607806335
+
+// pairing
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define GAMMA0 (-11.11*1.60)
+#else
+#define GAMMA0 -11.11
+#endif
 
 #endif
