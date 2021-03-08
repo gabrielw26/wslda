@@ -73,6 +73,15 @@ int main( int argc , char ** argv )
     aBdG = 0.0; // deactivate BdG functional
 #endif
 
+#ifdef UNIFORM_TEST_MODE
+    md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
+    md.Nb = md.Na+1;
+    if(md.spinsymmetry==1) md.Nb = md.Na;
+    md.init0Na = md.Na;
+    md.init0Nb = md.Nb;
+    printf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
+#endif
+
     printf("# CREATING UNIFORM SOLUTION...\n");
     
     // Generate uniform solution

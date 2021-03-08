@@ -33,10 +33,7 @@
 #include "wslda_writevars.h"
 #include "wslda_reproducibility.h"
 
-static double dc_ec;
-static double dc_t0;
-static int dc_np;
-static int dc_nwfip;
+#include "tdwslda_static_vars.h"
 #include "logger.h"
 
 int main( int argc , char ** argv ) 
@@ -567,7 +564,8 @@ int main( int argc , char ** argv )
     
     // Set constants
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
-    md.ec=ec; dc_ec=ec; dc_t0=t0; dc_np=np; dc_nwfip=nwfip;
+    md.ec=ec; 
+    TDWSLDA_SET_STATIC_VARS;
     
     // ===================================================================================
     // ================================== EXTRA DATA =====================================

@@ -1429,9 +1429,21 @@ int get_nwf_to_evolve_2d(int *nwf)
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
+    
+    int *states_selected;
+    cppmallocl(states_selected,NZ, int);
+    states_selected[0]=1;
+    for(i=1; i<NZ/2; i++) states_selected[i]=2;
+#ifdef USE_CUBIC_CUTOFF
+    states_selected[NZ/2]=1;
+#else
+    states_selected[NZ/2]=0;
+#endif
+    for(i=NZ/2+1; i<NZ; i++) states_selected[i]=0;
+    
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative kz values 
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // take only from sphere and for non-negative kz values 
             if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
             else *nwf+=2; // thera are two soloutions for each momentum
             
@@ -1441,8 +1453,8 @@ int get_nwf_to_evolve_2d(int *nwf)
             if(kk2[ixyz]<kc2) 
             {
                 // take only positive energy states
-                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+                if(states_selected[iz]==2) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 1;
                 
                 total_nwf2+=1;
             }
@@ -1451,8 +1463,8 @@ int get_nwf_to_evolve_2d(int *nwf)
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+                if(states_selected[iz]==2) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 2;
                 
                 total_nwf2+=2;
             }
@@ -1468,6 +1480,7 @@ int get_nwf_to_evolve_2d(int *nwf)
     free(kky);
     free(kkz);
     free(kk2);
+    free(states_selected);
     
     if(total_nwf!=__md_pca_uniform.nwf)
     {
@@ -1551,9 +1564,20 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     int total_nwf=0;
     int takeit;
     
+    int *states_selected;
+    cppmallocl(states_selected,NZ, int);
+    states_selected[0]=1;
+    for(i=1; i<NZ/2; i++) states_selected[i]=2;
+#ifdef USE_CUBIC_CUTOFF
+    states_selected[NZ/2]=1;
+#else
+    states_selected[NZ/2]=0;
+#endif
+    for(i=NZ/2+1; i<NZ; i++) states_selected[i]=0;
+    
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // only positive energy state
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // only positive energy state
             if(md.spinsymmetry==1) nwf+=1; // thera are two soloutions for each momentum
             else nwf+=2; // thera are two soloutions for each momentum
             
@@ -1562,16 +1586,16 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+                if(states_selected[iz]==2) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 1;
             }
         }
         else 
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+                if(states_selected[iz]==2) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 2;
             }
         }
         
@@ -1602,7 +1626,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // take only from sphere
         {
             eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
             eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
@@ -1730,6 +1754,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     free(kky);
     free(kkz);
     free(kk2);
+    free(states_selected);
     
     return 0;
 }

@@ -42,9 +42,11 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
     {
         k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
         
+#ifndef USE_CUBIC_CUTOFF
         if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
         if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
-        
+#endif
+
         hasit=0;
         for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<CMP_EPS) {hasit=1; break;}
         
@@ -127,19 +129,17 @@ int count_number_of_k_modes(double *kkx, double *kky, double *kkz, int codedim, 
         return ierr;
     }
     
-    // otherwise, use old method
-    if(codedim==2) lNY=1;
+    if(codedim==2)
+    {
+        if(NZ==1) {*k_modes=1; return WSLDA_OK;}
+#ifdef USE_CUBIC_CUTOFF
+        *k_modes=NZ/2 + 1; 
+#else
+        *k_modes=NZ/2    ; 
+#endif
+        return WSLDA_OK;
+    }
     
-    // take only positive energy states
-    for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
-        {
-            if     (kky[iy]>CMP_EPS       && kkz[iz]>CMP_EPS      ) kvecs_to_consder += 1; // 2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-            else if(kky[iy]>CMP_EPS       && fabs(kkz[iz])<CMP_EPS) kvecs_to_consder += 1; // 2*1; // one solution x (-ky, +ky) x (  kz=0  )
-            else if(fabs(kky[iy])<CMP_EPS && kkz[iz]>CMP_EPS      ) kvecs_to_consder += 1; // 1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-            else if(fabs(kky[iy])<CMP_EPS && fabs(kkz[iz])<CMP_EPS) kvecs_to_consder += 1; // 1*1; // one solution x (  ky=0  ) x (  kz=0  )
-        }
-        
-    *k_modes = kvecs_to_consder; // save result
     return WSLDA_OK;
 }
 
@@ -170,41 +170,32 @@ int create_k_modes(double *kkx, double *kky, double *kkz, int codedim, wslda_kmo
         return ierr;
     }
     
-    // otherwise, use old method
-    if(codedim==2) lNY=1;
-    
-    // take only positive energy states
-    for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
+    if(codedim==2)
+    {
+        kvecs_to_consder += 1; 
+        k_modes[kvecs_to_consder].ky=kky[0];
+        k_modes[kvecs_to_consder].kz=kkz[0];
+        k_modes[kvecs_to_consder].weight=1; // (kz=0)
+        
+        if(NZ==1) return WSLDA_OK; // strict 2D case
+        
+        for(iz=1; iz<lNZ/2; iz++)
         {
-            if     (kky[iy]>CMP_EPS       && kkz[iz]>CMP_EPS      ) 
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=2*2; // (-ky, +ky) x (-kz, +kz)
-            }
-            else if(kky[iy]>CMP_EPS       && fabs(kkz[iz])<CMP_EPS)
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=2*1; // (-ky, +ky) x (  kz=0  )
-            }
-            else if(fabs(kky[iy])<CMP_EPS && kkz[iz]>CMP_EPS      )
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=1*2; //  (  ky=0  ) x (-kz, +kz)
-            }
-            else if(fabs(kky[iy])<CMP_EPS && fabs(kkz[iz])<CMP_EPS)
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=1*1; //  (  ky=0  ) x (  kz=0  )
-            }
+            kvecs_to_consder += 1; 
+            k_modes[kvecs_to_consder].ky=kky[0];
+            k_modes[kvecs_to_consder].kz=kkz[iz];
+            k_modes[kvecs_to_consder].weight=2; // (  ky=0  ) x (-kz, +kz)
         }
+        
+#ifdef USE_CUBIC_CUTOFF
+        kvecs_to_consder += 1; 
+        k_modes[kvecs_to_consder].ky=kky[0];
+        k_modes[kvecs_to_consder].kz=kkz[NZ/2];
+        k_modes[kvecs_to_consder].weight=1;
+#endif
+
+        return WSLDA_OK;
+    }
         
     return WSLDA_OK;
 }
@@ -283,7 +274,10 @@ int get_weight_1d(double ky, double kz)
 int get_weight_2d(double kz)
 {
     int wcnt = 1;  
-    if(fabs(kz)>CMP_EPS) wcnt*=2; // account for -kz and +kz 
+    if(fabs(kz)>CMP_EPS) wcnt=2; // account for -kz and +kz
+#ifdef USE_CUBIC_CUTOFF
+    if(fabs(kz+M_PI/DZ)<1.0e-12) wcnt = 1.0;// momentum for which I should kill contribution for gradients
+#endif
     return wcnt;
 }
 
@@ -356,9 +350,10 @@ int wslda_kmodes_1d_get_modes(double ky, double kz, int *cnt, double *mkky, doub
     double k2;
     for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
     {
+#ifndef USE_CUBIC_CUTOFF
         if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
         if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
-        
+#endif
         k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
         
         if(fabs(k2-ink2)<CMP_EPS)
@@ -435,7 +430,11 @@ int wslda_kmodes_1d_getcnt2d(double ky, double kz, double *kky, double *kkz)
     int isum=0;
     for(i=0; i<lcnt; i++) 
     {
+#ifdef USE_CUBIC_CUTOFF
+        if(lkz[i]>-CMP_EPS || fabs(lkz[i]+M_PI/DZ)<1.0e-12) 
+#else
         if(lkz[i]>-CMP_EPS) 
+#endif
         {
             for(j=0; j<lkzcnt[i]; j++)
             {
