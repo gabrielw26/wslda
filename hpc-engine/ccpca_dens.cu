@@ -53,8 +53,8 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
 #endif
 
             wcnt = cnt[iwf];  
-            if(fabs(ky+M_PI)<1.0e-12) ky = 0.0; // momentum for which I should kill contribution for gradients
-            if(fabs(kz+M_PI)<1.0e-12) kz = 0.0; // momentum for which I should kill contribution for gradients
+            if(fabs(ky+M_PI/DY)<1.0e-12) ky = 0.0; // momentum for which I should kill contribution for gradients
+            if(fabs(kz+M_PI/DZ)<1.0e-12) kz = 0.0; // momentum for which I should kill contribution for gradients
             
             // read u and v
             u=wf[      iwf*NX+ixyz];

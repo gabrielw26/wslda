@@ -274,7 +274,10 @@ int get_weight_1d(double ky, double kz)
 int get_weight_2d(double kz)
 {
     int wcnt = 1;  
-    if(fabs(kz)>CMP_EPS) wcnt*=2; // account for -kz and +kz 
+    if(fabs(kz)>CMP_EPS) wcnt=2; // account for -kz and +kz
+#ifdef USE_CUBIC_CUTOFF
+    if(fabs(kz+M_PI/DZ)<1.0e-12) wcnt = 1.0;// momentum for which I should kill contribution for gradients
+#endif
     return wcnt;
 }
 
@@ -427,7 +430,11 @@ int wslda_kmodes_1d_getcnt2d(double ky, double kz, double *kky, double *kkz)
     int isum=0;
     for(i=0; i<lcnt; i++) 
     {
+#ifdef USE_CUBIC_CUTOFF
+        if(lkz[i]>-CMP_EPS || fabs(lkz[i]+M_PI/DZ)<1.0e-12) 
+#else
         if(lkz[i]>-CMP_EPS) 
+#endif
         {
             for(j=0; j<lkzcnt[i]; j++)
             {

@@ -474,7 +474,7 @@ int main( int argc , char ** argv )
         double _dx, _dy, _dz;
         int *nwf_per_kz;
         int nwf_s2dpca;
-        cppmallocl(nwf_per_kz, NZ/2,int);
+        cppmallocl(nwf_per_kz, NZ/2+1,int);
         time=0.0;
         sprintf(file_name, "%s/s2dpca.info", md.inprefix);
         if(ip==0)
@@ -504,7 +504,7 @@ int main( int argc , char ** argv )
         MPI_Bcast( mu , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &ec , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;
         MPI_Bcast( &beta , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  it=0; t0=0.0;
-        MPI_Bcast( nwf_per_kz , NZ/2 , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
+        MPI_Bcast( nwf_per_kz , NZ/2+1 , MPI_INT , 0 , MPI_COMM_WORLD ) ; 
                 
         // divide wf over processes
         if(ip==0) printf("# INIT2: nwf=%d wave-functions to scatter\n", nwf);
@@ -559,6 +559,9 @@ int main( int argc , char ** argv )
         {
             double wcnt=2.0;
             if(fabs(h_kkz[iwf])<1.0e-12) wcnt = 1.0; // except for kz=0.0
+#ifdef USE_CUBIC_CUTOFF
+            if(fabs(h_kkz[iwf]+M_PI/DZ)<1.0e-12) wcnt = 1.0;
+#endif            
             ixyz=0;
             for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ )
             {
