@@ -680,7 +680,12 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     FILE * pFile;
     int i, tnwf=0;
     
-    for(ikz=0; ikz<nz/2; ikz++)
+    int ikzadd=0;
+#ifdef USE_CUBIC_CUTOFF
+    ikzadd=1;
+#endif
+    
+    for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
         sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz);
         
@@ -692,6 +697,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
         
         nwf_per_kz[ikz]=i;
         if(ikz==0) tnwf+=i;
+        else if(ikz==nz/2) tnwf+=i;
         else       tnwf+=2*i;
         
 //         printf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
@@ -700,7 +706,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     if(tnwf!=*nwf) return -1;
     
     tnwf=0;
-    for(ikz=0; ikz<nz/2; ikz++)  tnwf+=nwf_per_kz[ikz];
+    for(ikz=0; ikz<nz/2+ikzadd; ikz++)  tnwf+=nwf_per_kz[ikz];
     *nwf=tnwf;
     
     return 0;
@@ -793,9 +799,14 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     FILE *fkkz;
     FILE *ffbeta;
     
+    int ikzadd=0;
+#ifdef USE_CUBIC_CUTOFF
+    ikzadd=1;
+#endif
+    
 //     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
-    for(ikz=0; ikz<nz/2; ikz++)
+    for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
         // reset pointer to file
         fu=NULL;
@@ -874,14 +885,20 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     FILE *fkkz;
     FILE *ffbeta;
     
+    int ikzadd=0;
+#ifdef USE_CUBIC_CUTOFF
+    ikzadd=1;
+#endif
+    
 //     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
-    for(ikz=0; ikz<nz/2; ikz++)
+    for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
         // reset pointer to file
         fu=NULL;
         
         if(ikz==0) dcoeff=1;
+        else if(ikz==nz/2) dcoeff=1;
         else dcoeff=2;
         
         for(dd=0; dd<dcoeff; dd++)

@@ -60,6 +60,7 @@ int logger(FILE *log,
         fprintf(log,"#\n");
         fprintf(log,"# ==================== ALGORITHM SETTINGS ===================\n");
         fprintf(log,"# np                 =%14d\n", dc_np);
+        fprintf(log,"# nwf                =%14d\n", dc_nwf);
         fprintf(log,"# nwfip              =%14d\n", dc_nwfip);
         fprintf(log,"# dt*emax            =%14.6g\n", md.dt/eF*Emax);
         fprintf(log,"# dt*eF              =%14.6g\n", md.dt);
