@@ -6,7 +6,7 @@
 #define NZ 12
 
 #define DX 1.0
-#define DY 1.0                                                                                                                                       
+#define DY 1.0
 #define DZ 1.0
 
 /**
@@ -35,9 +35,19 @@
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 
- * the code will utilize it in order to speed-up the calculations
+ * the code will utilize it in order to speed-up the calculations by factor 4x (approximately)
  * */
 // #define MATRIX_IS_REAL
+
+/**
+ * Scheme of pairing field renormalization procedure. 
+ * For more info see: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Regularization%20schemes%20of%20the%20pairing%20field
+ * Select one:
+ * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
+ * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
+ * */
+#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME CUBIC_CUTOFF
 
 /**
  * Select diagonalization routine

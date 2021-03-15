@@ -60,6 +60,7 @@ int logger(FILE *log,
         fprintf(log,"#\n");
         fprintf(log,"# ==================== ALGORITHM SETTINGS ===================\n");
         fprintf(log,"# np                 =%14d\n", dc_np);
+        fprintf(log,"# nwf                =%14d\n", dc_nwf);
         fprintf(log,"# nwfip              =%14d\n", dc_nwfip);
         fprintf(log,"# dt*emax            =%14.6g\n", md.dt/eF*Emax);
         fprintf(log,"# dt*eF              =%14.6g\n", md.dt);
@@ -88,7 +89,7 @@ int logger(FILE *log,
     // add entry
     fprintf(log, "%6d %12.4f %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
         lineid, // 1
-        (dc_t0+it*md.dt/eF)*md.timesteps * eF, // 2
+        (dc_t0+it*md.dt/eF*md.timesteps) * eF, // 2
         npart[SPINA], // 3
         npart[SPINB], // 4
         npart[SPINA]+npart[SPINB], // 5

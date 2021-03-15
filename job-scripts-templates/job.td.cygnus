@@ -1,13 +1,14 @@
 #!/bin/bash                                                                                          
 #---------- qsub option ----------                                                                   
+#PBS -N JOB_NAME                  # YOUR JOB NAME  
 #PBS -A TDSLDA20                                                                                     
 #PBS -q gpu                                                                                          
-#PBS -l elapstim_req=01:00:00     # SET WALLTIME                                                                     
+#PBS -l elapstim_req=00:10:00     # SET WALLTIME                                                                     
 
 #---------- MPI option ----------                                                                    
-#PBS -b 8                         # SET NUMBER OF NODES                                                               
+#PBS -b 2                         # SET NUMBER OF NODES                                                               
 #PBS -T openmpi                                                                                      
-#PBS -v NQSV_MPI_VER=3.1.6/gcc4.8.5-cuda10.1.2                                                   
+#PBS -v NQSV_MPI_VER=3.1.6/intel19.0.5-cuda10.2                                                       
 
 #---------- Others (optional) ----------                                                             
 #PBS -o output.o                  # SET NAME OF OUTPUT FILE                                                                    
@@ -30,12 +31,13 @@
 ##      cd /work/TDSLDA20/
 
 
-#---------- Program execution ----------                                                             
-module load openmpi/3.1.6/gcc4.8.5-cuda10.1.2
-module load cuda/10.1.2
-
+#---------- Program execution ----------
 cd $PBS_O_WORKDIR
+pwd
+source env.sh
 
-## NOTE: YOU MUST ASSURE: -np=-b*4 (each node has 4 GPUs)
-mpirun ${NQSII_MPIOPTS} -np 32 -npernode 4 -x UCX_MAX_RNDV_RAILS=4 ./td-wslda-3d input.txt
+## NOTE: HERE YOU PROVIDE YOUR COMMANDS TO EXECUTE 
+##   YOU MUST ASSURE: -np=-b*4 (each node has 4 GPUs)
+##   do NOT modify other parameters except np value!
+mpirun ${NQSII_MPIOPTS} -np 8 -npernode 4 -x UCX_MAX_RNDV_RAILS=4 ./td-wslda-3d input.txt > out.txt
 

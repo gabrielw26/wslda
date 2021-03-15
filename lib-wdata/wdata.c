@@ -14,6 +14,24 @@
 
 #define WRKDIR_SET 123987
 
+/**
+ * Basic functions for extracting lattice
+ * */
+int wdata_getNX(wdata_metadata *md) {return md->NX;}
+int wdata_getNY(wdata_metadata *md) {return md->NY;}
+int wdata_getNZ(wdata_metadata *md) {return md->NZ;}
+double wdata_getDX(wdata_metadata *md) {return md->DX;}
+double wdata_getDY(wdata_metadata *md) {return md->DY;}
+double wdata_getDZ(wdata_metadata *md) {return md->DZ;}
+
+void wdata_setNX(wdata_metadata *md, int NX) {md->NX=NX;}
+void wdata_setNY(wdata_metadata *md, int NY) {md->NY=NY;}
+void wdata_setNZ(wdata_metadata *md, int NZ) {md->NZ=NZ;}
+void wdata_setDX(wdata_metadata *md, double DX) {md->DX=DX;}
+void wdata_setDY(wdata_metadata *md, double DY) {md->DY=DY;}
+void wdata_setDZ(wdata_metadata *md, double DZ) {md->DZ=DZ;}
+void wdata_setprefix(wdata_metadata *md, const char *prefix) {strcpy (md->prefix, prefix);}
+
 int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz)
 {
     md->NX=nx;

@@ -5,7 +5,7 @@
  * It can be used for checking of correctness of solver parameters.
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 solve-uniform.c -I. -I$WSLDA/hpc-engine -o solve-uniform -lm
+ *    gcc -std=gnu99 solve-uniform.c -I. -I$WSLDA/hpc-engine -o solve-uniform -lm -lfftw3
  * 
  * */  
 
@@ -51,6 +51,8 @@ int main( int argc , char ** argv )
         return( EXIT_FAILURE ) ;      
     }
         
+    printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    printf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #if FUNCTIONAL==BDG
     printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA    
@@ -69,6 +71,15 @@ int main( int argc , char ** argv )
     }
 #else
     aBdG = 0.0; // deactivate BdG functional
+#endif
+
+#ifdef UNIFORM_TEST_MODE
+    md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
+    md.Nb = md.Na+1;
+    if(md.spinsymmetry==1) md.Nb = md.Na;
+    md.init0Na = md.Na;
+    md.init0Nb = md.Nb;
+    printf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
 
     printf("# CREATING UNIFORM SOLUTION...\n");

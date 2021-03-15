@@ -14,6 +14,8 @@
 #include <complex.h>
 #include <mpi.h>
 
+int wsldapid; // process id - global variable
+
 #include "wdata.h"
 
 #include "pca_settings.h"
@@ -40,6 +42,9 @@
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h" 
+#include "wslda_interpolation.h"
+#include "wslda_resize.h"
+#include "wslda_st_checkpoint.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -91,6 +96,8 @@ NOT TESTED
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 // #define VERBOSE
+// #define VERBOSEDIG
+
 
 /* Auxiliary routine: printing a real matrix */
 void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
@@ -142,23 +149,9 @@ double dc_ec;
 // BdG mode
 double aBdG;
 
-int wsldapid; // process id - global variable
-
 #include "logger.h"
 
 typedef char * string;
-
-#if CODEDIM==1
-#define DENSDIM 12*NX
-#define POTDIM  12*NX
-#define BLOCKLENGTH (NX)
-#else
-#define DENSDIM 12*NX*NY
-#define POTDIM  12*NX*NY
-#define BLOCKLENGTH (NX*NY)
-#endif
-
-// make -f Makefile.kzsolver
 
 int main( int argc , char ** argv ) 
 {   
@@ -669,34 +662,84 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s/checkpoint.%s", md.inprefix,suffix);
-            printf("# READING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "rb");
-            if(pFile==NULL)
+            // Check format of checkpoint
+            i = wslda_stcheckpoint_format(CODEDIM);
+            if(i==WSLDA_ST_CHECKPOINT_DAT)
             {
+                // this format supports extansions and interpolatons
+                int _interop, _resop;
+                file_operation( wslda_st_required_operations(CODEDIM, &_interop, &_resop) );
+                
+                // prepare for reading
+                double trd_consts[11];
+                j=0; // file idx
+
+                // convert checkpoint
+                if(_interop>0)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_RESIZE, j, CODEDIM, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                
+                if(_resop==12)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_1D_TO_2D, j, CODEDIM, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                
+                // read checkpoint
+                file_operation(
+                    wslda_st_read_checkpoint(j, CODEDIM, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                );
+                
+                // decode constants
+                dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+            }
+            else if(i==WSLDA_ST_CHECKPOINT_OLD)
+            {
+                // NOTE: It wll be removed in future
+                // here I keep it only to be compatible with our past caculations
+                            sprintf(file_name, "%s/checkpoint.%s", md.inprefix,suffix);
+                printf("# READING CHECKPOINT FILE `%s`\n", file_name);
+                printf("# !!! !!! YOU ARE USING OLD CHECKPOINT FORMAT !!! !!! SUPPORT OF THIS FORMAT WILL BE REMOVED IN FUTURE!\n");
+                FILE * pFile = fopen(file_name, "rb");
+                if(pFile==NULL)
+                {
+                    printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
+                    ABORT_NOBARRIER;
+                }
+                
+                // write all nescesary data to file
+                fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
+                fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
+                fread(&beta        , sizeof(double)      , 1 , pFile); 
+                fread(&eF          , sizeof(double)      , 1 , pFile); 
+                fread(&kF          , sizeof(double)      , 1 , pFile);
+                fread(&Effg        , sizeof(double)      , 1 , pFile);
+                fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
+                fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
+                fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
+                fread(npart        , sizeof(double)      , 2 , pFile);
+                fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
+                    
+                fclose(pFile);
+
+            }
+            else
+            {
+                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
                 printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }
-            
-            // write all nescesary data to file
-            fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
-            fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fread(&beta        , sizeof(double)      , 1 , pFile); 
-            fread(&eF          , sizeof(double)      , 1 , pFile); 
-            fread(&kF          , sizeof(double)      , 1 , pFile);
-            fread(&Effg        , sizeof(double)      , 1 , pFile);
-            fread(h_potentials , sizeof(double)*POTDIM, 1 , pFile);
-            fread(h_densities  , sizeof(double)*DENSDIM,1 , pFile);
-            fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fread(npart        , sizeof(double)      , 2 , pFile);
-            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
-                  
-            fclose(pFile);
             
             printf("# CHECKPOINT READ: it=%d\n", it);
             printf("# CHECKPOINT READ: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
@@ -1048,7 +1091,11 @@ int main( int argc , char ** argv )
             
             // diagonalize
             b_t();
+#ifdef VERBOSEDIG
             if(gr_iam==0) printf("# DIAGONALIZATION %d %d...\n", it, ikz); fflush(stdout);
+#else
+            if(iam==0) printf("# DIAGONALIZATION %d %d...\n", it, ikz); fflush(stdout);
+#endif 
 #ifdef MATRIX_IS_REAL
         // convert matrix to real version
 //         for(ixyz=0; ixyz<nip*niq; ixyz++) if(fabs(cimag(h[ixyz]))>1.0e-12) {printf("# ERROR: matrix has imginary components!\n"); ABORT_NOBARRIER;}
@@ -1144,7 +1191,11 @@ int main( int argc , char ** argv )
             pzheevr_m=iy-ix;
 #endif
             rt_zheev+=e_t(0);
+#ifdef VERBOSEDIG
             if(gr_iam==0) printf("# DIAGONALIZATION %d %d DONE [%.0f sec] (EXTRACTED %d STATES)\n", it, ikz, rt_zheev/(ikz-mylidx+1), pzheevr_m); fflush(stdout);
+#else
+            if(iam==0) printf("# DIAGONALIZATION %d %d DONE [%.0f sec] (EXTRACTED %d STATES)\n", it, ikz, rt_zheev/(ikz-mylidx+1), pzheevr_m); fflush(stdout);            
+#endif
             
             
             if(pzheevr_m==0)
@@ -1537,30 +1588,12 @@ int main( int argc , char ** argv )
         // checkpoint - only by iam==0
         if(md.checkpoint && iam==0)
         {
-            sprintf(file_name, "%s/checkpoint.%s", md.outprefix, suffix);
-            printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "wb");
-            
-            // write all nescesary data to file
-            i=it+1;
-            fwrite(&i           , sizeof(int)         , 1 , pFile); // iteration number
-            fwrite(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fwrite(&beta        , sizeof(double)      , 1 , pFile); 
-            fwrite(&eF          , sizeof(double)      , 1 , pFile); 
-            fwrite(&kF          , sizeof(double)      , 1 , pFile);
-            fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-            fwrite(h_potentials , sizeof(double)*POTDIM, 1 , pFile);
-            fwrite(h_densities  , sizeof(double)*DENSDIM,1, pFile);
-            fwrite(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fwrite(npart        , sizeof(double)      , 2 , pFile);
-            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
-                  
-            fclose(pFile);
+            // prepare data info for writing
+            double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
+            // write checkpoint
+            file_operation(
+                wslda_st_write_checkpoint(CODEDIM, it, 11, twrt_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+            );
         }
         
         rt_other+=e_t(0);

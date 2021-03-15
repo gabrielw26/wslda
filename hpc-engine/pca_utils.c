@@ -22,7 +22,7 @@ metadata_t md =
 1, //measurements;         
 1, // timesteps;            
 0.01, //dt;                
-M_PI/DX, // kc;                
+0.999999*M_PI/DX, // kc;                
 M_PI*M_PI/(2.*DX*DX), //ec;                
 "none", // inprefix
 "wslda", // outprefix
@@ -356,7 +356,23 @@ int parse_input_file(char * file_name)
     if(md.init0Tstart<0.0) md.init0Tstart=md.init0Tstop;
     if(md.init0scmix<0.0) md.init0scmix=md.linearmixing;
     if(md.init0maxiter<0) md.init0maxiter=md.maxiters;
-        
+    
+#ifdef WSLDA
+    if(md.muchange>0 && md.Na!=md.Nb && md.spinsymmetry==1) 
+    {
+        warn_head(stdout);
+        fprintf(stdout, "#\tForcing spinsymmetry=0 since Na!=Nb and muchange>0 (fixed particle number mode). \n");
+        warn_foot(stdout);
+        md.spinsymmetry=0;
+    }
+#endif
+
+#ifdef USE_CUBIC_CUTOFF
+    fprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
+    md.ec=1.0e16;
+    md.kc=1.0e16;
+#endif
+
     fclose(fp);
     return 1;
 }
