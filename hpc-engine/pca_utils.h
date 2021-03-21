@@ -109,6 +109,8 @@ typedef struct
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
+    char initialized; // technical variable, indicating that structure is initialized by the input file 
+    char stdoutfile[MD_CHAR_LGTH]; // technical variable,
 
     // POTENTIAL PARAMETERS
     double params[MAX_USER_PARAMS];
@@ -182,5 +184,7 @@ int copy_input_file(char * input_file, char * file_name);
 int wslda_check_settings();
 
 int wslda_check_array_against_naninf(int n, double *array);
+
+void wprintf( const char * format, ... );
 
 #endif

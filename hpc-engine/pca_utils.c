@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
@@ -85,6 +86,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 10.0, // ccswitch;
 1, // iogroups
 "wdat", // dataformat
+0, // initialized
+"wslda_stdout.txt", // stdoutfile
 };
 
 metadata_t *input = &md; // additional handler;
@@ -372,6 +375,12 @@ int parse_input_file(char * file_name)
     md.ec=1.0e16;
     md.kc=1.0e16;
 #endif
+    
+    // prepare for wprintf()
+    sprintf(md.stdoutfile, "%s_stdout.txt", md.outprefix);
+    FILE * f = fopen(md.stdoutfile, "w"); // clear file
+    fclose(f);    
+    md.initialized=1;
 
     fclose(fp);
     return 1;
@@ -581,4 +590,18 @@ int wslda_check_array_against_naninf(int n, double *array)
         if(isinf(array[i])) return WSLDA_ERR_INF_DETECTED;
     }
     return WSLDA_OK;
+}
+
+void wprintf( const char * format, ... )
+{
+  va_list args;
+  va_start (args, format);
+  vprintf (format, args);
+  if(md.initialized)
+  {
+      FILE * f = fopen(md.stdoutfile, "a");
+      vfprintf (f, format, args);
+      fclose(f);
+  }
+  va_end (args);
 }

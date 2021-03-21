@@ -223,12 +223,8 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
-#if CODEDIM==1
-    if(iam==0) printf("# CODE: ST-WSLDA-1D\n");
-#else
-    if(iam==0) printf("# CODE: ST-WSLDA-2D\n");
-#endif
-    if(iam==0) printf("# VERSION: %s\n", VERSION);
+    
+    if(iam==0) printf("# START OF MAIN FUNCTION\n");
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -270,6 +266,13 @@ int main( int argc , char ** argv )
         copy_input_file(argv[i],file_name) ; 
         assure_reproducibility(md.outprefix);
     }
+    
+#if CODEDIM==1
+    if(iam==0) printf("# CODE: ST-WSLDA-1D\n");
+#else
+    if(iam==0) printf("# CODE: ST-WSLDA-2D\n");
+#endif
+    if(iam==0) printf("# VERSION: %s\n", VERSION);
     
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
