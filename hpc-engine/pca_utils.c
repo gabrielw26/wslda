@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
@@ -85,6 +86,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 10.0, // ccswitch;
 1, // iogroups
 "wdat", // dataformat
+0, // initialized
+"wslda.stdout", // stdoutfile
 };
 
 metadata_t *input = &md; // additional handler;
@@ -297,11 +300,11 @@ int parse_input_file(char * file_name)
                 int ivars, ierr;
                 for(ivars=0; ivars<100; ivars++)
                 {
-//                     printf("[PARSER-i]: `%s`, `%s` `%s`\n", s, tag, ptag);
+//                     wprintf("[PARSER-i]: `%s`, `%s` `%s`\n", s, tag, ptag);
                     ierr = sscanf (s,"%s %s %*s",tag,ptag);
                     if(ierr<2) break;
                     
-//                     if(ptag[0]=='#') printf("[PARSER-#]:\n");
+//                     if(ptag[0]=='#') wprintf("[PARSER-#]:\n");
                     if(ptag[0]=='#') break;
                     
                     if (strcmp (ptag,"all") == 0) 
@@ -311,14 +314,14 @@ int parse_input_file(char * file_name)
 #else
                         replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
 #endif
-//                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
+//                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
                     
                     if (strcmp (ptag,"default") == 0) 
                     {
                         replace_str(s,ptag,"rho delta j");
-//                         printf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
+//                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
                         
@@ -331,13 +334,19 @@ int parse_input_file(char * file_name)
                     
                     // add variable
                     strcpy(md.writevar[md.nwritevar],ptag); md.nwritevar++;
-//                     printf("[ADDING]: %d->%s\n", md.nwritevar-1, md.writevar[md.nwritevar-1]);
-//                     printf("[PARSER-O]: `%s`, `%s` `%s`\n", s, tag, ptag);
+//                     wprintf("[ADDING]: %d->%s\n", md.nwritevar-1, md.writevar[md.nwritevar-1]);
+//                     wprintf("[PARSER-O]: `%s`, `%s` `%s`\n", s, tag, ptag);
                 }
             }
         }
         
     }
+    
+    // prepare for wprintf()
+    sprintf(md.stdoutfile, "%s.stdout", md.outprefix);
+    FILE * f = fopen(md.stdoutfile, "w"); // clear file
+    fclose(f);    
+    md.initialized=1;
     
     // add default variables - if not added 
     if(md.nwritevar==0)
@@ -361,18 +370,18 @@ int parse_input_file(char * file_name)
     if(md.muchange>0 && md.Na!=md.Nb && md.spinsymmetry==1) 
     {
         warn_head(stdout);
-        fprintf(stdout, "#\tForcing spinsymmetry=0 since Na!=Nb and muchange>0 (fixed particle number mode). \n");
+        wfprintf(stdout, "#\tForcing spinsymmetry=0 since Na!=Nb and muchange>0 (fixed particle number mode). \n");
         warn_foot(stdout);
         md.spinsymmetry=0;
     }
 #endif
 
 #ifdef USE_CUBIC_CUTOFF
-    fprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
+    wfprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
     md.ec=1.0e16;
     md.kc=1.0e16;
 #endif
-
+    
     fclose(fp);
     return 1;
 }
@@ -424,47 +433,47 @@ void getnwfip( int ip , int np , int nwf , int * nwfip )
 
 void print_help(char *progname)
 {
-  printf("USAGE:\n");
-  printf("\t%s input_file_name\n\n",progname);
-  printf("OR\n");
-  printf("\t%s -v\n",progname);
-  printf("\tfor printing information about the version.\n\n");
+  wprintf("USAGE:\n");
+  wprintf("\t%s input_file_name\n\n",progname);
+  wprintf("OR\n");
+  wprintf("\t%s -v\n",progname);
+  wprintf("\tfor printing information about the version.\n\n");
   
 }
 
 void print_version()
 {
-  printf("Code       : %s\n",STRINGIZE(CODE));
-  printf("Version    : %s\n",VERSION);
-  printf("Build time : %s, %s\n",__DATE__,__TIME__);
-  printf("Lattice    : %d x %d x %d\n", NX, NY, NZ);
-  printf("Defined macro-variables:\n");
-  printf("\tNXYZ=%d\n", NXYZ);
+  wprintf("Code       : %s\n",STRINGIZE(CODE));
+  wprintf("Version    : %s\n",VERSION);
+  wprintf("Build time : %s, %s\n",__DATE__,__TIME__);
+  wprintf("Lattice    : %d x %d x %d\n", NX, NY, NZ);
+  wprintf("Defined macro-variables:\n");
+  wprintf("\tNXYZ=%d\n", NXYZ);
 #ifdef TARGET_MACHINE
-  printf("\tTARGET_MACHINE=%s\n",STRINGIZE(TARGET_MACHINE));
+  wprintf("\tTARGET_MACHINE=%s\n",STRINGIZE(TARGET_MACHINE));
 #endif
 #ifdef VERBOSE
-  printf("\tVERBOSE\n");
+  wprintf("\tVERBOSE\n");
 #endif
 #ifdef DEBUG
-  printf("\tDEBUG\n");
+  wprintf("\tDEBUG\n");
 #endif
 #ifdef TIMING
-  printf("\tTIMING\n");
+  wprintf("\tTIMING\n");
 #endif
 #ifdef EPSILON
-  printf("\tEPSILON=%g\n",EPSILON);  
+  wprintf("\tEPSILON=%g\n",EPSILON);  
 #endif
 #ifdef MAX_USER_PARAMS
-    printf("\tMAX_USER_PARAMS=%d\n", MAX_USER_PARAMS);
+    wprintf("\tMAX_USER_PARAMS=%d\n", MAX_USER_PARAMS);
 #endif
     
-    printf("\tUD_SCITERS=%d\n", UD_SCITERS);
-    printf("\tUD_MIX_COEFF=%f\n", UD_MIX_COEFF);
-    printf("\tDENSEPSILON=%g\n", DENSEPSILON);
+    wprintf("\tUD_SCITERS=%d\n", UD_SCITERS);
+    wprintf("\tUD_MIX_COEFF=%f\n", UD_MIX_COEFF);
+    wprintf("\tDENSEPSILON=%g\n", DENSEPSILON);
     
 #ifdef CURRENT_CORRECTIONS
-    printf("\tCURRENT_CORRECTIONS\n");
+    wprintf("\tCURRENT_CORRECTIONS\n");
 #endif
     
 }
@@ -582,3 +591,40 @@ int wslda_check_array_against_naninf(int n, double *array)
     }
     return WSLDA_OK;
 }
+
+void wprintf( const char * format, ... )
+{
+  va_list args;
+  va_start (args, format);
+  vprintf (format, args); 
+  va_end (args);
+  if(md.initialized)
+  {
+      FILE * f = fopen(md.stdoutfile, "a");
+      if(f==NULL) { printf("PROBLEM!\n"); fflush(stdout);}
+      va_start (args, format);
+      vfprintf (f, format, args);
+      va_end (args);
+      fclose(f);
+  }
+  fflush(stdout);
+}
+
+void wfprintf(FILE *stream,  const char * format, ... )
+{
+  va_list args;
+  va_start (args, format);
+  vfprintf (stream, format, args);
+  va_end (args);
+  if(md.initialized)
+  {
+      FILE * f = fopen(md.stdoutfile, "a");
+      va_start (args, format);
+      vfprintf (f, format, args);
+      va_end (args);
+      fclose(f);
+  }
+  fflush(stream); 
+}
+
+

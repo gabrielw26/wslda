@@ -184,7 +184,7 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
     
 //     double ttt=0.0;
 //     for(ixyz=0; ixyz<NX; ixyz++) ttt+=rho_a[ixyz] * LZ;
-//     printf("ttt=%f\n", ttt);
+//     wprintf("ttt=%f\n", ttt);
     
     return 0;
 }
