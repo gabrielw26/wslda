@@ -23,12 +23,14 @@
 #include <time.h>
 
 #include "netlib-lapack.h"
+void wprintf( const char * format, ... );
+void wfprintf(FILE *stream,  const char * format, ... );
 
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
     {                                                                           \
-        fprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
-        fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
+        wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
         return -1 ;                                                             \
     }
     
@@ -67,17 +69,17 @@ int lapack_inversion(int M, double **a, double **b)
     
     // call for optimal workspace for _dgetri
     dgetri_(&M, A, &M, ipiv, testwork, &lwork, &info );
-    if(info!=0) { printf("Error: memory query: _dgetri=%d\n", info); return 1;}
+    if(info!=0) { wprintf("Error: memory query: _dgetri=%d\n", info); return 1;}
     lwork=(int)testwork[0];
-//     printf("dgetri: request for memory: %d\n", lwork);
+//     wprintf("dgetri: request for memory: %d\n", lwork);
     double *work;
     cppmallocl(work,lwork,double);
 
     dgetrf_(&M, &M, A, &M, ipiv, &info );
-    if(info!=0) { printf("Error: dgetrf_=%d\n", info); return info;}
+    if(info!=0) { wprintf("Error: dgetrf_=%d\n", info); return info;}
     
     dgetri_(&M, A, &M, ipiv, work, &lwork, &info );
-    if(info!=0) { printf("Error: dgetri_=%d\n", info); return info;}
+    if(info!=0) { wprintf("Error: dgetri_=%d\n", info); return info;}
     
 	for(i=0; i<M; i++) for(j=0; j<M; j++) b[i][j] = A[j*M +i]; // copy to result table
 	

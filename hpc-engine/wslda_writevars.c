@@ -19,8 +19,8 @@
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
     {                                                                           \
-        fprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
-        fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ;               \
+        wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
         return -1 ;                                                             \
     }
 

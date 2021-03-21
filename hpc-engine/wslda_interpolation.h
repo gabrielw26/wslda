@@ -570,7 +570,7 @@ int wslda_interpolation_3dr(int nxi, int nyi, int nzi, double *funIn, int nxo, i
             {
                 ixyzo = (izo-(nzo-nzi)) + (nzo/2+1)*iyo + (nzo/2+1)*nyo*ixo;
                 in_backward[ixyzo] =  conj(out_forward[ixyzi]);
-//                 printf("SC: %d --> %d\n", izo, (izo-(nzo-nzi)));
+//                 wprintf("SC: %d --> %d\n", izo, (izo-(nzo-nzi)));
             }
             else
             {
