@@ -265,7 +265,7 @@ int compute_matrix_elements_1d(metadata_s3dpca_grid *bgrid, int it, wslda_densit
             }
             
         } // for(li=0; li<bgrid->nip; li++)
-//         printf("ci=%d\n", ci); fflush(stdout);
+//         wprintf("ci=%d\n", ci); fflush(stdout);
     } // for(lj=0; lj<bgrid->niq; lj++)
     
     // clear memory
@@ -339,7 +339,7 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
         
         if(fabs(creal(diff))>1.0e-14 || fabs(cimag(diff))>1.0e-14) 
         {
-            printf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
+            wprintf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
                 ri, ci, creal(x1x2), cimag(x1x2), creal(x2x1), cimag(x2x1)
             );
             hermitian_violated=1;

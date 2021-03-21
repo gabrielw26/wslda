@@ -53,7 +53,7 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
         if(hasit==1)
         {
             lweight[i]++;
-//             if(wsldapid==0) printf("->>>> HAS %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, i);
+//             if(wsldapid==0) wprintf("->>>> HAS %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, i);
         }
         else
         {
@@ -62,7 +62,7 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
             lkz[lcnt]=kkz[iz];
             lk2[lcnt]=k2;
             lcnt++;
-//             if(wsldapid==0) printf("->>>> NEW %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, lcnt-1);
+//             if(wsldapid==0) wprintf("->>>> NEW %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, lcnt-1);
         }
     }
     
@@ -89,7 +89,7 @@ int fill_wslda_kmodes_1d(double *kky, double *kkz)
     free(lk2);
     free(lweight);
     
-//     printf("->>>> lcnt=%d isum=%d NY*NZ=%d\n", lcnt, isum, (NY-1)*(NZ-1));
+//     wprintf("->>>> lcnt=%d isum=%d NY*NZ=%d\n", lcnt, isum, (NY-1)*(NZ-1));
     if(isum!=(NY-1)*(NZ-1)) return WSLDA_ERR_INTRISTIC_ERROR;
     
     return WSLDA_OK;
@@ -388,7 +388,7 @@ int wslda_kmodes_1d_to_2d(double ky, double kz, int *cnt, double *kkz, int *kzcn
     int i,j, hasit;
     for(i=0; i<lcnt; i++)
     {
-//         printf("AAA: %12.8f %12.8f %6d %6d %12.8f %12.8f\n",ky,kz, lcnt, i, lky[i],lkz[i]);
+//         wprintf("AAA: %12.8f %12.8f %6d %6d %12.8f %12.8f\n",ky,kz, lcnt, i, lky[i],lkz[i]);
         hasit=0;
         for(j=0; j<*cnt; j++) if(fabs(lkz[i]-kkz[j])<CMP_EPS) {hasit=1; break;}
         
@@ -407,7 +407,7 @@ int wslda_kmodes_1d_to_2d(double ky, double kz, int *cnt, double *kkz, int *kzcn
     }
     
 //     for(i=0; i<*cnt; i++)
-//         printf("BBB: %12.8f %12.8f %6d %6d %12.8f %6d\n",ky,kz, *cnt, i, kkz[i],kzcnt[i]);
+//         wprintf("BBB: %12.8f %12.8f %6d %6d %12.8f %6d\n",ky,kz, *cnt, i, kkz[i],kzcnt[i]);
 
     free(lky);
     free(lkz);

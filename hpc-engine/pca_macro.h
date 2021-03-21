@@ -36,7 +36,7 @@
     }
     
 #define TESTLINE                                                                \
-    { printf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); }
+    { wprintf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); }
 
     
 // execution of function by GPU and CPU side.

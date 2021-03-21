@@ -56,7 +56,7 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     resize[0]=0;
     char file_name[512];
     sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
-    printf("# INSPECTING CHECKPOINT FILE `%s`\n", file_name);
+    wprintf("# INSPECTING CHECKPOINT FILE `%s`\n", file_name);
     
     FILE * pFile = fopen(file_name, "rb");
     if(pFile==NULL) return WSLDA_ERR_CANNOT_OPEN_CHECKPOINT_FILE;
@@ -73,18 +73,18 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     int inNX=lattice1[1], inNY=lattice1[2], inNZ=lattice1[3];
     double inDX=lattice2[0], inDY=lattice2[1], inDZ=lattice2[2];
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;  
-    printf("# CHECKPOINT FOR %dD LATTICE: [NX,NY,NZ]=[%d,%d,%d], [DX,DY,DZ]=[%.3f,%.3f,%.3f], [LX,LY,LZ]=[%.3f,%.3f,%.3f]\n", 
+    wprintf("# CHECKPOINT FOR %dD LATTICE: [NX,NY,NZ]=[%d,%d,%d], [DX,DY,DZ]=[%.3f,%.3f,%.3f], [LX,LY,LZ]=[%.3f,%.3f,%.3f]\n", 
     incodedim, inNX, inNY, inNZ, inDX, inDY, inDZ, inLX, inLY, inLZ);
     if(incodedim==codedim && inNX==NX && inNY==NY && inNZ==NZ && inDX==DX && inDY==DY && inDZ==DZ)
     {
-        printf("# CHECKPOINT FULLY COMPATIBLE WITH PREDEFINES.H\n"); fflush(stdout);
+        wprintf("# CHECKPOINT FULLY COMPATIBLE WITH PREDEFINES.H\n"); fflush(stdout);
         return WSLDA_OK;
     }
     
     
     if(inLX!=LX || inLY!=LY || inLZ!=LZ)
     {
-        printf("# ERORR: [LX,LY,LZ]=[%.3f,%.3f,%.3f] FOR THE TARGET LATTICE DIFFERS FROM INPUT LATTICE!\n", LX, LY, LZ);
+        wprintf("# ERORR: [LX,LY,LZ]=[%.3f,%.3f,%.3f] FOR THE TARGET LATTICE DIFFERS FROM INPUT LATTICE!\n", LX, LY, LZ);
 //         return WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE;
         report_warning(WSLDA_WRN_CHECKPOINT_UNPREDICTED, stdout);
         intepolation[0]=incodedim; 
@@ -122,7 +122,7 @@ int wslda_st_read_checkpoint(int fileidx, int codedim, int *it,
     if(fileidx==0) 
     {
         sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
-        printf("# LOADING CHECKPOINT FILE `%s`\n", file_name);
+        wprintf("# LOADING CHECKPOINT FILE `%s`\n", file_name);
     }
     else sprintf(file_name, "%s/checkpoint.dat.%d", md.outprefix, fileidx);
     
@@ -189,7 +189,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     if(fileidx==0) 
     {
         sprintf(file_name_in, "%s/checkpoint.dat", md.inprefix);
-        printf("# LOADING CHECKPOINT FILE `%s`\n", file_name_in);
+        wprintf("# LOADING CHECKPOINT FILE `%s`\n", file_name_in);
     }
     else sprintf(file_name_in, "%s/checkpoint.dat.%d", md.outprefix, fileidx);
     sprintf(file_name_out, "%s/checkpoint.dat.%d", md.outprefix, fileidx+1);
@@ -221,7 +221,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     if(fread(h_densities_in , sizeof(double)*DENSDIM_in, 1 , pFile)!=1) return WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE;
     if(fread(energy       , sizeof(double)*nenergy , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE;
     if(fread(&mbroy       , sizeof(int)            , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE; // broyden
-//     printf("111 mbroy=%d md.Mbroyden=%d\n", mbroy, md.Mbroyden);
+//     wprintf("111 mbroy=%d md.Mbroyden=%d\n", mbroy, md.Mbroyden);
     double **dens_in_in;		// pointer to array of arrays of densities
     double **dens_out_in;		// 		---//---
     int SOLDIM_in = nbroy-2; SOLDIM_in /=bs;  SOLDIM_in *=bs_in; // rescale array lenght
@@ -239,7 +239,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     }
     fclose(pFile);
     
-//     printf("CI %d %d %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in ,bs_in, bs);
+//     wprintf("CI %d %d %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in ,bs_in, bs);
 
     // output buffers  
     int interNX, interNY, interNZ;
@@ -250,7 +250,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
         lattice1_in[0]=3; // dimension go up 
         lattice1_in[3]=NZ; 
         
-        printf("# CONVERTING CHECKPOINT FILE: 2D --> 3D\n"); fflush(stdout);
+        wprintf("# CONVERTING CHECKPOINT FILE: 2D --> 3D\n"); fflush(stdout);
     }
     else if(operation==ST_CHECKPOINT_1D_TO_3D) 
     { 
@@ -260,7 +260,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
         lattice1_in[2]=NY;
         lattice1_in[3]=NZ; 
         
-        printf("# CONVERTING CHECKPOINT FILE: 1D --> 3D\n"); fflush(stdout);
+        wprintf("# CONVERTING CHECKPOINT FILE: 1D --> 3D\n"); fflush(stdout);
     }    
     else if(operation==ST_CHECKPOINT_1D_TO_2D) 
     { 
@@ -270,11 +270,11 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
         lattice1_in[2]=NY;
         lattice1_in[3]=NZ; 
         
-        printf("# CONVERTING CHECKPOINT FILE: 1D --> 2D\n"); fflush(stdout);
+        wprintf("# CONVERTING CHECKPOINT FILE: 1D --> 2D\n"); fflush(stdout);
     } 
     else if(operation==ST_CHECKPOINT_RESIZE)
     {
-        printf("# CONVERTING CHECKPOINT WITH RESOLUTION [DX,DY,DZ]=[%.3f,%.3f,%.3f] TO NEW RESOLUTION [%.3f,%.3f,%.3f]\n",
+        wprintf("# CONVERTING CHECKPOINT WITH RESOLUTION [DX,DY,DZ]=[%.3f,%.3f,%.3f] TO NEW RESOLUTION [%.3f,%.3f,%.3f]\n",
             lattice2_in[0], lattice2_in[1], lattice2_in[2], DX, DY, DZ
         ); fflush(stdout);
         interNX=lattice1_in[1]; // make copy ...
@@ -294,7 +294,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     DENSDIM_in = ndens;  DENSDIM_in/=bs;  DENSDIM_in*=bs_out; // rescale array lenght
     SOLDIM_in = nbroy-2; SOLDIM_in /=bs;  SOLDIM_in *=bs_out; // rescale array lenght
     SOLDIM_in+=2; // get back factor 2
-//     printf("COO %d %d %d %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in, bs_in, bs, bs_out);
+//     wprintf("COO %d %d %d %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in, bs_in, bs, bs_out);
     
     pFile = fopen(file_name_out, "wb");
     if(pFile==NULL) return WSLDA_ERR_CANNOT_OPEN_CHECKPOINT_FILE;
@@ -313,7 +313,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     j=0; k=0;
     while(k<POTCNT)
     {
-//             printf("POTCNT %d %d %c\n", k, j, type[j]);
+//             wprintf("POTCNT %d %d %c\n", k, j, type[j]);
         if(operation==ST_CHECKPOINT_2D_TO_3D) 
         { 
             if(wslda_resize_array_2d_to_3d(type[j], NX, NY, ptr_in, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR; 
@@ -354,7 +354,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     j=0; k=0;
     while(k<DENSCNT)
     {
-// //             printf("DENSCNT %d %d %c\n", k, j, type[j]);
+// //             wprintf("DENSCNT %d %d %c\n", k, j, type[j]);
         if(operation==ST_CHECKPOINT_2D_TO_3D) 
         { 
             if(wslda_resize_array_2d_to_3d(type[j], NX, NY, ptr_in, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR; 
@@ -390,8 +390,8 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     
     if(fwrite(energy       , sizeof(double)*nenergy , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE;
     if(fwrite(&mbroy       , sizeof(int)            , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE; // broyden
-// //         printf("mbroy=%d md.Mbroyden=%d\n", mbroy, md.Mbroyden);
-// //         printf("CO %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in);
+// //         wprintf("mbroy=%d md.Mbroyden=%d\n", mbroy, md.Mbroyden);
+// //         wprintf("CO %d %d %d %d %d\n", nconsts, POTDIM_in, DENSDIM_in, nenergy, SOLDIM_in);
     if(mbroy==md.Mbroyden)
     {
         if(md.mixingtype=='d') {strcpy(type, DENSTYPE); l=DENSCNT;}
@@ -404,7 +404,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
             j=0; k=0;
             while(k<l)
             {
-// //                     printf("lin %d %d %c %d %d %d\n", k, j, type[j],bs_in,bs,bs_out);
+// //                     wprintf("lin %d %d %c %d %d %d\n", k, j, type[j],bs_in,bs,bs_out);
                 if(operation==ST_CHECKPOINT_2D_TO_3D) 
                 { 
                     if(wslda_resize_array_2d_to_3d(type[j], NX, NY, ptr_in, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR; 
@@ -447,7 +447,7 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
             j=0; k=0;
             while(k<l)
             {
-// //                     printf("lin %d %d %c %d %d %d\n", k, j, type[j],bs_in,bs,bs_out);
+// //                     wprintf("lin %d %d %c %d %d %d\n", k, j, type[j],bs_in,bs,bs_out);
                 if(operation==ST_CHECKPOINT_2D_TO_3D) 
                 { 
                     if(wslda_resize_array_2d_to_3d(type[j], NX, NY, ptr_in, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR; 
@@ -521,7 +521,7 @@ int wslda_st_write_checkpoint(int codedim, int it,
     
     char file_name[512];
     sprintf(file_name, "%s/checkpoint.%s", md.outprefix, suffix);
-    printf("# WRITING CHECKPOINT FILE `%s`\n", file_name);
+    wprintf("# WRITING CHECKPOINT FILE `%s`\n", file_name);
     if(md.overwrite==0) if(exists(file_name)) return WSLDA_ERR_CANNOT_OVERWRITE;
     
     FILE * pFile = fopen(file_name, "wb");
@@ -537,13 +537,13 @@ int wslda_st_write_checkpoint(int codedim, int it,
     if(fwrite(h_densities  , sizeof(double)*ndens   , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE;
     if(fwrite(energy       , sizeof(double)*nenergy , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE;
     if(fwrite(&md.Mbroyden , sizeof(int)            , 1 , pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE; // broyden
-// //     printf("WRITING md.Mbroyden=%d\n", md.Mbroyden);
+// //     wprintf("WRITING md.Mbroyden=%d\n", md.Mbroyden);
     for (i = 0; i < (md.Mbroyden + 1); i++) if(fwrite(dens_in[i]   , sizeof(double)*nbroy , 1, pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE;
     for (i = 0; i < (md.Mbroyden + 1); i++) if(fwrite(dens_out[i]  , sizeof(double)*nbroy , 1, pFile)!=1) return WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE;
             
     fclose(pFile);
     
-// //     printf("WW %d %d %d %d %d\n", nconsts, npot, ndens, nenergy, nbroy);
+// //     wprintf("WW %d %d %d %d %d\n", nconsts, npot, ndens, nenergy, nbroy);
             
     return WSLDA_OK;
 }
