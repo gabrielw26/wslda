@@ -87,7 +87,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
-"wslda_stdout.txt", // stdoutfile
+"wslda.stdout", // stdoutfile
 };
 
 metadata_t *input = &md; // additional handler;
@@ -343,7 +343,7 @@ int parse_input_file(char * file_name)
     }
     
     // prepare for wprintf()
-    sprintf(md.stdoutfile, "%s_stdout.txt", md.outprefix);
+    sprintf(md.stdoutfile, "%s.stdout", md.outprefix);
     FILE * f = fopen(md.stdoutfile, "w"); // clear file
     fclose(f);    
     md.initialized=1;

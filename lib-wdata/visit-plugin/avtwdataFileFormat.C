@@ -453,7 +453,7 @@ avtwdataFileFormat::avtwdataFileFormat(const char *filename)
 
         fclose(inp);          
     }
-    str = wdmd.prefix; str+="_stdout.txt";
+    str = wdmd.prefix; str+=".stdout";
     inp = fopen (str.c_str(),"r");
     if(inp!=NULL) // if file exists
     {
