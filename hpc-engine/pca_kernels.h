@@ -26,7 +26,7 @@ double der_tildeC__der_nb_h(double n_a, double n_b);
 
 // params handling
 #ifdef TDWSLDA
-void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data);
+void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 int memcopy_extra_data(size_t extra_data_size, void *extra_data);

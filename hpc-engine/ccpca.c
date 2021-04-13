@@ -536,10 +536,6 @@ int main( int argc , char ** argv )
          for(i=0; i<nwfip; i++) h_cnt[i]=wslda_kmodes_1d_get_weight(h_kkyz[i], h_kkyz[i+nwfip]);
     }
     
-#ifdef TDWSLDA
-    dt/=eF; // time step
-#endif
-    
     if(ip==0) wprintf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
     if(md.inittype!=5)
@@ -563,12 +559,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
     gpu_exec( memcopy_host2gpu(h_cnt    , d_cnt    ,  (size_t)nwfip  *sizeof(int)) );
-    
-    // Set constants
-    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
-    md.ec=ec; 
-    TDWSLDA_SET_STATIC_VARS;
-    
+        
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
@@ -598,10 +589,18 @@ int main( int argc , char ** argv )
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
-    process_params(md.params, kF, mu, extra_data_size, extra_data);
+    process_params(md.params, &kF, mu, extra_data_size, extra_data);
 #else
     process_params(md.params, kF, mu);
 #endif
+    // Set constants
+    eF=0.5*kF*kF;
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
+    md.ec=ec; 
+    TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef BDG_MODE   
