@@ -83,7 +83,7 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-extern "C" void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
+extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
 
