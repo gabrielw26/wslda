@@ -169,9 +169,9 @@ void report_warning(int errcode, FILE *stream)
             break;
             
         case WSLDA_WRN_SPINSYMMETRY1:
-            wfprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            wfprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with commented-out predefines.h option SPINSYMMETRY_MODE!\n");
             wfprintf(stream, "#\t Check if it is intended!\n");
-            wfprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            wfprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 0`!\n");
             break;
             
         case WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN:
