@@ -78,7 +78,8 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
  * @param params array of size MAX_USER_PARAMS with parameters from input file. 
  * @param kF typical Fermi momentum scale of the problem. 
  *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center
+ *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center.
+ *           Note that it is passed via a pointer, to access/modify it use kF[0] or (*kF).
  * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
