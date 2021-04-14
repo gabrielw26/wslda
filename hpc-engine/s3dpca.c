@@ -936,12 +936,6 @@ int main( int argc , char ** argv )
     elpa_set(handle, "mpi_comm_parent", MPI_Comm_c2f(MPI_COMM_WORLD), &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_row",ip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_col", iq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#ifdef ELPA_USE_GPU
-    if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
-    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#else
-    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#endif
     
     /* Setup */
     info=elpa_setup(handle);    
@@ -951,6 +945,17 @@ int main( int argc , char ** argv )
 //     elpa_autotune_t autotune_handle = elpa_autotune_setup(handle, ELPA_AUTOTUNE_FAST, ELPA_AUTOTUNE_DOMAIN_COMPLEX, &info); 
 //     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 //     int elpa_atotue_unfinished=1;
+    
+    elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
+    if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    
+#ifdef ELPA_USE_GPU
+    if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
+    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#else
+    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
 #ifdef MATRIX_IS_REAL
     elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info); 
     if(iam==0) wprintf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
@@ -959,11 +964,7 @@ int main( int argc , char ** argv )
     if(iam==0) wprintf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
 #endif
     if(info!=ELPA_OK) wprintf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
-    
-    elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
-    if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
-    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-        
+            
     if(iam==0) wprintf("# SETTING UP OF ELPA  DONE.\n");
 #endif
         
