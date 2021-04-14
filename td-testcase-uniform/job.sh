@@ -26,7 +26,9 @@
 ## NOTE: dwarf is not heterogeneous (different nodes have different number of GPUs of different type),
 ## you need to deliver proper information about structure of the system in dwarfnodes.txt file
 
-module load cuda/9.0
+# execute code
+cd $PBS_O_WORKDIR
+source env.sh
 
 mpirun -n 40 -hostfile dwarfnodes.txt ./td-wslda-2d input.txt
 
