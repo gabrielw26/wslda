@@ -87,26 +87,29 @@
 
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
- * Fill this part only if ELPA library is used for diagonnalization
+ * Fill this part only if ELPA library is used for diagonalization
+ * 
+ * Default settings are: ELPA_SOLVER_1STAGE
+ * but you can overwrite using options below
  * */
 
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-#define ELPA_USE_GPU
+// #define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
-#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
-#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
+// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
+// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
 
 /**
  * Fraction of eigenvectors to be extracted in each cycle.
- * 1.0 corresponds to extraction of all eigenvectors (USE IT IF YOU ARE NOT SURE)
+ * 1.0 corresponds to extraction of all eigenvectors (default)
  * NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
  * NOTE: For 3D case this value typically can be set to 0.78, for 1D and 2D casese 1.0 is recommended.
  * */
-#define ELPA_NEV_FRACTION 1.0
+// #define ELPA_NEV_FRACTION 1.0
