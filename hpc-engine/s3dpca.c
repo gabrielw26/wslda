@@ -824,7 +824,7 @@ int main( int argc , char ** argv )
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+    if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -1007,7 +1007,7 @@ int main( int argc , char ** argv )
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
 #endif
-        if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+        if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         process_params(dc_params, &kF, mu, extra_data_size, extra_data);
