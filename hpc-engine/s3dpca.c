@@ -265,6 +265,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #ifdef USE_SCALAPACK_PZHEEVR
     if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
 #endif
@@ -369,7 +370,7 @@ int main( int argc , char ** argv )
 #endif 
     
     /* initialize the BLACS grid for hamiltonian diagonalizaion- a virtual rectangular grid */
-    if(iam==0) wprintf("# CREATING CBLACS GRID OF SIZE (pzheev): [%d x %d]\n", md.p, md.q);
+    if(iam==0) wprintf("# CREATING CBLACS GRID OF SIZE [%d x %d] WITH BLOCK SIZE [%d x %d]\n", md.p, md.q, md.mb, md.nb);
     b_order = "R" ;
     Cblacs_pinfo( &iam_blacs , &nprocs_blacs ) ;
     if ( nprocs_blacs < 1 ) 
@@ -1123,7 +1124,7 @@ int main( int argc , char ** argv )
         ix=ix+1; // shift to next eigenvalue
         nwf=iy-ix;
 #endif            
-        if(iam==0) wprintf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/Hsize);
+        if(iam==0) wprintf("# NUMBER OF EXTRACTED nwf IN ENERGY RANGE [-ecut,+ecut] IS %d (%.1f%% OF TOTAL NUMBER OF STATES)\n", nwf, 100.0*nwf/Hsize);
         
         // Temporary grid for density computation
         int ictxt_d; // context for density computation
@@ -1397,7 +1398,10 @@ int main( int argc , char ** argv )
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
         rt_other+=e_t(0);
-                
+        
+        // ------------------------ energy ----------------------
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
+        
         // ------------------ angular momentum ------------------
         b_t();
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
@@ -1413,7 +1417,6 @@ int main( int argc , char ** argv )
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}

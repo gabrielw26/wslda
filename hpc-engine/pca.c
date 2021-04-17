@@ -842,6 +842,7 @@ int main( int argc , char ** argv )
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
+    if(ip==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     process_params(md.params, &kF, mu, extra_data_size, extra_data); 
 #else
     process_params(md.params, kF, mu);
