@@ -577,7 +577,7 @@ int main( int argc , char ** argv )
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(ip==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
         
@@ -589,6 +589,7 @@ int main( int argc , char ** argv )
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
+    if(ip==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     process_params(md.params, &kF, mu, extra_data_size, extra_data);
 #else
     process_params(md.params, kF, mu);

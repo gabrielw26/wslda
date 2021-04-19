@@ -1,24 +1,13 @@
 # W-SLDA Toolkit settings
 # 
-# // ---------------------- ELPA SETTINGS ---------------------------
-# // Fill this part only if ELPA library is used for diagonnalization
+# Computation precision: double complex
+# Computer: Summit
 # 
-# // uncomment it if you want to activate GPU for diagonalizations 
 # #define ELPA_USE_GPU
-# 
-# // Select ELPA kernels
 # #define ELPS_USE_SOLVER ELPA_SOLVER_1STAGE
 # #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
 # #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
-# 
-# // Fraction of eigenvectors to be extracted in each cycle.
-# // 1.0 corresponds to extraction if all eigenvectors (USE IT IF YOU YOU ARE NOT SURE)
-# // NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
-# // NOTE: For 3D case this value typically can be set to 0.78
 # #define ELPA_NEV_FRACTION 1.0
-# 
-# Computation precision: double complex
-# Computer: Summit
 #
 # Columns:
 # 1: matrix size
@@ -30,3 +19,14 @@
 524288      157.7
 746496      488.7
 1769472     57804
+
+
+# #define ELPA_USE_GPU
+# #define ELPS_USE_SOLVER ELPA_SOLVER_2STAGE
+# #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
+# #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
+# #define ELPA_NEV_FRACTION 1.0
+65536       0.51
+128000      2.27
+221184      15.41
+746496      516.0

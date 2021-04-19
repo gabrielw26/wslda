@@ -265,6 +265,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #ifdef USE_SCALAPACK_PZHEEVR
     if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
 #endif
@@ -369,7 +370,7 @@ int main( int argc , char ** argv )
 #endif 
     
     /* initialize the BLACS grid for hamiltonian diagonalizaion- a virtual rectangular grid */
-    if(iam==0) wprintf("# CREATING CBLACS GRID OF SIZE (pzheev): [%d x %d]\n", md.p, md.q);
+    if(iam==0) wprintf("# CREATING CBLACS GRID OF SIZE [%d x %d] WITH BLOCK SIZE [%d x %d]\n", md.p, md.q, md.mb, md.nb);
     b_order = "R" ;
     Cblacs_pinfo( &iam_blacs , &nprocs_blacs ) ;
     if ( nprocs_blacs < 1 ) 
@@ -760,7 +761,7 @@ int main( int argc , char ** argv )
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(iam==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     }
@@ -824,7 +825,7 @@ int main( int argc , char ** argv )
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+    if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -1007,7 +1008,7 @@ int main( int argc , char ** argv )
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
 #endif
-        if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+        if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -1123,7 +1124,7 @@ int main( int argc , char ** argv )
         ix=ix+1; // shift to next eigenvalue
         nwf=iy-ix;
 #endif            
-        if(iam==0) wprintf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/Hsize);
+        if(iam==0) wprintf("# NUMBER OF EXTRACTED nwf IN ENERGY RANGE [-ecut,+ecut] IS %d (%.1f%% OF TOTAL NUMBER OF STATES)\n", nwf, 100.0*nwf/Hsize);
         
         // Temporary grid for density computation
         int ictxt_d; // context for density computation
@@ -1397,7 +1398,10 @@ int main( int argc , char ** argv )
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
         rt_other+=e_t(0);
-                
+        
+        // ------------------------ energy ----------------------
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
+        
         // ------------------ angular momentum ------------------
         b_t();
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
@@ -1413,7 +1417,6 @@ int main( int argc , char ** argv )
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
