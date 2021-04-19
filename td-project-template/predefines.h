@@ -132,31 +132,16 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    int *ompi_local_rank;
-    ompi_local_rank = (int *)malloc(sizeof(int)*np);
+
     int ompi_ppn=4;
     if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    MPI_Allgather(&ompi_ppn,1,MPI_INT,ompi_local_rank,1,MPI_INT,MPI_COMM_WORLD);
-    int ompi_i=0, ompi_j;
-    while(ompi_i<np)
-    {
-        if(ompi_local_rank[ompi_i]==8)
-        {
-            for(ompi_j=0; ompi_j<8; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=8;
-        }
-        else
-        {
-            for(ompi_j=0; ompi_j<4; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=4;
-        }
-    }
+    if(strcmp (processor_name,"node2068.grid4cern.if.pw.edu.pl")==0) ompi_ppn=2;
 
-    deviceid=ompi_local_rank[ip];
-    free(ompi_local_rank);
+
+    deviceid=ip % 8;
     
-    return deviceid;
+    return deviceid % ompi_ppn;
 }
 #endif
