@@ -819,7 +819,7 @@ int main( int argc , char ** argv )
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(iam==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     }
