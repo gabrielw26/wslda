@@ -1,3 +1,6 @@
+# Commented lines are ignored
+# Next line must be empty!
+
 A chemist walks into a pharmacy and asks the pharmacist, 
 “Do you have any acetylsalicylic acid?”
 “You mean aspirin?” asked the pharmacist.
@@ -133,3 +136,4 @@ Programming today is a race between software engineers striving
 to build bigger and better idiot-proof programs, and the Universe trying 
 to produce bigger and better idiots. So far, the Universe is winning.
 -- Rick Cook --
+# do not remove this line!
