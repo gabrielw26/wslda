@@ -236,7 +236,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -248,7 +248,7 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
@@ -284,7 +284,8 @@ int main( int argc , char ** argv )
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET aBdG IN INPUT FILE!\n");
+        if(iam==0) wprintf("ERROR: SET aBdG IN INPUT FILE!\n"); 
+        something_to_cheer_you_up_pid0(stdout);
         fflush(stdout);
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
@@ -757,6 +758,7 @@ int main( int argc , char ** argv )
         {                                                             
             wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
             wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            something_to_cheer_you_up_pid0(stdout);
             MPI_Finalize() ;
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
@@ -964,7 +966,7 @@ int main( int argc , char ** argv )
     elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
     if(iam==0) wprintf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
 #endif
-    if(info!=ELPA_OK) wprintf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
             
     if(iam==0) wprintf("# SETTING UP OF ELPA  DONE.\n");
 #endif

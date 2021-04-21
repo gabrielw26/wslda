@@ -36,6 +36,8 @@
 #include "tdwslda_static_vars.h"
 #include "logger.h"
 
+int wsldapid; // process id - global variable
+
 int main( int argc , char ** argv ) 
 {
     int i, j, k; // basic iterators
@@ -119,6 +121,7 @@ int main( int argc , char ** argv )
     MPI_Init( &argc , &argv ) ; /* set up the parallel WORLD */
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
+    wsldapid=ip; // save to global variable
     
     if(ip==0) wprintf("# START OF THE MAIN FUNCTION\n");
     
@@ -140,7 +143,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -152,7 +155,7 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }

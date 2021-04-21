@@ -12,6 +12,20 @@
 void wprintf( const char * format, ... );
 void wfprintf(FILE *stream,  const char * format, ... );
 
+#include "jdb.h"
+extern int wsldapid; // process id - global variable
+void something_to_cheer_you_up(FILE *stream)
+{
+    wfprintf(stream, "==========================================================================\n");
+    wfprintf(stream, "Upset with the error? Here is something to cheer you up:\n");
+    jdb_message(stream);
+    wfprintf(stream, "==========================================================================\n");
+}
+void something_to_cheer_you_up_pid0(FILE *stream)
+{
+    if(wsldapid==0) something_to_cheer_you_up(stream);
+}
+
 void report_error(int errcode, FILE *stream)
 {
     if(errcode==WSLDA_OK) return; // no reporting
@@ -141,8 +155,7 @@ void report_error(int errcode, FILE *stream)
     wfprintf(stream, "\tAsk for help WSLDA developers:\n");
     wfprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/issues\n");
     wfprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
-    wfprintf(stream, "==========================================================================\n");
-    
+    something_to_cheer_you_up_pid0(stream);
 }
 
 void warn_head(FILE *stream)
