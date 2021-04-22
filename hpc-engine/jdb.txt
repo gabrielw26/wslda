@@ -1,4 +1,7 @@
-# Commented lines are ignored
+# use 
+#   python jdb.py
+# to automatically generate jdb.h
+# 
 # Next line must be empty!
 
 A chemist walks into a pharmacy and asks the pharmacist, 
@@ -136,4 +139,45 @@ Programming today is a race between software engineers striving
 to build bigger and better idiot-proof programs, and the Universe trying 
 to produce bigger and better idiots. So far, the Universe is winning.
 -- Rick Cook --
+
+Physics is like sex: 
+sure, it may give some practical results, but that’s not why we do it.
+-- Richard P. Feynman --
+
+I have not failed. I’ve just found 10,000 ways that won’t work.
+-- Thomas Alva Edison --
+
+If you try and take a cat apart to see how it works, 
+the first thing you have on your hands is a non-working cat.
+-- Douglas Adams --
+
+Philosophy of science is about as useful to scientists as ornithology is to birds.
+-- Richard P. Feynman --
+
+If you’re too open-minded, your brains will fall out.
+-- Lawrence Ferlinghetti --
+
+The answer to the problem was 'log(1+x)'. 
+A student copied the answer from the good student next to him, 
+but didn't want to make it obvious that he was cheating, 
+so he changed the answer slightly, to 'timber(1+x)' 
+
+The experimentalist comes running excitedly into the theorist's office, 
+waving a graph taken off his latest experiment. 
+'Hmmm,' says the theorist, 'That's exactly where you'd expect to see that peak. Here's the reason (long logical explanation follows).' 
+In the middle of it, the experimentalist says 'Wait a minute', studies the chart for a second, and says, 
+'Oops, this is upside down.' He fixes it. 
+'Hmmm,' says the theorist, 'you'd expect to see a dip in exactly that position. Here's the reason...'.
+
+What is the difference between a physicist, an engineer, and a mathematician?
+- If an engineer walks into a room and sees a fire in the middle and a bucket of water in the corner, 
+  he takes the bucket of water and pours it on the fire and puts it out.
+- If a physicist walks into a room and sees a fire in the middle and a bucket of water in the corner, 
+  he takes the bucket of water and pours it eloquently around the fire and lets the fire put itself out.
+- If a mathematician walks into a room and sees a fire in the middle and a bucket of water in the corner, 
+  he convinces himself there is a solution and leaves. (credit: Jeremiah Jazdzewski)
+
+Heisenberg is out for a drive when he's stopped by a traffic cop. 
+The cop says 'Do you know how fast you were going?' 
+Heisenberg says 'No, but I know where I am.' 
 # do not remove this line!
