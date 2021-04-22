@@ -7,7 +7,7 @@
 #include <time.h>
 void jdb_message(FILE *stream)
 {
-    int maxid = 34;
+    int maxid = 43;
     srand (time(NULL));
     int r = rand() % maxid;
     switch(r)
@@ -181,6 +181,56 @@ void jdb_message(FILE *stream)
 			wfprintf(stream, "  to build bigger and better idiot-proof programs, and the Universe trying\n");
 			wfprintf(stream, "  to produce bigger and better idiots. So far, the Universe is winning.\n");
 			wfprintf(stream, "  -- Rick Cook --\n");
+			break;
+		case 34:
+			wfprintf(stream, "  Physics is like sex:\n");
+			wfprintf(stream, "  sure, it may give some practical results, but that’s not why we do it.\n");
+			wfprintf(stream, "  -- Richard P. Feynman --\n");
+			break;
+		case 35:
+			wfprintf(stream, "  I have not failed. I’ve just found 10,000 ways that won’t work.\n");
+			wfprintf(stream, "  -- Thomas Alva Edison --\n");
+			break;
+		case 36:
+			wfprintf(stream, "  If you try and take a cat apart to see how it works,\n");
+			wfprintf(stream, "  the first thing you have on your hands is a non-working cat.\n");
+			wfprintf(stream, "  -- Douglas Adams --\n");
+			break;
+		case 37:
+			wfprintf(stream, "  Philosophy of science is about as useful to scientists as ornithology is to birds.\n");
+			wfprintf(stream, "  -- Richard P. Feynman --\n");
+			break;
+		case 38:
+			wfprintf(stream, "  If you’re too open-minded, your brains will fall out.\n");
+			wfprintf(stream, "  -- Lawrence Ferlinghetti --\n");
+			break;
+		case 39:
+			wfprintf(stream, "  The answer to the problem was \'log(1+x)\'.\n");
+			wfprintf(stream, "  A student copied the answer from the good student next to him,\n");
+			wfprintf(stream, "  but didn\'t want to make it obvious that he was cheating,\n");
+			wfprintf(stream, "  so he changed the answer slightly, to \'timber(1+x)\'\n");
+			break;
+		case 40:
+			wfprintf(stream, "  The experimentalist comes running excitedly into the theorist\'s office,\n");
+			wfprintf(stream, "  waving a graph taken off his latest experiment.\n");
+			wfprintf(stream, "  \'Hmmm,\' says the theorist, \'That\'s exactly where you\'d expect to see that peak. Here\'s the reason (long logical explanation follows).\'\n");
+			wfprintf(stream, "  In the middle of it, the experimentalist says \'Wait a minute\', studies the chart for a second, and says,\n");
+			wfprintf(stream, "  \'Oops, this is upside down.\' He fixes it.\n");
+			wfprintf(stream, "  \'Hmmm,\' says the theorist, \'you\'d expect to see a dip in exactly that position. Here\'s the reason...\'.\n");
+			break;
+		case 41:
+			wfprintf(stream, "  What is the difference between a physicist, an engineer, and a mathematician?\n");
+			wfprintf(stream, "  - If an engineer walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "  he takes the bucket of water and pours it on the fire and puts it out.\n");
+			wfprintf(stream, "  - If a physicist walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "  he takes the bucket of water and pours it eloquently around the fire and lets the fire put itself out.\n");
+			wfprintf(stream, "  - If a mathematician walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "  he convinces himself there is a solution and leaves. (credit: Jeremiah Jazdzewski)\n");
+			break;
+		case 42:
+			wfprintf(stream, "  Heisenberg is out for a drive when he\'s stopped by a traffic cop.\n");
+			wfprintf(stream, "  The cop says \'Do you know how fast you were going?\'\n");
+			wfprintf(stream, "  Heisenberg says \'No, but I know where I am.\'\n");
 
         default: break;
     }
