@@ -1031,7 +1031,7 @@ int main( int argc , char ** argv )
     elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
     if(iam==0) wprintf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
 #endif
-    error_msg_mpi_abort(iam, info!=ELPA_OK);
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
             
     if(iam==0) wprintf("# SETTING UP OF ELPA  DONE.\n");
 #endif
