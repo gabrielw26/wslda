@@ -1,20 +1,25 @@
 
 # COMPILERS
 CXX=mpicc
-NVCC = nvcc 
+NVCC=nvcc 
 
 # DIRECTORY SETTINGS (must end with /)
+# W-SLDA instalation folder (for read only)
 WSLDADIR=../
+# folder where temporarry files will be stored (will be created automatically)
 OBJDIR=./obj/
+# folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
-# COMPILER FLAGS
+# COMPILER FLAGS & LIBRARIES
+# C compiler flags
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/ -DTARGET_MACHINE=TITAN
+# CUDA compiler flags
 NVCCFLAGS = -arch sm_30 -O3 
-
-# LIBRARIES
+# prescription how to link with: FFTW, CUDA
 LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lm
 
 
-include mk.td
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.td
 
