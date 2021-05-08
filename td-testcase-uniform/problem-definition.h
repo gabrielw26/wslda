@@ -15,6 +15,11 @@
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULA FOR V_ext(r)
     double V_ext = 0.0;
 
@@ -39,6 +44,11 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  * */
 __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULA FOR Delta_ext(r)
     Complex D_ext = Complex(0.0,0.0);
 
@@ -63,6 +73,11 @@ __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, doub
  * */
 __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULAS FOR vec{v}_ext=(vx, vy, vz)
     double v_ext;
     if(coordinate==XAXIS) v_ext=0.0;
