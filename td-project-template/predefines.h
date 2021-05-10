@@ -61,6 +61,29 @@
 // #define SPINSYMMETRY_MODE
 
 /**
+ * Scheme of pairing field renormalization procedure. 
+ * For more info see: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Regularization%20schemes%20of%20the%20pairing%20field
+ * Select one:
+ * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
+ * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
+ * */
+#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME CUBIC_CUTOFF
+
+/**
+ * Meaningful only in case of ASLDA.
+ * Parameters defining stabilization procedure of ASLDA functional. 
+ * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
+ * contribution from current term j^2/2n is assumed to be zero. 
+ * For regions with density above ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
+ * the contribution is assumed to be intact by stabilization procedure. 
+ * For more info see: 
+ * https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
+ * */
+#define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
+#define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
+
+/**
  * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
  * Performance of read/write checkpoint depends on the number of writes involved in IO process,
  * and optimal value depends on the computer. 
@@ -109,31 +132,16 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    int *ompi_local_rank;
-    ompi_local_rank = (int *)malloc(sizeof(int)*np);
+
     int ompi_ppn=4;
     if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
     if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    MPI_Allgather(&ompi_ppn,1,MPI_INT,ompi_local_rank,1,MPI_INT,MPI_COMM_WORLD);
-    int ompi_i=0, ompi_j;
-    while(ompi_i<np)
-    {
-        if(ompi_local_rank[ompi_i]==8)
-        {
-            for(ompi_j=0; ompi_j<8; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=8;
-        }
-        else
-        {
-            for(ompi_j=0; ompi_j<4; ompi_j++) ompi_local_rank[ompi_i+ompi_j]=ompi_j;
-            ompi_i+=4;
-        }
-    }
+    if(strcmp (processor_name,"node2068.grid4cern.if.pw.edu.pl")==0) ompi_ppn=2;
 
-    deviceid=ompi_local_rank[ip];
-    free(ompi_local_rank);
+
+    deviceid=ip % 8;
     
-    return deviceid;
+    return deviceid % ompi_ppn;
 }
 #endif

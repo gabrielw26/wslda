@@ -60,6 +60,7 @@ int logger(FILE *log,
         fprintf(log,"#\n");
         fprintf(log,"# ==================== ALGORITHM SETTINGS ===================\n");
         fprintf(log,"# np                 =%14d\n", dc_np);
+        fprintf(log,"# nwf                =%14d\n", dc_nwf);
         fprintf(log,"# nwfip              =%14d\n", dc_nwfip);
         fprintf(log,"# dt*emax            =%14.6g\n", md.dt/eF*Emax);
         fprintf(log,"# dt*eF              =%14.6g\n", md.dt);
@@ -87,21 +88,21 @@ int logger(FILE *log,
     
     // add entry
     fprintf(log, "%6d %12.4f %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
-        lineid,
-        (dc_t0+it*md.dt/eF)*md.timesteps * eF, // 1
-        npart[SPINA], // 2
-        npart[SPINB], // 3
-        npart[SPINA]+npart[SPINB], // 4
-        E_tot/Effg, // 5
-        energy[EKIN]/Effg, // 6
-        energy[EPOT]/Effg, // 7
-        energy[EPAIR]/Effg, // 8
-        energy[ECURRENT]/Effg, // 9
-        energy[EPOTEXT]/Effg, //10
-        energy[EPAIREXT]/Effg, //11
-        energy[EVELEXT]/Effg, //12
-        logger_get_time_from_last_entry(), //13
-        buffer
+        lineid, // 1
+        (dc_t0+it*md.dt/eF*md.timesteps) * eF, // 2
+        npart[SPINA], // 3
+        npart[SPINB], // 4
+        npart[SPINA]+npart[SPINB], // 5
+        E_tot/Effg, // 6
+        energy[EKIN]/Effg, // 7
+        energy[EPOT]/Effg, // 8
+        energy[EPAIR]/Effg, // 9
+        energy[ECURRENT]/Effg, // 10
+        energy[EPOTEXT]/Effg, //11
+        energy[EPAIREXT]/Effg, //12
+        energy[EVELEXT]/Effg, //13
+        logger_get_time_from_last_entry(), //14
+        buffer // 15
     );
     
     lineid++; // new line 

@@ -6,7 +6,7 @@
 #define NZ 12
 
 #define DX 1.0
-#define DY 1.0                                                                                                                                       
+#define DY 1.0
 #define DZ 1.0
 
 /**
@@ -35,9 +35,19 @@
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 
- * the code will utilize it in order to speed-up the calculations
+ * the code will utilize it in order to speed-up the calculations by factor 4x (approximately)
  * */
 // #define MATRIX_IS_REAL
+
+/**
+ * Scheme of pairing field renormalization procedure. 
+ * For more info see: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Regularization%20schemes%20of%20the%20pairing%20field
+ * Select one:
+ * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
+ * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
+ * */
+#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME CUBIC_CUTOFF
 
 /**
  * Select diagonalization routine
@@ -61,10 +71,26 @@
  * */
 #define DENSEPSILON 1.0e-8
 
+/**
+ * Meaningful only in case of ASLDA.
+ * Parameters defining stabilization procedure of ASLDA functional. 
+ * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
+ * contribution from current term j^2/2n is assumed to be zero. 
+ * For regions with density above ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
+ * the contribution is assumed to be intact by stabilization procedure. 
+ * For more info see: 
+ * https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
+ * */
+#define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
+#define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
+
 
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
- * Fill this part only if ELPA library is used for diagonnalization
+ * Fill this part only if ELPA library is used for diagonalization
+ * 
+ * Default settings are: ELPA_SOLVER_1STAGE
+ * but you can overwrite using options below
  * */
 
 /**
@@ -76,14 +102,14 @@
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
-#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
-#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
+// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
+// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
 
 /**
  * Fraction of eigenvectors to be extracted in each cycle.
- * 1.0 corresponds to extraction of all eigenvectors (USE IT IF YOU ARE NOT SURE)
+ * 1.0 corresponds to extraction of all eigenvectors (default)
  * NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
  * NOTE: For 3D case this value typically can be set to 0.78, for 1D and 2D casese 1.0 is recommended.
  * */
-#define ELPA_NEV_FRACTION 1.0
+// #define ELPA_NEV_FRACTION 1.0

@@ -86,6 +86,7 @@ typedef struct
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
     int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0
     int nomixstart; // if 1 then in the first iteration do not do mixing, default nomixstart=0
+    char mixingtype; // 'd' - mix densities, 'p' - mix potentials (default)
     
     // broyden mixing parameters
     int broyden; // 0 - linear mixing, 1 - update densities with Broyden, default=0
@@ -108,6 +109,8 @@ typedef struct
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
+    char initialized; // technical variable, indicating that structure is initialized by the input file 
+    char stdoutfile[MD_CHAR_LGTH]; // technical variable,
 
     // POTENTIAL PARAMETERS
     double params[MAX_USER_PARAMS];
@@ -119,6 +122,7 @@ typedef struct
 
 #ifndef ALLOCATE_MD_STRUCTURE
 extern metadata_t md;
+extern metadata_t *input;
 #endif
 
 #define MAX_REC_LEN 1024
@@ -178,5 +182,10 @@ void symmetrize_densities(double *h_densities);
 int copy_input_file(char * input_file, char * file_name);
 
 int wslda_check_settings();
+
+int wslda_check_array_against_naninf(int n, double *array);
+
+void wprintf( const char * format, ... );
+void wfprintf(FILE *stream,  const char * format, ... );
 
 #endif

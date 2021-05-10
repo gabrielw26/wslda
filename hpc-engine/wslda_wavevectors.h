@@ -8,6 +8,96 @@
 
 #ifndef __WSLDA_WAVEVECTORS__
 #define __WSLDA_WAVEVECTORS__
+
+#define CMP_EPS 1.0e-12
+
+// ------------------------------- IMPROVED INTERFACE FOR 1D CODES -------------------------------
+typedef struct
+{
+    int cnt; // number of unique modes for 1d case
+    double *ky; 
+    double *kz;
+    int *weight; // degeneracy of the mode
+} wslda_kmodes_1d;
+
+static wslda_kmodes_1d _kmodes_1d = {0, NULL, NULL, NULL}; // local structure
+
+int fill_wslda_kmodes_1d(double *kky, double *kkz)
+{
+    double *lky, *lkz, *lk2;
+    int *lweight;
+    int lcnt=0;
+    
+    // take memory
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkz,NY*NZ,double);
+    cppmallocl(lk2,NY*NZ,double);
+    cppmallocl(lweight,NY*NZ,int);
+    
+    // take only unique kx^2+ky^2
+    int iz, iy, i;
+    int hasit;
+    double k2;
+    for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+        k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
+        
+#ifndef USE_CUBIC_CUTOFF
+        if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+#endif
+
+        hasit=0;
+        for(i=0; i<lcnt; i++) if(fabs(lk2[i]-k2)<CMP_EPS) {hasit=1; break;}
+        
+        if(hasit==1)
+        {
+            lweight[i]++;
+//             if(wsldapid==0) wprintf("->>>> HAS %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, i);
+        }
+        else
+        {
+            lweight[lcnt]=1;
+            lky[lcnt]=kky[iy];
+            lkz[lcnt]=kkz[iz];
+            lk2[lcnt]=k2;
+            lcnt++;
+//             if(wsldapid==0) wprintf("->>>> NEW %12.6f %12.6f %12.6f %6d\n", kky[iy], kkz[iz], k2, lcnt-1);
+        }
+    }
+    
+    // copy to destination buffer
+    cppmallocl(_kmodes_1d.ky,lcnt,double);
+    cppmallocl(_kmodes_1d.kz,lcnt,double);
+    cppmallocl(_kmodes_1d.weight,lcnt,int);
+    _kmodes_1d.cnt=lcnt;
+        
+    int isum=0;
+    for(i=0; i<lcnt; i++)
+    {
+        _kmodes_1d.ky[i]=lky[i];
+        _kmodes_1d.kz[i]=lkz[i];
+        _kmodes_1d.weight[i]=lweight[i];
+        
+        // check internal sum
+        isum+=lweight[i];
+    }
+    
+    // free memory
+    free(lky);
+    free(lkz);
+    free(lk2);
+    free(lweight);
+    
+//     wprintf("->>>> lcnt=%d isum=%d NY*NZ=%d\n", lcnt, isum, (NY-1)*(NZ-1));
+    if(isum!=(NY-1)*(NZ-1)) return WSLDA_ERR_INTRISTIC_ERROR;
+    
+    return WSLDA_OK;
+}
+
+
+// ------------------------------- OLD INTERFACE FOR 1D AND 2D CODES -------------------------------
+
 /**
  * Structure containg info about k mode for 2D and 1D codes only
  * */
@@ -28,18 +118,28 @@ int count_number_of_k_modes(double *kkx, double *kky, double *kkz, int codedim, 
     int iz=0;
     int lNZ=NZ;
     int lNY=NY;
-    if(codedim==2) lNY=1;
     
-    // take only positive energy states
-    for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
-        {
-            if     (kky[iy]>1.0e-12       && kkz[iz]>1.0e-12      ) kvecs_to_consder += 1; // 2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-            else if(kky[iy]>1.0e-12       && fabs(kkz[iz])<1.0e-12) kvecs_to_consder += 1; // 2*1; // one solution x (-ky, +ky) x (  kz=0  )
-            else if(fabs(kky[iy])<1.0e-12 && kkz[iz]>1.0e-12      ) kvecs_to_consder += 1; // 1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-            else if(fabs(kky[iy])<1.0e-12 && fabs(kkz[iz])<1.0e-12) kvecs_to_consder += 1; // 1*1; // one solution x (  ky=0  ) x (  kz=0  )
-        }
+    if(codedim==1) // apply improved interface
+    {
+        int ierr=WSLDA_OK;
+        if(_kmodes_1d.cnt==0) ierr=fill_wslda_kmodes_1d(kky, kkz); 
+        kvecs_to_consder = _kmodes_1d.cnt;
         
-    *k_modes = kvecs_to_consder; // save result
+        *k_modes = kvecs_to_consder; // save result
+        return ierr;
+    }
+    
+    if(codedim==2)
+    {
+        if(NZ==1) {*k_modes=1; return WSLDA_OK;}
+#ifdef USE_CUBIC_CUTOFF
+        *k_modes=NZ/2 + 1; 
+#else
+        *k_modes=NZ/2    ; 
+#endif
+        return WSLDA_OK;
+    }
+    
     return WSLDA_OK;
 }
 
@@ -53,40 +153,49 @@ int create_k_modes(double *kkx, double *kky, double *kkz, int codedim, wslda_kmo
     int iz=0;
     int lNZ=NZ;
     int lNY=NY;
-    if(codedim==2) lNY=1;
     
-    // take only positive energy states
-    for(iz=0; iz<lNZ; iz++) for(iy=0; iy<lNY; iy++)
+    if(codedim==1) // apply improved interface
+    {
+        int ierr=WSLDA_OK;
+        if(_kmodes_1d.cnt==0) ierr=fill_wslda_kmodes_1d(kky, kkz); 
+
+        int i;
+        for(i=0; i<_kmodes_1d.cnt; i++)
         {
-            if     (kky[iy]>1.0e-12       && kkz[iz]>1.0e-12      ) 
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=2*2; // (-ky, +ky) x (-kz, +kz)
-            }
-            else if(kky[iy]>1.0e-12       && fabs(kkz[iz])<1.0e-12)
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=2*1; // (-ky, +ky) x (  kz=0  )
-            }
-            else if(fabs(kky[iy])<1.0e-12 && kkz[iz]>1.0e-12      )
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=1*2; //  (  ky=0  ) x (-kz, +kz)
-            }
-            else if(fabs(kky[iy])<1.0e-12 && fabs(kkz[iz])<1.0e-12)
-            {
-                kvecs_to_consder += 1; 
-                k_modes[kvecs_to_consder].ky=kky[iy];
-                k_modes[kvecs_to_consder].kz=kkz[iz];
-                k_modes[kvecs_to_consder].weight=1*1; //  (  ky=0  ) x (  kz=0  )
-            }
+            k_modes[i].ky=_kmodes_1d.ky[i];
+            k_modes[i].kz=_kmodes_1d.kz[i];
+            k_modes[i].weight=_kmodes_1d.weight[i];
         }
+            
+        return ierr;
+    }
+    
+    if(codedim==2)
+    {
+        kvecs_to_consder += 1; 
+        k_modes[kvecs_to_consder].ky=kky[0];
+        k_modes[kvecs_to_consder].kz=kkz[0];
+        k_modes[kvecs_to_consder].weight=1; // (kz=0)
+        
+        if(NZ==1) return WSLDA_OK; // strict 2D case
+        
+        for(iz=1; iz<lNZ/2; iz++)
+        {
+            kvecs_to_consder += 1; 
+            k_modes[kvecs_to_consder].ky=kky[0];
+            k_modes[kvecs_to_consder].kz=kkz[iz];
+            k_modes[kvecs_to_consder].weight=2; // (  ky=0  ) x (-kz, +kz)
+        }
+        
+#ifdef USE_CUBIC_CUTOFF
+        kvecs_to_consder += 1; 
+        k_modes[kvecs_to_consder].ky=kky[0];
+        k_modes[kvecs_to_consder].kz=kkz[NZ/2];
+        k_modes[kvecs_to_consder].weight=1;
+#endif
+
+        return WSLDA_OK;
+    }
         
     return WSLDA_OK;
 }
@@ -154,8 +263,8 @@ int create_kkz(double *kkz)
 int get_weight_1d(double ky, double kz)
 {
     int wcnt = 1; 
-    if(fabs(ky)>1.0e-12) wcnt*=2; // account for -ky and +ky 
-    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    if(fabs(ky)>CMP_EPS) wcnt*=2; // account for -ky and +ky 
+    if(fabs(kz)>CMP_EPS) wcnt*=2; // account for -kz and +kz 
     return wcnt;
 }
 
@@ -165,9 +274,185 @@ int get_weight_1d(double ky, double kz)
 int get_weight_2d(double kz)
 {
     int wcnt = 1;  
-    if(fabs(kz)>1.0e-12) wcnt*=2; // account for -kz and +kz 
+    if(fabs(kz)>CMP_EPS) wcnt=2; // account for -kz and +kz
+#ifdef USE_CUBIC_CUTOFF
+    if(fabs(kz+M_PI/DZ)<1.0e-12) wcnt = 1.0;// momentum for which I should kill contribution for gradients
+#endif
     return wcnt;
 }
+
+int td_fill_wslda_kmodes_1d()
+{
+    double *kky, *kkz;
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    create_kky(kky);
+    create_kkz(kkz);
+    int ierr=fill_wslda_kmodes_1d(kky,kkz);
+    
+    free(kky);
+    free(kkz);
+    
+    return ierr;
+}
+
+int wslda_kmodes_1d_get_weight2(double ky, double kz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    double k2, lk2; 
+    k2 = ky*ky + kz*kz;
+    
+    int i;
+    for(i=0; i<_kmodes_1d.cnt; i++)
+    {
+        lk2 = _kmodes_1d.ky[i]*_kmodes_1d.ky[i] + _kmodes_1d.kz[i]*_kmodes_1d.kz[i];
+        if(fabs(k2-lk2)<CMP_EPS) return _kmodes_1d.weight[i];
+    }
+    
+    return 0;
+}
+
+int wslda_kmodes_1d_get_weight(double ky, double kz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    int i;
+    for(i=0; i<_kmodes_1d.cnt; i++)
+    {
+        if(fabs(_kmodes_1d.ky[i]-ky)<CMP_EPS && fabs(_kmodes_1d.kz[i]-kz)<CMP_EPS) return _kmodes_1d.weight[i];
+    }
+    
+    return 0;
+}
+
+
+int wslda_kmodes_1d_get_modes(double ky, double kz, int *cnt, double *mkky, double *mkkz)
+{
+    // make sure data is ready to use
+    if(_kmodes_1d.cnt==0) td_fill_wslda_kmodes_1d();
+    
+    double *kky, *kkz;
+    cppmallocl(kky,NY,double);
+    cppmallocl(kkz,NZ,double);
+    
+    create_kky(kky);
+    create_kkz(kkz);
+    
+    // take only unique kx^2+ky^2
+    int iz, iy, i;
+    double ink2 = ky*ky + kz*kz;
+    *cnt=0;
+    
+    double k2;
+    for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++)
+    {
+#ifndef USE_CUBIC_CUTOFF
+        if(NY>1 && iy==NY/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+        if(NZ>1 && iz==NZ/2) continue; // state without (+,-) pair, SKIP for 1D mode 
+#endif
+        k2=kky[iy]*kky[iy] + kkz[iz]*kkz[iz];
+        
+        if(fabs(k2-ink2)<CMP_EPS)
+        {
+            mkky[*cnt]=kky[iy];
+            mkkz[*cnt]=kkz[iz];
+            (*cnt)=(*cnt)+1;
+        }
+    }
+    
+    free(kky);
+    free(kkz);
+
+    return 0;
+}
+
+/**
+ * Converts 1D modes into 2D modes
+ * */
+int wslda_kmodes_1d_to_2d(double ky, double kz, int *cnt, double *kkz, int *kzcnt, double *kky)
+{
+    double *lky, *lkz;
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkz,NY*NZ,double);    
+
+    int lcnt;
+    
+    wslda_kmodes_1d_get_modes(ky, kz, &lcnt, lky, lkz);
+    
+    // scan versus unique |kz| values
+    *cnt=0;
+    int i,j, hasit;
+    for(i=0; i<lcnt; i++)
+    {
+//         wprintf("AAA: %12.8f %12.8f %6d %6d %12.8f %12.8f\n",ky,kz, lcnt, i, lky[i],lkz[i]);
+        hasit=0;
+        for(j=0; j<*cnt; j++) if(fabs(lkz[i]-kkz[j])<CMP_EPS) {hasit=1; break;}
+        
+        if(hasit==0)
+        {
+            kkz[*cnt]=lkz[i];
+            kzcnt[*cnt]=1;
+            kky[*cnt*NY+0]=lky[i];
+            *cnt=*cnt+1;
+        }
+        else
+        {
+            kky[j*NY+kzcnt[j]]=lky[i];
+            kzcnt[j]++;
+        }
+    }
+    
+//     for(i=0; i<*cnt; i++)
+//         wprintf("BBB: %12.8f %12.8f %6d %6d %12.8f %6d\n",ky,kz, *cnt, i, kkz[i],kzcnt[i]);
+
+    free(lky);
+    free(lkz);
+
+    return 0;
+}
+
+int wslda_kmodes_1d_getcnt2d(double ky, double kz, double *kky, double *kkz)
+{
+    double *lky, *lkz;
+    int *lkzcnt;
+    cppmallocl(lkz,NZ,double);
+    cppmallocl(lky,NY*NZ,double);
+    cppmallocl(lkzcnt,NZ,int);
+    
+    int lcnt;
+    wslda_kmodes_1d_to_2d(ky, kz, &lcnt, lkz, lkzcnt, lky);
+    
+    int i,j;
+    int isum=0;
+    for(i=0; i<lcnt; i++) 
+    {
+#ifdef USE_CUBIC_CUTOFF
+        if(lkz[i]>-CMP_EPS || fabs(lkz[i]+M_PI/DZ)<1.0e-12) 
+#else
+        if(lkz[i]>-CMP_EPS) 
+#endif
+        {
+            for(j=0; j<lkzcnt[i]; j++)
+            {
+                kkz[isum]=lkz[i];
+                kky[isum]=lky[i*NY+j];
+                isum++;
+            }
+        }
+    }
+    
+    free(lky);
+    free(lkz);
+    free(lkzcnt);
+    
+    return isum;
+}
+
+#undef CMP_EPS
 
 #endif
 

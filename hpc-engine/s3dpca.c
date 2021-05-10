@@ -12,7 +12,7 @@
 #ifdef S3DDEBUG
 #define ECHOLINE                                                                                                        \
     {                                                                                                                   \
-        if(iam==0) {printf("# ECHOLINE REACHED LINE %d IN FILE %s\n", __LINE__ , __FILE__); fflush(stdout); }           \
+        if(iam==0) {wprintf("# ECHOLINE REACHED LINE %d IN FILE %s\n", __LINE__ , __FILE__); fflush(stdout); }           \
         MPI_Barrier(MPI_COMM_WORLD);                                                                                    \
     }
 #else
@@ -47,6 +47,9 @@
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h"
+#include "wslda_interpolation.h"
+#include "wslda_resize.h"
+#include "wslda_st_checkpoint.h"
 
 #if DIAGONALIZATION_ROUTINE==PZHEEVR
 #define USE_SCALAPACK_PZHEEVR
@@ -111,10 +114,10 @@ int indxl2g_(int*, int*, int*, int*, int*);
 /* Auxiliary routine: printing a real matrix */
 void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
         int i, j;
-        printf( "\n %s\n", desc );
+        wprintf( "\n %s\n", desc );
         for( i = 0; i < m; i++ ) {
-                for( j = 0; j < n; j++ ) printf( " %6.2f", creal(a[i+j*lda]) );
-                printf( "\n" );
+                for( j = 0; j < n; j++ ) wprintf( " %6.2f", creal(a[i+j*lda]) );
+                wprintf( "\n" );
         }
 }
 void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
@@ -148,9 +151,6 @@ int wsldapid; // process id - global variable
 #include "logger.h"
 
 typedef char * string;
-#define DENSDIM 12*NXYZ
-#define POTDIM  12*NXYZ
-#define BLOCKLENGTH (NXYZ) 
 
 int main( int argc , char ** argv ) 
 {    
@@ -181,6 +181,7 @@ int main( int argc , char ** argv )
     double *h_densities_old; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_densities_partial; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
+    double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
     double energy[ENERGYITEMS], energy_old[ENERGYITEMS];
     string energy_labels[ENERGYITEMS];
@@ -214,7 +215,8 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
-    if(iam==0) printf("# CODE: ST-WSLDA-3D\n");
+    
+    if(iam==0) wprintf("# START OF THE MAIN FUNCTION\n");
     
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -234,7 +236,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            printf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -246,7 +248,7 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            printf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
@@ -257,20 +259,24 @@ int main( int argc , char ** argv )
         assure_reproducibility(md.outprefix);
     }
     
+    if(iam==0) wprintf("# CODE: ST-WSLDA-3D\n");
+    if(iam==0) wprintf("# VERSION: %s\n", VERSION);
+    
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-    if(iam==0) printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #ifdef USE_SCALAPACK_PZHEEVR
-    if(iam==0) printf("# USING SCALAPACK WITH PZHEEVR.\n");
+    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
 #endif
 #ifdef USE_SCALAPACK_PZHEEVD
-    if(iam==0) printf("# USING SCALAPACK WITH PZHEEVD.\n");
+    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
 #endif
 #ifdef USE_SCALAPACK_PZHEEV
-    if(iam==0) printf("# USING SCALAPACK WITH PZHEEV.\n");
+    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEV.\n");
 #endif
 #ifdef USE_ELPA
-    if(iam==0) printf("# USING ELPA.\n");
+    if(iam==0) wprintf("# USING ELPA.\n");
 #endif
     
 #if FUNCTIONAL==BDG
@@ -278,7 +284,8 @@ int main( int argc , char ** argv )
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        if(iam==0) printf("ERROR: SET aBdG IN INPUT FILE!\n");
+        if(iam==0) wprintf("ERROR: SET aBdG IN INPUT FILE!\n"); 
+        something_to_cheer_you_up_pid0(stdout);
         fflush(stdout);
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
@@ -288,20 +295,20 @@ int main( int argc , char ** argv )
 #endif
 
 #if FUNCTIONAL==BDG
-    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA    
-    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
 #elif FUNCTIONAL==ASLDA    
-    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
 #elif FUNCTIONAL==CUSTOMEDF    
-    if(iam==0) printf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
+    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
 #endif
     
 #ifdef SPINSYMMETRY_MODE
     md.spinsymmetry=1; // force spin symmetry mode
 #endif
-    if(md.spinsymmetry>0 && iam==0)  printf("# SPINSYMMETRY MODE IS ACTIVE.\n");
-    if(md.nocurrents>0 && iam==0)  printf("# CODE IMPOSES NO CURRENTS FOR THE SOLUTION.\n");
+    if(md.spinsymmetry>0 && iam==0)  wprintf("# SPINSYMMETRY MODE IS ACTIVE.\n");
+    if(md.nocurrents>0 && iam==0)  wprintf("# CODE IMPOSES NO CURRENTS FOR THE SOLUTION.\n");
     
 #ifdef UNIFORM_TEST_MODE
     md.Na = ceil(1.0/(6.*M_PI*M_PI)*LXYZ);
@@ -309,7 +316,7 @@ int main( int argc , char ** argv )
     if(md.spinsymmetry==1) md.Nb = md.Na;
     md.init0Na = md.Na;
     md.init0Nb = md.Nb;
-    if(iam==0) printf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
+    if(iam==0) wprintf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
     
     // ====================================================================================
@@ -318,7 +325,7 @@ int main( int argc , char ** argv )
     
     if(md.p==0 || md.q==0)
     { 
-        if(iam==0) printf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
+        if(iam==0) wprintf("# AUTOMATIC DIVISION OF WORK - MAY NOT BE OPTIMAL!\n"); fflush(stdout);
         int dims[2] = {0,0};
         MPI_Dims_create(np, 2, dims); // however, you can also set nprow and npcol by hand, keeping constraing nprow*npcol=np
         if(dims[0]<dims[1])
@@ -334,6 +341,19 @@ int main( int argc , char ** argv )
         
     }
     
+    if(md.p==0 || md.q==0) 
+    {
+        if(iam==0) wprintf("ERROR: CANNOT SET p AND q VALUES! CHECK INPUT FILE SETTINGS!\n"); fflush(stdout);
+        ABORTip(iam);
+    }
+    
+    // check if input parameters are ok
+    if(md.p*md.q!=np) 
+    {
+        if(iam==0) wprintf("ERROR: md.p*md.q!=np: CHECK INPUT FILE SETTINGS!\n"); fflush(stdout);
+        ABORTip(iam);
+    }
+    
     // for hamiltonian diagonalization
     int iam_blacs, nprocs_blacs, ictxt;
     char * b_order ;
@@ -343,15 +363,15 @@ int main( int argc , char ** argv )
     int info;
     int Hsize = NXYZ*2; // size of hamiltonian matrix
     
-    if(iam==0) printf("# HAMILTONIAN SIZE: %d x %d\n", Hsize, Hsize);
+    if(iam==0) wprintf("# HAMILTONIAN SIZE: %d x %d\n", Hsize, Hsize);
 #ifdef MATRIX_IS_REAL
-    if(iam==0) printf("# HAMILTONIAN TOTAL STORAGE: %.3fGB\n", 1.0*sizeof(double)*Hsize*Hsize/1024/1024/1024);
+    if(iam==0) wprintf("# HAMILTONIAN TOTAL STORAGE: %.3fGB\n", 1.0*sizeof(double)*Hsize*Hsize/1024/1024/1024);
 #else
-    if(iam==0) printf("# HAMILTONIAN TOTAL STORAGE: %.3fGB\n", 1.0*sizeof(double complex)*Hsize*Hsize/1024/1024/1024);
+    if(iam==0) wprintf("# HAMILTONIAN TOTAL STORAGE: %.3fGB\n", 1.0*sizeof(double complex)*Hsize*Hsize/1024/1024/1024);
 #endif 
     
     /* initialize the BLACS grid for hamiltonian diagonalizaion- a virtual rectangular grid */
-    if(iam==0) printf("# CREATING CBLACS GRID OF SIZE (pzheev): [%d x %d]\n", md.p, md.q);
+    if(iam==0) wprintf("# CREATING CBLACS GRID OF SIZE [%d x %d] WITH BLOCK SIZE [%d x %d]\n", md.p, md.q, md.mb, md.nb);
     b_order = "R" ;
     Cblacs_pinfo( &iam_blacs , &nprocs_blacs ) ;
     if ( nprocs_blacs < 1 ) 
@@ -367,7 +387,7 @@ int main( int argc , char ** argv )
     nip = numroc_( &Hsize, &md.mb, &ip, &ZERO, &p );
     niq = numroc_( &Hsize, &md.nb, &iq, &ZERO, &q );
 #ifdef VERBOSE
-    printf("# CHECK: iam=%d, ip=%d, iq=%d, nip=%d, niq=%d mb=%d nb=%d\n", iam, ip, iq, nip, niq, md.mb, md.nb);    
+    wprintf("# CHECK: iam=%d, ip=%d, iq=%d, nip=%d, niq=%d mb=%d nb=%d\n", iam, ip, iq, nip, niq, md.mb, md.nb);    
 #endif
     /* Descriptor for the matrix */
     descinit_( DESCA, &Hsize, &Hsize, &md.mb, &md.nb, &ZERO, &ZERO, &ictxt, &nip, &info ); 
@@ -394,24 +414,37 @@ int main( int argc , char ** argv )
     cppmallocl(h_densities_old,DENSDIM,double);
     cppmallocl(h_densities_partial,DENSDIM,double);
     cppmallocl(h_potentials,POTDIM,double);
+    cppmallocl(h_potentials_old,POTDIM,double);
     cppmallocl(dc_params, MAX_USER_PARAMS, double);
+    
+    // solution buffers
+    int SOLDIM;
+    double *h_solution; // pointer to array with solution
+    double *h_solution_old; // pointer to array with solution
+    if(md.mixingtype=='d') { SOLDIM = DENSDIM; h_solution = h_densities ; h_solution_old = h_densities_old ; }
+    else                   { SOLDIM = POTDIM ; h_solution = h_potentials; h_solution_old = h_potentials_old; }
+
+    if(iam==0)
+    {
+        if(md.mixingtype=='d') wprintf("# MIXING TYPE: (d)ensities.\n");
+        else                   wprintf("# MIXING TYPE: (p)otentials.\n");      
+    }
     
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXYZ);
-    wslda_density densall_old = convert_into_wslda_density(h_densities_old, NXYZ);
     wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NXYZ);
-    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ);
+    wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ, mu);
             
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
     cppmallocl(dens_out, (md.Mbroyden + 1), double*);
     for (i = 0; i < (md.Mbroyden + 1); i++){
-        cppmallocl(dens_in[i], DENSDIM + 2, double);
-        cppmallocl(dens_out[i], DENSDIM + 2, double);
+        cppmallocl(dens_in[i], SOLDIM + 2, double);
+        cppmallocl(dens_out[i], SOLDIM + 2, double);
         
         // reset values
-        for(j=0; j<DENSDIM + 2; j++) dens_in[i][j]=0.0;
-        for(j=0; j<DENSDIM + 2; j++) dens_out[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_in[i][j]=0.0;
+        for(j=0; j<SOLDIM + 2; j++) dens_out[i][j]=0.0;
     }
 
     // ---------------- HAMILTONIAN ----------------
@@ -496,7 +529,7 @@ int main( int argc , char ** argv )
     {
         if(md.inittype==0)
         {
-            if(iam==0) printf("# CREATING UNIFORM SOLUTION...\n");
+            if(iam==0) wprintf("# CREATING UNIFORM SOLUTION...\n");
 
             // Generate uniform initial 
             if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
@@ -511,7 +544,7 @@ int main( int argc , char ** argv )
         }
         else 
         {
-            if(iam==0) printf("# READING UNIFORM SOLUTION...\n");
+            if(iam==0) wprintf("# READING UNIFORM SOLUTION...\n");
             if(iam==0) { cpu_exec( read_uniform(&nwf, iam==0) ); }
             MPI_Bcast( &__md_pca_uniform , sizeof(metadata_pca_uniform_t), MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
             MPI_Bcast( &nwf , 1, MPI_INT , 0 , MPI_COMM_WORLD ) ;
@@ -569,55 +602,112 @@ int main( int argc , char ** argv )
     {
         if(iam==0)
         {
-            sprintf(file_name, "%s/checkpoint.s3dpca", md.inprefix);
-            printf("# READING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "rb");
-            if(pFile==NULL)
+            // Check format of checkpoint
+            i = wslda_stcheckpoint_format(3);
+            if(i==WSLDA_ST_CHECKPOINT_DAT)
             {
-                printf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
+                // this format supports extansions and interpolatons
+                int _interop, _resop;
+                file_operation( wslda_st_required_operations(3, &_interop, &_resop) );
+                
+                // prepare for reading
+                double trd_consts[11];
+                j=0; // file idx
+
+                // convert checkpoint
+                if(_interop>0)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_RESIZE, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                
+                if(_resop==23)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_2D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                if(_resop==13)
+                {
+                    file_operation(
+                        wslda_st_checkpoint_convert(ST_CHECKPOINT_1D_TO_3D, j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                    ); 
+                    j++;
+                }
+                
+                // read checkpoint
+                file_operation(
+                    wslda_st_read_checkpoint(j, 3, &it, 11, trd_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+                );
+                
+                // decode constants
+                dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+            }
+            else if(i==WSLDA_ST_CHECKPOINT_OLD)
+            {
+                // NOTE: It wll be removed in future
+                // here I keep it only to be compatible with our past caculations
+                sprintf(file_name, "%s/checkpoint.s3dpca", md.inprefix);
+                wprintf("# READING CHECKPOINT FILE `%s`\n", file_name);
+                wprintf("# !!! !!! YOU ARE USING OLD CHECKPOINT FORMAT !!! !!! SUPPORT OF THIS FORMAT WILL BE REMOVED IN FUTURE!\n");
+                FILE * pFile = fopen(file_name, "rb");
+                if(pFile==NULL)
+                {
+                    wprintf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
+                    ABORT_NOBARRIER;
+                }
+                
+                // write all nescesary data to file
+                fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
+                fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
+                fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
+                fread(&beta        , sizeof(double)      , 1 , pFile); 
+                fread(&eF          , sizeof(double)      , 1 , pFile); 
+                fread(&kF          , sizeof(double)      , 1 , pFile);
+                fread(&Effg        , sizeof(double)      , 1 , pFile);
+                fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
+                fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
+                fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
+                fread(npart        , sizeof(double)      , 2 , pFile);
+                fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
+                fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , SOLDIM + 2 , pFile);
+                for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , SOLDIM + 2 , pFile);
+                    
+                fclose(pFile);
+
+            }
+            else
+            {
+                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+                wprintf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }
-            
-            // write all nescesary data to file
-            fread(&it          , sizeof(int)         , 1 , pFile); // iteration number
-            fread(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fread(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fread(&beta        , sizeof(double)      , 1 , pFile); 
-            fread(&eF          , sizeof(double)      , 1 , pFile); 
-            fread(&kF          , sizeof(double)      , 1 , pFile);
-            fread(&Effg        , sizeof(double)      , 1 , pFile);
-            fread(h_potentials , sizeof(double)*POTDIM , 1, pFile);
-            fread(h_densities  , sizeof(double)*DENSDIM, 1, pFile);
-            fread(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fread(npart        , sizeof(double)      , 2 , pFile);
-            fread(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fread(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fread(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
-                  
-            fclose(pFile);
-            
-            printf("# CHECKPOINT READ: it=%d\n", it);
-            printf("# CHECKPOINT READ: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
-            printf("# CHECKPOINT READ: dc_ec=%16.8g  beta=%16.8g\n", dc_ec, beta);
-            printf("# CHECKPOINT READ: eF=%16.8g  kF=%16.8g  Effg=%16.8g\n", eF, kF, Effg);
-            printf("# CHECKPOINT READ: ------- NPART -------\n");
-            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+                        
+            wprintf("# CHECKPOINT READ: it=%d\n", it);
+            wprintf("# CHECKPOINT READ: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+            wprintf("# CHECKPOINT READ: dc_ec=%16.8g  beta=%16.8g\n", dc_ec, beta);
+            wprintf("# CHECKPOINT READ: eF=%16.8g  kF=%16.8g  Effg=%16.8g\n", eF, kF, Effg);
+            wprintf("# CHECKPOINT READ: ------- NPART -------\n");
+            wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "SPINA", npart[SPINA], npart[SPINA], (npart[SPINA]-npart[SPINA]));
-            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "SPINB", npart[SPINB], npart[SPINB], (npart[SPINB]-npart[SPINB]));  
-            printf("# CHECKPOINT READ: ------- ENERGY -------\n");
+            wprintf("# CHECKPOINT READ: ------- ENERGY -------\n");
             E_tot=0.0; E_tot_old=0.0;
             for(i=0; i<ENERGYITEMS; i++)
             {
                 E_tot+=energy[i]; 
                 
-                printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+                wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                     energy_labels[i], energy[i]/Effg, energy[i]/Effg, (energy[i]-energy[i])/Effg);
             }
-            printf("  ------------------------------------------------------------------------\n");
-            printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            wprintf("  ------------------------------------------------------------------------\n");
+            wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
                 "E_tot", E_tot/Effg, E_tot/Effg, (E_tot-E_tot)/Effg);
         }
         
@@ -636,14 +726,24 @@ int main( int argc , char ** argv )
         MPI_Bcast(npart        , 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
         MPI_Bcast(&dc_mu_a_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD ); 
         MPI_Bcast(&dc_mu_b_old , 1 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
-        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], DENSDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_in[i] , SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+        for (i = 0; i < (md.Mbroyden + 1); i++) MPI_Bcast(dens_out[i], SOLDIM + 2 , MPI_DOUBLE , 0 , MPI_COMM_WORLD );
+    }
+    else if(md.inittype==-1) // start from checkpoint
+    {
+        if(iam==0) wprintf("# BUFFERS WILL BE INITIALIZED VIA modify_densities AND modify_potentials FUNCTIONS\n");
+        if(iam==0) wprintf("# FORCING: resetit=1 AND nomixstart=1\n");
+        if(iam==0) wprintf("# FORCING: ITERATION NUMBER: it=-1\n");
+        md.resetit=1;
+        md.nomixstart=1;
     }
     else
     {
-        if(iam==0) printf("NOT SUPPORTED INITTYPE=%d!\n", md.inittype);
+        if(iam==0) wprintf("NOT SUPPORTED INITTYPE=%d!\n", md.inittype);
         ABORT;
     }
+    
+    if(md.inittype>=0) cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
     
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
@@ -652,17 +752,18 @@ int main( int argc , char ** argv )
     MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(extra_data_size>0)
     {
-        if(iam==0) printf("# EXTRA_DATA IS ACTIVE.\n");
-        if(iam==0) printf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+        if(iam==0) wprintf("# EXTRA_DATA IS ACTIVE.\n");
+        if(iam==0) wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
         if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
         {                                                             
-            fprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
-            fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+            wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            something_to_cheer_you_up_pid0(stdout);
             MPI_Finalize() ;
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(iam==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     }
@@ -672,7 +773,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     // ================================== FFTW PLANS =====================================
     // ===================================================================================
-    if(iam==0) { printf("# CREATING FFTW PLANS...\n"); fflush(stdout); }
+    if(iam==0) { wprintf("# CREATING FFTW PLANS...\n"); fflush(stdout); }
     metadata_s3dpca_fft mdfft; // keeps plans and buffers for fftw
     create_fft_plans(&mdfft, md.batch);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -726,13 +827,14 @@ int main( int argc , char ** argv )
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
+    if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, &kF, mu, extra_data_size, extra_data);
     dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     modify_densities(it-1, densall, dc_params, extra_data_size, extra_data) ;
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
+    dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     ECHOLINE;
@@ -753,16 +855,16 @@ int main( int argc , char ** argv )
 #if defined(USE_SCALAPACK_PZHEEVD) || defined(USE_SCALAPACK_PZHEEV) || defined(USE_SCALAPACK_PZHEEVR)
     /* Query and allocate the optimal workspace */
 #ifdef USE_SCALAPACK_PZHEEVR
-    if(iam==0) printf("# PREPARING WORKING BUFFERS FOR: `pzheevr`\n");
+    if(iam==0) wprintf("# PREPARING WORKING BUFFERS FOR: `pzheevr`\n");
 #endif
 #ifdef USE_SCALAPACK_PZHEEVD
-    if(iam==0) printf("# PREPARING WORKING BUFFERS FOR: `pzheevd`\n");
+    if(iam==0) wprintf("# PREPARING WORKING BUFFERS FOR: `pzheevd`\n");
 #endif
 #ifdef USE_SCALAPACK_PZHEEV
-    if(iam==0) printf("# PREPARING WORKING BUFFERS FOR: `pzheev`\n");
+    if(iam==0) wprintf("# PREPARING WORKING BUFFERS FOR: `pzheev`\n");
 #endif    
 #ifdef MATRIX_IS_REAL
-    if(iam==0) printf("# MATRIX IS ASSUMED TO BE REAL! SWITCHING TO pdsyev* VERSION!\n");
+    if(iam==0) wprintf("# MATRIX IS ASSUMED TO BE REAL! SWITCHING TO pdsyev* VERSION!\n");
 #endif
     double complex * work , tw[ 2 ] = {1.0+I*0.0,1.0+I*0.0};
     double * rwork , tw_[2] = {1.0, 1.0} ;
@@ -812,15 +914,15 @@ int main( int argc , char ** argv )
     cppmallocl(rwork, lrwork, double);
     
 #ifdef VERBOSE 
-    printf("# pzheevd-set[%d]: info=%d  lwork=%d  lrwork=%d  liwork=%d\n",iam, info, lwork, lrwork, liwork);
+    wprintf("# pzheevd-set[%d]: info=%d  lwork=%d  lrwork=%d  liwork=%d\n",iam, info, lwork, lrwork, liwork);
     size_t size_workspace = sizeof(double complex)*lwork+sizeof(double)*lrwork;
-    printf("# SIZE OF WORKSPACE [%d]: size_workspace=%.3fGB\n",iam, 1.0*(double)(size_workspace)/1024./1024./1024.);  
+    wprintf("# SIZE OF WORKSPACE [%d]: size_workspace=%.3fGB\n",iam, 1.0*(double)(size_workspace)/1024./1024./1024.);  
 #endif
  
 #endif
     
 #ifdef USE_ELPA
-    if(iam==0) printf("# SETTING UP ELPA...\n");
+    if(iam==0) wprintf("# SETTING UP ELPA...\n");
     if (elpa_init(20181112) != ELPA_OK) error_msg_mpi_abort(iam, ELPA API version not supported);
     
     elpa_t handle;
@@ -837,12 +939,6 @@ int main( int argc , char ** argv )
     elpa_set(handle, "mpi_comm_parent", MPI_Comm_c2f(MPI_COMM_WORLD), &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_row",ip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_col", iq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#ifdef ELPA_USE_GPU
-    if(iam==0) printf("# ELPA: ACTIVATING GPUs\n");
-    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#else
-    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#endif
     
     /* Setup */
     info=elpa_setup(handle);    
@@ -852,20 +948,27 @@ int main( int argc , char ** argv )
 //     elpa_autotune_t autotune_handle = elpa_autotune_setup(handle, ELPA_AUTOTUNE_FAST, ELPA_AUTOTUNE_DOMAIN_COMPLEX, &info); 
 //     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 //     int elpa_atotue_unfinished=1;
-#ifdef MATRIX_IS_REAL
-    elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info); 
-    if(iam==0) printf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
-#else
-    elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
-    if(iam==0) printf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
-#endif
-    if(info!=ELPA_OK) printf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
     
     elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
-    if(iam==0) printf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
+    if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-        
-    if(iam==0) printf("# SETTING UP OF ELPA  DONE.\n");
+    
+#ifdef ELPA_USE_GPU
+    if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
+    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#else
+    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+#ifdef MATRIX_IS_REAL
+    elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info); 
+    if(iam==0) wprintf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
+#else
+    elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
+    if(iam==0) wprintf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
+#endif
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+            
+    if(iam==0) wprintf("# SETTING UP OF ELPA  DONE.\n");
 #endif
         
     fflush(stdout);
@@ -882,13 +985,14 @@ int main( int argc , char ** argv )
         b_t();
         if((kziter+1)==md.maxiters && md.writewf==1) 
         {
-            if(iam==0) printf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
+            if(iam==0) wprintf("# EXECUTING LAST ITERATION WITH SAVING DATA [md.writewf==1]\n");
             saving_iteration=1;
         }
         rt_zheev=0.0; rt_dens=0.0; rt_pot=0.0; rt_other=0.0; rt_me=0.0; rt_redistrib=0.0;
         b_t();
-        // Make copy of densities
+        // Make copy of densities and potentials
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_old[ixyz]  = h_densities[ixyz];
+        for(ixyz=0; ixyz<POTDIM ; ixyz++) h_potentials_old[ixyz] = h_potentials[ixyz];
         for(ixyz=0; ixyz<DENSDIM; ixyz++) h_densities_partial[ixyz] = 0.0; // reset
         for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
@@ -906,7 +1010,7 @@ int main( int argc , char ** argv )
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
 #endif
-        if(iam==0) printf("# EXECUTING: process_params(md.params, %f)\n", kF);
+        if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -922,10 +1026,10 @@ int main( int argc , char ** argv )
         
         // diagonalize
         b_t();
-        if(iam==0) printf("# DIAGONALIZATION %d...\n", it); fflush(stdout);
+        if(iam==0) wprintf("# DIAGONALIZATION %d...\n", it); fflush(stdout);
 #ifdef MATRIX_IS_REAL
         // convert matrix to real version
-//         for(ixyz=0; ixyz<nip*niq; ixyz++) if(fabs(cimag(h[ixyz]))>1.0e-12) {printf("# ERROR: matrix has imginary components!\n"); ABORT_NOBARRIER;}
+//         for(ixyz=0; ixyz<nip*niq; ixyz++) if(fabs(cimag(h[ixyz]))>1.0e-12) {wprintf("# ERROR: matrix has imginary components!\n"); ABORT_NOBARRIER;}
         for(ixyz=0; ixyz<nip*niq; ixyz++) hR[ixyz] = creal(h[ixyz]);
 #endif
 #ifdef USE_SCALAPACK_PZHEEVR
@@ -957,7 +1061,7 @@ int main( int argc , char ** argv )
         /* Check for convergence */
         if( info > 0 ) 
         {
-            printf( "The algorithm failed to compute eigenvalues!\n" );
+            wprintf( "The algorithm failed to compute eigenvalues!\n" );
             ABORT_NOBARRIER;
         }
 #endif
@@ -966,7 +1070,7 @@ int main( int argc , char ** argv )
 //         if (elpa_atotue_unfinished != 0 ) elpa_atotue_unfinished = elpa_autotune_step(handle, autotune_handle, &info);
 //         sprintf(file_name, "%s_elpa.autotune", md.outprefix);
 //         if(iam==0) elpa_autotune_save_state(handle, autotune_handle, file_name, &info);
-//         if(iam==0) printf("----> elpa_atotue_unfinished=%d info=%d\n", elpa_atotue_unfinished, info);
+//         if(iam==0) wprintf("----> elpa_atotue_unfinished=%d info=%d\n", elpa_atotue_unfinished, info);
 //         if (elpa_atotue_unfinished == 0) 
 //         {
 //             elpa_autotune_set_best(handle, autotune_handle, &info);  // from now on use values used by autotuning
@@ -974,7 +1078,7 @@ int main( int argc , char ** argv )
 //         }
 //         if (elpa_atotue_unfinished == 0 && iam==0) 
 //         {
-//             printf("# ELPA autotuning finished in the %d th scf step \n",kziter);
+//             wprintf("# ELPA autotuning finished in the %d th scf step \n",kziter);
 //         }
 
 #ifdef MATRIX_IS_REAL
@@ -984,12 +1088,12 @@ int main( int argc , char ** argv )
 #endif
         if( info !=ELPA_OK ) 
         {
-            printf( "The algorithm failed to compute eigenvalues!\n" );
+            wprintf( "The algorithm failed to compute eigenvalues!\n" );
             ABORT_NOBARRIER;
         }     
         if(elpa_nev<Hsize && En[elpa_nev-1]<dc_ec)
         {
-            printf( "# !!!!!!! WARNING !!!!!!!: ELPA_NEV_FRACTION IS TOO SMALL!!!!!!!\n" );
+            wprintf( "# !!!!!!! WARNING !!!!!!!: ELPA_NEV_FRACTION IS TOO SMALL!!!!!!!\n" );
         }
 #endif
 #ifdef MATRIX_IS_REAL
@@ -998,7 +1102,7 @@ int main( int argc , char ** argv )
         for(ixyz=nip*niq-1; ixyz>=0; ixyz--) U[ixyz] = hR[ixyz] + I*0.0;
 #endif
         rt_zheev+=e_t(0);
-        if(iam==0) printf("# DIAGONALIZATION DONE [%.0f sec]\n", rt_zheev); fflush(stdout);
+        if(iam==0) wprintf("# DIAGONALIZATION DONE [%.0f sec]\n", rt_zheev); fflush(stdout);
         ECHOLINE;
         
         // preparation for density computation
@@ -1009,7 +1113,7 @@ int main( int argc , char ** argv )
         // do matrix redistribution for computation of densities
         for(i=0; i<Hsize-1; i++) if(En[i]>En[i+1]) 
         {
-            printf( "Eigenvalues are not sorted correctly!\n" );
+            wprintf( "Eigenvalues are not sorted correctly!\n" );
             ABORT_NOBARRIER;
         }
         // find min and max index energies in the interval E in [-ecut,+ecut]
@@ -1022,7 +1126,7 @@ int main( int argc , char ** argv )
         ix=ix+1; // shift to next eigenvalue
         nwf=iy-ix;
 #endif            
-        if(iam==0) printf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/Hsize);
+        if(iam==0) wprintf("# NUMBER OF EXTRACTED nwf IN ENERGY RANGE [-ecut,+ecut] IS %d (%.1f%% OF TOTAL NUMBER OF STATES)\n", nwf, 100.0*nwf/Hsize);
         
         // Temporary grid for density computation
         int ictxt_d; // context for density computation
@@ -1034,7 +1138,7 @@ int main( int argc , char ** argv )
         nip_d = numroc_( &Hsize, &md.mb, &ip_d, &ZERO, &p_d );
         niq_d = numroc_( &nwf, &ONE, &iq_d, &ZERO, &q_d );
 #ifdef VERBOSE
-        printf("# CHECK-D: iam=%d, ip_d=%d, iq_d=%d, nip_d=%d, niq_d=%d\n", iam, ip_d, iq_d, nip_d, niq_d);    
+        wprintf("# CHECK-D: iam=%d, ip_d=%d, iq_d=%d, nip_d=%d, niq_d=%d\n", iam, ip_d, iq_d, nip_d, niq_d);    
 #endif
         /* Descriptor for the matrix */
         descinit_( DESCUD, &Hsize, &nwf, &md.mb, &ONE, &ZERO, &ZERO, &ictxt_d, &nip_d, &info ); 
@@ -1076,8 +1180,8 @@ int main( int argc , char ** argv )
         if(saving_iteration==1) // save extracted wave-functions
         {
             b_t();
-            if(iam==0) printf("# WRITING WAVE-FUNCTIONS WHERE |E_n/eF|<%.6g\n", md.writeecut); fflush(stdout);
-            if(iam==0) printf("# WRITING USING %d I/O GROUPS\n", md.iogroups); fflush(stdout);
+            if(iam==0) wprintf("# WRITING WAVE-FUNCTIONS WHERE |E_n/eF|<%.6g\n", md.writeecut); fflush(stdout);
+            if(iam==0) wprintf("# WRITING USING %d I/O GROUPS\n", md.iogroups); fflush(stdout);
             
             // Creating IO groups
             int idgroup; // identifier of the group
@@ -1088,7 +1192,7 @@ int main( int argc , char ** argv )
             MPI_Comm_split(MPI_COMM_WORLD, idgroup, iam, &mpi_comm_group);
             MPI_Comm_rank(mpi_comm_group, &gr_iam);
             MPI_Comm_size(mpi_comm_group, &gr_np);
-            if(gr_iam==0) printf("# I/O GROUP %d WITH %d PROCESSES HAS BEEN SUCCESSFULLY CREATED.\n", idgroup, gr_np); fflush(stdout);
+            if(gr_iam==0) wprintf("# I/O GROUP %d WITH %d PROCESSES HAS BEEN SUCCESSFULLY CREATED.\n", idgroup, gr_np); fflush(stdout);
             
             // !!!!! I/O can be written better with MPI I/O - maybe it will be improved in future !!!!!
             MPI_Status MPIStat;
@@ -1152,12 +1256,12 @@ int main( int argc , char ** argv )
             if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
                 
             double rt = e_t(0);
-            if(gr_iam==0) printf("# DATA WRITING BY I/O GROUP %d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", idgroup, rt, (double)1.*lastwf*NX*NY*NZ*2*16/1024./1024., lastwf); fflush(stdout);
+            if(gr_iam==0) wprintf("# DATA WRITING BY I/O GROUP %d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", idgroup, rt, (double)1.*lastwf*NX*NY*NZ*2*16/1024./1024., lastwf); fflush(stdout);
             
             // recompute total nwf
             if(gr_iam!=0) lastwf=0;
             MPI_Allreduce( &lastwf, &nwf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-            if(iam==0) printf("# DATA SAVING DONE. IN TOTAL WRITTEN %d WAVE-FUNCTIONS.\n", nwf);
+            if(iam==0) wprintf("# DATA SAVING DONE. IN TOTAL WRITTEN %d WAVE-FUNCTIONS.\n", nwf);
             rt_other+=rt;
         }
         
@@ -1187,8 +1291,10 @@ int main( int argc , char ** argv )
         // finalize computation of tau
         cpu_exec( density_caculate_tau(densall, &mdfft) );
 #endif
+        
+        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
         rt_dens+=e_t(0);
-                
+                        
         // free temporary resources
         b_t();
         free(U_d); 
@@ -1197,9 +1303,17 @@ int main( int argc , char ** argv )
         Cblacs_gridexit( ictxt_d );
         rt_other+=e_t(0);
         
+        // ------------------ compute new potentials ------------------
+        b_t();
+        cpu_exec( compute_potentials(it, densall, potsall) ); 
+        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
+        dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
+        rt_pot+=e_t(0);
+        
         // ------------------ update chemical potentials ------------------
         b_t();
-        if(iam==0) printf("# MUCHANGE FROM: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE FROM: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
@@ -1221,7 +1335,7 @@ int main( int argc , char ** argv )
             dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
         }
-        if(iam==0) printf("# MUCHANGE TO  : dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE TO  : mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
@@ -1230,7 +1344,7 @@ int main( int argc , char ** argv )
         if(md.nomixstart==1 && kziter==0) //special case - no mixing for the first iteration
         {
             // pass - do not mix
-            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: NO MIXING FOR STARTING ITERATION (nomixstart==1)! MIXING SKIPPED!\n");
+            if(iam==0) wprintf("# DENSITIES MIX: SPECIAL CASE: NO MIXING FOR STARTING ITERATION (nomixstart==1)! MIXING SKIPPED!\n");
         }
         else if(saving_iteration==1) //special case - saving interation
         {
@@ -1238,26 +1352,26 @@ int main( int argc , char ** argv )
             // for clear comparision of read corretness skip mixing here
             
             // pass - do not mix
-            if(iam==0) printf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
+            if(iam==0) wprintf("# DENSITIES MIX: SPECIAL CASE: SAVING ITERATION! MIXING SKIPPED!\n");
         }
         else if (((it-md.startbroyden) >= 0) && ((it-md.startbroyden) < (md.Mbroyden + 1)) && (md.broyden == 1) )
         {
             int rkziter=it-md.startbroyden;
-            for(ixyz = 0; ixyz < DENSDIM; ixyz++) {
-				dens_in[rkziter][ixyz] = h_densities_old[ixyz];
-				dens_out[rkziter][ixyz] = h_densities[ixyz];
-            	h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0 - md.linearmixing) * h_densities_old[ixyz];
+            for(ixyz = 0; ixyz < SOLDIM; ixyz++) {
+				dens_in[rkziter][ixyz] = h_solution_old[ixyz];
+				dens_out[rkziter][ixyz] = h_solution[ixyz];
+            	h_solution[ixyz] = md.linearmixing * h_solution[ixyz] + (1.0 - md.linearmixing) * h_solution_old[ixyz];
             }
 			dens_in[rkziter][ixyz+0] = dc_mu_a_old;
 			dens_out[rkziter][ixyz+0] = dc_mu_a;
 			dens_in[rkziter][ixyz+1] = dc_mu_b_old;
 			dens_out[rkziter][ixyz+1] = dc_mu_b;
-            if(iam==0) printf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
+            if(iam==0) wprintf("# DENSITIES MIX: BROYDEN IS STORING DATA, MIXING=LINEAR\n");
         }
         else if (((it-md.startbroyden) >= (md.Mbroyden+1)) && (it-md.stopbroyden)<=0 && (md.broyden == 1))
         {
-        	update_mu(dens_in, dens_out, h_densities_old, h_densities, md.Mbroyden, DENSDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
-        	Broyden_mu(h_densities, dens_in, dens_out, md.Mbroyden, DENSDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
+        	update_mu(dens_in, dens_out, h_solution_old, h_solution, md.Mbroyden, SOLDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
+        	Broyden_mu(h_solution, dens_in, dens_out, md.Mbroyden, SOLDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
             
             if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
             else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
@@ -1267,13 +1381,13 @@ int main( int argc , char ** argv )
             
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
             
-            if(iam==0) printf("# MUCHANGE BROY: dc_mu_a=%16.8g  dc_mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
-            if(iam==0) printf("# DENSITIES MIX: BROYDEN MIXING\n");
+            if(iam==0) wprintf("# MUCHANGE BROY: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+            if(iam==0) wprintf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
         {
-        	for(ixyz = 0; ixyz < DENSDIM; ixyz++) h_densities[ixyz] = md.linearmixing * h_densities[ixyz] + (1.0-md.linearmixing) * h_densities_old[ixyz];
-            if(iam==0) printf("# DENSITIES MIX: LINEAR MIXING\n");
+        	for(ixyz = 0; ixyz < SOLDIM; ixyz++) h_solution[ixyz] = md.linearmixing * h_solution[ixyz] + (1.0-md.linearmixing) * h_solution_old[ixyz];
+            if(iam==0) wprintf("# DENSITIES MIX: LINEAR MIXING\n");
         }
         
         // impose by hand nonegativity of densities
@@ -1285,43 +1399,37 @@ int main( int argc , char ** argv )
         	if (densall.tau_a[ixyz] < 0.) densall.tau_a[ixyz] = dens_min;
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
-        
-        modify_densities(it, densall, dc_params, extra_data_size, extra_data) ;
         rt_other+=e_t(0);
         
-        // ------------------ compute new potentials ------------------
-        b_t();
-        cpu_exec( compute_potentials(it, densall, potsall) ); 
-        modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
-        rt_pot+=e_t(0);
+        // ------------------------ energy ----------------------
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         
         // ------------------ angular momentum ------------------
         b_t();
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
         cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
         Lz = Lz_a + Lz_b; // total angular momentum        
-        if(iam==0) printf("# ANGULAR MOMENTUM: it=%d\n", it);
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+        if(iam==0) wprintf("# ANGULAR MOMENTUM: it=%d\n", it);
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ_A", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "LZ_T", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
-        if(iam==0) printf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
+        if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
             "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]), convstatus[is_converged_local], nparttest);
         nparttest=fabs(npart[SPINB]-md.Nb)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n", 
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
             
-        if(iam==0) printf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
+        if(iam==0) wprintf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
         Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
         E_tot=0.0; E_tot_old=0.0;
         for(i=0; i<ENERGYITEMS; i++)
@@ -1331,20 +1439,21 @@ int main( int argc , char ** argv )
             
             if(fabs((energy[i]-energy_old[i])/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
             
-            if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+            if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 energy_labels[i], energy[i]/Effg, energy_old[i]/Effg, (energy[i]-energy_old[i])/Effg, convstatus[is_converged_local]);
             
         }
-        if(iam==0) printf("  ------------------------------------------------------------------------------------------\n");
+        if(iam==0) wprintf("  ------------------------------------------------------------------------------------------\n");
         if(fabs((E_tot-E_tot_old)/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
-        if(iam==0) printf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
         
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB];
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
-        if(iam==0) printf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
-        if(iam==0) printf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
+        if(iam==0) wprintf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
+        if(iam==0) wprintf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
         if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
         
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
@@ -1355,39 +1464,22 @@ int main( int argc , char ** argv )
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
                 
         // checkpoint - only by iam==0
-        if(md.checkpoint && iam==0)
+        if(md.checkpoint && iam==0) 
         {
-            sprintf(file_name, "%s/checkpoint.s3dpca", md.outprefix);
-            printf("# CREATING CHECKPOINT FILE `%s`\n", file_name);
-            FILE * pFile = fopen(file_name, "wb");
-            
-            // write all nescesary data to file
-            i=it+1;
-            fwrite(&i           , sizeof(int)         , 1 , pFile); // iteration number
-            fwrite(&dc_mu_a     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b     , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_ec       , sizeof(double)      , 1 , pFile); 
-            fwrite(&beta        , sizeof(double)      , 1 , pFile); 
-            fwrite(&eF          , sizeof(double)      , 1 , pFile); 
-            fwrite(&kF          , sizeof(double)      , 1 , pFile);
-            fwrite(&Effg        , sizeof(double)      , 1 , pFile);
-            fwrite(h_potentials , sizeof(double)*POTDIM , 1 , pFile);
-            fwrite(h_densities  , sizeof(double)*DENSDIM, 1 , pFile);
-            fwrite(energy       , sizeof(double)      , ENERGYITEMS , pFile);
-            fwrite(npart        , sizeof(double)      , 2 , pFile);
-            fwrite(&dc_mu_a_old , sizeof(double)      , 1 , pFile); 
-            fwrite(&dc_mu_b_old , sizeof(double)      , 1 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_in[i]   , sizeof(double) , DENSDIM + 2 , pFile);
-            for (i = 0; i < (md.Mbroyden + 1); i++) fwrite(dens_out[i]  , sizeof(double) , DENSDIM + 2 , pFile);
-                  
-            fclose(pFile);
+            // prepare data info for writing
+            double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
+            // write checkpoint
+            file_operation(
+                wslda_st_write_checkpoint(3, it, 11, twrt_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+            );
         }
+        
         
         rt_other+=e_t(0);
         
         // ------------------ timing------------------
         rt_tot=rt_zheev+rt_dens+rt_pot+rt_other+rt_me+rt_redistrib; 
-        if(iam==0) printf("# TIMING rt_tot=%8.2f: rt_zheev=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n", 
+        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_zheev=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n", 
             rt_tot, rt_zheev, rt_zheev/rt_tot*100., rt_redistrib, rt_redistrib/rt_tot*100., rt_dens, rt_dens/rt_tot*100., rt_pot, rt_pot/rt_tot*100., rt_me, rt_me/rt_tot*100., rt_other, rt_other/rt_tot*100.);
         fflush(stdout);
         
@@ -1412,12 +1504,12 @@ int main( int argc , char ** argv )
             {
                 // write check.stamp file
                 sprintf(file_name, "%s_check.stamp", md.outprefix);
-                printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+                wprintf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
                 file_operation( touch_file(file_name) );
                 file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, ENERGYITEMS, energy) );
             }
             
-            if(iam==0) printf("# SAVING ITERATION DONE.\n");
+            if(iam==0) wprintf("# SAVING ITERATION DONE.\n");
             break;
         }
         
@@ -1426,7 +1518,7 @@ int main( int argc , char ** argv )
         
         if(is_converged && kziter>0)
         {
-            if(iam==0) printf("# ALGORITHM CONVERGED!\n");
+            if(iam==0) wprintf("# ALGORITHM CONVERGED!\n");
             
             if(md.writewf==0) break;
             else saving_iteration=1;
@@ -1434,7 +1526,7 @@ int main( int argc , char ** argv )
         
         if(kziter==md.maxiters)
         {
-            if(iam==0) printf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);
+            if(iam==0) wprintf("# MAXIMUM NUMBER OF ITERATIONS REACHED!\n"); fflush(stdout);
             
             if(md.writewf==0) break;
             else saving_iteration=1;

@@ -10,6 +10,12 @@
 
 #include <stdio.h>
 void report_error(int errcode, FILE *stream);
+void report_warning(int errcode, FILE *stream);
+void print_warning(int errcode);
+void warn_head(FILE *stream);
+void warn_foot(FILE *stream);
+void something_to_cheer_you_up(FILE *stream);
+void something_to_cheer_you_up_pid0(FILE *stream);
 
 // no error
 #define WSLDA_OK  0
@@ -25,5 +31,20 @@ void report_error(int errcode, FILE *stream);
 #define WSLDA_ERR_ABDG_NOT_SET 10008
 #define WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA 10009 
 #define WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_NWF 10010
+#define WSLDA_ERR_NAN_DETECTED 10011
+#define WSLDA_ERR_INF_DETECTED 10012
+#define WSLDA_WRN_SPINSYMMETRY0 10013
+#define WSLDA_WRN_SPINSYMMETRY1 10014
+#define WSLDA_ERR_INTERPOLATION_NOT_IMPLEMENTED 10015
+#define WSLDA_ERR_CANNOT_CREATE_CHECKPOINT_FILE 10016
+#define WSLDA_ERR_CANNOT_WRITETO_CHECKPOINT_FILE 10017
+#define WSLDA_ERR_CANNOT_OPEN_CHECKPOINT_FILE 10018
+#define WSLDA_ERR_CANNOT_READFROM_CHECKPOINT_FILE 10019
+#define WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN 10020
+#define WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE 10021
+#define WSLDA_ERR_INTRISTIC_ERROR 10022
+#define WSLDA_WRN_CHECKPOINT_DOINTERPOLATION 10023
+#define WSLDA_WRN_CHECKPOINT_DORESIZE 10024
+#define WSLDA_WRN_CHECKPOINT_UNPREDICTED 10025
 
 #endif

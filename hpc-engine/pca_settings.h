@@ -119,17 +119,29 @@
 #define A2 0.0
 #endif
 
+#ifndef A0
+#define A0 1.000
+#define A1 0.0
+#define A2 0.0
+#endif
+
 // normal part
 #define G0 0.357
 #define G1 0.642
 
-// pairing
-#define GAMMA0 -11.11
-// #define GAMMA0 -0.000001
-
 // regularization function parameters
+#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#else
 #define P_NMIN 1.0e-7
+#endif
+
+#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define P_NMAX ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#else
 #define P_NMAX 1.0e-5
+#endif
+
 #define P_ALPHA 1.0
 
 // #define P_NMIN 1.0e-8
@@ -141,6 +153,7 @@
 // ===================================================================================
 
 #define DXYZ (DX*DY*DZ)
+#define DXY (DX*DY)
 
 // Volume settings
 #define LX (DX*NX)
@@ -251,5 +264,36 @@
 #define PZHEEVR 1
 #define PZHEEVD 2
 #define ELPA 3
+
+#define SPHERICAL_CUTOFF 88
+#define CUBIC_CUTOFF 89
+
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define USE_CUBIC_CUTOFF
+#endif
+// otherwise use speherical cutoff
+#define REGULARIZATION_SCHEME_K_CONST 2.442749607806335
+
+// pairing
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define GAMMA0 (-11.11*1.60)
+#else
+#define GAMMA0 -11.11
+#endif
+
+// defaults for ELPA
+#ifndef ELPA_USE_SOLVER
+#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
+#endif
+#ifndef ELPA_USE_COMPLEX_KERNEL
+#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
+#endif
+#ifndef ELPA_USE_REAL_KERNEL
+#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+#endif
+#ifndef ELPA_NEV_FRACTION
+#define ELPA_NEV_FRACTION 1.0
+#endif
+
 
 #endif

@@ -14,6 +14,35 @@
 
 #define WRKDIR_SET 123987
 
+/**
+ * Basic functions for extracting lattice
+ * */
+int wdata_getNX(wdata_metadata *md) {return md->NX;}
+int wdata_getNY(wdata_metadata *md) {return md->NY;}
+int wdata_getNZ(wdata_metadata *md) {return md->NZ;}
+double wdata_getDX(wdata_metadata *md) {return md->DX;}
+double wdata_getDY(wdata_metadata *md) {return md->DY;}
+double wdata_getDZ(wdata_metadata *md) {return md->DZ;}
+
+void wdata_setNX(wdata_metadata *md, int NX) {md->NX=NX;}
+void wdata_setNY(wdata_metadata *md, int NY) {md->NY=NY;}
+void wdata_setNZ(wdata_metadata *md, int NZ) {md->NZ=NZ;}
+void wdata_setDX(wdata_metadata *md, double DX) {md->DX=DX;}
+void wdata_setDY(wdata_metadata *md, double DY) {md->DY=DY;}
+void wdata_setDZ(wdata_metadata *md, double DZ) {md->DZ=DZ;}
+void wdata_setprefix(wdata_metadata *md, const char *prefix) {strcpy (md->prefix, prefix);}
+
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz)
+{
+    md->NX=nx;
+    md->NY=ny;
+    md->NZ=nz;
+    md->DX=dx;
+    md->DZ=dy;
+    md->DY=dz;
+    return 0;
+}
+
 char __wdata__basedir[MAX_REC_LEN];
 void wdata_goto_wrkdir(wdata_metadata *md)
 {
@@ -515,6 +544,16 @@ int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const
     wdata_print_const(_const, fout);
     fclose(fout);
     return 0;
+}
+
+
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment)
+{
+    FILE * fout = fopen(file_name, "a");
+    if(fout==NULL) return 1;
+    fprintf(fout, "# %s\n", comment);
+    fclose(fout);
+    return 0;    
 }
 
 int wdata_has_variable(wdata_metadata *md, const char *varname)

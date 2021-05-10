@@ -11,6 +11,38 @@
 
 #ifndef _WSLDA_POTDENS_
 #define _WSLDA_POTDENS_
+
+// ordering arrays in h_densities, 
+// c - complex, r- real
+#define DENSCNT 12
+#define DENSTYPE "crrrrrrrrrr"
+
+// ordering arrays in h_potentials, 
+// c - complex, r- real
+#define POTCNT 12
+#define POTTYPE "rrcrrrrrrrr"
+
+#if CODEDIM==1
+
+#define DENSDIM (DENSCNT*NX)
+#define POTDIM  (POTCNT*NX)
+#define BLOCKLENGTH (NX)
+
+#elif CODEDIM==2
+
+#define DENSDIM (DENSCNT*NX*NY)
+#define POTDIM  (POTCNT*NX*NY)
+#define BLOCKLENGTH (NX*NY)
+
+#else
+
+#define DENSDIM (DENSCNT*NXYZ)
+#define POTDIM  (POTCNT*NXYZ)
+#define BLOCKLENGTH (NXYZ) 
+
+#endif
+
+
 typedef struct
 {
     int nx;             
@@ -53,6 +85,9 @@ typedef struct
     double *A_b_x;
     double *A_b_y;
     double *A_b_z;
+    
+    // chemical potentials
+    double *mu;
 } wslda_potential; 
 
 
@@ -64,6 +99,6 @@ wslda_density convert_into_wslda_density(double *h_densities, int blocklength);
 /**
  * Converts array into wslda_potential structure
  * */
-wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength);
+wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength, double *mu);
 
 #endif

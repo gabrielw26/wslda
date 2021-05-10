@@ -64,6 +64,30 @@ typedef struct
     
 } wdata_metadata; 
 
+/**
+ * Basic functions for extracting lattice
+ * */
+int wdata_getNX(wdata_metadata *md);
+int wdata_getNY(wdata_metadata *md);
+int wdata_getNZ(wdata_metadata *md);
+double wdata_getDX(wdata_metadata *md);
+double wdata_getDY(wdata_metadata *md);
+double wdata_getDZ(wdata_metadata *md);
+
+void wdata_setNX(wdata_metadata *md, int NX);
+void wdata_setNY(wdata_metadata *md, int NY);
+void wdata_setNZ(wdata_metadata *md, int NZ);
+void wdata_setDX(wdata_metadata *md, double DX);
+void wdata_setDY(wdata_metadata *md, double DY);
+void wdata_setDZ(wdata_metadata *md, double DZ);
+void wdata_setprefix(wdata_metadata *md, const char *prefix);
+
+/** 
+ * Function sets lattice size in struct wdata_metadata
+ * @return 0: ok, 1: error,
+ * */
+int wdata_set_lattice(wdata_metadata *md, int nx, int ny, int nz, double dx, double dy, double dz);
+
 /** 
  * Function reads metadata
  * and puts values into struct wdata_metadata
@@ -204,6 +228,12 @@ int wdata_add_link_to_metadata_file(const char * file_name, wdata_link *link);
  * @return 0: ok, 1: cannot add entry to file
  * */
 int wdata_add_const_to_metadata_file(const char * file_name, wdata_const *_const);
+
+/**
+ * Function adds at the end of file new comment
+ * @return 0: ok, 1: cannot add entry to file
+ * */
+int wdata_add_comment_to_metadata_file(const char * file_name, const char * comment);
 
 /**
  * Function checks if dataset has variable of name varname

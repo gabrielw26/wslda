@@ -1,13 +1,15 @@
 #!/bin/bash
+##        <-- SET name 
 #PBS -N td-wslda
-#PBS -l nodes=7:ppn=20
-#PBS -l walltime=12:00:00
+##        <-- SET number of nodes, ppn=40 to lock the whole node or ppn=8 to allow sharing with others
+#PBS -l nodes=2:ppn=40
+##        <-- SET memory request, increase it if you encounter problem of type: `PBS: job killed: mem job total exceeded limit`
+#PBS -l mem=128gb
+##        <-- SET walltime, correlate it with `walltime` input file variable
+#PBS -l walltime=12:00:00  
 #PBS -j oe
 #PBS -q long
 
-## -------- WIKI INFO -------
-## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/dwarf
-## 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
 ##      qsub job.sh
@@ -23,11 +25,14 @@
 ## For storing results use location:
 ##      cd /home2/archive
 ##      
-## NOTE: dwarf is not heterogeneous (different nodes have different number of GPUs of different type),
-## you need to deliver proper information about structure of the system in dwarfnodes.txt file
+## NOTE: dwarf is not heterogeneous (different nodes have different number of GPUs of a different type),
+## method of distributing tasks across nodes is provided in predefines.h. 
 
-module load cuda/9.0
+## execute code
+cd $PBS_O_WORKDIR
+source ./env.sh
 
-mpirun -n 40 -hostfile dwarfnodes.txt ./td-wslda-2d input.txt
+##         <--- SET n = 8*nodes, do NOT modify `-npernode 8`
+mpirun -n 16 -npernode 8 ./td-wslda-2d input.txt
 
 

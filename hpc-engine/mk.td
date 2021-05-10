@@ -9,7 +9,7 @@ WDATASRC=$(WSLDADIR)lib-wdata/
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
-       wslda_reproducibility.h wslda_errors.h ../VERSION.h
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h ../VERSION.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h
 WDATADEPS = wdata.h
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
@@ -66,6 +66,9 @@ d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
 	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
+	
+ext: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
 
 $(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
@@ -99,10 +102,12 @@ dirs:
 	mkdir -p $(BINDIR)
 
 clean:
-	rm -f $(OBJDIR)*
+	rm -f $(OBJDIR)*.o
+	rm -f $(OBJDIR)reproducibility.h
 	rm -f $(BINDIR)td-wslda-1d
 	rm -f $(BINDIR)td-wslda-2d
 	rm -f $(BINDIR)td-wslda-3d
+	rm -f $(BINDIR)solve-uniform
 	
 ver:
 	$(CXX) --version 

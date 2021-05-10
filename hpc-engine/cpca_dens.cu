@@ -51,8 +51,11 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
 #endif
             wcnt = 2.0; // take into account +kz and -kz
             if(fabs(kz)<1.0e-12) wcnt = 1.0; // except for kz=0.0
-            if(fabs(kz+M_PI)<1.0e-12) kz = 0.0; // momentum for which I should kill contribution for gradients
-            
+#ifdef USE_CUBIC_CUTOFF
+            if(fabs(kz+M_PI/DZ)<1.0e-12) {kz = 0.0; wcnt=1;}// momentum for which I should kill contribution for gradients
+#else
+            if(fabs(kz+M_PI/DZ)<1.0e-12) kz = 0.0; // momentum for which I should kill contribution for gradients
+#endif            
             // read u and v
             u=wf[       iwf*NXY+ixyz];
             v=wf[n*NXY +iwf*NXY+ixyz];
@@ -167,7 +170,9 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
             kz = kkz[iwf];
             wcnt = 2.0; // take into account +kz and -kz
             if(fabs(kz)<1.0e-12) wcnt = 1.0; // except for kz=0.0
-            
+#ifdef USE_CUBIC_CUTOFF
+            if(fabs(kz+M_PI/DZ)<1.0e-12) wcnt = 1.0;// momentum for which I should kill contribution for gradients
+#endif            
             // read u and v
             u=wf[       iwf*NXY+ixyz];
             v=wf[n*NXY+iwf*NXY+ixyz];
@@ -304,7 +309,9 @@ __global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, doubl
             kz = kkz[iwf];
             wcnt = 2.0; // take into account +kz and -kz
             if(fabs(kz)<1.0e-12) wcnt = 1.0; // except for kz=0.0
-            
+#ifdef USE_CUBIC_CUTOFF
+            if(fabs(kz+M_PI/DZ)<1.0e-12) wcnt = 1.0;// momentum for which I should kill contribution for gradients
+#endif             
             wcnt*=weights[iwf]; // add external weight 
             
             // read u and v

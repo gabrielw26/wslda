@@ -257,6 +257,9 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
             // pairing
+#ifdef USE_CUBIC_CUTOFF
+            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
+#else
             t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
             p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
             if(cimag(p0)<0.) p0 *= -1. ;
@@ -266,7 +269,9 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
             wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
             wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
+
             // g_eff = wz_0.real(); 
             ldelta = lnu*(-1.0*creal(wz_0));
             
@@ -457,7 +462,8 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
     double *V_a = h_potentials.V_a;
     double *V_b = h_potentials.V_b;
     double complex *delta = h_potentials.delta;
-    
+    double * alpha_a = h_potentials.alpha_a;
+    double * alpha_b = h_potentials.alpha_b;
     
     // Code is equivivalent to the code implemented in pca_kernels.cu
     
@@ -469,6 +475,7 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
     double Va, Vb;
     double complex p0, kc, wz_0, Zone, lnu, ldelta;
     double v_ext_a, v_ext_b;
+    double alph_plus;
     
     ixyz=0;
     for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
@@ -477,23 +484,29 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         v_ext_b=v_ext(ix,iy,iz,it,SPINB,params,extra_data_size,extra_data);     
         
         // start computation of delta
-        t5 = 1.0/ (4.0*M_PI*aBdG);
+        alph_plus = 0.5*(alpha_a[ixyz]+alpha_b[ixyz]);
+        t5 = 1.0/ (4.0*M_PI*aBdG*alph_plus);
         Va = V_a[ixyz]+v_ext_a; // initial values
         Vb = V_b[ixyz]+v_ext_b; // initial values
         lnu = nu[ixyz];
         Zone = Complex(1.0, 0.0);
         
         // pairing
+#ifdef USE_CUBIC_CUTOFF
+        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*alph_plus*M_PI*DX), 0.0);
+#else
         t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
-        p0 = csqrt( Complex(2.0*t7, 0.0) );
+        p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
         if(cimag(p0)<0.) p0 *= -1. ;
-        kc = csqrt( Complex(2.0*(dc_ec+t7), 0.0) );
+        kc = csqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
         if(cimag(kc)<0.) kc *= -1. ;
-        
+    
         wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
         if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
-        wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+        wz_0= kc / ( 2. * M_PI * M_PI * alph_plus) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
         wz_0 = Zone / (Zone*t5 - wz_0);
+        
         // g_eff = wz_0.real(); 
         ldelta = lnu*(-1.0*creal(wz_0));
         
@@ -572,8 +585,8 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
         taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
         taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
         
-        // galilean invariant contribution
-        energy[EKIN]+=0.5*(taua + taub);
+        // standard contribution, gallileant invariance only of alpha_a=alpha_b=1
+        energy[EKIN]+=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub);
         
         // potential energy
         energy[EPOT]+=0.0;

@@ -395,6 +395,9 @@ __global__ void kernel_compute_potentials(int it,
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
             // pairing
+#ifdef USE_CUBIC_CUTOFF
+            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
+#else
             t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
             p0 = thrust::sqrt( Complex(2.0*t7/ alph_plus, 0.0) );
             if(p0.imag()<0.) p0 *= -1. ;
@@ -404,6 +407,7 @@ __global__ void kernel_compute_potentials(int it,
             wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
             wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
             wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
             // g_eff = wz_0.real(); 
             ldelta = lnu*(-1.0*wz_0.real());
@@ -456,6 +460,9 @@ __global__ void kernel_compute_potentials_bdg(int it,
         Zone = Complex(1.0, 0.0);
   
         // pairing
+#ifdef USE_CUBIC_CUTOFF
+        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0); // FIXME: account for effective mass
+#else
         t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
         p0 = thrust::sqrt( Complex(2.0*t7, 0.0) );
         if(p0.imag()<0.) p0 *= -1. ;
@@ -465,6 +472,7 @@ __global__ void kernel_compute_potentials_bdg(int it,
         wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
         if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
         wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
         wz_0 = Zone / (Zone*t5 - wz_0);
         // g_eff = wz_0.real(); 
         ldelta = lnu*(-1.0*wz_0.real());

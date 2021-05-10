@@ -137,27 +137,21 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
-    double kc=0.999999*M_PI/DX;
-//     double kc=M_PI*sqrt(3.);
-//     double kc=0.80*M_PI/DX;
+    double kc=md.kc;
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
     
-#ifdef USE_CUBIC_CUTOFF
-    kc=sqrt( pow(kkx[NX/2],2) + pow(kky[NY/2],2) + pow(kkz[NZ/2],2)) * 1.000000000001; // go with maximal momentum cutoff
-#endif
-    
-    if(printout && md.init0debug>0) printf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
-    if(printout && md.init0debug>0) printf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
-    if(printout && md.init0debug>0) printf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
-    if(printout && md.init0debug>0) printf("# DEBUG: p=%f\n", p);
-    if(printout && md.init0debug>0) printf("# DEBUG: alph_a=%f, alph_b=%f, alph_plus=%f\n", alph_a, alph_b, alph_plus); 
-    if(printout && md.init0debug>0) printf("# DEBUG: dalphm_dna=%f, dalphm_dnb=%f\n", dalphm_dna, dalphm_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dalphp_dna=%f, dalphp_dnb=%f\n", dalphp_dna, dalphp_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dtildeC_dna=%f, dtildeC_dnb=%f\n", dtildeC_dna, dtildeC_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dD_dna=%f, dD_dnb=%f\n", dD_dna, dD_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: D=%f, tC=%f\n", D, tC);
-    if(printout && md.init0debug>0 && md.spinsymmetry>0) printf("# SPIN SYMMETRY MODE!\n");
+    if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: p=%f\n", p);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: alph_a=%f, alph_b=%f, alph_plus=%f\n", alph_a, alph_b, alph_plus); 
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dalphm_dna=%f, dalphm_dnb=%f\n", dalphm_dna, dalphm_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dalphp_dna=%f, dalphp_dnb=%f\n", dalphp_dna, dalphp_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dtildeC_dna=%f, dtildeC_dnb=%f\n", dtildeC_dna, dtildeC_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dD_dna=%f, dD_dnb=%f\n", dD_dna, dD_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: D=%f, tC=%f\n", D, tC);
+    if(printout && md.init0debug>0 && md.spinsymmetry>0) wprintf("# SPIN SYMMETRY MODE!\n");
 
     
     // Set quantities updated in s-c loop
@@ -168,8 +162,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     else          delta = 0.5*pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0; // initial value: 0.5*eF
     double nu= -1.0 * delta * tC / alph_plus; // initial value
     
-    if(printout && md.init0debug>0) printf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
-    if(printout && md.init0debug>0) printf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
+    if(printout && md.init0debug>0) wprintf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
+    if(printout && md.init0debug>0) wprintf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
     
     // auxliary variables
     int maxiter=md.init0maxiter;
@@ -218,7 +212,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             
             // pairing
 #ifdef USE_CUBIC_CUTOFF
-            wz_0=2.442/(4.0*M_PI*DX) + I*0.0;
+            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
 #else
             mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
             p0 = csqrt( 2.0*mu_p/ alph_plus) ;
@@ -252,8 +246,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
                     vk = delta*delta / ( pow(0.5*(eta_a+eta_b)+0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta);
                     uk = 1.0 - vk;
-    //                 if(printout) if(vk<0) printf("S1v: problem\n");
-    //                 if(printout) if(uk<0) printf("S1u: problem\n");
+    //                 if(printout) if(vk<0) wprintf("S1v: problem\n");
+    //                 if(printout) if(uk<0) wprintf("S1u: problem\n");
                     vk = sqrt(vk); uk=sqrt(uk);
                     if(eta_b+ek<0.0) vk=-1.0*vk;
                     
@@ -283,8 +277,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                     ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
                     vk = delta*delta / ( pow(0.5*(eta_a+eta_b)-0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta) ;
                     uk = 1.0 - vk;
-    //                 if(printout) if(vk<0) printf("S2v: problem\n");
-    //                 if(printout) if(uk<0) printf("S2u: problem: %f %f\n", vk, uk);
+    //                 if(printout) if(vk<0) wprintf("S2v: problem\n");
+    //                 if(printout) if(uk<0) wprintf("S2u: problem: %f %f\n", vk, uk);
                     vk = sqrt(vk); uk=sqrt(uk);
                     if(eta_b+ek<0.0) vk=-1.0*vk;
                     
@@ -328,10 +322,10 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                 nu/=2.0*LXYZ;
             }
             
-            if(printout && md.init0debug>1) printf("D: iter=%d: V_a=%f, V_b=%f, delta=%f, n_a=%f, n_b=%f, tau_a=%f, tau_b=%f, nu=%f\n", iter, V_a, V_b, delta, n_a, n_b, tau_a, tau_b, nu);
+            if(printout && md.init0debug>1) wprintf("D: iter=%d: V_a=%f, V_b=%f, delta=%f, n_a=%f, n_b=%f, tau_a=%f, tau_b=%f, nu=%f\n", iter, V_a, V_b, delta, n_a, n_b, tau_a, tau_b, nu);
             
             // check convergence
-            if(printout && md.init0debug>1) printf("C: iter=%d: fabs(n0_a-n_a)=%g fabs(n0_b-n_b)=%g fabs(delta-delta_old)=%g, mu_a=%f, mu_b=%f\n", iter, fabs(n0_a-n_a), fabs(n0_b-n_b), fabs(delta-delta_old), mu_a, mu_b);
+            if(printout && md.init0debug>1) wprintf("C: iter=%d: fabs(n0_a-n_a)=%g fabs(n0_b-n_b)=%g fabs(delta-delta_old)=%g, mu_a=%f, mu_b=%f\n", iter, fabs(n0_a-n_a), fabs(n0_b-n_b), fabs(delta-delta_old), mu_a, mu_b);
             is_conv=1;
             if(fabs(n0_a-n_a)>epsilon) is_conv=0; // check for density
             if(fabs(n0_b-n_b)>epsilon) is_conv=0; // check for density
@@ -347,15 +341,15 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             mu_b += md.init0muchange*(md.init0Tstart/T)*(n0_b-n_b);
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
-        if(printout && md.init0debug>0) printf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
-        if(iter==maxiter && printout && md.init0debug>0) printf("# WARNING: MAXITER REACHED!\n");
+        if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
+        if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
             
         // Compute energy 
         energy_kin=(0.5*alph_a*tau_a + 0.5*alph_b*tau_b)*LXYZ;
         energy_pot=(D)*LXYZ;
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
-        if(printout  && md.init0debug>0) printf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+        if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
         fflush(stdout);
     }
     
@@ -364,20 +358,20 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     eta_a = alph_a*kc2/2.0 + V_a - mu_a;
     eta_b = alph_b*kc2/2.0 + V_b - mu_b;
     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC1=%f\n", ek);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC1=%f\n", ek);
     if(fabs(ek)>ec) ec=fabs(ek);
     ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC2=%f\n", ek);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC2=%f\n", ek);
     if(fabs(ek)>ec) ec=fabs(ek);
     
     mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
     ec=alph_plus*kc2/2.0 - mu_p;
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC=%f\n", ec);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC=%f\n", ec);
     
     // print results
-    if(printout) printf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
-    if(printout) printf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
-    if(printout) printf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
+    if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
+    if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
     
     
     // Clear memory
@@ -420,19 +414,19 @@ int save_uniform()
 {
     char filename[512];
     sprintf(filename, "%s/uniform.solution", md.outprefix);
-    printf("# UNIFORM SAVE: Creating file with solution: `%s`\n", filename);
+    wprintf("# UNIFORM SAVE: Creating file with solution: `%s`\n", filename);
     int fexist = exists(filename); 
     if(fexist)
     {
         if(md.overwrite) 
         {
-            printf("# UNIFORM SAVE: File `%s` exists. Removing [overwrite=%d]\n", filename, md.overwrite);
+            wprintf("# UNIFORM SAVE: File `%s` exists. Removing [overwrite=%d]\n", filename, md.overwrite);
             urm(filename);
         }
         else
         {
-            printf("# UNIFORM SAVE: Error: File `%s` exists. [overwrite=%d] \n", filename, md.overwrite);
-            return 1;
+            wprintf("# UNIFORM SAVE: Error: File `%s` exists. [overwrite=%d] \n", filename, md.overwrite);
+            return WSLDA_ERR_CANNOT_OVERWRITE;
         }
     }
 
@@ -458,7 +452,7 @@ int read_uniform(int *nwf, int printout)
 {
     char filename[512];
     sprintf(filename, "%s/uniform.solution", md.inprefix);
-    printf("# UNIFORM READ: Reading data from file: `%s`\n", filename);
+    wprintf("# UNIFORM READ: Reading data from file: `%s`\n", filename);
     int fexist = exists(filename); 
     if(!fexist) return 1;
 
@@ -495,24 +489,24 @@ int read_uniform(int *nwf, int printout)
     double mu_a=__md_pca_uniform.mu_a;
     double mu_b=__md_pca_uniform.mu_b;
     
-    if(printout && md.init0debug>0) printf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
-    if(printout && md.init0debug>0) printf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
-    if(printout && md.init0debug>0) printf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
-    if(printout && md.init0debug>0) printf("# DEBUG: p=%f\n", p);
-    if(printout && md.init0debug>0) printf("# DEBUG: alph_a=%f, alph_b=%f, alph_plus=%f\n", alph_a, alph_b, alph_plus); 
-    if(printout && md.init0debug>0) printf("# DEBUG: dalphm_dna=%f, dalphm_dnb=%f\n", dalphm_dna, dalphm_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dalphp_dna=%f, dalphp_dnb=%f\n", dalphp_dna, dalphp_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dtildeC_dna=%f, dtildeC_dnb=%f\n", dtildeC_dna, dtildeC_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: dD_dna=%f, dD_dnb=%f\n", dD_dna, dD_dnb);
-    if(printout && md.init0debug>0) printf("# DEBUG: D=%f, tC=%f\n", D, tC);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: p=%f\n", p);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: alph_a=%f, alph_b=%f, alph_plus=%f\n", alph_a, alph_b, alph_plus); 
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dalphm_dna=%f, dalphm_dnb=%f\n", dalphm_dna, dalphm_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dalphp_dna=%f, dalphp_dnb=%f\n", dalphp_dna, dalphp_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dtildeC_dna=%f, dtildeC_dnb=%f\n", dtildeC_dna, dtildeC_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: dD_dna=%f, dD_dnb=%f\n", dD_dna, dD_dnb);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: D=%f, tC=%f\n", D, tC);
 
     double tau_a=__md_pca_uniform.tau_a;
     double tau_b=__md_pca_uniform.tau_b;
     double delta=__md_pca_uniform.delta;
     double nu=__md_pca_uniform.nu;
 
-    if(printout && md.init0debug>0) printf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
-    if(printout && md.init0debug>0) printf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
+    if(printout && md.init0debug>0) wprintf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
+    if(printout && md.init0debug>0) wprintf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
     
     double ec=__md_pca_uniform.ec;
     *nwf=__md_pca_uniform.nwf;
@@ -525,9 +519,9 @@ int read_uniform(int *nwf, int printout)
     energy_tot=energy_kin+energy_pot+energy_pair;    
     
     // print results
-    if(printout) printf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
-    if(printout) printf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
-    if(printout) printf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);    
+    if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
+    if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);    
     return 0;
     
     
@@ -628,7 +622,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
     double beta=__md_pca_uniform.beta;
     int takeit;
 
-    if(printout) printf("# UNIFORM CREATE WF: Creating wave-functions.\n");
+    if(printout) wprintf("# UNIFORM CREATE WF: Creating wave-functions.\n");
     ixyz=0;
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
@@ -688,7 +682,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
              
@@ -743,7 +737,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
         }
@@ -834,7 +828,7 @@ int extract_En_for_kz(double kz, double *En, int printout)
     ec=&__md_pca_uniform.ec;
     double beta=__md_pca_uniform.beta;
 
-    if(printout) { printf("# extract_En_for_kz: extracting eigen-values\n"); fflush(stdout); }
+    if(printout) { wprintf("# extract_En_for_kz: extracting eigen-values\n"); fflush(stdout); }
     for(ixyz=0; ixyz<2*NX*NY; ixyz++) En[ixyz]=-999999999999.;
     ixyz=0;
     int nwf=0;
@@ -858,7 +852,7 @@ int extract_En_for_kz(double kz, double *En, int printout)
         ixyz++;
     }    
     
-    if(printout) {printf("# extract_En_for_kz: sorting\n"); fflush(stdout); }
+    if(printout) {wprintf("# extract_En_for_kz: sorting\n"); fflush(stdout); }
     
     while(1)
     {
@@ -958,7 +952,7 @@ int extract_En(double *En, int printout)
     ec=&__md_pca_uniform.ec;
     double beta=__md_pca_uniform.beta;
 
-    if(printout) { printf("# extract_En: extracting eigen-values\n"); fflush(stdout); }
+    if(printout) { wprintf("# extract_En: extracting eigen-values\n"); fflush(stdout); }
     for(ixyz=0; ixyz<2*NXYZ; ixyz++) En[ixyz]=-999999999999.;
     ixyz=0;
     int nwf=0;
@@ -982,7 +976,7 @@ int extract_En(double *En, int printout)
         ixyz++;
     }    
     
-    if(printout) {printf("# extract_En: sorting\n"); fflush(stdout); }
+    if(printout) {wprintf("# extract_En: sorting\n"); fflush(stdout); }
     
     while(1)
     {
@@ -1096,17 +1090,16 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
     double gbare=4.0*M_PI*md.aBdG;
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double alph_a=1.0;
     double alph_b=1.0;
-//     double kc=M_PI*sqrt(3.);
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
     
-    if(printout && md.init0debug>0) printf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
-    if(printout && md.init0debug>0) printf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
-    if(printout && md.init0debug>0) printf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
-    if(printout && md.init0debug>0) printf("# DEBUG: p=%f\n", p);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: p=%f\n", p);
     
     // Set quantities updated in s-c loop
     double tau_a=pow(6.0*M_PI*M_PI*n0_a, 5.0/3.0) / (10.0*M_PI*M_PI); // initial value
@@ -1116,9 +1109,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     else          delta = 0.5*pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0; // initial value: 0.5*eF
     double nu= -1.0 * delta / gbare; // initial value
     
-    if(printout && md.init0debug>0) printf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
-    if(printout && md.init0debug>0) printf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
-    if(printout && md.init0debug>0 && md.spinsymmetry>0) printf("# SPIN SYMMETRY MODE!\n");
+    if(printout && md.init0debug>0) wprintf("# DEBUG: tau_a=%f, tau_b=%f\n", tau_a, tau_b);   
+    if(printout && md.init0debug>0) wprintf("# DEBUG: delta=%f, nu=%f\n", delta, nu);  
+    if(printout && md.init0debug>0 && md.spinsymmetry>0) wprintf("# SPIN SYMMETRY MODE!\n");
     
     // auxliary variables
     int maxiter=md.init0maxiter;
@@ -1168,6 +1161,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             V_b = 0.0;
             
             // pairing
+#ifdef USE_CUBIC_CUTOFF
+            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
+#else
             mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
             p0 = csqrt( 2.0*mu_p) ;
             if ( cimag(p0) < 0. ) p0 *= -1. ;
@@ -1177,9 +1173,10 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;    
                     
             wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
+#endif
             g_eff = creal( Zone / (Zone/gbare - wz_0) );
             delta = -1.0*g_eff*nu;
-//             printf("AAA: %f %f \n", delta, g_eff);
+//             wprintf("AAA: %f %f \n", delta, g_eff);
             
             // contribution from states to densities
             n_a=0.0;
@@ -1198,11 +1195,11 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                     
                     // solution 1:
                     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
-//                     if(iter>=1947) printf("DDD: %f %f %f %f\n", ek, eta_a, eta_b,delta);
+//                     if(iter>=1947) wprintf("DDD: %f %f %f %f\n", ek, eta_a, eta_b,delta);
                     vk = delta*delta / ( pow(0.5*(eta_a+eta_b)+0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta);
                     uk = 1.0 - vk;
-//                     if(printout) if(vk<0.0) printf("S1v: problem\n");
-//                     if(printout) if(uk<0.0) printf("S1u: problem\n");
+//                     if(printout) if(vk<0.0) wprintf("S1v: problem\n");
+//                     if(printout) if(uk<0.0) wprintf("S1u: problem\n");
                     vk = sqrt(vk); uk=sqrt(uk);
                     if(eta_b+ek<0.0) vk=-1.0*vk;
                     
@@ -1232,8 +1229,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                     ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
                     vk = delta*delta / ( pow(0.5*(eta_a+eta_b)-0.5*sqrt((eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta)),2) + delta*delta) ;
                     uk = 1.0 - vk;
-//                     if(printout) if(vk<0.0) printf("S2v: problem\n");
-//                     if(printout) if(uk<0.0) printf("S2u: problem: %f %f\n", vk, uk);
+//                     if(printout) if(vk<0.0) wprintf("S2v: problem\n");
+//                     if(printout) if(uk<0.0) wprintf("S2u: problem: %f %f\n", vk, uk);
                     vk = sqrt(vk); uk=sqrt(uk);
                     if(eta_b+ek<0.0) vk=-1.0*vk;
                     
@@ -1277,10 +1274,10 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                 nu/=2.0*LXYZ;
             }
             
-            if(printout && md.init0debug>1) printf("D: iter=%d: V_a=%f, V_b=%f, delta=%f, n_a=%f, n_b=%f, tau_a=%f, tau_b=%f, nu=%f\n", iter, V_a, V_b, delta, n_a, n_b, tau_a, tau_b, nu);
+            if(printout && md.init0debug>1) wprintf("D: iter=%d: V_a=%f, V_b=%f, delta=%f, n_a=%f, n_b=%f, tau_a=%f, tau_b=%f, nu=%f\n", iter, V_a, V_b, delta, n_a, n_b, tau_a, tau_b, nu);
             
             // check convergence
-            if(printout && md.init0debug>1) printf("C: iter=%d: fabs(n0_a-n_a)=%g fabs(n0_b-n_b)=%g fabs(delta-delta_old)=%g, mu_a=%f, mu_b=%f\n", iter, fabs(n0_a-n_a), fabs(n0_b-n_b), fabs(delta-delta_old), mu_a, mu_b);
+            if(printout && md.init0debug>1) wprintf("C: iter=%d: fabs(n0_a-n_a)=%g fabs(n0_b-n_b)=%g fabs(delta-delta_old)=%g, mu_a=%f, mu_b=%f\n", iter, fabs(n0_a-n_a), fabs(n0_b-n_b), fabs(delta-delta_old), mu_a, mu_b);
             is_conv=1;
             if(fabs(n0_a-n_a)>epsilon) is_conv=0; // check for density
             if(fabs(n0_b-n_b)>epsilon) is_conv=0; // check for density
@@ -1296,15 +1293,15 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             mu_b += md.init0muchange*(n0_b-n_b);
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
-        if(printout && md.init0debug>0) printf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
-        if(iter==maxiter && printout && md.init0debug>0) printf("# WARNING: MAXITER REACHED!\n");
+        if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
+        if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
             
         // Compute energy 
         energy_kin=(0.5*alph_a*tau_a + 0.5*alph_b*tau_b)*LXYZ;
         energy_pot=(0.0)*LXYZ;
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
-        if(printout  && md.init0debug>0) printf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+        if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
         fflush(stdout);
     }
     
@@ -1313,20 +1310,20 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     eta_a = alph_a*kc2/2.0 + V_a - mu_a;
     eta_b = alph_b*kc2/2.0 + V_b - mu_b;
     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC1=%f\n", ek);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC1=%f\n", ek);
     if(fabs(ek)>ec) ec=fabs(ek);
     ek = -0.5*(eta_b-eta_a) - 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC2=%f\n", ek);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC2=%f\n", ek);
     if(fabs(ek)>ec) ec=fabs(ek);
     
     mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
     ec=1.0*kc2/2.0 - mu_p;
-    if(printout && md.init0debug>0) printf("# ENERGY CUT-OFF: EC=%f\n", ec);
+    if(printout && md.init0debug>0) wprintf("# ENERGY CUT-OFF: EC=%f\n", ec);
     
     // print results
-    if(printout) printf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
-    if(printout) printf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
-    if(printout) printf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
+    if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
+    if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
     
     // Clear memory
     free(kkx);
@@ -1427,14 +1424,26 @@ int get_nwf_to_evolve_2d(int *nwf)
     // extract number of wave-functions
     ixyz=0;
     *nwf=0;
-//     double kc=__md_pca_uniform.kc;
-    double kc=0.999999*M_PI/DX;
+
+    double kc=md.kc;
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
+    
+    int *states_selected;
+    cppmallocl(states_selected,NZ, int);
+    states_selected[0]=1;
+    for(i=1; i<NZ/2; i++) states_selected[i]=2;
+#ifdef USE_CUBIC_CUTOFF
+    states_selected[NZ/2]=1;
+#else
+    states_selected[NZ/2]=0;
+#endif
+    for(i=NZ/2+1; i<NZ; i++) states_selected[i]=0;
+    
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative kz values 
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // take only from sphere and for non-negative kz values 
             if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
             else *nwf+=2; // thera are two soloutions for each momentum
             
@@ -1444,8 +1453,8 @@ int get_nwf_to_evolve_2d(int *nwf)
             if(kk2[ixyz]<kc2) 
             {
                 // take only positive energy states
-                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+                if(states_selected[iz]==2) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 1;
                 
                 total_nwf2+=1;
             }
@@ -1454,14 +1463,14 @@ int get_nwf_to_evolve_2d(int *nwf)
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+                if(states_selected[iz]==2) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 2;
                 
                 total_nwf2+=2;
             }
         }
              
-//         printf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
+//         wprintf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
         
         ixyz++;
     }
@@ -1471,10 +1480,11 @@ int get_nwf_to_evolve_2d(int *nwf)
     free(kky);
     free(kkz);
     free(kk2);
+    free(states_selected);
     
     if(total_nwf!=__md_pca_uniform.nwf)
     {
-        printf("# ERROR: get_nwf_to_evolve_2d: total_nwf[%d]!=__md_pca_uniform.nwf[%d], total_nwf2[%d]\n", total_nwf, __md_pca_uniform.nwf, total_nwf2);
+        wprintf("# ERROR: get_nwf_to_evolve_2d: total_nwf[%d]!=__md_pca_uniform.nwf[%d], total_nwf2[%d]\n", total_nwf, __md_pca_uniform.nwf, total_nwf2);
         fflush(stdout);
         return 1;
     }
@@ -1547,16 +1557,27 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     } 
     
     // extract number of wave-functions and check consistency
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double kc2=kc*kc;
     ixyz=0;
     int nwf=0;
     int total_nwf=0;
     int takeit;
     
+    int *states_selected;
+    cppmallocl(states_selected,NZ, int);
+    states_selected[0]=1;
+    for(i=1; i<NZ/2; i++) states_selected[i]=2;
+#ifdef USE_CUBIC_CUTOFF
+    states_selected[NZ/2]=1;
+#else
+    states_selected[NZ/2]=0;
+#endif
+    for(i=NZ/2+1; i<NZ; i++) states_selected[i]=0;
+    
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // only positive energy state
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // only positive energy state
             if(md.spinsymmetry==1) nwf+=1; // thera are two soloutions for each momentum
             else nwf+=2; // thera are two soloutions for each momentum
             
@@ -1565,16 +1586,16 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 1*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 1;
+                if(states_selected[iz]==2) total_nwf += 1*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 1;
             }
         }
         else 
         {
             if(kk2[ixyz]<kc2)
             {
-                if(kkz[iz]>1.0e-6) total_nwf += 2*2; // two solutions x (-kz, +kz)
-                else if(fabs(kkz[iz])<1.0e-6) total_nwf += 2;
+                if(states_selected[iz]==2) total_nwf += 2*2; // two solutions x (-kz, +kz)
+                else if(states_selected[iz]==1) total_nwf += 2;
             }
         }
         
@@ -1600,12 +1621,12 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     *ec=__md_pca_uniform.ec;
     double beta=__md_pca_uniform.beta;
 
-    if(printout) printf("# UNIFORM CREATE WF: Creating wave-functions.\n");
+    if(printout) wprintf("# UNIFORM CREATE WF: Creating wave-functions.\n");
     ixyz=0;
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kkz[iz]>-1.0e-6) // take only from sphere
+        if(kk2[ixyz]<kc2 && states_selected[iz]>0) // take only from sphere
         {
             eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
             eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
@@ -1663,7 +1684,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
             
@@ -1721,7 +1742,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
         }
@@ -1733,6 +1754,7 @@ int create_uniform_wf_2d(int idxfrom, int idxto, double complex *wf, double *mu_
     free(kky);
     free(kkz);
     free(kk2);
+    free(states_selected);
     
     return 0;
 }
@@ -1797,18 +1819,21 @@ int get_nwf_to_evolve_1d(int *nwf)
     // extract number of wave-functions
     ixyz=0;
     *nwf=0;
-//     double kc=__md_pca_uniform.kc;
-    double kc=0.999999*M_PI/DX;
+
+    double kc=md.kc;
     double kc2=kc*kc;
     int total_nwf=0;
     int total_nwf2=0;
+    int deg;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
             
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        if(kk2[ixyz]<kc2) // 
         {
-            if(md.spinsymmetry==1) *nwf+=1; // only positive energy state
-            else *nwf+=2; // there are two solutions for each momentum
+            deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+            if(deg>0) deg=1; else deg=0;
+            if(md.spinsymmetry==1) *nwf+=1*deg; // only positive energy state
+            else *nwf+=2*deg; // there are two solutions for each momentum
         }
             
         // make test for correctness
@@ -1817,29 +1842,21 @@ int get_nwf_to_evolve_1d(int *nwf)
             if(kk2[ixyz]<kc2) 
             {
                 // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
-                                
-                total_nwf2+=1;
+                total_nwf += 1*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+                total_nwf2+= 1;
             }
         }
         else
         {
             if(kk2[ixyz]<kc2)
             {
-                // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
-                
-                total_nwf2+=2;
+                // there are two solutions for each momentum
+                total_nwf += 2*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+                total_nwf2+= 2;
             }
         }
              
-//         printf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
+//         wprintf("TTT: %9d %4d %4d %4d %9d %9d\n", ixyz, ix, iy, iz, total_nwf, nwf);
         
         ixyz++;
     }
@@ -1852,7 +1869,7 @@ int get_nwf_to_evolve_1d(int *nwf)
     
     if(total_nwf!=__md_pca_uniform.nwf)
     {
-        printf("# ERROR: get_nwf_to_evolve_1d: total_nwf[%d]!=__md_pca_uniform.nwf[%d], total_nwf2[%d]\n", total_nwf, __md_pca_uniform.nwf, total_nwf2);
+        wprintf("# ERROR: get_nwf_to_evolve_1d: total_nwf[%d]!=__md_pca_uniform.nwf[%d], total_nwf2[%d]\n", total_nwf, __md_pca_uniform.nwf, total_nwf2);
         fflush(stdout);
         return 1;
     }
@@ -1868,11 +1885,12 @@ int get_nwf_to_evolve_1d(int *nwf)
  * @param ec energy cut-off for the solution (OUTPUT)
  * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param cnt degenerecies of states (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param printout, function prints on output info if printout is true
  * @return 0 - OK, otherwise error
  * */
-int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_a, double *mu_b, double *ec, double *fEn, double *kkyzvals, double *En, int printout)
+int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_a, double *mu_b, double *ec, double *fEn, double *kkyzvals, int *cnt, double *En, int printout)
 {
     int i,j;
     int ix, iy, iz, ixyz; 
@@ -1925,19 +1943,22 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
     } 
     
     // extract number of wave-functions and check consistency
-    double kc=0.999999*M_PI/DX;
+    double kc=md.kc;
     double kc2=kc*kc;
     ixyz=0;
     int nwf=0;
     int total_nwf=0;
     int takeit;
+    int deg; 
     
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere and for non-negative ky and non-negative kz values 
+        if(kk2[ixyz]<kc2) // take only from sphere and for non-negative ky and non-negative kz values 
         {
-            if(md.spinsymmetry==1) nwf+=1; // only positive energy state
-            else nwf+=2; // thera are two solutions for each momentum
+            deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+            if(deg>0) deg=1; else deg=0;
+            if(md.spinsymmetry==1) nwf+=1*deg; // only positive energy state
+            else nwf+=2*deg; // there are two solutions for each momentum
         }
         
         // make test for correctness
@@ -1946,21 +1967,15 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
             if(kk2[ixyz]<kc2)
             {
                 // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 1*2*2; // one solution x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 1*2*1; // one solution x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 1*1*2; // one solution x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 1*1*1; // one solution x (  ky=0  ) x (  kz=0  )
+                total_nwf += 1*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
             }
         }
         else 
         {
             if(kk2[ixyz]<kc2)
             {
-                // take only positive energy states
-                if     (kky[iy]>1.0e-6       && kkz[iz]>1.0e-6      ) total_nwf += 2*2*2; // two solutions x (-ky, +ky) x (-kz, +kz)
-                else if(kky[iy]>1.0e-6       && fabs(kkz[iz])<1.0e-6) total_nwf += 2*2*1; // two solutions x (-ky, +ky) x (  kz=0  )
-                else if(fabs(kky[iy])<1.0e-6 && kkz[iz]>1.0e-6      ) total_nwf += 2*1*2; // two solutions x (  ky=0  ) x (-kz, +kz)
-                else if(fabs(kky[iy])<1.0e-6 && fabs(kkz[iz])<1.0e-6) total_nwf += 2*1*1; // two solutions x (  ky=0  ) x (  kz=0  )
+                // there are two solutions for each momentum
+                total_nwf += 2*wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
             }
         }
         
@@ -1986,12 +2001,13 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
     *ec=__md_pca_uniform.ec;
     double beta=__md_pca_uniform.beta;
 
-    if(printout) printf("# UNIFORM CREATE WF: Creating wave-functions.\n");
+    if(printout) wprintf("# UNIFORM CREATE WF: Creating wave-functions.\n");
     ixyz=0;
     nwf=-1;
     for ( ix = 0 ; ix < NX ; ix++ ) for ( iy = 0 ; iy < NY ; iy++ ) for ( iz = 0 ; iz < NZ ; iz++ ) 
     {
-        if(kk2[ixyz]<kc2 && kky[iy]>-1.0e-6 && kkz[iz]>-1.0e-6) // take only from sphere
+        deg=wslda_kmodes_1d_get_weight(kky[iy], kkz[iz]);
+        if(kk2[ixyz]<kc2 && deg>0) // take only from sphere
         {
             eta_a = alph_a*kk2[ixyz]/2.0 + V_a - *mu_a;
             eta_b = alph_b*kk2[ixyz]/2.0 + V_b - *mu_b;    
@@ -2045,12 +2061,15 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
                 kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
                 
+                // degeneracy
+                cnt[nwf-idxfrom]=deg;
+                
                 // eigen energy
                 En[nwf-idxfrom]=ek;
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
             
@@ -2104,12 +2123,15 @@ int create_uniform_wf_1d(int idxfrom, int idxto, double complex *wf, double *mu_
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
                 kkyzvals[(idxto-idxfrom) + nwf-idxfrom]=kkz[iz];
                 
+                // degeneracy
+                cnt[nwf-idxfrom]=deg;
+                
                 // eigen energy
                 En[nwf-idxfrom]=ek;
                 
 //                 // only for tests:
 //                 if(nwf==idxfrom)
-//                     printf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
+//                     wprintf("!!!!!!!!! nwf=%d: kx=%f ky=%f kz=%f kk2=%f\n", nwf, kkx[ix], kky[iy], kkz[iz], kk2[ixyz]);
             }
             
         }

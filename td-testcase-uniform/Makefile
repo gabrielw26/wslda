@@ -4,11 +4,12 @@
 
 # COMPILERS
 CXX=mpicc
-NVCC = nvcc 
+NVCC=nvcc 
 
 # DIRECTORY SETTINGS (must end with /)
 WSLDADIR=/home2/archive/wslda/
 OBJDIR=./obj/
+# folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
 # COMPILER FLAGS
@@ -19,4 +20,5 @@ NVCCFLAGS = -arch sm_35 -O3
 LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lm
 
 
-include mk.td
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.td

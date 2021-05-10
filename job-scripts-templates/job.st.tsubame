@@ -1,0 +1,47 @@
+#!/bin/sh
+#$ -cwd
+#$ -l f_node=4      # <- SET: number of node, max is 72
+#$ -l h_rt=12:00:00 # <- SET: walltime hh:mm:ss
+#$ -N st-wslda      # <- SET: name of your job
+#$ -m abe           # activate e-mail notification
+#$ -M your-email@pw.edu.pl # <- SET: your e-mail
+#$ -v LD_LIBRARY_PATH=/apps/t3/sles12sp2/cuda/10.2.89/lib64:/gs/hs1/hp190063/share/elpa/lib
+#export PSM2_MQ_RNDV_HFI_THRESH=128000
+
+## -------- WIKI INFO -------
+## http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/tsubame
+## 
+## ------ QUEUE SYSTEM ------
+## to submit use:
+##     qsub job.sh
+## to check status use:
+##     qstat 
+## to delete job use:
+##     qdel jobid
+##       
+## ------ COMPUTATION -------      
+## For computation use workspace: /gs/hs1/hp190063/
+## Create there subfolder
+
+# modules
+. /etc/profile.d/modules.sh
+module load cuda/10.2.89
+module load intel/19.1.0.166
+module load intel-mpi/19.6.166
+module load fftw/3.3.6
+
+# settings
+export PSM2_DEVICES="hfi,shm,self"
+export PSM2_MQ_SENDREQS_MAX=$((1048576*2))
+export PSM2_MQ_RECVREQS_MAX=$((1048576*2))
+export I_MPI_HYDRA_BOOTSTRAP=ssh
+unset I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS
+export HFI_UNIT=0
+
+# execute calcs
+
+#   <- SET: set path to computation folder
+cd MY_PATH
+#                         <-NOTE n must be equal 28*f_node
+mpiexec.hydra -ppn 28 -n 112 ./st-wslda-3d input.txt 
+
