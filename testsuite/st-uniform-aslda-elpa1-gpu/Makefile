@@ -11,12 +11,15 @@
 CXX=mpicc
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=/home2/archive/wslda/
+WSLDADIR=$(WSLDA)
 OBJDIR=./obj/
+# folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3 -I/usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack391/include/elpa-2020.05.001/
 LIBS=-lfftw3 -lm -llapack -lscalapack -lelpa
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st
+ 
