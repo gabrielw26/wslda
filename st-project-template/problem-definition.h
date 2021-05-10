@@ -15,6 +15,10 @@
  * */
 double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+
     // ADD HERE FORMULA FOR V_ext(r)
     double V_ext = 0.0;
 
@@ -37,6 +41,10 @@ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t ex
  * */
 double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+
     // ADD HERE FORMULA FOR Delta_ext(r)
     double complex D_ext = 0.0 + I*0.0;
 
@@ -61,6 +69,10 @@ double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, d
  * */
 double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+
     // ADD HERE FORMULAS FOR vec{v}_ext=(vx, vy, vz)
     double v_ext;
     if(coordinate==XAXIS) v_ext=0.0;
