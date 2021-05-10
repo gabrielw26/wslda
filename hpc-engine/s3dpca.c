@@ -58,7 +58,7 @@
 #elif DIAGONALIZATION_ROUTINE==ELPA
 #define USE_ELPA
 #else
-    select DIAGONALIZATION ROUTINE in predifines.h
+#error "select DIAGONALIZATION ROUTINE in predifines.h"
 #endif
 
 
@@ -169,6 +169,7 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
+    double S=0.0, S_old=0.0; // entropy
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -193,7 +194,7 @@ int main( int argc , char ** argv )
     energy_labels[EPAIREXT] = "E_pairext";
     energy_labels[EVELEXT] = "E_velext";
     double E_tot, E_tot_old;
-    double npart[2], npart_old[2], nparttest;
+    double npart[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, npart_old[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, nparttest;
     char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
     int is_converged, is_converged_local;
     int saving_iteration=0;
@@ -520,7 +521,7 @@ int main( int argc , char ** argv )
     
     // reset energy and particle number
     for(ixyz=0; ixyz< ENERGYITEMS; ixyz++) energy[ixyz] = 0.0;
-    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    npart[SPINA]=NUMERICAL_ZERO; npart[SPINB]=NUMERICAL_ZERO;
     
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
@@ -997,6 +998,7 @@ int main( int argc , char ** argv )
         for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
+        S_old=S; S=0.0; // save value of entropy and reset buffer
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         if(md.referencekF>0.0) kF = md.referencekF;
@@ -1268,9 +1270,10 @@ int main( int argc , char ** argv )
         // --------- DENSITIES ----------
         b_t();
         // compute contribution to the densities
-        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, densall_partial, &mdfft, md.spinsymmetry) );
+        cpu_exec( compute_contribution_to_densities(En_d_local, U_d, niq_d, beta, densall_partial, &mdfft, md.spinsymmetry, &S) );
         // compute densities as global reduction
         MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce( MPI_IN_PLACE, &S, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
         if(md.spinsymmetry==1)  for(ixyz=0; ixyz<NXYZ; ixyz++) // impose by hand symmetry on densities
         {
@@ -1404,6 +1407,12 @@ int main( int argc , char ** argv )
         // ------------------------ energy ----------------------
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         
+        // ---------------------- entropy -----------------------
+        if(iam==0) wprintf("# ENTROPY: it=%d\n", it);
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "S/NkB", S/(npart[SPINA]+npart[SPINB]), S_old/(npart_old[SPINA]+npart_old[SPINB]), 
+                           (S/(npart[SPINA]+npart[SPINB])-S_old/(npart_old[SPINA]+npart_old[SPINB])));
+        
         // ------------------ angular momentum ------------------
         b_t();
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
@@ -1411,11 +1420,11 @@ int main( int argc , char ** argv )
         Lz = Lz_a + Lz_b; // total angular momentum        
         if(iam==0) wprintf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_A", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
+            "LZ_A/N", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
+            "LZ_B/N", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_T", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
+            "LZ_T/N", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
         
         // ------------------ check convergence ------------------
         is_converged=1;
