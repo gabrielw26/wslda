@@ -14,7 +14,7 @@ BINDIR=./
 
 # COMPILER FLAGS
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
-NVCCFLAGS = -arch sm_35 -O3 
+NVCCFLAGS = -arch sm_35 -O3 -std=c++03
 
 # LIBRARIES
 LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lm
