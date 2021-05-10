@@ -1,0 +1,8 @@
+# This file contains list of test to be executed by testsuite system
+# Tests are executed in order given below
+
+# basic tests - uniform system
+td-test-1
+st-test-1
+
+
