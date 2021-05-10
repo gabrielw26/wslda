@@ -53,10 +53,8 @@ int wsldapid; // process id - global variable
 #elif DIAGONALIZATION_ROUTINE==ELPA
 #define USE_ELPA
 #else
-    select DIAGONALIZATION ROUTINE in predifines.h
+#error "select DIAGONALIZATION ROUTINE in predifines.h"
 #endif
-
-
 
 #ifdef USE_SCALAPACK_PZHEEVR
 /* PZHEEVR prototype */
@@ -172,6 +170,7 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
+    double S=0.0, S_old=0.0; // entropy
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -196,7 +195,7 @@ int main( int argc , char ** argv )
     energy_labels[EPAIREXT] = "E_pairext";
     energy_labels[EVELEXT] = "E_velext";
     double E_tot, E_tot_old;
-    double npart[2], npart_old[2], nparttest;
+    double npart[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, npart_old[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, nparttest;
     char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
     int is_converged, is_converged_local;
     int saving_iteration=0;
@@ -585,7 +584,7 @@ int main( int argc , char ** argv )
     
     // reset energy and particle number
     for(ixyz=0; ixyz< ENERGYITEMS; ixyz++) energy[ixyz] = 0.0;
-    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    npart[SPINA]=NUMERICAL_ZERO; npart[SPINB]=NUMERICAL_ZERO;
     
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
@@ -1062,6 +1061,7 @@ int main( int argc , char ** argv )
         for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
+        S_old=S; S=0.0; // save value of entropy and reset buffer
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         // take density in the center and use it for definition of the kF (for SPINA)
@@ -1372,9 +1372,9 @@ int main( int argc , char ** argv )
             // compute contribution to the densities
             b_t();
 #if CODEDIM==1
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].ky, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].ky, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry, &S) );
 #else
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry, &S) );
 #endif
             rt_dens+=e_t(0);
             
@@ -1393,6 +1393,7 @@ int main( int argc , char ** argv )
         b_t();
         fflush(stdout); // for nice printing
         MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce( MPI_IN_PLACE, &S, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( MPI_IN_PLACE, &nwf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
         if(iam==0) wprintf("# NWF=%d\n", nwf);
         if(iam==0) wprintf("# NUMBER OF EXTRACTED nwf IN ENERGY RANGE [-ecut,+ecut] IS %d (%.1f%% OF TOTAL NUMBER OF STATES)\n", nwf, 100.0*nwf/(NXYZ*2));
@@ -1527,7 +1528,13 @@ int main( int argc , char ** argv )
         
         // ------------------------ energy ----------------------
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
-                
+              
+        // ---------------------- entropy -----------------------
+        if(iam==0) wprintf("# ENTROPY: it=%d\n", it);
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "S/NkB", S/(npart[SPINA]+npart[SPINB]), S_old/(npart_old[SPINA]+npart_old[SPINB]), 
+                           (S/(npart[SPINA]+npart[SPINB])-S_old/(npart_old[SPINA]+npart_old[SPINB])));
+        
         // ------------------ angular momentum ------------------
         b_t();
 #if CODEDIM==1
@@ -1539,11 +1546,11 @@ int main( int argc , char ** argv )
         Lz = Lz_a + Lz_b; // total angular momentum
         if(iam==0) wprintf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_A", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
+            "LZ_A/N", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
+            "LZ_B/N", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_T", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
+            "LZ_T/N", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
 #endif
         
         // ------------------ check convergence ------------------

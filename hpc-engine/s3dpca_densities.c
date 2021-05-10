@@ -19,10 +19,11 @@ double fbeta(double E, double beta);
  * @param beta inverse of temperature
  * @param h_densities array with densities to be updated (INPUT/OUTPUT)
  * @param mdfft metadata for ffts plans execution (INPUT) 
- * @param spinsymmetry
+ * @param spinsymmetry (INPUT)
+ * @param S buffer for entopy (INPUT/OUTPUT)
  * */
 int compute_contribution_to_densities(double *En, double complex *psi, int nwfip, double beta, wslda_density h_densities, 
-                                      metadata_s3dpca_fft *mdfft, int spinsymmetry)
+                                      metadata_s3dpca_fft *mdfft, int spinsymmetry, double *S)
 {
     int ien; 
     int ix, iy, iz, ixyz;
@@ -115,6 +116,18 @@ int compute_contribution_to_densities(double *En, double complex *psi, int nwfip
         
         fbEn=fbeta(En[ien], beta)*DENS_FACTOR_M;
         fbmEn = DENS_FACTOR_M - fbEn;
+        
+        // entropy 
+        if(spinsymmetry>0)
+        {
+            if(fbEn >NUMERICAL_ZERO) S[0] -=  fbEn * log( fbEn)*2.0;
+            if(fbmEn>NUMERICAL_ZERO) S[0] -= fbmEn * log(fbmEn)*2.0;
+        }
+        else
+        {
+            if(fbEn >NUMERICAL_ZERO) S[0] -=  fbEn * log( fbEn);
+            if(fbmEn>NUMERICAL_ZERO) S[0] -= fbmEn * log(fbmEn);
+        }
             
         if(spinsymmetry>0) for(ixyz=0; ixyz<NXYZ; ixyz++) // spin symmetric case
         {

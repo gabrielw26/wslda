@@ -24,6 +24,7 @@ typedef struct
     double tau_a;
     double tau_b;
     double beta;
+    double S;
     double ekin;
     double epot;
     double epair;
@@ -178,7 +179,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double tau_a_old, tau_b_old, delta_old, nu_old;
     double scmix=md.init0scmix, epsilon=md.init0eps;
     int is_conv;
-    double beta, T;
+    double beta, T, S;
     double energy_kin, energy_pot, energy_pair, energy_tot;
     double kc2=kc*kc;
     
@@ -228,6 +229,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             delta = -1.0*g_eff*nu;
             
             // contribution from states to densities
+            S=0.0;
             n_a=0.0;
             n_b=0.0;
             tau_a=0.0;
@@ -260,6 +262,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                             n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
                             tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
                             nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
+                            if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                            if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                             (*nwf)++;
                         }
                     }
@@ -270,6 +274,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
                         tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
+                        if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                        if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                         (*nwf)++;
                     }
                     
@@ -291,6 +297,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                             n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
                             tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
                             nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
+                            if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                            if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));                            
                             (*nwf)++;
                         }
                     }
@@ -301,6 +309,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
                         tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
+                        if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                        if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                         (*nwf)++;
                     }
                 }
@@ -371,6 +381,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     // print results
     if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
     if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# ENTROPY PER PARTICLE: S/NkB=%16.12f\n", S/((n0_a+n0_a)*LXYZ));
     if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
     
     
@@ -397,6 +408,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     __md_pca_uniform.tau_a=tau_a;
     __md_pca_uniform.tau_b=tau_b;
     __md_pca_uniform.beta=beta;    
+    __md_pca_uniform.S=S;
     __md_pca_uniform.nwf=*nwf;
     __md_pca_uniform.ekin=energy_kin;
     __md_pca_uniform.epot=energy_pot;
@@ -488,6 +500,7 @@ int read_uniform(int *nwf, int printout)
     double kc=__md_pca_uniform.kc;
     double mu_a=__md_pca_uniform.mu_a;
     double mu_b=__md_pca_uniform.mu_b;
+    double S=__md_pca_uniform.S;
     
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
     if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
@@ -521,6 +534,7 @@ int read_uniform(int *nwf, int printout)
     // print results
     if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
     if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# ENTROPY PER PARTICLE: S/NkB=%16.12f\n", S/((n0_a+n0_a)*LXYZ));
     if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);    
     return 0;
     
@@ -1126,7 +1140,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double tau_a_old, tau_b_old, delta_old, nu_old;
     double scmix=md.init0scmix, epsilon=md.init0eps;
     int is_conv;
-    double beta, T;
+    double beta, T, S;
     double energy_kin, energy_pot, energy_pair, energy_tot;
     double kc2=kc*kc;
     
@@ -1179,6 +1193,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
 //             wprintf("AAA: %f %f \n", delta, g_eff);
             
             // contribution from states to densities
+            S=0.0;
             n_a=0.0;
             n_b=0.0;
             tau_a=0.0;
@@ -1212,6 +1227,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                             n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
                             tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
                             nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
+                            if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                            if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                             (*nwf)++;
                         }
                     }
@@ -1222,6 +1239,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
                         tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
+                        if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                        if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                         (*nwf)++;
                     }
                     
@@ -1243,6 +1262,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                             n_b+=vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta);
                             tau_b+=kk2tau[ixyz]*(vk*vk*fbeta(-1.0*ek,beta) + uk*uk*fbeta(ek,beta));
                             nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta))*2.0; // will be divided by two later
+                            if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                            if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=2.*fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                             (*nwf)++;
                         }
                     }
@@ -1253,6 +1274,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
                         n_b+=vk*vk*fbeta(-1.0*ek,beta);
                         tau_b+=kk2tau[ixyz]*vk*vk*fbeta(-1.0*ek,beta);
                         nu+=uk*vk*(fbeta(-1.0*ek,beta)-fbeta(ek,beta));
+                        if(fbeta(     ek,beta)>NUMERICAL_ZERO) S-=fbeta(     ek,beta)*log(fbeta(     ek,beta));
+                        if(fbeta(-1.0*ek,beta)>NUMERICAL_ZERO) S-=fbeta(-1.0*ek,beta)*log(fbeta(-1.0*ek,beta));
                         (*nwf)++;
                     }
                 }
@@ -1323,6 +1346,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     // print results
     if(printout) wprintf("# UNIFORM SOLUTION: delta/eF_a=%8.4f, mu_a/eF_a=%8.4f, delta/eF_b=%8.4f, mu_b/eF_b=%8.4f, ec=%8.4f\n", delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b, ec);
     if(printout) wprintf("# UNIFORM SOLUTION: energy_kin=%16.12f, energy_pot=%16.12f, energy_pair=%16.12f, energy_tot=%16.12f\n", energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+    if(printout) wprintf("# ENTROPY PER PARTICLE: S/NkB=%16.12f\n", S/((n0_a+n0_a)*LXYZ));
     if(printout) wprintf("# UNIFORM SOLUTION: nwf=%d\n", *nwf);
     
     // Clear memory
