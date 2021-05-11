@@ -1,0 +1,5 @@
+# This file contains list of test to be executed by testsuite system
+# Tests are executed in order given below
+
+# ----- st-wslda ------
+st-uniform-aslda-elpa1-gpu
