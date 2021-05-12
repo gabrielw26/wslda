@@ -2,4 +2,4 @@
 # Tests are executed in order given below
 
 # ----- st-wslda ------
-st-uniform-aslda-elpa1-gpu
+st-uniform-simple-fast

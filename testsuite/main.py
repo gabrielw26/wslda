@@ -204,6 +204,9 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
     else: ff.write('SUCCESS. No FAIL occured!\n\n')
     np.savetxt(ff, arrs, '%-{}s'.format(spc), '\t')
     ff.close()
+    
+    print("\n\nmore %s\n" %filepath )
+    
     return __tests, __oks, __fails
 
 # Cute print to the Terminal window
@@ -254,11 +257,12 @@ for folder in F:
 
 xx, yy, zz = runReport(listOfFolders, listOfTags, listOfMakes, listOfRuns, listOfChecks)
 
+#cute_print()
+
 print('\n--- Summary ---')
 print('TESTS: ' + str(xx))
 print('OK: ' + str(yy))
 print('FAIL: ' + str(zz))
 
-cute_print()
 print('Done.')
 print("--- %.8s seconds ---" % (time.time() - start_time))
