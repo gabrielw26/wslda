@@ -1,5 +1,8 @@
-# This file contains list of test to be executed by testsuite system
-# Tests are executed in order given below
+# List basic and fast tests
+# This testsuite is used to get a fast benchmark about basic functionalities of the W-SLDA
 
 # ----- st-wslda ------
 st-uniform-simple-fast
+
+# ----- st-wslda ------
+td-uniform-simple-fast

@@ -17,7 +17,7 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3 -I/usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack391/include/elpa-2020.05.001/
+CFLAGS= -std=gnu99 -O3 -I/usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack391/include/elpa-2020.05.001/ -DTESTSUITE
 LIBS=-lfftw3 -lm -llapack -lscalapack -lelpa
 
 # ----- DO NOT MODIFY -----
