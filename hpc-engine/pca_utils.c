@@ -628,3 +628,11 @@ void wfprintf(FILE *stream,  const char * format, ... )
 }
 
 
+void testsuite_ok()
+{
+    char file_name[512];
+    sprintf(file_name, "%s_testsuite.ok", md.outprefix);
+    FILE * f = fopen(file_name, "w");
+    fprintf(f,"%s\n",file_name);
+    fclose(f);
+}

@@ -1520,7 +1520,12 @@ int main( int argc , char ** argv )
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
             file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, TDWSLDAITEMS, h_energy) );            
         }
-}
+    }
+    
+#ifdef TESTSUITE
+    if(ip==0) testsuite_ok();
+#endif
+    
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;
