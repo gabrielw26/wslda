@@ -6,17 +6,20 @@ import os
 import sys
 import time
 
+start_time = time.time()
+date_time = datetime.datetime.now().strftime("%d.%m.%Y_%H.%M")
 #configuration logger in console
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #configuration logger in testsuite.log file
-logFilePath = getpass.getuser() + '_testsuite_' + datetime.datetime.now().strftime("%d.%m.%Y_%H.%M") + '.log'
+
+logFilePath = getpass.getuser() + '_logger_' + date_time
 logging.basicConfig(filename=logFilePath, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #disable all logger comunicates
 #logging.disable(logging.CRITICAL)
 
-start_time = time.time()
+
 listOfFolders, listOfTags, listOfMakes, listOfRuns, listOfDiffs, listOfChecks, listOfErrors = [], [], [], [], [], [], []
 
 description_file = 'test.desc'
@@ -165,7 +168,7 @@ def commands():
 # Generating final report
 def runReport(__Folder, __Tag, __Make, __Run, __Check):
     #Settings of the report output file
-    filepath = S + '/' + getpass.getuser() + '_report_' + datetime.datetime.now().strftime("%d.%m.%Y_%H.%M") + '.txt'
+    filepath = S + '/' + getpass.getuser() + '_report_' + date_time
     if os.path.exists(filepath): os.remove(filepath)
     max_arr = []
     tmp_arr = [__Folder, __Tag, __Make, __Run, __Check]
@@ -205,7 +208,7 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
     np.savetxt(ff, arrs, '%-{}s'.format(spc), '\t')
     ff.close()
     
-    print("\n\nmore %s\n" %filepath )
+    print("\n\nmore %s\n" % filepath)
     
     return __tests, __oks, __fails
 
