@@ -1547,6 +1547,10 @@ int main( int argc , char ** argv )
     /* messy exit here */
     destroy_fft_plans(&mdfft);
     
+#ifdef TESTSUITE
+    if(iam==0) testsuite_ok();
+#endif
+    
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;
     /* Arrays will be cleared automatically */

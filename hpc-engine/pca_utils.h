@@ -188,4 +188,6 @@ int wslda_check_array_against_naninf(int n, double *array);
 void wprintf( const char * format, ... );
 void wfprintf(FILE *stream,  const char * format, ... );
 
+void testsuite_ok();
+
 #endif
