@@ -1266,6 +1266,11 @@ int main( int argc , char ** argv )
             file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );   
         }
     }
+    
+#ifdef TESTSUITE
+    if(ip==0) testsuite_ok();
+#endif
+    
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;

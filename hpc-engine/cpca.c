@@ -1390,6 +1390,11 @@ int main( int argc , char ** argv )
             fflush(stdout);
         }
     }
+    
+#ifdef TESTSUITE
+    if(ip==0) testsuite_ok();
+#endif
+    
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;
