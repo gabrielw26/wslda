@@ -1316,7 +1316,7 @@ int main( int argc , char ** argv )
         
         // ------------------ update chemical potentials ------------------
         b_t();
-        if(iam==0) wprintf("# MUCHANGE FROM: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE FROM: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
@@ -1338,7 +1338,7 @@ int main( int argc , char ** argv )
             dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
         }
-        if(iam==0) wprintf("# MUCHANGE TO  : mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
@@ -1384,7 +1384,7 @@ int main( int argc , char ** argv )
             
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
             
-            if(iam==0) wprintf("# MUCHANGE BROY: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+            if(iam==0) wprintf("# MUCHANGE BROY: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
             if(iam==0) wprintf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
@@ -1408,7 +1408,7 @@ int main( int argc , char ** argv )
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         
         // ---------------------- entropy -----------------------
-        if(iam==0) wprintf("# ENTROPY: it=%d\n", it);
+        if(iam==0) wprintf("# ENTROPY [T/eF=%16.8g]: it=%d\n", 1.0/(beta*eF), it);
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
             "S/NkB", S/(npart[SPINA]+npart[SPINB]), S_old/(npart_old[SPINA]+npart_old[SPINB]), 
                            (S/(npart[SPINA]+npart[SPINB])-S_old/(npart_old[SPINA]+npart_old[SPINB])));
@@ -1420,11 +1420,11 @@ int main( int argc , char ** argv )
         Lz = Lz_a + Lz_b; // total angular momentum        
         if(iam==0) wprintf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_A/N", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
+            "Lza/Na", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_B/N", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
+            "Lzb/Nb", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_T/N", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
+            "Lzt/Nt", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
         
         // ------------------ check convergence ------------------
         is_converged=1;
