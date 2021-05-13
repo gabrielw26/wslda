@@ -184,6 +184,7 @@ int main( int argc , char ** argv )
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
+    double observables[WSLDAITEMS];
     double energy[ENERGYITEMS], energy_old[ENERGYITEMS];
     string energy_labels[ENERGYITEMS];
     energy_labels[EKIN] = "E_kin";
@@ -1461,7 +1462,8 @@ int main( int argc , char ** argv )
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
         if(iam==0) wprintf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) wprintf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
-        if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        for(i=0; i<ENERGYITEMS; i++) observables[i]=energy[i]; observables[ENTROPY]=S;
+        if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, observables, npart, dc_params, dc_extra_data_size, dc_extra_data) );
         cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
         
         // set constants after update

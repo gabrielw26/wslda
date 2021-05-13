@@ -129,6 +129,7 @@
 #define YAXIS 1
 #define ZAXIS 2
 
+// ------------- observables -----------------
 // energy contributions
 #define ENERGYITEMS 7
 #define EKIN        0
@@ -139,13 +140,16 @@
 #define EPAIREXT    5
 #define EVELEXT     6
 // other contributions
+// total number of items in TDWSLDA codes
+#define TDWSLDAITEMS (ENERGYITEMS+4)
 #define NPARTA      7
 #define NPARTB      8
 #define LZA         9
 #define LZB         10
-// total number of items in TDWSLDA codes
-#define TDWSLDAITEMS 11
 
+// total number of items in WSLDA codes 
+#define WSLDAITEMS (ENERGYITEMS+1)
+#define ENTROPY     7
 
 // cufft plans
 #define CUFFT_NUMBER_OF_PLANS 4
