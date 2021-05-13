@@ -1,0 +1,11 @@
+# expected results for input.ss0.noise0.txt
+# var                         value    tolerance
+npart[SPINA]:           78.99999882       1.0e-3
+npart[SPINB]:           80.00000031       1.0e-3
+energy[EKIN]:           1.791748334       1.0e-3
+energy[EPOT]:         -0.5272707949       1.0e-3
+energy[EPAIR]:        -0.8547301503       1.0e-3
+energy[ECURRENT]:                 0       1.0e-3
+energy[EPOTEXT]:                  0       1.0e-3
+energy[EPAIREXT]:                 0       1.0e-3
+energy[EVELEXT]:                  0       1.0e-3
