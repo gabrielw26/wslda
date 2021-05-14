@@ -48,7 +48,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, // init0DeltaT;
 1.0e-9, // init0eps;
 -1.0, // init0scmix
-10000, // init0maxiter;
+-1, // init0maxiter;
 0, // init0debug
 0, // init0save
 0, // p;                    
