@@ -9,7 +9,8 @@ static int lineid; // line id
  * @param h_densities structure with densities, see (wiki) documentation for list of fields.
  * @param h_potentials struture with potentials, see (wiki) documentation for list of fields.
  * @param kF typical Fermi momentum scale of the problem. 
- * @param energy array with contributions to energy: EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT
+ * @param observable array with observables: 
+ *                      contributions to the energy: EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT
  * @param npart array with computed particle numbers: npart[SPINA] and  npart[SPINB]
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -23,7 +24,7 @@ int logger(FILE *log,
            int it, 
            wslda_density h_densities, wslda_potential h_potentials, 
            double kF, double *mu,
-           double *energy, double *npart, 
+           double *observable, double *npart, 
            double *params, size_t extra_data_size, void *extra_data)
 {
     
@@ -37,7 +38,7 @@ int logger(FILE *log,
     
     double eF = 0.5 * kF*kF;
     double Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
-    double E_tot = energy[EKIN]+energy[EPOT]+energy[EPAIR]+energy[ECURRENT]+energy[EPOTEXT]+energy[EPAIREXT]+energy[EVELEXT];     
+    double E_tot = observable[EKIN]+observable[EPOT]+observable[EPAIR]+observable[ECURRENT]+observable[EPOTEXT]+observable[EPAIREXT]+observable[EVELEXT];     
     double Emax =  M_PI*M_PI/(2.*DX*DX);
     
     if(lineid==0) // HEADER
@@ -74,13 +75,13 @@ int logger(FILE *log,
         fprintf(log,"#  4: npart[SPINB]\n");
         fprintf(log,"#  5: npart[SPINA]+npart[SPINB]\n");
         fprintf(log,"#  6: E_tot/Effg\n");
-        fprintf(log,"#  7: energy[EKIN]/Effg\n");
-        fprintf(log,"#  8: energy[EPOT]/Effg\n");
-        fprintf(log,"#  9: energy[EPAIR]/Effg\n");
-        fprintf(log,"# 10: energy[ECURRENT]/Effg\n");
-        fprintf(log,"# 11: energy[EPOTEXT]/Effg\n");
-        fprintf(log,"# 12: energy[EPAIREXT]/Effg\n");
-        fprintf(log,"# 13: energy[EVELEXT]/Effg\n");
+        fprintf(log,"#  7: observable[EKIN]/Effg\n");
+        fprintf(log,"#  8: observable[EPOT]/Effg\n");
+        fprintf(log,"#  9: observable[EPAIR]/Effg\n");
+        fprintf(log,"# 10: observable[ECURRENT]/Effg\n");
+        fprintf(log,"# 11: observable[EPOTEXT]/Effg\n");
+        fprintf(log,"# 12: observable[EPAIREXT]/Effg\n");
+        fprintf(log,"# 13: observable[EVELEXT]/Effg\n");
         fprintf(log,"# 14: time per iteration (sec)\n");
         fprintf(log,"# 15: time & date of entry\n");
     }
@@ -94,32 +95,33 @@ int logger(FILE *log,
         npart[SPINB], // 4
         npart[SPINA]+npart[SPINB], // 5
         E_tot/Effg, // 6
-        energy[EKIN]/Effg, // 7
-        energy[EPOT]/Effg, // 8
-        energy[EPAIR]/Effg, // 9
-        energy[ECURRENT]/Effg, // 10
-        energy[EPOTEXT]/Effg, //11
-        energy[EPAIREXT]/Effg, //12
-        energy[EVELEXT]/Effg, //13
+        observable[EKIN]/Effg, // 7
+        observable[EPOT]/Effg, // 8
+        observable[EPAIR]/Effg, // 9
+        observable[ECURRENT]/Effg, // 10
+        observable[EPOTEXT]/Effg, //11
+        observable[EPAIREXT]/Effg, //12
+        observable[EVELEXT]/Effg, //13
         logger_get_time_from_last_entry(), //14
         buffer // 15
     );
+    
+    lineid++; // new line 
     
     // for testsuite
     char fname [512];
     sprintf(fname,"%s.cmp", md.outprefix);
     FILE *fcmp = fopen(fname, "w");
-    fprintf(fcmp,"npart[SPINA]:     %20.10g\n", npart[SPINA]);
-    fprintf(fcmp,"npart[SPINB]:     %20.10g\n", npart[SPINB]);
-    fprintf(fcmp,"energy[EKIN]:     %20.10g\n", energy[EKIN]/Effg);
-    fprintf(fcmp,"energy[EPOT]:     %20.10g\n", energy[EPOT]/Effg);
-    fprintf(fcmp,"energy[EPAIR]:    %20.10g\n", energy[EPAIR]/Effg);
-    fprintf(fcmp,"energy[ECURRENT]: %20.10g\n", energy[ECURRENT]/Effg);
-    fprintf(fcmp,"energy[EPOTEXT]:  %20.10g\n", energy[EPOTEXT]/Effg);
-    fprintf(fcmp,"energy[EPAIREXT]: %20.10g\n", energy[EPAIREXT]/Effg);
-    fprintf(fcmp,"energy[EVELEXT]:  %20.10g\n", energy[EVELEXT]/Effg);
+    fprintf(fcmp,"npart[SPINA]     %20.10g\n", npart[SPINA]);
+    fprintf(fcmp,"npart[SPINB]     %20.10g\n", npart[SPINB]);
+    fprintf(fcmp,"energy[EKIN]     %20.10g\n", observable[EKIN]);
+    fprintf(fcmp,"energy[EPOT]     %20.10g\n", observable[EPOT]);
+    fprintf(fcmp,"energy[EPAIR]    %20.10g\n", observable[EPAIR]);
+    fprintf(fcmp,"energy[ECURRENT] %20.10g\n", observable[ECURRENT]);
+    fprintf(fcmp,"energy[EPOTEXT]  %20.10g\n", observable[EPOTEXT]);
+    fprintf(fcmp,"energy[EPAIREXT] %20.10g\n", observable[EPAIREXT]);
+    fprintf(fcmp,"energy[EVELEXT]  %20.10g\n", observable[EVELEXT]);
     fclose(fcmp);
     
-    lineid++; // new line 
     return 0;
 }

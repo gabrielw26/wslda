@@ -9,4 +9,4 @@ module load elpa-gcc721/202005
 module list
 
 # path to W-SLDA engine
-export WSLDA=/home2/scratch/knfk/cold-atoms/
+export WSLDA=/home/gabrielw/cold-atoms/
