@@ -1,0 +1,68 @@
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  1 - start from st-wslda-1d solution, inprefix points to folder with s1dpca binary files 
+                                #  2 - start from st-wslda-2d solution, inprefix points to folder with s2dpca binary files 
+                                #  3 - start from st-wslda-3d solution, inprefix points to folder with s3dpca binary files 
+                                #  
+                                #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                  
+       
+# ------------------- INPUT/OUTPUT ------------------
+outprefix               test.ss1
+inprefix                none
+overwrite               1
+iogroups                8      # number of IO groups
+checkpoint              0       # do checkpoint at the end of calculation?
+walltime                11.9    # after this time force checkpoint [hr]
+
+# list of variables for writing
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext
+# default = rho delta j
+writevar           default
+
+# aBdG                -0.9 # scattering length for BDG mode 
+
+# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
+dt                      0.0035   # integration time step, in units of eF^-1
+measurements            10        # number of requested mesurments
+timesteps               100      # number of time steps between each measurement
+                                 # measurements are written with time resolution: timesteps*dt
+                                 # the total trajectory length is: measurements*timesteps*dt
+selfstart               0        # use Taylor expansion for first 5 steps? 
+
+
+
+
+# ------------------ GPUS THREADING SET --------------
+nthreads                512
+batch                   100000
+
+# --------------------- OTHER -----------------
+spinsymmetry            1       # spin symmetric system
+# current corrections
+# ccstart                 0.
+# ccswitch                10.
+# ccstop                  1000.
+# qfalpha                 0.0     # alpha parameter for quantum friction term
+# qfbeta                  0.0     # beta parameter for quantum friction - parring channel
+# qfgamma                 0.0     # gamma parameter for particle number control
+# qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
+# qfstop                  0.0     # stop time for evolving with quantum friction, in units of eF
+# qfswitch                0.0     # time for switch function
+
+# ----------- IN CASE OF: inittype=0 ----------------
+temperature             0.1      # requested temperature in units of eF, default T=0
+# For more info see wiki pages: Initialization of the st wslda solvers
+# init0Na                 28.0   # requested number of particles of type a, default=Na
+# init0Nb                 28.0   # requested number of particles of type b, default=Nb
+# init0muchange           0.1    # change rate of chemical potentials, default muchange
+init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
+# init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
+# init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
+# init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
+# init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
+# init0maxiter            1000   # maximum number of iterations, default=maxiters
+init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
+init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 
+
