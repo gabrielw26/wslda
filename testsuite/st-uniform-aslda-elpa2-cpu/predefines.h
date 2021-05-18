@@ -100,15 +100,15 @@
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-#define ELPA_USE_GPU
+// #define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
-// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
-// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
+#define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
+#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
+#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
 
 /**
  * Fraction of eigenvectors to be extracted in each cycle.

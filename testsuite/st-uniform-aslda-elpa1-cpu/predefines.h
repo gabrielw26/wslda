@@ -100,7 +100,7 @@
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-#define ELPA_USE_GPU
+// #define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,

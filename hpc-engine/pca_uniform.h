@@ -1392,7 +1392,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     __md_pca_uniform.delta=delta;
     __md_pca_uniform.tau_a=tau_a;
     __md_pca_uniform.tau_b=tau_b;
-    __md_pca_uniform.beta=beta;    
+    __md_pca_uniform.beta=beta;
+    __md_pca_uniform.S=S;
     __md_pca_uniform.nwf=*nwf;
     __md_pca_uniform.ekin=energy_kin;
     __md_pca_uniform.epot=energy_pot;

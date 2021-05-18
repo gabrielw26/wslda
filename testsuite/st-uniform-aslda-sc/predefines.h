@@ -1,3 +1,8 @@
+#define TS_EERR 1.0e-2
+#define TS_NERR 1.0e-2
+#define TS_MUERR 1.0e-2
+#define TS_SERR 1.0e-2
+
 /**
  * Define lattice size and lattice spacing
  * */

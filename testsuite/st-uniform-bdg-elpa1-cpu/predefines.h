@@ -29,8 +29,8 @@
  *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
-// #define FUNCTIONAL BDG
+// #define FUNCTIONAL ASLDA
+#define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
@@ -100,7 +100,7 @@
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-#define ELPA_USE_GPU
+// #define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,

@@ -1,3 +1,8 @@
+#define TS_EERR 1.0e-2
+#define TS_NERR 1.0e-2
+#define TS_MUERR 1.0e-2
+#define TS_SERR 1.0e-2
+
 /**
  * Define lattice size and lattice spacing
  * */
@@ -28,8 +33,8 @@
  *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
  *      in problem-definition.h file
  * */
-// #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
+#define FUNCTIONAL SLDA
+// #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
 

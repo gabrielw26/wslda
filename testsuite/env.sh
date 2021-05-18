@@ -10,3 +10,4 @@ module list
 
 # path to W-SLDA engine
 export WSLDA=/home/gabrielw/cold-atoms/
+set -x
