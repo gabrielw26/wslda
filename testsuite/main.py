@@ -107,7 +107,7 @@ def run_diff_test(output, reference):
     return now_check
 
 # Executing Unix commands given for each test in description file
-def commands():
+def commands(dir_name):
     tag_test_counter = 0
     tab_checks, tab_makes, tab_runs, tab_diffs = [], [], [], []
     file = open(description_file, "r").read().split('\n')
@@ -115,7 +115,8 @@ def commands():
         if line.startswith('#'): continue
         if line.startswith('tag:'):
             tagg, add_tag = line.split(': ')
-            logging.info("Proceeding with test: " + str(add_tag))
+            logging.info(">>>>>>>>>>>> Proceeding with test: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>>>>>>>>>>>>>>>> TEST: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
             listOfTags.append(add_tag)
             continue
         if line.startswith('exec:'):
@@ -248,7 +249,7 @@ for folder in F:
                 continue
             for test in range(amount):
                 listOfFolders.append(f)
-            makes, runs, checks = commands()  # EXECUTING TESTS
+            makes, runs, checks = commands(f)  # EXECUTING TESTS
             for m in makes: listOfMakes.append(m)
             for r in runs: listOfRuns.append(r)
             for c in checks: listOfChecks.append(c)
@@ -257,7 +258,8 @@ for folder in F:
     else:
         logging.warning("\"" + f + "\" directory not found. Skipping \"" + f + "\" directory.")
         continue
-
+logging.info("No more tests to do.")
+logging.info("Creating the report.")
 xx, yy, zz = runReport(listOfFolders, listOfTags, listOfMakes, listOfRuns, listOfChecks)
 
 #cute_print()
@@ -266,6 +268,6 @@ print('\n--- Summary ---')
 print('TESTS: ' + str(xx))
 print('OK: ' + str(yy))
 print('FAIL: ' + str(zz))
-
+logging.info("End of program.")
 print('Done.')
 print("--- %.8s seconds ---" % (time.time() - start_time))
