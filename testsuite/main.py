@@ -117,6 +117,7 @@ def commands(dir_name):
             tagg, add_tag = line.split(': ')
             logging.info(">>>>>>>>>>>> Proceeding with test: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
             print(">>>>>>>>>>>>>>>>>> TEST: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
+            sys.stdout.flush()
             listOfTags.append(add_tag)
             continue
         if line.startswith('exec:'):
@@ -210,6 +211,7 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
     ff.close()
     
     print("\n\nmore %s\n" % filepath)
+    sys.stdout.flush()
     
     return __tests, __oks, __fails
 
@@ -221,6 +223,7 @@ def cute_print():
     for row in printable_array:
         print("".join(word.ljust(col_width) for word in row))
     print('\n')
+    sys.stdout.flush()
 
 # Main function
 S = get_global_dir()  # Set head directory
@@ -264,6 +267,7 @@ xx, yy, zz = runReport(listOfFolders, listOfTags, listOfMakes, listOfRuns, listO
 
 #cute_print()
 
+sys.stdout.flush()
 print('\n--- Summary ---')
 print('TESTS: ' + str(xx))
 print('OK: ' + str(yy))
@@ -271,3 +275,4 @@ print('FAIL: ' + str(zz))
 logging.info("End of program.")
 print('Done.')
 print("--- %.8s seconds ---" % (time.time() - start_time))
+sys.stdout.flush()
