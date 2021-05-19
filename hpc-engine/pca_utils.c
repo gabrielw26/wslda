@@ -636,3 +636,38 @@ void testsuite_ok()
     fprintf(f,"%s\n",file_name);
     fclose(f);
 }
+
+void create_reprowf_tar()
+{
+    char cmd[2048];
+    sprintf(cmd, 
+        "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout",
+        md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_checkpoint()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s_checkpoint.dat %s/checkpoint.dat", md.outprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_initcheckpoint()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s_checkpoint.dat %s_checkpoint.dat.init", md.inprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_reprowftar()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s/reprowf.tar %s_reprowf.tar", md.inprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+    

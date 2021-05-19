@@ -722,7 +722,10 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
+    if(ip==0 && (md.inittype==1 || md.inittype==2 || md.inittype==3)) copy_reprowftar();
+    
     // wait till loading is done
+    fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================

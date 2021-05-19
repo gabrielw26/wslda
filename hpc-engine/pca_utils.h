@@ -190,4 +190,9 @@ void wfprintf(FILE *stream,  const char * format, ... );
 
 void testsuite_ok();
 
+void create_reprowf_tar();
+void copy_checkpoint();
+void copy_initcheckpoint();
+void copy_reprowftar();
+
 #endif

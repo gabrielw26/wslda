@@ -647,6 +647,9 @@ int main( int argc , char ** argv )
                 
                 // decode constants
                 dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+                
+                // copy init checkpoint
+                copy_initcheckpoint();
             }
             else if(i==WSLDA_ST_CHECKPOINT_OLD)
             {
@@ -1268,6 +1271,9 @@ int main( int argc , char ** argv )
             rt_other+=rt;
         }
         
+        // For wf-reproducibility pack - save present checkpoint file
+        if(saving_iteration==1 && iam==0) copy_checkpoint();
+        
         // --------- DENSITIES ----------
         b_t();
         // compute contribution to the densities
@@ -1518,6 +1524,12 @@ int main( int argc , char ** argv )
                 wprintf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
                 file_operation( touch_file(file_name) );
                 file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, ENERGYITEMS, energy) );
+            }
+            
+            if(iam==0)
+            {
+                wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
+                create_reprowf_tar();
             }
             
             if(iam==0) wprintf("# SAVING ITERATION DONE.\n");
