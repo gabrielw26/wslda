@@ -6,6 +6,8 @@ tag: ss1-noise1-1d-lm
 exec: pwd
 exec: cp ../st-templates-full/*.h .
 exec: cp ../st-templates-full/input* .
+exec: echo "temperature  0.05" >> input.ss1.noise1.txt.lm
+exec: echo "init0Tstart  0.05" >> input.ss1.noise1.txt.lm
 exec: rm -rf test.ss1.noise1*
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
@@ -37,6 +39,8 @@ tag: ss0-noise1-1d-lm
 exec: pwd
 exec: cp ../st-templates-full/*.h .
 exec: cp ../st-templates-full/input* .
+exec: echo "temperature  0.05" >> input.ss0.noise1.txt.lm
+exec: echo "init0Tstart  0.05" >> input.ss0.noise1.txt.lm
 exec: rm -rf test.ss0.noise1*
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
@@ -69,6 +73,8 @@ tag: ss1-noise1-1d-br
 exec: pwd
 exec: cp ../st-templates-full/*.h .
 exec: cp ../st-templates-full/input* .
+exec: echo "temperature  0.05" >> input.ss1.noise1.txt.br
+exec: echo "init0Tstart  0.05" >> input.ss1.noise1.txt.br
 exec: rm -rf test.ss1.noise1*
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
@@ -100,6 +106,8 @@ tag: ss0-noise1-1d-br
 exec: pwd
 exec: cp ../st-templates-full/*.h .
 exec: cp ../st-templates-full/input* .
+exec: echo "temperature  0.05" >> input.ss0.noise1.txt.br
+exec: echo "init0Tstart  0.05" >> input.ss0.noise1.txt.br
 exec: rm -rf test.ss0.noise1*
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
