@@ -4,8 +4,8 @@
 # =====================================================================
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
-WDATAINC=$(WSLDADIR)lib-wdata/
-WDATASRC=$(WSLDADIR)lib-wdata/
+WDATAINC=$(WSLDADIR)lib/wdata/c/
+WDATASRC=$(WSLDADIR)lib/wdata/c/
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
@@ -92,7 +92,7 @@ $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wsld
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
-$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
+$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)

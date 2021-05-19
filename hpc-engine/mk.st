@@ -3,8 +3,8 @@
 # =====================================================================
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
-WDATAINC=$(WSLDADIR)lib-wdata/
-WDATASRC=$(WSLDADIR)lib-wdata/
+WDATAINC=$(WSLDADIR)lib/wdata/c/
+WDATASRC=$(WSLDADIR)lib/wdata/c/
 DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_interpolation.h wslda_resize.h jdb.h ../VERSION.h
 WDATADEPS = wdata.h
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
@@ -65,7 +65,7 @@ $(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 	
-$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
+$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 	
 .PHONY: clean all ver dirs 
