@@ -1,0 +1,10 @@
+
+*.o
+*.so
+*.a
+
+c-examples/example-write
+
+c-examples/example-read
+
+c-examples/example-addvar
