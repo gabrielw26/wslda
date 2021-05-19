@@ -271,4 +271,12 @@
 #define TS_SERR 1.0e-3
 #endif
 
+// ------------ math -------------
+#ifndef M_PI
+#define M_PI 3.14159265358979323846 
+#endif 
+#ifndef M_PI_2
+#define M_PI_2 1.570796326794896558
+#endif
+
 #endif
