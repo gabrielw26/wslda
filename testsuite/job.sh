@@ -4,6 +4,7 @@
 ## If you want to submit to specific node use this: 
 ##PBS -l nodes=node2067.grid4cern.if.pw.edu.pl:ppn=40
 #PBS -l walltime=12:00:00
+#PBS -l mem=64gb
 #PBS -j oe
 #PBS -q long
 

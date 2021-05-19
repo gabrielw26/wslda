@@ -37,14 +37,17 @@ all: 1d 2d 3d
 3d: dirs d3d
 
 d1d: $(OBJS1D) $(OBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-1d $^ 
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) $(LIBS) -DWSLDA $^ 
 
 d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-2d $^  
-	
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) $(LIBS) -DWSLDA $^  
+
 d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -DWSLDA -o $(BINDIR)st-wslda-3d $^
-	
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) $(LIBS) -DWSLDA $^
+
 ext: $(WDATAOBJS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
 	$(CXX) $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -o $(BINDIR)test-external-potentials -lm -lfftw3

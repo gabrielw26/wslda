@@ -685,7 +685,7 @@ int main( int argc , char ** argv )
             }
             else
             {
-                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+                sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
                 wprintf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }

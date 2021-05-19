@@ -59,14 +59,17 @@ all: 1d 2d 3d
 3d: dirs d3d
 
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-1d $^ 
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $(LIBS) $^ 
 
 d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-2d $^ 
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $(LIBS) $^ 
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
-	
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $(LIBS) $^
+
 ext: $(WDATAOBJS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
 

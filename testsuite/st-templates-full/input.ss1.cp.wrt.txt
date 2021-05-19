@@ -60,8 +60,8 @@ startbroyden            1
 
 # data block size 
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
-mb                      8
-nb                      8
+mb                      32
+nb                      32
 
 # ----------- IN CASE OF: inittype=0 ----------------
 # For more info see wiki pages: Initialization of the st wslda solvers
