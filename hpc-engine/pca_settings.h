@@ -253,5 +253,22 @@
 #define ELPA_NEV_FRACTION 1.0
 #endif
 
+// ----- for TESTSUITE -----
+// default energy error
+#ifndef TS_EERR
+#define TS_EERR 1.0e-4
+#endif
+// default particle error
+#ifndef TS_NERR
+#define TS_NERR 1.0e-3
+#endif
+// default chemical potential error
+#ifndef TS_MUERR
+#define TS_MUERR 1.0e-3
+#endif
+// default entropy error
+#ifndef TS_SERR
+#define TS_SERR 1.0e-3
+#endif
 
 #endif

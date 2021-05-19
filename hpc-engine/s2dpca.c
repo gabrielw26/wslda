@@ -703,6 +703,9 @@ int main( int argc , char ** argv )
                 
                 // decode constants
                 dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+                
+                // copy input checkpoint
+                copy_initcheckpoint();
             }
             else if(i==WSLDA_ST_CHECKPOINT_OLD)
             {
@@ -741,7 +744,7 @@ int main( int argc , char ** argv )
             }
             else
             {
-                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+                sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
                 wprintf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }
@@ -1390,6 +1393,9 @@ int main( int argc , char ** argv )
             
         } // for(ikz=mylidx; ikz<myuidx; ikz++)
         
+        // For wf-reproducibility pack - save present checkpoint file
+        if(saving_iteration==1 && iam==0) copy_checkpoint();
+        
         // global reduction
         b_t();
         fflush(stdout); // for nice printing
@@ -1652,6 +1658,12 @@ int main( int argc , char ** argv )
 #endif
             }
             
+            if(iam==0)
+            {
+                wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
+                create_reprowf_tar();
+            }
+                
             if(iam==0) wprintf("# EXTRA SAVING ITERATION DONE.\n");
             break;
         }

@@ -464,7 +464,10 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
+    if(ip==0 && (md.inittype==1 || md.inittype==2 || md.inittype==3)) copy_reprowftar();
+    
     // wait till loading is done
+    fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -661,7 +664,9 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+#endif
     
     // report result
     if(ip==0)

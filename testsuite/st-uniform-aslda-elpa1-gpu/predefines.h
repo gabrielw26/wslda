@@ -5,9 +5,9 @@
 #define NY 14
 #define NZ 16
 
-#define DX 1.2
-#define DY 1.2
-#define DZ 1.2
+#define DX 0.9
+#define DY 0.9
+#define DZ 0.9
 
 /**
  * Select functional:
@@ -46,7 +46,7 @@
  * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
  * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
  * */
-#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
 // #define REGULARIZATION_SCHEME CUBIC_CUTOFF
 
 /**

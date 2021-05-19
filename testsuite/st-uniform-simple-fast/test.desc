@@ -3,7 +3,6 @@
 # --------------------------------------------------------------------------
 tag: ss1-noise0-1d
 exec: cp ../st-templates-fast/*.h .
-exec: cp ../st-templates-fast/ref* .
 exec: cp ../st-templates-fast/input* .
 exec: rm -rf test.ss1.noise0*
 exec: make -f ../st-templates-fast/Makefile clean
@@ -11,7 +10,7 @@ exec: make -f ../st-templates-fast/Makefile 1d
 test: st-wslda-1d
 exec: mpirun -np 20 ./st-wslda-1d input.ss1.noise0.txt
 test: test.ss1.noise0_testsuite.ok
-diff: test.ss1.noise0.cmp ref.ss1
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
 
 tag: ss1-noise0-2d
 exec: rm -rf test.ss1.noise0*
@@ -19,7 +18,7 @@ exec: make -f ../st-templates-fast/Makefile 2d
 test: st-wslda-2d
 exec: mpirun -np 20 ./st-wslda-2d input.ss1.noise0.txt
 test: test.ss1.noise0_testsuite.ok
-diff: test.ss1.noise0.cmp ref.ss1
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
 
 tag: ss1-noise0-3d
 exec: rm -rf test.ss1.noise0*
@@ -27,7 +26,7 @@ exec: make -f ../st-templates-fast/Makefile 3d
 test: st-wslda-3d
 exec: mpirun -np 20 ./st-wslda-3d input.ss1.noise0.txt
 test: test.ss1.noise0_testsuite.ok
-diff: test.ss1.noise0.cmp ref.ss1
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
 # 
 # --------------------------------------------------------------------------
 # Spin imbalanced system, no noise
@@ -38,7 +37,7 @@ exec: make -f ../st-templates-fast/Makefile 1d
 test: st-wslda-1d
 exec: mpirun -np 20 ./st-wslda-1d input.ss0.noise0.txt
 test: test.ss0.noise0_testsuite.ok
-diff: test.ss0.noise0.cmp ref.ss0
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
 
 tag: ss0-noise0-2d
 exec: rm -rf test.ss0.noise0*
@@ -46,7 +45,7 @@ exec: make -f ../st-templates-fast/Makefile 2d
 test: st-wslda-2d
 exec: mpirun -np 20 ./st-wslda-2d input.ss0.noise0.txt
 test: test.ss0.noise0_testsuite.ok
-diff: test.ss0.noise0.cmp ref.ss0
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
 
 tag: ss0-noise0-3d
 exec: rm -rf test.ss0.noise0*
@@ -54,7 +53,7 @@ exec: make -f ../st-templates-fast/Makefile 3d
 test: st-wslda-3d
 exec: mpirun -np 20 ./st-wslda-3d input.ss0.noise0.txt
 test: test.ss0.noise0_testsuite.ok
-diff: test.ss0.noise0.cmp ref.ss0
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
 
 
 

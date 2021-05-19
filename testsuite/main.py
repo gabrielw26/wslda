@@ -107,7 +107,7 @@ def run_diff_test(output, reference):
     return now_check
 
 # Executing Unix commands given for each test in description file
-def commands():
+def commands(dir_name):
     tag_test_counter = 0
     tab_checks, tab_makes, tab_runs, tab_diffs = [], [], [], []
     file = open(description_file, "r").read().split('\n')
@@ -115,7 +115,9 @@ def commands():
         if line.startswith('#'): continue
         if line.startswith('tag:'):
             tagg, add_tag = line.split(': ')
-            logging.info("Proceeding with test: " + str(add_tag))
+            logging.info(">>>>>>>>>>>> Proceeding with test: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>>>>>>>>>>>>>>>> TEST: " + dir_name + "->" + str(add_tag) + "<<<<<<<<<<<<<<<<<<<<<")
+            sys.stdout.flush()
             listOfTags.append(add_tag)
             continue
         if line.startswith('exec:'):
@@ -132,7 +134,7 @@ def commands():
                     logging.info("File \"" + str(made_file) + "\" found.")
                     now_make = 'OK'
                 else:
-                    logging.error("File \"" + str(made_file) + "\" not found.")
+                    logging.error("FAIL - File \"" + str(made_file) + "\" not found.")
                     now_make = 'FAIL'
                 continue
             if tag_test_counter == 2:
@@ -142,7 +144,7 @@ def commands():
                     logging.info("File \"" + str(out_file) + "\" found.")
                     now_run = 'OK'
                 else:
-                    logging.error("File \"" + str(out_file) + "\" not found.")
+                    logging.error(" FAIL - File \"" + str(out_file) + "\" not found.")
                     now_run = 'FAIL'
                 tag_test_counter = 0
                 continue
@@ -157,7 +159,7 @@ def commands():
                 now_check = str(check_diff)
                 tab_checks.append(now_check)
             else:
-                logging.error("File \"" + str(file1) + "\" or/and file \"" + str(file2) + "\" not found.")
+                logging.error("FAIL - File \"" + str(file1) + "\" or/and file \"" + str(file2) + "\" not found.")
                 now_check = 'FAIL'
                 tab_checks.append(now_check)
             tab_makes.append(str(now_make))
@@ -209,6 +211,7 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
     ff.close()
     
     print("\n\nmore %s\n" % filepath)
+    sys.stdout.flush()
     
     return __tests, __oks, __fails
 
@@ -220,6 +223,7 @@ def cute_print():
     for row in printable_array:
         print("".join(word.ljust(col_width) for word in row))
     print('\n')
+    sys.stdout.flush()
 
 # Main function
 S = get_global_dir()  # Set head directory
@@ -248,7 +252,7 @@ for folder in F:
                 continue
             for test in range(amount):
                 listOfFolders.append(f)
-            makes, runs, checks = commands()  # EXECUTING TESTS
+            makes, runs, checks = commands(f)  # EXECUTING TESTS
             for m in makes: listOfMakes.append(m)
             for r in runs: listOfRuns.append(r)
             for c in checks: listOfChecks.append(c)
@@ -257,15 +261,18 @@ for folder in F:
     else:
         logging.warning("\"" + f + "\" directory not found. Skipping \"" + f + "\" directory.")
         continue
-
+logging.info("No more tests to do.")
+logging.info("Creating the report.")
 xx, yy, zz = runReport(listOfFolders, listOfTags, listOfMakes, listOfRuns, listOfChecks)
 
 #cute_print()
 
+sys.stdout.flush()
 print('\n--- Summary ---')
 print('TESTS: ' + str(xx))
 print('OK: ' + str(yy))
 print('FAIL: ' + str(zz))
-
+logging.info("End of program.")
 print('Done.')
 print("--- %.8s seconds ---" % (time.time() - start_time))
+sys.stdout.flush()
