@@ -134,21 +134,21 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
             
-            // legacy mode
-            if(spinsymmetry==0)
-            {
-                wdata_link l1 = {"density_a", "rho_a"};
-                wdata_link l2 = {"density_b", "rho_b"};
-                wdata_add_link(&tmd, &l1);
-                wdata_add_link(&tmd, &l2);
-            }
-            else
-            {
-                wdata_link l1 = {"density_a", "rho_a"};
-                wdata_link l2 = {"density_b", "rho_a"};
-                wdata_add_link(&tmd, &l1);
-                wdata_add_link(&tmd, &l2);
-            }
+//             // legacy mode
+//             if(spinsymmetry==0)
+//             {
+//                 wdata_link l1 = {"density_a", "rho_a"};
+//                 wdata_link l2 = {"density_b", "rho_b"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
+//             else
+//             {
+//                 wdata_link l1 = {"density_a", "rho_a"};
+//                 wdata_link l2 = {"density_b", "rho_a"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
 
         }
         else if(strcmp (lvars[i],"current") == 0 || strcmp (lvars[i],"j") == 0)
@@ -160,21 +160,21 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
             
-            // legacy mode
-            if(spinsymmetry==0)
-            {
-                wdata_link l1 = {"current_a", "j_a"};
-                wdata_link l2 = {"current_b", "j_b"};
-                wdata_add_link(&tmd, &l1);
-                wdata_add_link(&tmd, &l2);
-            }
-            else
-            {
-                wdata_link l1 = {"current_a", "j_a"};
-                wdata_link l2 = {"current_b", "j_a"};
-                wdata_add_link(&tmd, &l1);
-                wdata_add_link(&tmd, &l2);
-            }
+//             // legacy mode
+//             if(spinsymmetry==0)
+//             {
+//                 wdata_link l1 = {"current_a", "j_a"};
+//                 wdata_link l2 = {"current_b", "j_b"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
+//             else
+//             {
+//                 wdata_link l1 = {"current_a", "j_a"};
+//                 wdata_link l2 = {"current_b", "j_a"};
+//                 wdata_add_link(&tmd, &l1);
+//                 wdata_add_link(&tmd, &l2);
+//             }
         }
         else if(strcmp (lvars[i],"tau") == 0)
         {
