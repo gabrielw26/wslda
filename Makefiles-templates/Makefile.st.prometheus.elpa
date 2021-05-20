@@ -15,4 +15,5 @@ BINDIR=./
 CFLAGS= -O3 -I/net/software/local/elpa/2019.05.001/include/elpa-2019.05.001/
 LIBS=-lfftw3 -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lstdc++ -ldl -lelpa
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st

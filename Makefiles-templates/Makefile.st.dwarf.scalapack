@@ -19,4 +19,5 @@ BINDIR=./
 CFLAGS= -std=gnu99 -O3 
 LIBS=-lfftw3 -lm -llapack -lscalapack 
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st
