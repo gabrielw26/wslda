@@ -134,7 +134,7 @@ def commands(dir_name):
                     logging.info("File \"" + str(made_file) + "\" found.")
                     now_make = 'OK'
                 else:
-                    logging.error("File \"" + str(made_file) + "\" not found.")
+                    logging.error("FAIL - File \"" + str(made_file) + "\" not found.")
                     now_make = 'FAIL'
                 continue
             if tag_test_counter == 2:
@@ -144,7 +144,7 @@ def commands(dir_name):
                     logging.info("File \"" + str(out_file) + "\" found.")
                     now_run = 'OK'
                 else:
-                    logging.error("File \"" + str(out_file) + "\" not found.")
+                    logging.error(" FAIL - File \"" + str(out_file) + "\" not found.")
                     now_run = 'FAIL'
                 tag_test_counter = 0
                 continue
@@ -159,7 +159,7 @@ def commands(dir_name):
                 now_check = str(check_diff)
                 tab_checks.append(now_check)
             else:
-                logging.error("File \"" + str(file1) + "\" or/and file \"" + str(file2) + "\" not found.")
+                logging.error("FAIL - File \"" + str(file1) + "\" or/and file \"" + str(file2) + "\" not found.")
                 now_check = 'FAIL'
                 tab_checks.append(now_check)
             tab_makes.append(str(now_make))

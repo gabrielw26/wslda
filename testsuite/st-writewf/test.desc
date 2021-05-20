@@ -1,0 +1,47 @@
+# --------------------------------------------------------------------------
+# --------> 1d as wf generator
+# --------------------------------------------------------------------------
+tag: wf-1d
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input.ss1.cp.* .
+exec: rm -rf test.cp.wrt*
+exec: echo "outprefix  wf1d" >> input.ss1.cp.wrt.txt
+exec: echo "writewf 1" >> input.ss1.cp.wrt.txt
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.cp.wrt.txt
+test: wf1d_testsuite.ok
+diff: wf1d.cmp wf1d_uniform.ref
+
+# --------------------------------------------------------------------------
+# --------> 2d as wf generator
+# --------------------------------------------------------------------------
+tag: wf-2d
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input.ss1.cp.* .
+exec: rm -rf test.cp.wrt*
+exec: echo "outprefix  wf2d" >> input.ss1.cp.wrt.txt
+exec: echo "writewf 1" >> input.ss1.cp.wrt.txt
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.cp.wrt.txt
+test: wf2d_testsuite.ok
+diff: wf2d.cmp wf2d_uniform.ref
+
+# --------------------------------------------------------------------------
+# --------> 3d as wf generator
+# --------------------------------------------------------------------------
+tag: wf-3d
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input.ss1.cp.* .
+exec: rm -rf test.cp.wrt*
+exec: echo "outprefix  wf3d" >> input.ss1.cp.wrt.txt
+exec: echo "writewf 1" >> input.ss1.cp.wrt.txt
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss1.cp.wrt.txt
+test: wf3d_testsuite.ok
+diff: wf3d.cmp wf3d_uniform.ref

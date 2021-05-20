@@ -1,0 +1,85 @@
+# --------------------------------------------------------------------------
+# --------> 1d as checkpoint generator
+# --------------------------------------------------------------------------
+tag: write-1d
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input.ss1.cp.* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-1d_1d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+tag: read-1d_2d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+tag: read-1d_3d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 360 mpirun -np 20 ./st-wslda-3d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# --------> 2d as checkpoint generator
+# --------------------------------------------------------------------------
+tag: write-2d
+exec: rm -rf test.cp.wrt*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-2d_2d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+tag: read-2d_3d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 360 mpirun -np 20 ./st-wslda-3d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# --------> 3d as checkpoint generator
+# --------------------------------------------------------------------------
+tag: write-3d
+exec: rm -rf test.cp.wrt*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss1.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-3d_3d
+exec: rm -rf test.cp.read*
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 360 mpirun -np 20 ./st-wslda-3d input.ss1.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
