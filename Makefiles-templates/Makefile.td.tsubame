@@ -19,4 +19,5 @@ NVCCFLAGS = -arch sm_60 -O3
 LIBS=-lcudart -lcufft -lm
 
 
-include mk.td
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.td

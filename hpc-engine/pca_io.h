@@ -1476,4 +1476,24 @@ int check_stamp_entry_coeff(const char *file_name, int idens, int ndens, double 
     return 0;
 }
 
+/**
+ * Checks if output file exists
+ * if yes, returns error
+ * */
+int check_if_can_overwrite_files()
+{
+    if(md.overwrite==1) return WSLDA_OK;
+    
+    char fname[1024];
+    sprintf(fname, "%s_input.txt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.wlog", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.wtxt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.stdout", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_predefines.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_problem-definition.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_logger.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    
+    return WSLDA_OK;
+}
+
 #endif

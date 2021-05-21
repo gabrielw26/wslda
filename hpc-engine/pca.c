@@ -157,6 +157,7 @@ int main( int argc , char ** argv )
         }
         
         // Make copy of input file
+        file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
         file_operation( assure_reproducibility(md.outprefix) );
@@ -844,6 +845,9 @@ int main( int argc , char ** argv )
         gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
         gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
         gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
+        
+        // reproducibility pack
+        if(ip==0) save_extradata_to_file(extra_data_size, extra_data);
     }
     
     // Process params and copy them to gpu;

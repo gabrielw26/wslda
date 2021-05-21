@@ -195,4 +195,6 @@ void copy_checkpoint();
 void copy_initcheckpoint();
 void copy_reprowftar();
 
+void save_extradata_to_file(size_t size, void *extra_data);
+
 #endif

@@ -151,9 +151,9 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\tThis error does not have description.\n");
     }
     wfprintf(stream, "IF THIS INFORMATION IS NOT SUFFICIENT TO SOLVE YOUR PROBLEM\n");
-    wfprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home\n");
+    wfprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home\n");
     wfprintf(stream, "\tAsk for help WSLDA developers:\n");
-    wfprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/issues\n");
+    wfprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues\n");
     wfprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
     something_to_cheer_you_up_pid0(stream);
 }

@@ -19,5 +19,6 @@ BINDIR=./
 CFLAGS= -O3  -I/project/pr91/share/include/elpa-2020.05.001
 LIBS=-lfftw3  -L/project/pr91/share/lib -lelpa
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st
  
