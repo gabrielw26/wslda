@@ -1452,7 +1452,8 @@ int main( int argc , char ** argv )
 #else
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
 #endif
-        if(it>0) 
+        i=0; // as flag for broyden
+        if(it>0 && saving_iteration==0) // skip updating the potential if it is saving iteration 
         {       
             double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
             double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
@@ -1461,11 +1462,13 @@ int main( int argc , char ** argv )
             {
                 if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
                 else               muchange_a=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             if(fabs(muchange_b)>md.mumaxchange*eF)
             {
                 if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
                 else               muchange_b=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             dc_mu_a -= muchange_a;
             dc_mu_b -= muchange_b;  
@@ -1473,6 +1476,12 @@ int main( int argc , char ** argv )
                         
         }
         if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
+        
+        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1)
+        {
+            md.startbroyden=it;
+            if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
+        }
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
