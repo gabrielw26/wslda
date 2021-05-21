@@ -1328,7 +1328,8 @@ int main( int argc , char ** argv )
         // ------------------ update chemical potentials ------------------
         b_t();
         if(iam==0) wprintf("# MUCHANGE FROM: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
-        if(it>0 && saving_iteration==0) // skip upfating the potential is it is saving iteration
+        i=0; // as flag for broyden
+        if(it>0 && saving_iteration==0) // skip updating the potential if it is saving iteration
         {       
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
@@ -1339,17 +1340,25 @@ int main( int argc , char ** argv )
             {
                 if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
                 else               muchange_a=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             if(fabs(muchange_b)>md.mumaxchange*eF)
             {
                 if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
                 else               muchange_b=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             dc_mu_a -= muchange_a;
             dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
         }
         if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
+        
+        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1)
+        {
+            md.startbroyden=it;
+            if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
+        }
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
@@ -1533,7 +1542,7 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
-                create_reprowf_tar();
+                create_reprowf_tar(extra_data_size);
             }
             
             if(iam==0) wprintf("# SAVING ITERATION DONE.\n");
