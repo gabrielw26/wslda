@@ -262,6 +262,7 @@ int main( int argc , char ** argv )
         }
         
         // Make copy of input file
+        ip=iam; file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
         sprintf(file_name, "%s_input.txt", md.outprefix);
         copy_input_file(argv[i],file_name) ; 
         assure_reproducibility(md.outprefix);
@@ -827,6 +828,9 @@ int main( int argc , char ** argv )
         if(iam==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+        
+        // reproducibility pack
+        if(iam==0) save_extradata_to_file(extra_data_size, extra_data);
     }
     dc_extra_data_size=extra_data_size;
     dc_extra_data=extra_data;

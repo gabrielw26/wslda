@@ -670,4 +670,14 @@ void copy_reprowftar()
     wprintf("# SYSTEM: %s\n", cmd);
     system(cmd);
 }
+
+void save_extradata_to_file(size_t size, void *extra_data)
+{
+    char fname[1024];
+    sprintf(fname, "%s_extra_data.dat", md.outprefix);
+    wprintf("# SAVING EXTRA_DATA TO FILE: %s\n", fname);
+    FILE * f = fopen(fname, "wb");
+    fwrite(extra_data, size, 1, f);
+    fclose(f);
+}
     
