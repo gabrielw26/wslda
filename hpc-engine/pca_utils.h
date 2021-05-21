@@ -190,7 +190,7 @@ void wfprintf(FILE *stream,  const char * format, ... );
 
 void testsuite_ok();
 
-void create_reprowf_tar();
+void create_reprowf_tar(size_t extra_data_size);
 void copy_checkpoint();
 void copy_initcheckpoint();
 void copy_reprowftar();

@@ -1665,7 +1665,7 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
-                create_reprowf_tar();
+                create_reprowf_tar(extra_data_size);
             }
                 
             if(iam==0) wprintf("# EXTRA SAVING ITERATION DONE.\n");
