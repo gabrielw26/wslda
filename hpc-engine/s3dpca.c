@@ -1354,7 +1354,7 @@ int main( int argc , char ** argv )
         }
         if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         
-        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1)
+        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
         {
             md.startbroyden=it;
             if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
@@ -1363,7 +1363,6 @@ int main( int argc , char ** argv )
         
         // ------------------ mix densities ------------------
         b_t();
-        
         if(md.nomixstart==1 && kziter==0) //special case - no mixing for the first iteration
         {
             // pass - do not mix
@@ -1484,6 +1483,15 @@ int main( int argc , char ** argv )
         for(i=0; i<ENERGYITEMS; i++) observables[i]=energy[i]; observables[ENTROPY]=S;
         if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, observables, npart, dc_params, dc_extra_data_size, dc_extra_data) );
         cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
+        
+        // broyden restarting
+        i=0;
+        if(fabs((E_tot-E_tot_old)/Effg)>md.broydenEmaxchg) i=1;
+        if(i==1 && it+1-md.Mbroyden-md.broydenEdelay>md.startbroyden && it+1<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
+        {             //md.Mbroyden+x - typically after a few iteraton once the Broyden starts we observer energy fluctuation that should vanish 
+            md.startbroyden=it+1;
+            if(iam==0) wprintf("# ENERGY HAS CHANGED MORE THAN broydenEmaxchg=%f! RESTARTING BROYDEN TO AVOID INSTABILITY.\n", md.broydenEmaxchg);
+        }
         
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);

@@ -80,6 +80,9 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, //	omega0broyden
 1.,	// omeganbroyden
 1.,	// omegakbroyden
+1,  //broydenautores
+0.1, // broydenEmaxchg
+5, // broydenEdelay
 10000.0, // walltime
 -10.0, // ccstart; 
 99999.0, // ccstop;
@@ -215,7 +218,7 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
-        // kz-solver
+        // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
         else if (strcmp (tag,"npartconveps") == 0)
@@ -264,7 +267,13 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"omegakbroyden") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);   
         else if (strcmp (tag,"omeganbroyden") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);
+        else if (strcmp (tag,"broydenautores") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.broydenautores);
+        else if (strcmp (tag,"broydenEmaxchg") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.broydenEmaxchg);
+        else if (strcmp (tag,"broydenEdelay") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.broydenEdelay);
         // technical
         else if (strcmp (tag,"walltime") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.walltime);
