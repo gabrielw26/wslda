@@ -97,6 +97,9 @@ typedef struct
 	double omega0broyden;	// weight assigned to the error in the inverse Jacobian, default=0.01
 	double omeganbroyden;	  // weight associated with each previous iteration, default=1.0
 	double omegakbroyden;	   // weight associated with each previous iteration, default=1.0
+	int broydenautores; // automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
+	double broydenEmaxchg; // if the total energy between iteration change be more than broydenEmaxchg then Broyden is restarted, (default=0.1)
+	int broydenEdelay; // scan energy changes only after broydenEdelay with Broyden has been executed, typically, just after starting the Broyden energy fluctuations are observed which should decay within a few iterations (default=5)
     
     // walltime
     double walltime; // after this time in hours the energency checkpoint will be executed, default=1000 

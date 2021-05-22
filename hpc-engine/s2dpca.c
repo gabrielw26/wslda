@@ -1473,11 +1473,10 @@ int main( int argc , char ** argv )
             dc_mu_a -= muchange_a;
             dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
-                        
         }
         if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         
-        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1)
+        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
         {
             md.startbroyden=it;
             if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
@@ -1603,6 +1602,7 @@ int main( int argc , char ** argv )
         if(fabs((E_tot-E_tot_old)/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
+        
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB];
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
         if(iam==0) wprintf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
@@ -1610,6 +1610,15 @@ int main( int argc , char ** argv )
         for(i=0; i<ENERGYITEMS; i++) observables[i]=energy[i]; observables[ENTROPY]=S;
         if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, observables, npart, dc_params, dc_extra_data_size, dc_extra_data) );
         cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
+        
+        // broyden restarting
+        i=0;
+        if(fabs((E_tot-E_tot_old)/Effg)>md.broydenEmaxchg) i=1;
+        if(i==1 && it+1-md.Mbroyden-md.broydenEdelay>md.startbroyden && it+1<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
+        {             //md.Mbroyden+x - typically after a few iteraton once the Broyden starts we observer energy fluctuation that should vanish 
+            md.startbroyden=it+1;
+            if(iam==0) wprintf("# ENERGY HAS CHANGED MORE THAN broydenEmaxchg=%f! RESTARTING BROYDEN TO AVOID INSTABILITY.\n", md.broydenEmaxchg);
+        }
     
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
