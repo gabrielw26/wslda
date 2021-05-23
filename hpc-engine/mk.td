@@ -103,7 +103,7 @@ $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
-	$(NVCC) $(NVCCFLAGS) -c -o $@ $< 
+	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $< 
 
 .PHONY: clean all ver dirs
 
