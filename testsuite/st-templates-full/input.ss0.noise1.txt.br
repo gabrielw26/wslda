@@ -45,7 +45,7 @@ mumaxchange             0.05 # in units of Fermi energy
 
 broyden                 1 # use 1 if to activate Broyden mixing
 Mbroyden                5
-broydenmixing           0.75
+# broydenmixing           0.75
 # startbroyden            10
 # stopbroyden             10
 

@@ -70,7 +70,7 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: make -f ../td-templates-full/Makefile.0.c clean
 # exec: make -f ../td-templates-full/Makefile.0.c 1d
 # test: td-wslda-1d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.ss0.txt
+# exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.ss0.c.txt
 # test: test.ss0_testsuite.ok
 # diff: test.ss0.cmp test.ss0_uniform.ref
 # 
@@ -78,7 +78,7 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: rm -rf test.ss0*
 # exec: make -f ../td-templates-full/Makefile.0.c 2d
 # test: td-wslda-2d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.ss0.txt
+# exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.ss0.c.txt
 # test: test.ss0_testsuite.ok
 # diff: test.ss0.cmp test.ss0_uniform.ref
 # 
@@ -86,7 +86,7 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: rm -rf test.ss0*
 # exec: make -f ../td-templates-full/Makefile.0.c 3d
 # test: td-wslda-3d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.ss0.txt
+# exec: timeout 600 mpirun -np 8 ./td-wslda-3d input.ss0.c.txt
 # test: test.ss0_testsuite.ok
 # diff: test.ss0.cmp test.ss0_uniform.ref
 # 
@@ -98,7 +98,7 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: make -f ../td-templates-full/Makefile.1.c clean
 # exec: make -f ../td-templates-full/Makefile.1.c 1d
 # test: td-wslda-1d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.ss1.txt
+# exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.ss1.c.txt
 # test: test.ss1_testsuite.ok
 # diff: test.ss1.cmp test.ss1_uniform.ref
 # 
@@ -106,7 +106,7 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: rm -rf test.ss1*
 # exec: make -f ../td-templates-full/Makefile.1.c 2d
 # test: td-wslda-2d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.ss1.txt
+# exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.ss1.c.txt
 # test: test.ss1_testsuite.ok
 # diff: test.ss1.cmp test.ss1_uniform.ref
 # 
@@ -114,6 +114,6 @@ diff: test.ss1.cmp test.ss1_uniform.ref
 # exec: rm -rf test.ss1*
 # exec: make -f ../td-templates-full/Makefile.1.c 3d
 # test: td-wslda-3d
-# exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.ss1.txt
+# exec: timeout 600 mpirun -np 8 ./td-wslda-3d input.ss1.c.txt
 # test: test.ss1_testsuite.ok
 # diff: test.ss1.cmp test.ss1_uniform.ref
