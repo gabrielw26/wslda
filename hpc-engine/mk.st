@@ -36,6 +36,13 @@ all: 1d 2d 3d
 
 3d: dirs d3d
 
+ext: dirs \
+     (BINDIR)solve-uniform \
+     (BINDIR)test-external-potentials-1d \
+     (BINDIR)test-external-potentials-2d \
+     (BINDIR)test-external-potentials-3d \
+     (BINDIR)interpolate-dataset
+
 d1d: $(OBJS1D) $(OBJS) $(WDATAOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) $(LIBS) -DWSLDA $^ 
@@ -48,10 +55,21 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) $(LIBS) -DWSLDA $^
 
-ext: $(WDATAOBJS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
-	$(CXX) $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -o $(BINDIR)test-external-potentials -lm -lfftw3
+(BINDIR)solve-uniform: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
 	
+(BINDIR)test-external-potentials-1d: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)test-external-potentials-1d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=1 -lm -lfftw3
+	
+(BINDIR)test-external-potentials-2d: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)test-external-potentials-2d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=2 -lm -lfftw3
+	
+(BINDIR)test-external-potentials-3d: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)test-external-potentials-3d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=3 -lm -lfftw3
+	
+(BINDIR)interpolate-dataset: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
+		
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
 	python $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
@@ -80,8 +98,11 @@ clean:
 	rm -f $(BINDIR)st-wslda-1d
 	rm -f $(BINDIR)st-wslda-2d
 	rm -f $(BINDIR)st-wslda-3d
-	rm -f $(BINDIR)test-external-potentials
+	rm -f $(BINDIR)test-external-potentials-1d
+	rm -f $(BINDIR)test-external-potentials-2d
+	rm -f $(BINDIR)test-external-potentials-3d
 	rm -f $(BINDIR)solve-uniform
+	rm -f $(BINDIR)interpolate-dataset
 	
 ver:
 	$(CXX) --version

@@ -58,6 +58,10 @@ all: 1d 2d 3d
 
 3d: dirs d3d
 
+ext: dirs \
+     (BINDIR)solve-uniform \
+     (BINDIR)interpolate-dataset
+
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $(LIBS) $^ 
@@ -70,8 +74,11 @@ d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $(LIBS) $^
 
-ext: $(WDATAOBJS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
+(BINDIR)solve-uniform: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
+	
+(BINDIR)interpolate-dataset: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 
 $(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
