@@ -15,6 +15,11 @@
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULA FOR V_ext(r)
     double V_ext = 0.0;
 
@@ -39,6 +44,11 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  * */
 __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULA FOR Delta_ext(r)
     Complex D_ext = Complex(0.0,0.0);
 
@@ -63,6 +73,11 @@ __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, doub
  * */
 __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data)
 {
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+//     double t = dc_t0 + dc_dt*it; // time
+
     // ADD HERE FORMULAS FOR vec{v}_ext=(vx, vy, vz)
     double v_ext;
     if(coordinate==XAXIS) v_ext=0.0;
@@ -78,12 +93,13 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
  * @param params array of size MAX_USER_PARAMS with parameters from input file. 
  * @param kF typical Fermi momentum scale of the problem. 
  *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center
+ *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center.
+ *           Note that it is passed via a pointer, to access/modify it use kF[0] or (*kF).
  * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
-extern "C" void process_params(double *params, double kF, double *mu, size_t extra_data_size, void *extra_data)
+extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
 

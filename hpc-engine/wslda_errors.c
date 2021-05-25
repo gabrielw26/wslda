@@ -12,6 +12,20 @@
 void wprintf( const char * format, ... );
 void wfprintf(FILE *stream,  const char * format, ... );
 
+#include "jdb.h"
+extern int wsldapid; // process id - global variable
+void something_to_cheer_you_up(FILE *stream)
+{
+    wfprintf(stream, "==========================================================================\n");
+    wfprintf(stream, "Upset with the error? Here is something to cheer you up:\n");
+    jdb_message(stream);
+    wfprintf(stream, "==========================================================================\n");
+}
+void something_to_cheer_you_up_pid0(FILE *stream)
+{
+    if(wsldapid==0) something_to_cheer_you_up(stream);
+}
+
 void report_error(int errcode, FILE *stream)
 {
     if(errcode==WSLDA_OK) return; // no reporting
@@ -137,12 +151,11 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\tThis error does not have description.\n");
     }
     wfprintf(stream, "IF THIS INFORMATION IS NOT SUFFICIENT TO SOLVE YOUR PROBLEM\n");
-    wfprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home\n");
+    wfprintf(stream, "\tCheck wiki pages: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home\n");
     wfprintf(stream, "\tAsk for help WSLDA developers:\n");
-    wfprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/issues\n");
+    wfprintf(stream, "\t\tusing Issues reporting system: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues\n");
     wfprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
-    wfprintf(stream, "==========================================================================\n");
-    
+    something_to_cheer_you_up_pid0(stream);
 }
 
 void warn_head(FILE *stream)
@@ -169,9 +182,9 @@ void report_warning(int errcode, FILE *stream)
             break;
             
         case WSLDA_WRN_SPINSYMMETRY1:
-            wfprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with predefines.h option SPINSYMMETRY_MODE!\n");
+            wfprintf(stream, "#\t Input file setting: `spinsymmetry 1` not comptible with commented-out predefines.h option SPINSYMMETRY_MODE!\n");
             wfprintf(stream, "#\t Check if it is intended!\n");
-            wfprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 1`!\n");
+            wfprintf(stream, "#\t To avoid the code termination forcing: `spinsymmetry 0`!\n");
             break;
             
         case WSLDA_WRN_CHECKPOINT_NOT_CONSITENT_BROYDEN:

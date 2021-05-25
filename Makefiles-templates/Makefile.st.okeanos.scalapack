@@ -15,4 +15,5 @@ BINDIR=./
 CFLAGS= -O3 
 LIBS=-lfftw3 -lm -L/opt/cray/diag/lib
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st

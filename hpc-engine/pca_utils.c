@@ -48,7 +48,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, // init0DeltaT;
 1.0e-9, // init0eps;
 -1.0, // init0scmix
-10000, // init0maxiter;
+-1, // init0maxiter;
 0, // init0debug
 0, // init0save
 0, // p;                    
@@ -80,6 +80,9 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, //	omega0broyden
 1.,	// omeganbroyden
 1.,	// omegakbroyden
+1,  //broydenautores
+0.1, // broydenEmaxchg
+5, // broydenEdelay
 10000.0, // walltime
 -10.0, // ccstart; 
 99999.0, // ccstop;
@@ -215,7 +218,7 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
-        // kz-solver
+        // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
         else if (strcmp (tag,"npartconveps") == 0)
@@ -264,7 +267,13 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"omegakbroyden") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);   
         else if (strcmp (tag,"omeganbroyden") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);
+        else if (strcmp (tag,"broydenautores") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.broydenautores);
+        else if (strcmp (tag,"broydenEmaxchg") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.broydenEmaxchg);
+        else if (strcmp (tag,"broydenEdelay") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.broydenEdelay);
         // technical
         else if (strcmp (tag,"walltime") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.walltime);
@@ -628,3 +637,65 @@ void wfprintf(FILE *stream,  const char * format, ... )
 }
 
 
+void testsuite_ok()
+{
+    char file_name[512];
+    sprintf(file_name, "%s_testsuite.ok", md.outprefix);
+    FILE * f = fopen(file_name, "w");
+    fprintf(f,"%s\n",file_name);
+    fclose(f);
+}
+
+void create_reprowf_tar(size_t extra_data_size)
+{
+    char cmd[2048];
+    if(extra_data_size>0)
+    {
+        sprintf(cmd, 
+            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_extra_data.dat",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+    }
+    else
+    {
+        sprintf(cmd, 
+            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+    }
+        wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_checkpoint()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s_checkpoint.dat %s/checkpoint.dat", md.outprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_initcheckpoint()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s_checkpoint.dat %s_checkpoint.dat.init", md.inprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void copy_reprowftar()
+{
+    char cmd[2048];
+    sprintf(cmd, "cp -f %s/reprowf.tar %s_reprowf.tar", md.inprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+}
+
+void save_extradata_to_file(size_t size, void *extra_data)
+{
+    char fname[1024];
+    sprintf(fname, "%s_extra_data.dat", md.outprefix);
+    wprintf("# SAVING EXTRA_DATA TO FILE: %s\n", fname);
+    FILE * f = fopen(fname, "wb");
+    fwrite(extra_data, size, 1, f);
+    fclose(f);
+}
+    

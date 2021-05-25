@@ -36,6 +36,8 @@
 #include "tdwslda_static_vars.h"
 #include "logger.h"
 
+int wsldapid; // process id - global variable
+
 int main( int argc , char ** argv ) 
 {
     int i, j, k; // basic iterators
@@ -120,6 +122,7 @@ int main( int argc , char ** argv )
     MPI_Init( &argc , &argv ) ; /* set up the parallel WORLD */
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
+    wsldapid=ip; // save to global variable
     
     if(ip==0) wprintf("# START OF THE MAIN FUNCTION\n");
 
@@ -141,7 +144,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -153,12 +156,13 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
        
         // Make copy of input file
+        file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
         file_operation( assure_reproducibility(md.outprefix) );
@@ -461,7 +465,10 @@ int main( int argc , char ** argv )
         ABORT;
     }
     
+    if(ip==0 && (md.inittype==1 || md.inittype==2 || md.inittype==3)) copy_reprowftar();
+    
     // wait till loading is done
+    fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -536,10 +543,6 @@ int main( int argc , char ** argv )
          for(i=0; i<nwfip; i++) h_cnt[i]=wslda_kmodes_1d_get_weight(h_kkyz[i], h_kkyz[i+nwfip]);
     }
     
-#ifdef TDWSLDA
-    dt/=eF; // time step
-#endif
-    
     if(ip==0) wprintf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
     if(md.inittype!=5)
@@ -563,12 +566,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
     gpu_exec( memcopy_host2gpu(h_cnt    , d_cnt    ,  (size_t)nwfip  *sizeof(int)) );
-    
-    // Set constants
-    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
-    md.ec=ec; 
-    TDWSLDA_SET_STATIC_VARS;
-    
+        
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
@@ -586,7 +584,7 @@ int main( int argc , char ** argv )
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(ip==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
         
@@ -594,14 +592,26 @@ int main( int argc , char ** argv )
         gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
         gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
         gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
+        
+        // reproducibility pack
+        if(ip==0) save_extradata_to_file(extra_data_size, extra_data);
     }
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
-    process_params(md.params, kF, mu, extra_data_size, extra_data);
+    if(ip==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
+    process_params(md.params, &kF, mu, extra_data_size, extra_data);
 #else
     process_params(md.params, kF, mu);
 #endif
+    // Set constants
+    eF=0.5*kF*kF;
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
+    md.ec=ec; 
+    TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef BDG_MODE   
@@ -658,7 +668,9 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+#endif
     
     // report result
     if(ip==0)
@@ -1263,6 +1275,11 @@ int main( int argc , char ** argv )
             file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );   
         }
     }
+    
+#ifdef TESTSUITE
+    if(ip==0) testsuite_ok();
+#endif
+    
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;

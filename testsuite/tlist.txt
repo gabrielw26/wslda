@@ -1,0 +1,39 @@
+# This file contains list of test to be executed by testsuite system
+# Tests are executed in order given below
+
+# ----- st-wslda ------
+# -> test diagonalization engines (complex/real & speherical/cubic cutoff)
+st-uniform-aslda-elpa1-cpu
+st-uniform-aslda-elpa1-gpu
+st-uniform-aslda-elpa2-cpu
+st-uniform-aslda-elpa2-gpu
+st-uniform-aslda-heevd
+st-uniform-aslda-heevr
+
+# -> test functionals (complex/real & speherical/cubic cutoff)
+# aslda already tested!
+st-uniform-slda-elpa1-cpu
+st-uniform-bdg-elpa1-cpu
+
+# -> test convergenge of sc loop
+st-uniform-aslda-sc
+st-uniform-slda-sc
+st-uniform-bdg-sc
+
+# -> checkpoint/restart
+st-checkpoint
+
+# ----- td-wslda ------
+# -> test functionals (spherical/cubic cutoff)
+td-uniform-aslda
+td-uniform-slda
+td-uniform-bdg
+
+# -> checkpoint/restart
+td-checkpoint
+
+# ----- st-wslda -> td-wslda------
+# -> transfer wave-functions
+st-writewf
+td-readwf
+

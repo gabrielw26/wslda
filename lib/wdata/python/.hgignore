@@ -1,0 +1,13 @@
+syntax: glob
+
+build/
+*.egg*
+.coverage
+.nox
+.pytest_cache
+_misc
+examples/*.ipynb
+src/visit-plugin
+*.npy
+*.wdat
+*.wtxt

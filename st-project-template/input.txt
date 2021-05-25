@@ -41,6 +41,8 @@ nocurrents              0        # set to 1 if you want to impose ja=jb=0 (solut
 nomixstart              0        # do not do mixing for the first iteration
 # mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
 
+# ----------------- Broyden algorithm ----------------------
+# wiki: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Broyden%20algorithm
 broyden                 1        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
 broydenmixing           0.75     # mixing parameter (alpha) for Broyden mixing, default=0.75
 Mbroyden                5        # number of previous iterations used by Broyden, default=5 
@@ -57,6 +59,12 @@ Mbroyden                5        # number of previous iterations used by Broyden
                                  # starting from iteration it = stopbroyden+1 the algorithm again proceeds
                                  # with linear mixing and used linearmixing value for mixing
                                  # default=999999
+#broydenautores          1        # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
+#broydenEmaxchg          0.1      # if the total energy between iteration change be more than broydenEmaxchg 
+                                 # then Broyden is restarted, (default=0.1)
+#broydenEdelay           5        # scan energy changes only after broydenEdelay with Broyden has been executed 
+                                 # typically, just after starting the Broyden energy fluctuations are observed 
+                                 # which should decay within a few iterations (default=5)
 # Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
 #                 According experience of our collaborators, there are cases (physical problems)
 #                 where activating Broyden only for some number of iteration provides the best performance 

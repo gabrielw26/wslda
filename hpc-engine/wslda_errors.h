@@ -14,6 +14,8 @@ void report_warning(int errcode, FILE *stream);
 void print_warning(int errcode);
 void warn_head(FILE *stream);
 void warn_foot(FILE *stream);
+void something_to_cheer_you_up(FILE *stream);
+void something_to_cheer_you_up_pid0(FILE *stream);
 
 // no error
 #define WSLDA_OK  0

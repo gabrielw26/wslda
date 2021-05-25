@@ -133,3 +133,5 @@ extensions/interpolate-dataset
 extensions/resize-dataset
 
 *.eps
+
+st-testcase-uniform/interpolate-dataset

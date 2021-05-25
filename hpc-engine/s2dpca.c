@@ -53,10 +53,8 @@ int wsldapid; // process id - global variable
 #elif DIAGONALIZATION_ROUTINE==ELPA
 #define USE_ELPA
 #else
-    select DIAGONALIZATION ROUTINE in predifines.h
+#error "select DIAGONALIZATION ROUTINE in predifines.h"
 #endif
-
-
 
 #ifdef USE_SCALAPACK_PZHEEVR
 /* PZHEEVR prototype */
@@ -172,6 +170,7 @@ int main( int argc , char ** argv )
     double beta; // inverse of temperature
     double Lz_a=0.0, Lz_b=0.0, Lz=0.0;
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
+    double S=0.0, S_old=0.0; // entropy
     
     double eF_a, eF_b, eF, Effg, kF;
     double mu[2]; // chemical potential
@@ -186,6 +185,7 @@ int main( int argc , char ** argv )
     double *h_potentials; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_potentials_old; // pointer to array with potentials [V_a, V_b, delta] (CPU)
     double *h_energy; // buffer for energies (CPU)
+    double observables[WSLDAITEMS];
     double energy[ENERGYITEMS], energy_old[ENERGYITEMS];
     string energy_labels[ENERGYITEMS];
     energy_labels[EKIN] = "E_kin";
@@ -196,7 +196,7 @@ int main( int argc , char ** argv )
     energy_labels[EPAIREXT] = "E_pairext";
     energy_labels[EVELEXT] = "E_velext";
     double E_tot, E_tot_old;
-    double npart[2], npart_old[2], nparttest;
+    double npart[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, npart_old[2]={NUMERICAL_ZERO, NUMERICAL_ZERO}, nparttest;
     char convstatus[2][6]; sprintf(convstatus[0], "FAIL"); sprintf(convstatus[1], "PASS");
     int is_converged, is_converged_local;
     int saving_iteration=0;
@@ -244,7 +244,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -256,12 +256,13 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
         
         // Make copy of input file
+        ip=iam; file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
         sprintf(file_name, "%s_input.txt", md.outprefix);
         copy_input_file(argv[i],file_name) ; 
         assure_reproducibility(md.outprefix);
@@ -277,6 +278,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
     
 #ifdef USE_SCALAPACK_PZHEEVR
     if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
@@ -297,6 +299,7 @@ int main( int argc , char ** argv )
     {
         ierr = -1 ;
         if(iam==0) wprintf("ERROR: SET aBdG IN INPUT FILE!\n");
+        something_to_cheer_you_up_pid0(stdout);
         fflush(stdout);
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
         return( EXIT_FAILURE ) ;      
@@ -419,7 +422,7 @@ int main( int argc , char ** argv )
     // ===================================================================================
     int kvecs_to_consder = 0;    
     count_number_of_k_modes(kkx, kky, kkz, CODEDIM, &kvecs_to_consder);
-    if(iam==0) wprintf("# NUMBER OF PLAN WAVES TO CONSIDER: %d\n", kvecs_to_consder);
+    if(iam==0) wprintf("# NUMBER OF k-MODES TO CONSIDER: %d\n", kvecs_to_consder);
     
     wslda_kmode *kvecs;
     cppmallocl(kvecs,kvecs_to_consder,wslda_kmode);
@@ -501,7 +504,7 @@ int main( int argc , char ** argv )
     MPI_Gather( &j , 1 , MPI_INT , wf_idx_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     MPI_Bcast( wf_idx_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ;
     
-    if(gr_iam==0) wprintf("# GROUP %d COMPUTES FOR %d k-values [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
+    if(gr_iam==0) wprintf("# GROUP %d COMPUTES FOR %d k-MODES [%d,%d)\n", idgroup, nwfip, mylidx,myuidx); fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
         
     // ====================================================================================
@@ -523,7 +526,7 @@ int main( int argc , char ** argv )
 #endif    
     
     /* initialize the BLACS grid for hamiltonian diagonalizaion- a virtual rectangular grid */
-    if(iam==0) wprintf("# CREATING CBLACS GRIDs OF SIZE (pzheev): [%d x %d]\n", md.p, md.q);
+    if(iam==0) wprintf("# CREATING CBLACS GRIDS OF SIZE [%d x %d] WITH BLOCK SIZE [%d x %d]\n", md.p, md.q, md.mb, md.nb);
     b_order = "R" ;
     Cblacs_pinfo( &iam_blacs , &nprocs_blacs ) ;
     if ( nprocs_blacs < 1 ) 
@@ -583,7 +586,7 @@ int main( int argc , char ** argv )
     
     // reset energy and particle number
     for(ixyz=0; ixyz< ENERGYITEMS; ixyz++) energy[ixyz] = 0.0;
-    npart[SPINA]=0.0; npart[SPINB]=0.0;
+    npart[SPINA]=NUMERICAL_ZERO; npart[SPINB]=NUMERICAL_ZERO;
     
     // ===================================================================================
     // =============================== INITIAL STATE =====================================
@@ -701,6 +704,9 @@ int main( int argc , char ** argv )
                 
                 // decode constants
                 dc_mu_a=trd_consts[0];  dc_mu_b=trd_consts[1];  dc_mu_a_old=trd_consts[2];  dc_mu_b_old=trd_consts[3];  dc_ec=trd_consts[4];  beta=trd_consts[5];  eF=trd_consts[6];  kF=trd_consts[7];  Effg=trd_consts[8];  npart[SPINA]=trd_consts[9];  npart[SPINB]=trd_consts[10]; 
+                
+                // copy input checkpoint
+                copy_initcheckpoint();
             }
             else if(i==WSLDA_ST_CHECKPOINT_OLD)
             {
@@ -739,7 +745,7 @@ int main( int argc , char ** argv )
             }
             else
             {
-                sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+                sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
                 wprintf("# CANNOT FIND CHECKPOINT FILE: `%s`\n", file_name); fflush(stdout);
                 ABORT_NOBARRIER;
             }
@@ -814,13 +820,17 @@ int main( int argc , char ** argv )
         {                                                             
             wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
             wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            something_to_cheer_you_up_pid0(stdout);
             MPI_Finalize() ;
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(iam==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(iam==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+        
+        // reproducibility pack
+        if(iam==0) save_extradata_to_file(extra_data_size, extra_data);
     }
     dc_extra_data_size=extra_data_size;
     dc_extra_data=extra_data;
@@ -889,7 +899,7 @@ int main( int argc , char ** argv )
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+    if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
     process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -1001,12 +1011,6 @@ int main( int argc , char ** argv )
     elpa_set(handle, "mpi_comm_parent", MPI_Comm_c2f(mpi_comm_group), &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_row",ip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "process_col", iq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#ifdef ELPA_USE_GPU
-    if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
-    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#else
-    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#endif
     
     /* Setup */
     info=elpa_setup(handle);    
@@ -1016,6 +1020,17 @@ int main( int argc , char ** argv )
 //     elpa_autotune_t autotune_handle = elpa_autotune_setup(handle, ELPA_AUTOTUNE_FAST, ELPA_AUTOTUNE_DOMAIN_COMPLEX, &info); 
 //     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 //     int elpa_atotue_unfinished=1;
+    
+    elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
+    if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
+    if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+
+#ifdef ELPA_USE_GPU
+    if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
+    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#else
+    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
 #ifdef MATRIX_IS_REAL
     elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info); 
     if(iam==0) wprintf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
@@ -1023,12 +1038,8 @@ int main( int argc , char ** argv )
     elpa_set(handle, "complex_kernel", ELPA_USE_COMPLEX_KERNEL, &info); 
     if(iam==0) wprintf("# ELPA: SETTINGS COMPLEX KERNEL: `%s`\n", STRINGIZE(ELPA_USE_COMPLEX_KERNEL));
 #endif
-    if(info!=ELPA_OK) wprintf("# WARNING: ELPA RETURNED ERROR CODE=%d.\n", info);
-    
-    elpa_set(handle, "solver", ELPA_USE_SOLVER, &info);  
-    if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-        
+            
     if(iam==0) wprintf("# SETTING UP OF ELPA  DONE.\n");
 #endif
     
@@ -1058,6 +1069,7 @@ int main( int argc , char ** argv )
         for(i=0; i< ENERGYITEMS; i++) energy_old[i] = energy[i]; // make copy
         npart_old[SPINA]=npart[SPINA]; npart_old[SPINB]=npart[SPINB]; // make copy 
         Lz_a_old=Lz_a; Lz_b_old=Lz_b; Lz_old=Lz; 
+        S_old=S; S=0.0; // save value of entropy and reset buffer
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
         
         // take density in the center and use it for definition of the kF (for SPINA)
@@ -1072,7 +1084,7 @@ int main( int argc , char ** argv )
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
 #endif
-        if(iam==0) wprintf("# EXECUTING: process_params(md.params, %f)\n", kF);
+        if(iam==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
         for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         process_params(dc_params, &kF, mu, extra_data_size, extra_data);
@@ -1368,9 +1380,9 @@ int main( int argc , char ** argv )
             // compute contribution to the densities
             b_t();
 #if CODEDIM==1
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].ky, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].ky, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry, &S) );
 #else
-            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry) );
+            cpu_exec( compute_contribution_to_densities(niq_d, En_d_local, U_d, dc_ec, beta, densall_partial, &mdfft, kvecs[ikz].kz, kvecs[ikz].weight, md.spinsymmetry, &S) );
 #endif
             rt_dens+=e_t(0);
             
@@ -1385,13 +1397,17 @@ int main( int argc , char ** argv )
             
         } // for(ikz=mylidx; ikz<myuidx; ikz++)
         
+        // For wf-reproducibility pack - save present checkpoint file
+        if(saving_iteration==1 && iam==0) copy_checkpoint();
+        
         // global reduction
         b_t();
         fflush(stdout); // for nice printing
         MPI_Allreduce( h_densities_partial, h_densities, DENSDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce( MPI_IN_PLACE, &S, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( MPI_IN_PLACE, &nwf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
         if(iam==0) wprintf("# NWF=%d\n", nwf);
-        if(iam==0) wprintf("# Number of nwf in [-ecut,+ecut] to be extracted is: %d (%.1f%% of total number of states)\n", nwf, 100.0*nwf/(NXYZ*2));
+        if(iam==0) wprintf("# NUMBER OF EXTRACTED nwf IN ENERGY RANGE [-ecut,+ecut] IS %d (%.1f%% OF TOTAL NUMBER OF STATES)\n", nwf, 100.0*nwf/(NXYZ*2));
         rt_dens+=e_t(0);
         
         b_t();
@@ -1428,7 +1444,7 @@ int main( int argc , char ** argv )
         
         // ------------------ update chemical potentials ------------------
         b_t();
-        if(iam==0) wprintf("# MUCHANGE FROM: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE FROM: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
         for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
 #if CODEDIM==1
@@ -1436,7 +1452,8 @@ int main( int argc , char ** argv )
 #else
         npart[SPINA]*=DXYZ*NZ; npart[SPINB]*=DXYZ*NZ; 
 #endif
-        if(it>0) 
+        i=0; // as flag for broyden
+        if(it>0 && saving_iteration==0) // skip updating the potential if it is saving iteration 
         {       
             double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
             double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
@@ -1445,18 +1462,25 @@ int main( int argc , char ** argv )
             {
                 if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
                 else               muchange_a=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             if(fabs(muchange_b)>md.mumaxchange*eF)
             {
                 if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
                 else               muchange_b=-1.0*md.mumaxchange*eF;
+                i=1; // deactivate broyden
             }
             dc_mu_a -= muchange_a;
             dc_mu_b -= muchange_b;  
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
-                        
         }
-        if(iam==0) wprintf("# MUCHANGE TO  : mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+        if(iam==0) wprintf("# MUCHANGE TO  : mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
+        
+        if(i==1 && it>md.startbroyden && it<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
+        {
+            md.startbroyden=it;
+            if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
+        }
         rt_other+=e_t(0);
         
         // ------------------ mix densities ------------------
@@ -1501,7 +1525,7 @@ int main( int argc , char ** argv )
             
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
                 
-            if(iam==0) wprintf("# MUCHANGE BROY: mu_a=%16.8g  mu_b=%16.8g\n", dc_mu_a, dc_mu_b);
+            if(iam==0) wprintf("# MUCHANGE BROY: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
             if(iam==0) wprintf("# DENSITIES MIX: BROYDEN MIXING\n");
         }
         else
@@ -1520,7 +1544,16 @@ int main( int argc , char ** argv )
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
         rt_other+=e_t(0);
-                
+        
+        // ------------------------ energy ----------------------
+        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
+              
+        // ---------------------- entropy -----------------------
+        if(iam==0) wprintf("# ENTROPY [T/eF=%16.8g]: it=%d\n", 1.0/(beta*eF), it);
+        if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
+            "S/NkB", S/(npart[SPINA]+npart[SPINB]), S_old/(npart_old[SPINA]+npart_old[SPINB]), 
+                           (S/(npart[SPINA]+npart[SPINB])-S_old/(npart_old[SPINA]+npart_old[SPINB])));
+        
         // ------------------ angular momentum ------------------
         b_t();
 #if CODEDIM==1
@@ -1528,19 +1561,19 @@ int main( int argc , char ** argv )
 #else
         cpu_exec( compute_angular_momentum_Lz(densall.j_a_x, densall.j_a_y, &Lz_a) );
         cpu_exec( compute_angular_momentum_Lz(densall.j_b_x, densall.j_b_y, &Lz_b) );
-#endif
+
         Lz = Lz_a + Lz_b; // total angular momentum
         if(iam==0) wprintf("# ANGULAR MOMENTUM: it=%d\n", it);
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_A", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
+            "Lza/Na", Lz_a/npart[SPINA], Lz_a_old/npart_old[SPINA], (Lz_a/npart[SPINA]-Lz_a_old/npart_old[SPINA]));
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_B", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
+            "Lzb/Nb", Lz_b/npart[SPINB], Lz_b_old/npart_old[SPINB], (Lz_b/npart[SPINB]-Lz_b_old/npart_old[SPINB]));  
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n", 
-            "LZ_T", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
+            "Lzt/Nt", Lz/(npart[SPINA]+npart[SPINB]), Lz_old/(npart_old[SPINA]+npart_old[SPINB]), (Lz/(npart[SPINA]+npart[SPINB])-Lz_old/(npart_old[SPINA]+npart_old[SPINB])));
+#endif
         
         // ------------------ check convergence ------------------
         is_converged=1;
-        cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
         if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
         if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
@@ -1569,12 +1602,23 @@ int main( int argc , char ** argv )
         if(fabs((E_tot-E_tot_old)/Effg)>md.energyconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s\n", 
                 "E_tot", E_tot/Effg, E_tot_old/Effg, (E_tot-E_tot_old)/Effg, convstatus[is_converged_local]);
+        
         double minF_new = E_tot - dc_mu_a*npart[SPINA] - dc_mu_b*npart[SPINB];
         double minF_old = E_tot_old - dc_mu_a_old*npart_old[SPINA] - dc_mu_b_old*npart_old[SPINB];
         if(iam==0) wprintf("# MINIMIZATION FUNCTION: %16.8f\n", minF_new);
         if(iam==0) wprintf("# FUNCTION CHANGED BY: %16.8f\n", minF_new-minF_old);
-        if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, energy, npart, dc_params, dc_extra_data_size, dc_extra_data) );
+        for(i=0; i<ENERGYITEMS; i++) observables[i]=energy[i]; observables[ENTROPY]=S;
+        if(iam==0) cpu_exec( logger_add_entry(it, densall, potsall, kF, mu, observables, npart, dc_params, dc_extra_data_size, dc_extra_data) );
         cpu_exec( wslda_check_array_against_naninf(ENERGYITEMS, energy) );
+        
+        // broyden restarting
+        i=0;
+        if(fabs((E_tot-E_tot_old)/Effg)>md.broydenEmaxchg) i=1;
+        if(i==1 && it+1-md.Mbroyden-md.broydenEdelay>md.startbroyden && it+1<md.stopbroyden && md.broyden == 1 && md.broydenautores==1)
+        {             //md.Mbroyden+x - typically after a few iteraton once the Broyden starts we observer energy fluctuation that should vanish 
+            md.startbroyden=it+1;
+            if(iam==0) wprintf("# ENERGY HAS CHANGED MORE THAN broydenEmaxchg=%f! RESTARTING BROYDEN TO AVOID INSTABILITY.\n", md.broydenEmaxchg);
+        }
     
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
@@ -1636,6 +1680,12 @@ int main( int argc , char ** argv )
 #endif
             }
             
+            if(iam==0)
+            {
+                wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
+                create_reprowf_tar(extra_data_size);
+            }
+                
             if(iam==0) wprintf("# EXTRA SAVING ITERATION DONE.\n");
             break;
         }
@@ -1664,6 +1714,10 @@ int main( int argc , char ** argv )
         
     /* messy exit here */
     destroy_fft_plans(&mdfft);
+    
+#ifdef TESTSUITE
+    if(iam==0) testsuite_ok();
+#endif
     
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;

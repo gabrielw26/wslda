@@ -37,8 +37,19 @@ int wslda_stcheckpoint_format(int codedim)
     char file_name[512];
     
     // Step 1: Search for present data format
-    sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+    sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
     if(exists(file_name)) return WSLDA_ST_CHECKPOINT_DAT;
+    
+    // deprecated: remove in future
+    sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+    if(exists(file_name)) 
+    {
+        char cmd[1024];
+        sprintf(cmd,"cp %s/checkpoint.dat %s_checkpoint.dat", md.inprefix,md.inprefix);
+        wprintf("# OLD NAMING FOR CHECKPOINT FILE `%s`. EXECUTING: %s\n", file_name, cmd);
+        system(cmd);
+        return WSLDA_ST_CHECKPOINT_DAT;
+    }
     
     // Step 2: Search for old type of checkpoint file
     if     (codedim==1) sprintf(file_name, "%s/checkpoint.s1dpca", md.inprefix);
@@ -55,7 +66,7 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     intepolation[0]=0; 
     resize[0]=0;
     char file_name[512];
-    sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+    sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
     wprintf("# INSPECTING CHECKPOINT FILE `%s`\n", file_name);
     
     FILE * pFile = fopen(file_name, "rb");
@@ -84,7 +95,7 @@ int wslda_st_required_operations(int codedim, int *intepolation, int *resize)
     
     if(inLX!=LX || inLY!=LY || inLZ!=LZ)
     {
-        wprintf("# ERORR: [LX,LY,LZ]=[%.3f,%.3f,%.3f] FOR THE TARGET LATTICE DIFFERS FROM INPUT LATTICE!\n", LX, LY, LZ);
+        wprintf("# WARNING: [LX,LY,LZ]=[%.3f,%.3f,%.3f] FOR THE TARGET LATTICE DIFFERS FROM INPUT LATTICE!\n", LX, LY, LZ);
 //         return WSLDA_ERR_INCOMPATIBLE_CHECKPOINT_FILE;
         report_warning(WSLDA_WRN_CHECKPOINT_UNPREDICTED, stdout);
         intepolation[0]=incodedim; 
@@ -121,10 +132,10 @@ int wslda_st_read_checkpoint(int fileidx, int codedim, int *it,
     char file_name[512];
     if(fileidx==0) 
     {
-        sprintf(file_name, "%s/checkpoint.dat", md.inprefix);
+        sprintf(file_name, "%s_checkpoint.dat", md.inprefix);
         wprintf("# LOADING CHECKPOINT FILE `%s`\n", file_name);
     }
-    else sprintf(file_name, "%s/checkpoint.dat.%d", md.outprefix, fileidx);
+    else sprintf(file_name, "%s_checkpoint.dat.%d", md.outprefix, fileidx);
     
     int lattice1[4]={0,NX,NY,NZ};
     double lattice2[3]={DX, DY, DZ};
@@ -188,11 +199,11 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
     char file_name_in[512], file_name_out[512];
     if(fileidx==0) 
     {
-        sprintf(file_name_in, "%s/checkpoint.dat", md.inprefix);
+        sprintf(file_name_in, "%s_checkpoint.dat", md.inprefix);
         wprintf("# LOADING CHECKPOINT FILE `%s`\n", file_name_in);
     }
-    else sprintf(file_name_in, "%s/checkpoint.dat.%d", md.outprefix, fileidx);
-    sprintf(file_name_out, "%s/checkpoint.dat.%d", md.outprefix, fileidx+1);
+    else sprintf(file_name_in, "%s_checkpoint.dat.%d", md.outprefix, fileidx);
+    sprintf(file_name_out, "%s_checkpoint.dat.%d", md.outprefix, fileidx+1);
 
     int mbroy, i, j, k, l;
     FILE * pFile;
@@ -520,7 +531,7 @@ int wslda_st_write_checkpoint(int codedim, int it,
     lattice1[0]=codedim;
     
     char file_name[512];
-    sprintf(file_name, "%s/checkpoint.%s", md.outprefix, suffix);
+    sprintf(file_name, "%s_checkpoint.%s", md.outprefix, suffix);
     wprintf("# WRITING CHECKPOINT FILE `%s`\n", file_name);
     if(md.overwrite==0) if(exists(file_name)) return WSLDA_ERR_CANNOT_OVERWRITE;
     

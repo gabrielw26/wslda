@@ -4,12 +4,12 @@
 # =====================================================================
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
-WDATAINC=$(WSLDADIR)lib-wdata/
-WDATASRC=$(WSLDADIR)lib-wdata/
+WDATAINC=$(WSLDADIR)lib/wdata/c/
+WDATASRC=$(WSLDADIR)lib/wdata/c/
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
-       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h ../VERSION.h
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h ../VERSION.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h
 WDATADEPS = wdata.h
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
@@ -58,17 +58,27 @@ all: 1d 2d 3d
 
 3d: dirs d3d
 
+ext: dirs \
+     (BINDIR)solve-uniform \
+     (BINDIR)interpolate-dataset
+
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-1d $^ 
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $(LIBS) $^ 
 
 d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-2d $^ 
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $(LIBS) $^ 
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
-	$(CXX) $(CFLAGS) $(LIBS) -o $(BINDIR)td-wslda-3d $^
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $(LIBS) $^
+
+(BINDIR)solve-uniform: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
 	
-ext: $(WDATAOBJS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -o $(BINDIR)solve-uniform -lm -lfftw3
+(BINDIR)interpolate-dataset: $(WDATAOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 
 $(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
@@ -89,11 +99,11 @@ $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wsld
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
-$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS) $(DEPSLOCAL)
+$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
-	$(NVCC) $(NVCCFLAGS) -c -o $@ $< 
+	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $< 
 
 .PHONY: clean all ver dirs
 

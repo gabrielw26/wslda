@@ -18,7 +18,8 @@ BINDIR=./
 CFLAGS= -std=c11 -O3 -I/work/TDSLDA20/share/FFTW3/include -mkl=cluster -DM_PI=3.14159265358979323846 -DM_PI_2=1.570796326794896558 -I/work/TDSLDA20/share/elpa/include/elpa_openmp-2020.11.001 
 LIBS=/work/TDSLDA20/share/FFTW3/lib/libfftw3.a -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -lpthread -lm -ldl -mkl=cluster -L/work/TDSLDA20/share/elpa/lib -lelpa
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st
 
 
  

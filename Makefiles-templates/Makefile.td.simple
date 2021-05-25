@@ -16,5 +16,6 @@ NVCCFLAGS = -arch sm_30 -O3
 LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lm
 
 
-include mk.td
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.td
 
