@@ -165,8 +165,8 @@ int compute_matrix_elements_3d(metadata_s3dpca_grid *bgrid, int it, wslda_densit
             ci = indxl2g_( &ixyz2, &bgrid->nb, &bgrid->iq, &ZERO, &bgrid->q )-1; // back to C standard            
             
             // just in case: consitency check
-            if(ri>=2*NXYZ) {printf("ERROR: ri=%d >= 2*NXYZ\n", ri); return -99;}
-            if(ci>=2*NXYZ) {printf("ERROR: ci=%d >= 2*NXYZ\n", ci); return -98;}
+            if(ri>=2*NXYZ) {wprintf("ERROR: ri=%d >= 2*NXYZ\n", ri); return -99;}
+            if(ci>=2*NXYZ) {wprintf("ERROR: ci=%d >= 2*NXYZ\n", ci); return -98;}
             
             if(ci<NXYZ && ri<NXYZ) // part: |   ha    |
             {
@@ -310,7 +310,7 @@ int compute_matrix_elements_3d(metadata_s3dpca_grid *bgrid, int it, wslda_densit
             }
             
         } // for(li=0; li<bgrid->nip; li++)
-//         printf("ci=%d\n", ci); fflush(stdout);
+//         wprintf("ci=%d\n", ci); fflush(stdout);
     } // for(lj=0; lj<bgrid->niq; lj++)
     
     
@@ -384,7 +384,7 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
         
         if(fabs(creal(diff))>1.0e-14 || fabs(cimag(diff))>1.0e-14) 
         {
-            printf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
+            wprintf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
                 ri, ci, creal(x1x2), cimag(x1x2), creal(x2x1), cimag(x2x1)
             );
             hermitian_violated=1;

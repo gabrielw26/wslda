@@ -12,23 +12,23 @@ bindir:
 	mkdir -p ./bin
 
 lib: 
-	$(CXX) -O3 -c -I../lib-wdata/ ../lib-wdata/wdata.c -o ./wdata.o -fPIC
+	$(CXX) -O3 -c -I../lib/wdata/c ../lib/wdata/c/wdata.c -o ./wdata.o -fPIC
 	ar crf libwdata.a wdata.o
 
 wdata-cut: bindir lib
-	$(CXX) $(CFLAGS) wdata-cut.c -o ./bin/wdata-cut -I../lib-wdata/ -L. -lwdata -lm 
+	$(CXX) $(CFLAGS) wdata-cut.c -o ./bin/wdata-cut -I../lib/wdata/c -L. -lwdata -lm 
 
 wdata-sample: bindir lib
-	$(CXX) $(CFLAGS) wdata-sample.c -o ./bin/wdata-sample -I../lib-wdata/ -L. -lwdata -lm 
+	$(CXX) $(CFLAGS) wdata-sample.c -o ./bin/wdata-sample -I../lib/wdata/c -L. -lwdata -lm 
 
 dpca2wdata: bindir lib
-	$(CXX) $(CFLAGS) dpca2wdata.c -o ./bin/dpca2wdata -I../lib-wdata/ -I../hpc-engine/ -L. -lwdata -lm 
+	$(CXX) $(CFLAGS) dpca2wdata.c -o ./bin/dpca2wdata -I../lib/wdata/c -I../hpc-engine/ -L. -lwdata -lm 
 	
 dpca2wdata-hard: bindir lib
-	$(CXX) $(CFLAGS) dpca2wdata-hard.c -o ./bin/dpca2wdata-hard -I../lib-wdata/ -I../hpc-engine/ -L. -lwdata -lm 
+	$(CXX) $(CFLAGS) dpca2wdata-hard.c -o ./bin/dpca2wdata-hard -I../lib/wdata/c -I../hpc-engine/ -L. -lwdata -lm 
 	
 wdata2checkpoint: bindir lib
-	$(CXX) $(CFLAGS) wdata2checkpoint.c -o ./bin/wdata2checkpoint -I../lib-wdata/ -L. -lwdata -lm 
+	$(CXX) $(CFLAGS) wdata2checkpoint.c -o ./bin/wdata2checkpoint -I../lib/wdata/c -L. -lwdata -lm 
 
 clean:
 	rm *.o

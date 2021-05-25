@@ -36,6 +36,8 @@
 #include "tdwslda_static_vars.h"
 #include "logger.h"
 
+int wsldapid; // process id - global variable
+
 int main( int argc , char ** argv ) 
 {
     int i, j, k; // basic iterators
@@ -120,9 +122,9 @@ int main( int argc , char ** argv )
     MPI_Init( &argc , &argv ) ; /* set up the parallel WORLD */
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
+    wsldapid=ip; // save to global variable
     
-    if(ip==0) printf("# CODE: TD-WSLDA-1D\n");
-    if(ip==0) printf("# VERSION: %s\n", VERSION); fflush(stdout);
+    if(ip==0) wprintf("# START OF THE MAIN FUNCTION\n");
 
     // initial memory allocation
     cppmallocl( wf_tbl,np,int);
@@ -142,7 +144,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            printf( "TERMINATING! NO INPUT FILE.\n" ) ;
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -154,12 +156,13 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            printf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;      
         }
        
         // Make copy of input file
+        file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
         sprintf(file_name, "%s_input.txt", md.outprefix);
         file_operation( copy_input_file(argv[i],file_name) ); 
         file_operation( assure_reproducibility(md.outprefix) );
@@ -169,13 +172,16 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     
+    if(ip==0) wprintf("# CODE: TD-WSLDA-1D\n");
+    if(ip==0) wprintf("# VERSION: %s\n", VERSION); fflush(stdout);
+    
     // variables
     dt= md.dt ;
 #ifndef TDWSLDA
     double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
     dt/=Emax; // time step
 #endif
-    
+
 #ifdef SPINSYMMETRY_MODE
     if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
     md.spinsymmetry=1;
@@ -190,12 +196,12 @@ int main( int argc , char ** argv )
     if(md.spinsymmetry==1) md.Nb = md.Na;
     else md.Nb = md.Na +1; 
 
-    if(ip==0) printf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f Nb=%f\n", md.Na, md.Nb);
+    if(ip==0) wprintf("# UNIFORM_TEST_MODE: SETTING NUMBER OF PARTICLES Na=%f Nb=%f\n", md.Na, md.Nb);
     md.init0Na=md.Na; md.init0Nb=md.Nb;
 #endif
     
-    if(ip==0) printf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NX*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
-    
+    if(ip==0) wprintf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NX*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
+  
     cpu_exec( wslda_check_settings() );
     
     // ====================================================================================
@@ -203,33 +209,33 @@ int main( int argc , char ** argv )
     // ====================================================================================    
     int deviceId=0;
 #ifdef CUSTOM_GPU_DISTRIBUTION
-    if(ip==0) printf("# EXECUTING `assign_deviceid_to_mpi_process` TO GET GPUS DISTRIBUTION ACROSS THE SYSTEM\n");
+    if(ip==0) wprintf("# EXECUTING `assign_deviceid_to_mpi_process` TO GET GPUS DISTRIBUTION ACROSS THE SYSTEM\n");
     deviceId = assign_deviceid_to_mpi_process(MPI_COMM_WORLD);
 #else
-    if(ip==0) printf("# ASSUMING STANDARD DISTRIBUTION OF GPUS ACROSS THE SYSTEM [gpuspernode=%d]\n", md.gpuspernode);
+    if(ip==0) wprintf("# ASSUMING STANDARD DISTRIBUTION OF GPUS ACROSS THE SYSTEM [gpuspernode=%d]\n", md.gpuspernode);
     deviceId = ip % md.gpuspernode;
 #endif
-    
+      
 #ifdef PRINT_GPU_DISTRIBUTION
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    printf("# PROCESS ip=%d RUNNING ON NODE %s USES device-id=%d\n", ip, processor_name, deviceId);
+    wprintf("# PROCESS ip=%d RUNNING ON NODE %s USES device-id=%d\n", ip, processor_name, deviceId);
 #endif
     gpu_exec( set_gpu(deviceId) );
         
-    if(ip==0) printf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    if(ip==0) printf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+    if(ip==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    if(ip==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
 #if FUNCTIONAL==BDG
-    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
 #elif FUNCTIONAL==SLDA    
-    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
 #elif FUNCTIONAL==ASLDA    
-    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
 #elif FUNCTIONAL==CUSTOMEDF    
-    if(ip==0) printf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
 #endif
-    
+
     // ====================================================================================
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================
     // ====================================================================================
@@ -255,7 +261,7 @@ int main( int argc , char ** argv )
     {
         if(md.inittype==0)
         {
-            if(ip==0) printf("# CREATING UNIFORM SOLUTION...\n");
+            if(ip==0) wprintf("# CREATING UNIFORM SOLUTION...\n");
             
             // Generate initial state for testing
 #ifdef BDG_MODE
@@ -274,18 +280,18 @@ int main( int argc , char ** argv )
         }
         else 
         {
-            if(ip==0) printf("# READING UNIFORM SOLUTION...\n");
+            if(ip==0) wprintf("# READING UNIFORM SOLUTION...\n");
             if(ip==0) { cpu_exec( read_uniform(&nwf, ip==0) ); cpu_exec( get_nwf_to_evolve_1d(&nwf) ); }
             MPI_Bcast( &__md_pca_uniform , sizeof(metadata_pca_uniform_t), MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
             MPI_Bcast( &nwf , 1, MPI_INT , 0 , MPI_COMM_WORLD ) ;
         }
         
         // divide wf over processes
-        if(ip==0) printf("# INIT0-1: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) wprintf("# INIT0-1: nwf=%d wave-functions to scatter\n", nwf);
 //         ABORT;
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT0-1: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) wprintf("# INIT0-1: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -331,7 +337,7 @@ int main( int argc , char ** argv )
         cppmallocl(h_fbetaEn, nwfip,double);
         cppmallocl(h_kkyz, nwfip*2,double); // 2 accounts that we have ky and kz
         cppmallocl(h_cnt, nwfip,int);
-//         printf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
+//         wprintf("# WF SCATTER: ip=%d processes nwfip=%d wave-functions\n", ip, nwfip);
 
     }        
     else if(md.inittype==1) // Start from solution of st-wslda-1d solver 
@@ -358,21 +364,21 @@ int main( int argc , char ** argv )
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
             if(_nx!=NX || _ny!=NY || _nz!=NZ || _dx!=DX || _dy!=DY || _dz!=DZ)
             {
-                printf("# ST-WSLDA-1D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
-                printf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-                printf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
+                wprintf("# ST-WSLDA-1D INFO FILE NOT CONSISTENT GIVEN SETTINGS\n");
+                wprintf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+                wprintf("# SETTINGS   : nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", NX, NY, NZ, DX, DY, DZ);
                 ABORT_NOBARRIER;
             }
-            printf("# ST-WSLDA-1D: file_name=`%s`\n",file_name);
-            printf("# ST-WSLDA-1D: nwf (all modes)=%d\n",nwf);
-            printf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
-            printf("# ST-WSLDA-1D: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
+            wprintf("# ST-WSLDA-1D: file_name=`%s`\n",file_name);
+            wprintf("# ST-WSLDA-1D: nwf (all modes)=%d\n",nwf);
+            wprintf("# ST-WSLDA-1D: nx=%d, ny=%d, nz=%d, dx=%f, dy=%f, dz=%f\n", _nx, _ny, _nz, _dx, _dy, _dz);
+            wprintf("# ST-WSLDA-1D: kF=%f, mu_a=%f, mu_b=%f, ec=%f, beta=%f\n", kF, mu[SPINA], mu[SPINB], ec, beta);
             fflush(stdout);
             
             // scan files and determine nwf in each of them
             nwf_s1dpca=nwf;
             file_operation( scan_stwslda1d_info_files(md.inprefix, 1, kvecs_to_consder, kvecs, &nwf_s1dpca, nwf_per_kyz) );
-            printf("# ST-WSLDA-1D: nwf in binary files=%d\n",nwf_s1dpca);
+            wprintf("# ST-WSLDA-1D: nwf in binary files=%d\n",nwf_s1dpca);
             nwf=nwf_s1dpca;
         }
         MPI_Bcast( &nwf , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
@@ -384,10 +390,10 @@ int main( int argc , char ** argv )
         MPI_Bcast( kvecs , sizeof(wslda_kmode)*kvecs_to_consder , MPI_BYTE , 0 , MPI_COMM_WORLD ) ; 
                 
         // divide wf over processes
-        if(ip==0) printf("# INIT1: nwf=%d wave-functions to scatter\n", nwf);
+        if(ip==0) wprintf("# INIT1: nwf=%d wave-functions to scatter\n", nwf);
         if ( np > nwf )
         {
-            if(ip==0) printf("# INIT1: np[%d] > nwf[%d]!\n", np, nwf);
+            if(ip==0) wprintf("# INIT1: np[%d] > nwf[%d]!\n", np, nwf);
             ABORT;
         }
         getnwfip( ip , np , nwf , &nwfip ) ;
@@ -411,7 +417,7 @@ int main( int argc , char ** argv )
         int _4_nblocks = (int)ceil((float)(np)/_4_max_readers);
         for(i=0; i<_4_nblocks; i++)
         {
-            if(ip==0) { printf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
+            if(ip==0) { wprintf("# INIT1: BLOCK ID[%d] CONSITING WITH %d PROCESSES READS DATA...\n", i, _4_max_readers); fflush(stdout);}
             if(ip%_4_nblocks == i) file_operation( read_stwslda1d_wf(md.inprefix, 1, kvecs_to_consder, kvecs, nwf_per_kyz, mylidx, myuidx, h_wavefun, h_fbetaEn, h_kkyz, h_cnt) );
             MPI_Barrier(MPI_COMM_WORLD);
         }
@@ -422,7 +428,7 @@ int main( int argc , char ** argv )
         if(ip==0)
         {
             sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
-            printf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
+            wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
             file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, h_potentials) );           
         }
         
@@ -444,7 +450,7 @@ int main( int argc , char ** argv )
         }
         MPI_Allreduce( &Nmya, &Ntota, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce( &Nmyb, &Ntotb, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        if(ip==0) printf("# INIT1: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
+        if(ip==0) wprintf("# INIT1: TOTAL NUMBER OF PARTICLES: SPIN_A=%16.8g SPIN_B=%16.8g TOTAL=%16.8g\n", Ntota, Ntotb, Ntota+Ntotb); 
         if(md.spinsymmetry==1) Ntota = Ntota+Ntotb; 
         Effg = 0.6 * Ntota * eF;
         fflush(stdout);
@@ -455,11 +461,14 @@ int main( int argc , char ** argv )
     }
     else
     {
-        if(ip==0) printf("NOT SUPPORTED INITTYPE=%d!\n", md.inittype);
+        if(ip==0) wprintf("NOT SUPPORTED INITTYPE=%d!\n", md.inittype);
         ABORT;
     }
     
+    if(ip==0 && (md.inittype==1 || md.inittype==2 || md.inittype==3)) copy_reprowftar();
+    
     // wait till loading is done
+    fflush(stdout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ====================================================================================
@@ -497,7 +506,7 @@ int main( int argc , char ** argv )
     // ====================================================================================    
     if(md.inittype==5){ 
 
-        if(ip==0) printf("# LOADING CHECKPOINT\n");
+        if(ip==0) wprintf("# LOADING CHECKPOINT\n");
         b_t();
         size_t memsize;
 #if INTEGRATION_SCHEME==AB3AM4
@@ -524,21 +533,17 @@ int main( int argc , char ** argv )
         if(ip==0)
         {
             double memsize_gb = (double)(memsize) / pow(2,30);
-            printf("# CHECKPOINT INFO: MODE=READ: DATA SIZE=%12.2f GB\n",  memsize_gb);
-            printf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
-            printf("# CHECKPOINT INFO: READ TIME=%12.2f sec\n", rt);
-            printf("# CHECKPOINT INFO: READ SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+            wprintf("# CHECKPOINT INFO: MODE=READ: DATA SIZE=%12.2f GB\n",  memsize_gb);
+            wprintf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
+            wprintf("# CHECKPOINT INFO: READ TIME=%12.2f sec\n", rt);
+            wprintf("# CHECKPOINT INFO: READ SPEED=%12.3f GB/sec\n", memsize_gb/rt);
         }
         
          // fill h_cnt with data
          for(i=0; i<nwfip; i++) h_cnt[i]=wslda_kmodes_1d_get_weight(h_kkyz[i], h_kkyz[i+nwfip]);
     }
     
-#ifdef TDWSLDA
-    dt/=eF; // time step
-#endif
-    
-    if(ip==0) printf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
+    if(ip==0) wprintf("# INITIALIZING GPU BUFFERS OF ABM ALGORITHM...\n");
     
     if(md.inittype!=5)
     { 
@@ -561,12 +566,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
     gpu_exec( memcopy_host2gpu(h_cnt    , d_cnt    ,  (size_t)nwfip  *sizeof(int)) );
-    
-    // Set constants
-    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
-    md.ec=ec; 
-    TDWSLDA_SET_STATIC_VARS;
-    
+        
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
     // ===================================================================================
@@ -574,17 +574,17 @@ int main( int argc , char ** argv )
     MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     if(extra_data_size>0)
     {
-        if(ip==0) printf("# EXTRA_DATA IS ACTIVE.\n");
-        if(ip==0) printf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+        if(ip==0) wprintf("# EXTRA_DATA IS ACTIVE.\n");
+        if(ip==0) wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
         if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
         {                                                             
-            fprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
-            fprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+            wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
             MPI_Finalize() ;
             /* Arrays will be cleared automatically */
             return( EXIT_FAILURE ) ; 
         }
-        
+        if(ip==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
         if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
         
@@ -592,21 +592,33 @@ int main( int argc , char ** argv )
         gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
         gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
         gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
+        
+        // reproducibility pack
+        if(ip==0) save_extradata_to_file(extra_data_size, extra_data);
     }
     
     // Process params and copy them to gpu;
 #ifdef TDWSLDA
-    process_params(md.params, kF, mu, extra_data_size, extra_data);
+    if(ip==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
+    process_params(md.params, &kF, mu, extra_data_size, extra_data);
 #else
     process_params(md.params, kF, mu);
 #endif
+    // Set constants
+    eF=0.5*kF*kF;
+#ifdef TDWSLDA
+    dt/=eF; // time step
+#endif
+    gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
+    md.ec=ec; 
+    TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
     
 #ifdef BDG_MODE   
     gpu_exec( memcopy_const_BdG(md.aBdG) );
 #endif
     
-    if(ip==0) printf("# DONE.\n");
+    if(ip==0) wprintf("# DONE.\n");
     
     
     // CUFFT plans
@@ -619,7 +631,7 @@ int main( int argc , char ** argv )
     
     
     // Allocate memory for plans
-    if(ip==0) printf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
+    if(ip==0) wprintf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
     if(workarea_size<cufft_workSize) workarea_size=cufft_workSize;
     gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
     
@@ -629,7 +641,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ================================= INITIAL MEASUREMENT ==============================
     // ====================================================================================
-    if(ip==0) printf("# INITIAL MEASUREMENT\n");
+    if(ip==0) wprintf("# INITIAL MEASUREMENT\n");
     // normalize wf 
     gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );      
     // derivatives
@@ -656,7 +668,9 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+#endif
     
     // report result
     if(ip==0)
@@ -676,18 +690,18 @@ int main( int argc , char ** argv )
         Laz=h_energy[LZA];
         Lbz=h_energy[LZB];
         
-        printf("# GPU ENERGY     : ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); 
+        wprintf("# GPU ENERGY     : ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); 
         
         // Create check stamp file
         sprintf(file_name, "%s_check.stamp", md.outprefix);
-        printf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
+        wprintf("# CREATING CHECK STAMP FILE: `%s`\n",file_name);
         file_operation( touch_file(file_name) );
         // Take densities from device
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
         file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) ); 
         
-        printf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "rt"); 
-        printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
+        wprintf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "rt"); 
+        wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
         
         // Create run log and add entry
         cpu_exec( logger_create_header(execcmd) );
@@ -742,7 +756,7 @@ int main( int argc , char ** argv )
     { 
         // NOTE: I assume that potential is constant during first steps
         // NOTE: I assume there is no quantum friction during the first steps
-        if(ip==0) printf("# SELFSTART: EXECUTING TAYLOR EXPANSION OF THE EVOLUTION OPERATOR.\n");
+        if(ip==0) wprintf("# SELFSTART: EXECUTING TAYLOR EXPANSION OF THE EVOLUTION OPERATOR.\n");
         
         double *d_qpe; // buffers for quasiparticle energies
         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_qpe) );
@@ -937,7 +951,7 @@ int main( int argc , char ** argv )
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             
             // NOTE: d_wf keeps wave-function for t+dt
-//             if(ip==0) { printf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
+//             if(ip==0) { wprintf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
         }
         
         // Copy fkm1, ..., fkm4 back to gpu
@@ -955,7 +969,7 @@ int main( int argc , char ** argv )
         // clear memory
         gpu_exec( gpu_free(d_qpe) );
         free(h_fkm);
-        if(ip==0) printf("# SELFSTART: DONE.\n");
+        if(ip==0) wprintf("# SELFSTART: DONE.\n");
          
         // derivatives
         gradients_computed=1;
@@ -1000,9 +1014,9 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            printf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
+            wprintf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
              
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
+            wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
         }    
     
     }
@@ -1178,7 +1192,7 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            printf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, rt);        
+            wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %8.2f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, rt);        
             
             double _npart[2]={h_energy[NPARTA],h_energy[NPARTB]};
             cpu_exec( logger_add_entry(i_meas+1, densall, potsall, kF, mu, h_energy, _npart, md.params, extra_data_size, extra_data) );
@@ -1199,22 +1213,22 @@ int main( int argc , char ** argv )
             
             // another possibility - we approach walltime
             rt = wt_e_t();
-//             printf("# TIME TO WALLTIME: %8.2f [h]\n", md.walltime-rt/3600.);
+//             wprintf("# TIME TO WALLTIME: %8.2f [h]\n", md.walltime-rt/3600.);
             if(rt>md.walltime*3600) 
             {
                 forceCP = 1;
-                printf("# WALLTIME REACHED!\n");
+                wprintf("# WALLTIME REACHED!\n");
             }
         }
         MPI_Bcast(&forceCP, 1, MPI_INT , 0 , MPI_COMM_WORLD );
         if(forceCP==1) md.checkpoint = 1;
-        if(forceCP==1 && ip==0) printf("# CONDUCTING EMERGENCY CHECKPOINT!\n");
+        if(forceCP==1 && ip==0) wprintf("# CONDUCTING EMERGENCY CHECKPOINT!\n");
         if(forceCP==1) break;
         
         // Check if siulation is stable
         if( fabs( (h_energy[NPARTA]+h_energy[NPARTB]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
         {
-            if(ip==0) printf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n");
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n");
             break;
         }
 
@@ -1250,17 +1264,22 @@ int main( int argc , char ** argv )
         if(ip==0)
         {
             double memsize_gb = (double)(memsize) / pow(2,30);
-            printf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
-            printf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
-            printf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
-            printf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+            wprintf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
+            wprintf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
+            wprintf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
+            wprintf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
             sprintf(file_name, "%s_check.stamp", md.outprefix);
-            printf("# CREATING CHECK STAMP: `%s`\n",file_name);
+            wprintf("# CREATING CHECK STAMP: `%s`\n",file_name);
             // Take densities from device
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
             file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );   
         }
     }
+    
+#ifdef TESTSUITE
+    if(ip==0) testsuite_ok();
+#endif
+    
     /* messy exit here */
     MPI_Barrier( MPI_COMM_WORLD ) ;
     MPI_Finalize() ;

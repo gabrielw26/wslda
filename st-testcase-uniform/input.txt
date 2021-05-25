@@ -43,11 +43,20 @@ nocurrents              0       # set to 1 if you want to impose ja=jb=0 (soluti
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05 # in units of Fermi energy
 
-broyden                 1 # use 1 if to activate Broyden mixing
+# ----------------- Broyden algorithm ----------------------
+# wiki: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Broyden%20algorithm
+broyden                 1 # use 1 to activate the Broyden algorithm
 Mbroyden                5
 broydenmixing           0.75
-startbroyden            5
+# startbroyden            5
 # stopbroyden             10
+# broydenautores          1      # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
+# broydenEmaxchg          0.1    # if the total energy between iteration change be more than broydenEmaxchg 
+                               # then Broyden is restarted, (default=0.1)
+# broydenEdelay           5      # scan energy changes only after broydenEdelay with Broyden has been executed 
+                               # typically, just after starting the Broyden energy fluctuations are observed 
+                               # which should decay within a few iterations (default=5)
+
 
 # -------------- PARALLELIZATION SETTINGS --------------
 # NOTE: all matrices are processed collectively by p*q processes

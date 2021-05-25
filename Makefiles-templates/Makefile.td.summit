@@ -19,5 +19,6 @@ NVCCFLAGS = -arch sm_60 -O3
 LIBS=-L$(OMPI_DIR)/lib -L$(CUDA_DIR)/targets/ppc64le-linux/lib/stubs -lmpi_ibm -lnvidia-ml -L$(CUDA_DIR)/lib64 -lcudart -lcufft -lm
 
 
-include mk.td
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.td
 

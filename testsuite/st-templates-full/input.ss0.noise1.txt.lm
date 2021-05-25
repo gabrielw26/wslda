@@ -1,0 +1,79 @@
+# -------------------- CUSTOM PARAMS ------------------
+params31            1.0 # add noise
+
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
+inittype                0       #  0 - create uniform solution and start from it                                                                                                                                                
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
+                                #  
+                                # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
+
+# ------------------- INPUT/OUTPUT ------------------
+outprefix               test.ss0.noise1
+inprefix                none
+overwrite               1       # allow for overwriting results
+checkpoint              1       # do checkpoints after each iteration
+resetit                 0       # if 1 then reset iterations counter
+writewf                 0       # write wf at the end of computation yes=1, no=0
+# writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
+iogroups                8       # number of IO groups used for parallel wf writing, default=1
+
+# list of variables for writing
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
+# default = rho delta j
+writevar           default all
+
+# ----------------- PARTICLE NUMBERS -----------------
+Na                      28.  # Requested number of particles a-type
+Nb                      28.  # Requested number of particles b-type
+
+# ----------------- SELF-CONSISTENT LOOP -----------------
+# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*(pi/DX)^2
+energyconveps           1.0e-6   # energy convergence epsilon
+npartconveps            1.0e-6   # number of particles convergence epsilon
+linearmixing            0.5      # mixing parameter for densities, default=0.5
+muchange                0.5      # coefficient for changing chemical potential, default=0.5
+maxiters                500     # maximum number of iterations, default=10000
+temperature             0.1      # requested temperature in units of eF, default T=0
+# referencekF             1.0    # reference kF
+aBdG                    -0.9   # akF about 0.9
+spinsymmetry            0       # set to 1 if you want to impose Na=Nb
+nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
+nomixstart              0       # do not do mixing for starting iteration
+mumaxchange             0.05 # in units of Fermi energy
+
+broyden                 0 # use 1 if to activate Broyden mixing
+Mbroyden                5
+broydenmixing           0.75
+startbroyden            5
+# stopbroyden             10
+
+# -------------- PARALLELIZATION SETTINGS --------------
+# NOTE: all matrices are processed collectively by p*q processes
+# Following condition must be satisfied:
+#   for 3D code: p*q=np
+#   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
+# where np is total number of processes utilized for computation
+#p                       2
+#q                       2
+
+# data block size 
+# if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
+mb                      16
+nb                      16
+
+# ----------- IN CASE OF: inittype=0 ----------------
+# For more info see wiki pages: Initialization of the st wslda solvers
+# init0Na                 28.0   # requested number of particles of type a, default=Na
+# init0Nb                 28.0   # requested number of particles of type b, default=Nb
+# init0muchange           0.1    # change rate of chemical potentials, default muchange
+init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
+# init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
+# init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
+# init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
+# init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
+init0maxiter            10000   # maximum number of iterations, default=maxiters
+init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
+init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 
+

@@ -1,0 +1,90 @@
+# These tests read wave-functions from st-calcs
+# --------------------------------------------------------------------------
+# read 1d wf
+# --------------------------------------------------------------------------
+tag: read-1d_1d
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf1d" >> input.cp.read.txt
+exec: echo "inittype   1" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf1d_uniform.ref > ./wf1d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s clean
+exec: make -f ../td-templates-full/Makefile.1.s 1d
+test: td-wslda-1d
+exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf1d_uniform.ref
+
+tag: read-1d_2d
+exec: rm -rf test.cp.read*
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf1d" >> input.cp.read.txt
+exec: echo "inittype   1" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf1d_uniform.ref > ./wf1d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf1d_uniform.ref
+
+tag: read-1d_3d
+exec: rm -rf test.cp.read*
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf1d" >> input.cp.read.txt
+exec: echo "inittype   1" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf1d_uniform.ref > ./wf1d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s 3d
+test: td-wslda-3d
+exec: timeout 360 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf1d_uniform.ref
+
+
+# --------------------------------------------------------------------------
+# read 2d wf
+# --------------------------------------------------------------------------
+tag: read-2d_2d
+exec: rm -rf test.cp.read*
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf2d" >> input.cp.read.txt
+exec: echo "inittype   2" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf2d_uniform.ref > ./wf2d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf2d_uniform.ref
+
+tag: read-2d_3d
+exec: rm -rf test.cp.read*
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf2d" >> input.cp.read.txt
+exec: echo "inittype   2" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf2d_uniform.ref > ./wf2d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s 3d
+test: td-wslda-3d
+exec: timeout 360 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf2d_uniform.ref
+
+# --------------------------------------------------------------------------
+# read 3d wf
+# --------------------------------------------------------------------------
+tag: read-3d_3d
+exec: rm -rf test.cp.read*
+exec: cp ../td-templates-full/input.cp* .
+exec: echo "inprefix  ../st-writewf/wf3d" >> input.cp.read.txt
+exec: echo "inittype   3" >> input.cp.read.txt
+exec: echo "spinsymmetry   1" >> input.cp.read.txt
+exec: head -n 9 ../st-writewf/wf3d_uniform.ref > ./wf3d_uniform.ref
+exec: make -f ../td-templates-full/Makefile.1.s 3d
+test: td-wslda-3d
+exec: timeout 360 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp wf3d_uniform.ref

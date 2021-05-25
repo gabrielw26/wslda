@@ -700,7 +700,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
         else if(ikz==nz/2) tnwf+=i;
         else       tnwf+=2*i;
         
-//         printf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
+//         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
     if(tnwf!=*nwf) return -1;
@@ -741,7 +741,7 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
         
         nwf_per_kyz[ikz]=i;
         tnwf+=i*kvecs[ikz].weight;        
-//         printf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
+//         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
     if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
@@ -764,7 +764,7 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
             
 //             int ii;
 //             for(ii=0; ii<i; ii++)
-//                 printf("TTT: %6d %12.8f %12.8f %6d %6d %12.8f %12.8f\n", ikz, kvecs[ikz].ky,kvecs[ikz].kz, i, ii, kytmp[ii], kztmp[ii]); // TODO
+//                 wprintf("TTT: %6d %12.8f %12.8f %6d %6d %12.8f %12.8f\n", ikz, kvecs[ikz].ky,kvecs[ikz].kz, i, ii, kytmp[ii], kztmp[ii]); // TODO
         }
     }
     else if(codedim==3)
@@ -804,7 +804,7 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     ikzadd=1;
 #endif
     
-//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+//     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
@@ -815,11 +815,11 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
         {
             if(iwf>=mylidx && iwf<myuidx)
             {
-//                 printf("loading iwf=%d %d\n", iwf, ikz);
+//                 wprintf("loading iwf=%d %d\n", iwf, ikz);
                 
                 if(fu==NULL) // open files
                 {
-//                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+//                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                     sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
                     sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
                     sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
@@ -858,7 +858,7 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
             fclose(fv);
             fclose(fkkz);
             fclose(ffbeta);
-//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+//             wprintf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
         }
     }
     
@@ -890,7 +890,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     ikzadd=1;
 #endif
     
-//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+//     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
@@ -916,11 +916,11 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
             {
                 if(iwf>=mylidx && iwf<myuidx)
                 {
-    //                 printf("loading iwf=%d %d\n", iwf, ikz);
+    //                 wprintf("loading iwf=%d %d\n", iwf, ikz);
                     
                     if(fu==NULL) // open files
                     {
-    //                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+    //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                         sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
                         sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
                         sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
@@ -964,7 +964,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
             fclose(fv);
             fclose(fkkz);
             fclose(ffbeta);
-//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+//             wprintf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
         }
     }
     
@@ -1003,7 +1003,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
     int lNdim, dcoeff, dd;
     int ix, iy, iz, ixyz;
     
-//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+//     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
     for(ikz=0; ikz<kvecs_to_consder; ikz++)
     {
@@ -1025,7 +1025,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
             dcoeff=1;
             wslda_kmodes_1d_get_modes(kvecs[ikz].ky, kvecs[ikz].kz, &dcoeff, kytmp, kztmp);
             lNdim=NX*NY*NZ;
-//             printf("CCC: %6d %6d %6d\n", ikz, dcoeff, kvecs[ikz].weight);
+//             wprintf("CCC: %6d %6d %6d\n", ikz, dcoeff, kvecs[ikz].weight);
             if(dcoeff!=kvecs[ikz].weight) return -122;
         }
 
@@ -1046,11 +1046,11 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
             {
                 if(iwf>=mylidx && iwf<myuidx)
                 {
-//                     printf("loading iwf=%d %d\n", iwf, ikz);
+//                     wprintf("loading iwf=%d %d\n", iwf, ikz);
                     
                     if(fu==NULL) // open files
                     {
-//                         printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+//                         wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                         sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
                         sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
                         sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
@@ -1138,7 +1138,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
             fclose(fv);
             fclose(fkkz);
             fclose(ffbeta);
-//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+//             wprintf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
         }
     }
     
@@ -1334,7 +1334,7 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
     FILE *fv;
     FILE *ffbeta;
     
-//     printf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+//     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
     for(ikz=0; ikz<number_of_files; ikz++)
     {
@@ -1345,11 +1345,11 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
         {
             if(iwf>=mylidx && iwf<myuidx)
             {
-//                 printf("loading iwf=%d %d\n", iwf, ikz);
+//                 wprintf("loading iwf=%d %d\n", iwf, ikz);
                 
                 if(fu==NULL) // open files
                 {
-//                     printf("OPENING iwf=%d, file=%d\n", iwf, ikz);
+//                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                     sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, ikz);
                     sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, ikz);
                     sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, ikz);
@@ -1382,7 +1382,7 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
             fclose(fu);
             fclose(fv);
             fclose(ffbeta);
-//             printf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
+//             wprintf("CLOSING iwf=%d, file=%d\n", iwf, ikz);
         }
     }
     
@@ -1474,6 +1474,26 @@ int check_stamp_entry_coeff(const char *file_name, int idens, int ndens, double 
     fclose(check_stamp);
                 
     return 0;
+}
+
+/**
+ * Checks if output file exists
+ * if yes, returns error
+ * */
+int check_if_can_overwrite_files()
+{
+    if(md.overwrite==1) return WSLDA_OK;
+    
+    char fname[1024];
+    sprintf(fname, "%s_input.txt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.wlog", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.wtxt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s.stdout", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_predefines.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_problem-definition.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    sprintf(fname, "%s_logger.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
+    
+    return WSLDA_OK;
 }
 
 #endif

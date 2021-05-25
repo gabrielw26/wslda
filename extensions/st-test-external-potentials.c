@@ -25,6 +25,7 @@
 #include <math.h>
 #include <complex.h>
 
+int wsldapid;
 // W-DATA Format
 // Must be before wslda_toolkit.h !
 #include "wdata.h"
@@ -41,6 +42,7 @@ int main( int argc , char ** argv )
     // Read of input parameters
     char execcmd[ 256 ];
     int i,j;
+    wsldapid=0; // global variable
     
     strcpy( execcmd , argv[ 0 ] ) ;
     for( i = 1 ; i < argc ; i++ ) 

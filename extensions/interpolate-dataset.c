@@ -28,10 +28,12 @@
 #include "wdata.h"
 
 // W-SLDA Toolkit API
+int wsldapid;
 #include "wslda_toolkit.h"
 
 int main( int argc , char ** argv ) 
 {
+    wsldapid=0;
     int ierr;
     
     if(argc!=3)

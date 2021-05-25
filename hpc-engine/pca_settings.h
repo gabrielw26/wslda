@@ -17,58 +17,10 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
-// // To switch to cubic cut-off mode
-// #define USE_CUBIC_CUTOFF
 
 #else
-// DYNAMIC CODE - LEGACY MODE
-#define CODE PCA_ASLDA
-#define VERSION "1.10"
 
-// Lattice
-#define NX 8
-#define NY 10
-#define NZ 12
-
-#define DX 1.0
-#define DY 1.0                                                                                                                                       
-#define DZ 1.0
-
-// #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
-// #define FUNCTIONAL BDG
-
-// Maximal number of parameters in params array
-#define MAX_USER_PARAMS 32 
-
-// Minimal density to avoid numerical problems
-#define DENSEPSILON 1.0e-8
-
-// spin-symmetric mode decreases computing time for factor about two
-// #define SPINSYMMETRY_MODE
-
-// active this flag in order to store quasi-particle energies for each measurment
-// note that in case of 1d or 2d codes this can require much more space than measurments itself
-// meaningful only for dynamic codes
-// #define STORE_QPE
-
-// Enable computation with extarnal delta field
-// If this flag is active, you must provide body of delta_ext(...) function in pca_uext.h file
-#define ENABLE_DELTA_EXT
-
-// Enable computation with extarnal velocity field
-// If this flag is active, you must provide body of vector_vext(...) function in pca_uext.h file
-#define ENABLE_VELOCITY_EXT
-
-// // To switch to cubic cut-off mode
-// #define USE_CUBIC_CUTOFF
-
-// activate this flag for setting code in testing mode with uniform system
-#define UNIFORM_TEST_MODE
-
-// compute kinetic energy density using formula tau ~ |nabla Psi|^2
-// This is less acurate method than default, but we keep it for compability with older results
-// #define TAU_COMPUTATION_VIA_GRADIENTS
+#error "You need to select WSLDA or TDWSLDA!"
 
 #endif
 
@@ -152,6 +104,8 @@
 // =================================== TECHNICAL =====================================
 // ===================================================================================
 
+#define NUMERICAL_ZERO 1.0e-16
+
 #define DXYZ (DX*DY*DZ)
 #define DXY (DX*DY)
 
@@ -175,6 +129,7 @@
 #define YAXIS 1
 #define ZAXIS 2
 
+// ------------- observables -----------------
 // energy contributions
 #define ENERGYITEMS 7
 #define EKIN        0
@@ -185,13 +140,16 @@
 #define EPAIREXT    5
 #define EVELEXT     6
 // other contributions
+// total number of items in TDWSLDA codes
+#define TDWSLDAITEMS (ENERGYITEMS+4)
 #define NPARTA      7
 #define NPARTB      8
 #define LZA         9
 #define LZB         10
-// total number of items in TDWSLDA codes
-#define TDWSLDAITEMS 11
 
+// total number of items in WSLDA codes 
+#define WSLDAITEMS (ENERGYITEMS+1)
+#define ENTROPY     7
 
 // cufft plans
 #define CUFFT_NUMBER_OF_PLANS 4
@@ -279,6 +237,46 @@
 #define GAMMA0 (-11.11*1.60)
 #else
 #define GAMMA0 -11.11
+#endif
+
+// defaults for ELPA
+#ifndef ELPA_USE_SOLVER
+#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
+#endif
+#ifndef ELPA_USE_COMPLEX_KERNEL
+#define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_DEFAULT
+#endif
+#ifndef ELPA_USE_REAL_KERNEL
+#define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_DEFAULT
+#endif
+#ifndef ELPA_NEV_FRACTION
+#define ELPA_NEV_FRACTION 1.0
+#endif
+
+// ----- for TESTSUITE -----
+// default energy error
+#ifndef TS_EERR
+#define TS_EERR 1.0e-4
+#endif
+// default particle error
+#ifndef TS_NERR
+#define TS_NERR 1.0e-3
+#endif
+// default chemical potential error
+#ifndef TS_MUERR
+#define TS_MUERR 1.0e-3
+#endif
+// default entropy error
+#ifndef TS_SERR
+#define TS_SERR 1.0e-3
+#endif
+
+// ------------ math -------------
+#ifndef M_PI
+#define M_PI 3.14159265358979323846 
+#endif 
+#ifndef M_PI_2
+#define M_PI_2 1.570796326794896558
 #endif
 
 #endif

@@ -21,10 +21,11 @@ double fbeta(double E, double beta);
  * @param h_densities array with densities to be updated (INPUT/OUTPUT)
  * @param mdfft metadata for ffts plans execution (INPUT)
  * @param kz value of kz (INPUT) 
- * @param spinsymmetry 
+ * @param spinsymmetry (INPUT)
+ * @param S buffer for entopy (INPUT/OUTPUT)
  * */
 int compute_contribution_to_densities(int nwf, double *En, double complex *psi, double ecut, double beta, wslda_density h_densities, 
-                                      metadata_s2dpca_fft *mdfft, double kz, int weight, int spinsymmetry)
+                                      metadata_s2dpca_fft *mdfft, double kz, int weight, int spinsymmetry, double *S)
 {
     int ien; 
     int ix, iy, iz, ixyz;
@@ -116,6 +117,18 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
         
         fbEn=fbeta(En[ien], beta)*DENS_FACTOR_M;
         fbmEn = DENS_FACTOR_M - fbEn;
+        
+        // entropy 
+        if(spinsymmetry>0)
+        {
+            if(fbEn >NUMERICAL_ZERO) S[0] -=  fbEn * log( fbEn) * weight * 2.0;
+            if(fbmEn>NUMERICAL_ZERO) S[0] -= fbmEn * log(fbmEn) * weight * 2.0;
+        }
+        else
+        {
+            if(fbEn >NUMERICAL_ZERO) S[0] -=  fbEn * log( fbEn) * weight;
+            if(fbmEn>NUMERICAL_ZERO) S[0] -= fbmEn * log(fbmEn) * weight;
+        }
             
         if(spinsymmetry>0) for(ixyz=0; ixyz<NX*NY; ixyz++)
         {
@@ -183,7 +196,7 @@ int compute_contribution_to_densities(int nwf, double *En, double complex *psi, 
     
 //     double ttt=0.0;
 //     for(ixyz=0; ixyz<NX*NY; ixyz++) ttt+=rho_a[ixyz] * LZ;
-//     printf("ttt=%f\n", ttt);
+//     wprintf("ttt=%f\n", ttt);
     
     return 0;
 }
@@ -240,3 +253,4 @@ int density_caculate_tau(wslda_density h_densities, metadata_s2dpca_fft *mdfft)
     
     return 0;
 }
+

@@ -3,13 +3,19 @@
 CXX=mpicc
 
 # DIRECTORY SETTINGS (must end with /)
+# W-SLDA instalation folder (for read only)
 WSLDADIR=../
+# folder where temporarry files will be stored (will be created automatically)
 OBJDIR=./obj/
+# folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3  
+# C compiler flags
+CFLAGS= -std=gnu99 -O3
+# prescription how to link with: FFTW, Lapack, ScaLapack, ELPA (optionally)
 LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack 
 
-include mk.st
+# ----- DO NOT MODIFY -----
+include $(WSLDADIR)hpc-engine/mk.st
  

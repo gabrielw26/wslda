@@ -1,0 +1,175 @@
+# ---------------------- COMPLEX ARITHMETICS -------------------------------
+# --------------------------------------------------------------------------
+# Spin symmetric system, no noise
+# --------------------------------------------------------------------------
+tag: ss1-noise0-1d-c
+exec: pwd
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input* .
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-2d-c
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.c 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-3d-c
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.c 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+# 
+# --------------------------------------------------------------------------
+# Spin imbalanced system, no noise
+# --------------------------------------------------------------------------
+tag: ss0-noise0-1d-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-2d-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.c 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-3d-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.c 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+# ------------------------ REAL ARITHMETICS -------------------------------
+# --------------------------------------------------------------------------
+# Spin symmetric system, no noise
+# --------------------------------------------------------------------------
+tag: ss1-noise0-1d-r
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input* .
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-2d-r
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-3d-r
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+# 
+# --------------------------------------------------------------------------
+# Spin imbalanced system, no noise
+# --------------------------------------------------------------------------
+tag: ss0-noise0-1d-r
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-2d-r
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-3d-r
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+# ------------------------ REAL ARITHMETICS & CUBIC CUTOFF-------------------------------
+# --------------------------------------------------------------------------
+# Spin symmetric system, no noise
+# --------------------------------------------------------------------------
+tag: ss1-noise0-1d-r-c
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input* .
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c clean
+exec: make -f ../st-templates-full/Makefile.r.c 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-2d-r-c
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+
+tag: ss1-noise0-3d-r-c
+exec: rm -rf test.ss1.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss1.noise0.txt
+test: test.ss1.noise0_testsuite.ok
+diff: test.ss1.noise0.cmp test.ss1.noise0_uniform.ref
+# 
+# --------------------------------------------------------------------------
+# Spin imbalanced system, no noise
+# --------------------------------------------------------------------------
+tag: ss0-noise0-1d-r-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c 1d
+test: st-wslda-1d
+exec: timeout 180 mpirun -np 20 ./st-wslda-1d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-2d-r-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c 2d
+test: st-wslda-2d
+exec: timeout 180 mpirun -np 20 ./st-wslda-2d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+
+tag: ss0-noise0-3d-r-c
+exec: rm -rf test.ss0.noise0*
+exec: make -f ../st-templates-full/Makefile.r.c 3d
+test: st-wslda-3d
+exec: timeout 180 mpirun -np 20 ./st-wslda-3d input.ss0.noise0.txt
+test: test.ss0.noise0_testsuite.ok
+diff: test.ss0.noise0.cmp test.ss0.noise0_uniform.ref
+

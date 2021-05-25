@@ -45,7 +45,7 @@ int test_matrix_print(double complex *A, int nip, int niq, int mb, int nb, int i
             ri = indxl2g_( &ixyz1, &mb, &ip, &ZERO, &p )-1; // back to C standard
             ci = indxl2g_( &ixyz2, &nb, &iq, &ZERO, &q )-1; // back to C standard            
             
-            if(print) printf("A[%4d,%4d]=(%8.2f,%8.2f)\n", ri, ci, creal(A[ij]),  cimag(A[ij]));
+            if(print) wprintf("A[%4d,%4d]=(%8.2f,%8.2f)\n", ri, ci, creal(A[ij]),  cimag(A[ij]));
             
         } // for(li=0; li<nip; li++)
     } // for(lj=0; lj<niq; lj++)
