@@ -1,0 +1,8 @@
+
+c-examples/simple-1d
+
+*.o
+
+*.so
+
+*.a
