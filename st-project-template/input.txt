@@ -60,13 +60,13 @@ Mbroyden                5        # number of previous iterations used by Broyden
                                  # with linear mixing and used linearmixing value for mixing
                                  # default=999999
 #broydenautores          1        # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
-#broydenEmaxchg          0.1      # if the total energy between iteration change be more than broydenEmaxchg 
+#broydenEmaxchg          0.1      # if the total energy between iteration change by more than broydenEmaxchg 
                                  # then Broyden is restarted, (default=0.1)
 #broydenEdelay           5        # scan energy changes only after broydenEdelay with Broyden has been executed 
                                  # typically, just after starting the Broyden energy fluctuations are observed 
                                  # which should decay within a few iterations (default=5)
 # Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
-#                 According experience of our collaborators, there are cases (physical problems)
+#                 According to our experience, there are cases (physical problems)
 #                 where activating Broyden only for some number of iteration provides the best performance 
 
 # -------------- PARALLELIZATION SETTINGS --------------
