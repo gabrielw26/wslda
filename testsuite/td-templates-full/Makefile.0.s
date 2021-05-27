@@ -18,7 +18,7 @@ CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ \
 NVCCFLAGS = -arch sm_35 -O3 -std=c++03 -DTESTSUITE -DREGULARIZATION_SCHEME=SPHERICAL_CUTOFF
 
 # LIBRARIES
-LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lm
+LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lm
 
 
 # ----- DO NOT MODIFY -----
