@@ -6,7 +6,7 @@ CFLAGS= -std=gnu99 -O3
 # ------------------------------- DO NOT MODIFY ---------------------------------------
 # -------------------------------------------------------------------------------------
 
-all: bindir lib wdata-cut wdata-sample dpca2wdata wdata2checkpoint dpca2wdata-hard
+all: bindir lib wdata-cut wdata-sample dpca2wdata wdata2checkpoint dpca2wdata-hard wdata-interpolate
 
 bindir:
 	mkdir -p ./bin
@@ -18,6 +18,9 @@ lib:
 wdata-cut: bindir lib
 	$(CXX) $(CFLAGS) wdata-cut.c -o ./bin/wdata-cut -I../lib/wdata/c -L. -lwdata -lm 
 
+wdata-interpolate: bindir lib
+	$(CXX) $(CFLAGS) wdata-interpolate.c -o ./bin/wdata-interpolate -I../lib/wdata/c -I../hpc-engine -L. -lwdata -lfftw3 -lm 
+	
 wdata-sample: bindir lib
 	$(CXX) $(CFLAGS) wdata-sample.c -o ./bin/wdata-sample -I../lib/wdata/c -L. -lwdata -lm 
 
