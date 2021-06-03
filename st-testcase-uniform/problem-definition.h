@@ -139,7 +139,7 @@ void modify_densities(int it, wslda_density h_densities, double *params, size_t 
             // phase imprint
             h_densities.nu[ixyz]=abs_nu*cos(arg) + I*abs_nu*sin(arg);
           
-            ixyz++; // go to next point,  it should be last line of the triple loop
+            ixyz++; // go to the next point, it should be the last line of the triple loop
         }
     }
 }
@@ -174,7 +174,7 @@ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_pote
         // ... below you can modify at your wish ...
         
         
-        ixyz++; // go to next point,  it should be last line of the triple loop
+        ixyz++; // go to the next point, it should be the last line of the triple loop
     }
 }
 
