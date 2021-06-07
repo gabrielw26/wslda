@@ -71,15 +71,15 @@ ext: dirs \
 
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $(LIBS) $^ 
+	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS) 
 
 d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $(LIBS) $^ 
+	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $^ $(LIBS) 
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $(LIBS) $^
+	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $^ $(LIBS)
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3

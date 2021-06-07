@@ -52,15 +52,15 @@ ext: dirs \
 
 d1d: $(OBJS1D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) $(LIBS) -DWSLDA $^ 
+	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) -DWSLDA $^ $(LIBS) 
 
 d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) $(LIBS) -DWSLDA $^  
+	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) -DWSLDA $^ $(LIBS) 
 
 d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) $(LIBS) -DWSLDA $^
+	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) -DWSLDA $^ $(LIBS)
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
