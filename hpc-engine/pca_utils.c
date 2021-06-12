@@ -123,6 +123,7 @@ int parse_input_file(char * file_name)
     
     int i;
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
+    for(i=0; i<MAX_USER_PARAMS; i++) sprintf(md.strings[i], ""); // reset strings
     
     // reset list of variables
     md.nwritevar=0;
@@ -131,6 +132,7 @@ int parse_input_file(char * file_name)
     char tag[MAX_REC_LEN];
     char ptag[MAX_REC_LEN];
     double tmpparam;
+    char tmpstr[MD_CHAR_LGTH];
     while(fgets(s, MAX_REC_LEN, fp) != NULL)
     {
         // Read first element of line
@@ -299,6 +301,17 @@ int parse_input_file(char * file_name)
                 {
                     sscanf (s,"%s %lf %*s",tag,&tmpparam);
                     md.params[i]=(double)tmpparam;
+                    break;
+                }
+            }
+            
+            for(i=0; i<MAX_USER_PARAMS; i++)
+            {
+                sprintf(ptag,"strings%d",i);
+                if (strcmp (tag,ptag) == 0)
+                {
+                    sscanf (s,"%s %s %*s",tag,tmpstr);
+                    strcpy(md.strings[i], tmpstr);
                     break;
                 }
             }
