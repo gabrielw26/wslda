@@ -116,7 +116,8 @@ typedef struct
     char stdoutfile[MD_CHAR_LGTH]; // technical variable,
 
     // POTENTIAL PARAMETERS
-    double params[MAX_USER_PARAMS];
+    double params[MAX_USER_PARAMS]; // double parameters
+    char strings[MAX_USER_PARAMS][MD_CHAR_LGTH]; // strings
     
     // variables to write
     int nwritevar; // number of variables to write
