@@ -44,9 +44,10 @@ spinsymmetry            0       # spin symmetric system
 # ccstart                 0.
 # ccswitch                10.
 # ccstop                  1000.
+
+# --------------- QUANTUM FRICTION ------------------
+# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Quantum-friction
 # qfalpha                 0.0     # alpha parameter for quantum friction term
-# qfbeta                  0.0     # beta parameter for quantum friction - parring channel
-# qfgamma                 0.0     # gamma parameter for particle number control
 # qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
 # qfstop                  0.0     # stop time for evolving with quantum friction, in units of eF
 # qfswitch                0.0     # time for switch function
