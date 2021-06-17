@@ -842,8 +842,8 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                     if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
                 }
                 
-                if( fread(h_wavefun + NXY*(iwf-mylidx)            , sizeof(double complex)*NXY, 1 , fu) != 1) return -21;
-                if( fread(h_wavefun + NXY*(iwf-mylidx) + NXY*nwfip, sizeof(double complex)*NXY, 1 , fv) != 1) return -22;
+                if( fread(h_wavefun + (size_t)NXY*(iwf-mylidx)                    , sizeof(double complex)*NXY, 1 , fu) != 1) return -21;
+                if( fread(h_wavefun + (size_t)NXY*(iwf-mylidx) + (size_t)NXY*nwfip, sizeof(double complex)*NXY, 1 , fv) != 1) return -22;
                 if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
                 if( fread(h_kkz     + (iwf-mylidx) , sizeof(double), 1 , fkkz)   != 1) return -23;
             }
@@ -943,8 +943,8 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
                         if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
                     }
                     
-                    if( fread(h_wavefun + NXY*(iwf-mylidx)            , sizeof(double complex)*NXY, 1 , fu) != 1) return -21;
-                    if( fread(h_wavefun + NXY*(iwf-mylidx) + NXY*nwfip, sizeof(double complex)*NXY, 1 , fv) != 1) return -22;
+                    if( fread(h_wavefun + (size_t)NXY*(iwf-mylidx)                    , sizeof(double complex)*NXY, 1 , fu) != 1) return -21;
+                    if( fread(h_wavefun + (size_t)NXY*(iwf-mylidx) + (size_t)NXY*nwfip, sizeof(double complex)*NXY, 1 , fv) != 1) return -22;
                     if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
                     if( fread(h_kkz     + (iwf-mylidx) , sizeof(double), 1 , fkkz)   != 1) return -23;
                     
@@ -1084,8 +1084,8 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                         ixyz=0;
                         for(ix=0; ix<NX; ix++) 
                         {
-                            h_wavefun[NX*(iwf-mylidx)            + ixyz] = _u[ix];
-                            h_wavefun[NX*(iwf-mylidx) + NX*nwfip + ixyz] = _v[ix];
+                            h_wavefun[(size_t)NX*(iwf-mylidx)                    + ixyz] = _u[ix];
+                            h_wavefun[(size_t)NX*(iwf-mylidx) + (size_t)NX*nwfip + ixyz] = _v[ix];
                             ixyz++;
                         }
                         h_fbetaEn[iwf-mylidx]=_en;
@@ -1101,8 +1101,8 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                         ixyz=0;
                         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) 
                         {
-                            h_wavefun[NXY*(iwf-mylidx)             + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
-                            h_wavefun[NXY*(iwf-mylidx) + NXY*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
+                            h_wavefun[(size_t)NXY*(iwf-mylidx)                     + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
+                            h_wavefun[(size_t)NXY*(iwf-mylidx) + (size_t)NXY*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)/sqrt(LY);
                             ixyz++;
                         }
                         h_fbetaEn[iwf-mylidx]=_en;
@@ -1118,8 +1118,8 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                         ixyz=0;
                         for(ix=0; ix<NX; ix++) for(iy=0; iy<NY; iy++) for(iz=0; iz<NZ; iz++) 
                         {
-                            h_wavefun[NXYZ*(iwf-mylidx)              + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
-                            h_wavefun[NXYZ*(iwf-mylidx) + NXYZ*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
+                            h_wavefun[(size_t)NXYZ*(iwf-mylidx)                      + ixyz] = _u[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
+                            h_wavefun[(size_t)NXYZ*(iwf-mylidx) + (size_t)NXYZ*nwfip + ixyz] = _v[ix]*cexp(I*_ky*iy*DY)*cexp(I*_kz*iz*DZ)/sqrt(LY*LZ);
                             ixyz++;
                         }
                         h_fbetaEn[iwf-mylidx]=_en;
@@ -1368,8 +1368,8 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
                     if(fseek ( ffbeta, sizeof(double)*ii, SEEK_SET ) != 0 ) return -14; // cannot seek pointer
                 }
                 
-                if( fread(h_wavefun + NXYZ*(iwf-mylidx)            , sizeof(double complex)*NXYZ, 1 , fu) != 1) return -21;
-                if( fread(h_wavefun + NXYZ*(iwf-mylidx) + NXYZ*nwfip, sizeof(double complex)*NXYZ, 1 , fv) != 1) return -22;
+                if( fread(h_wavefun + (size_t)NXYZ*(iwf-mylidx)                     , sizeof(double complex)*NXYZ, 1 , fu) != 1) return -21;
+                if( fread(h_wavefun + (size_t)NXYZ*(iwf-mylidx) + (size_t)NXYZ*nwfip, sizeof(double complex)*NXYZ, 1 , fv) != 1) return -22;
                 if( fread(h_fbetaEn + (iwf-mylidx) , sizeof(double), 1 , ffbeta) != 1) return -23;
             }
             

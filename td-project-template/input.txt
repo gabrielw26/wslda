@@ -55,9 +55,9 @@ spinsymmetry            0       # spin symmetric system
 # --------------- QUANTUM FRICTION ------------------
 # See: Wiki -> Quantum friction
 # qfalpha                 0.0     # alpha parameter for quantum friction term
-# qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
-# qfstop                  0.0     # stop time for evolving with quantum friction, in units of eF
-# qfswitch                0.0     # time for switch function
+# qfstart                 0.0     # start time for evolving with quantum friction [eF]
+# qfstop                  0.0     # stop time for evolving with quantum friction [eF]
+# qfswitch                0.0     # the friction will be activated and deactivated gradually over this period of time [eF] 
 
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver
