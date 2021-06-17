@@ -17,6 +17,7 @@
 int wsldapid; // process id - global variable
 
 #include "wdata.h"
+#include "wderiv.h"
 
 #include "pca_settings.h"
 #include "wslda_errors.h"

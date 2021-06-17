@@ -15,6 +15,8 @@
 #include "wslda_functionals.h"
 
 extern int wsldapid; // process id - global variable
+#include "wderiv.h"
+#undef Complex
 #include "problem-definition.h"
 
 #define Complex(a,b) (a + I*b)

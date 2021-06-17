@@ -129,7 +129,7 @@ void modify_densities(int it, wslda_density h_densities, double *params, size_t 
         // ... below you can modify them at your wish ...
         
         
-        ixyz++; // go to next point,  it should be last line of the triple loop
+        ixyz++; // go to the next point, it should be the last line of the triple loop
     }
 }
 
@@ -163,7 +163,7 @@ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_pote
         // ... below you can modify them at your wish ...
         
         
-        ixyz++; // go to next point,  it should be last line of the triple loop
+        ixyz++; // go to the next point, it should be the last line of the triple loop
     }
 }
 
