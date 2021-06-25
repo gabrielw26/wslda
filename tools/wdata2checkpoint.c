@@ -88,6 +88,10 @@ int main( int argc , char ** argv )
         printf("Usage: %s file.wtxt outprefix\n", argv[0]);
         printf("\tor\n");
         printf("Usage: %s file.wtxt outprefix cycleid\n", argv[0]);
+        printf("\tor\n");
+        printf("Usage: %s file.wtxt outprefix cycleid ec\n", argv[0]);
+        printf("\tor\n");
+        printf("Usage: %s file.wtxt outprefix cycleid ec temperature\n", argv[0]);
         printf("\tfile.wtxt    - metadata file\n");
         printf("\toutprefix    - checkpoint will be written to outprefix\n");
         printf("\tcycleid      - use given cycleid to create checkpoint file, default: cycleid=last cycle \n");
