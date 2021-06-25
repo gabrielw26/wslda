@@ -4,7 +4,7 @@ CFLAGS= -std=gnu99 -O3
 
 # To compile tools you need to install first winterp library
 # https://gitlab.fizyka.pw.edu.pl/wtools/winterp
-WINTERP=-I../../winterp/c -L../../winterp/ -lwinterp -lfftw3
+WINTERP=-I../../libs/winterp/c -L../../libs/winterp/ -lwinterp -lfftw3
 
 # -------------------------------------------------------------------------------------
 # ------------------------------- DO NOT MODIFY ---------------------------------------
