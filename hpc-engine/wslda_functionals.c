@@ -16,6 +16,7 @@
 
 extern int wsldapid; // process id - global variable
 #include "wderiv.h"
+#include "winterp.h"
 #undef Complex
 #include "problem-definition.h"
 
