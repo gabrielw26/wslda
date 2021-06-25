@@ -2,6 +2,10 @@
 CXX=gcc
 CFLAGS= -std=gnu99 -O3
 
+# To compile tools you need to install first winterp library
+# https://gitlab.fizyka.pw.edu.pl/wtools/winterp
+WINTERP=-I../../winterp/c -L../../winterp/ -lwinterp -lfftw3
+
 # -------------------------------------------------------------------------------------
 # ------------------------------- DO NOT MODIFY ---------------------------------------
 # -------------------------------------------------------------------------------------
@@ -19,7 +23,7 @@ wdata-cut: bindir lib
 	$(CXX) $(CFLAGS) wdata-cut.c -o ./bin/wdata-cut -I../lib/wdata/c -L. -lwdata -lm 
 
 wdata-interpolate: bindir lib
-	$(CXX) $(CFLAGS) wdata-interpolate.c -o ./bin/wdata-interpolate -I../lib/wdata/c -I../hpc-engine -L. -lwdata -lfftw3 -lm 
+	$(CXX) $(CFLAGS) wdata-interpolate.c -o ./bin/wdata-interpolate -I../lib/wdata/c -I../hpc-engine -L. -lwdata $(WINTERP) -lm 
 	
 wdata-sample: bindir lib
 	$(CXX) $(CFLAGS) wdata-sample.c -o ./bin/wdata-sample -I../lib/wdata/c -L. -lwdata -lm 
