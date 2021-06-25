@@ -18,6 +18,7 @@
 
 #include "wdata.h"
 #include "wderiv.h"
+#include "winterp.h"
 
 #include "pca_settings.h"
 #include "pca_macro.h"

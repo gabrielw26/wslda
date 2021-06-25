@@ -1,0 +1,94 @@
+# -------------- 1D ---------------------
+tag: qf-1d-slda
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 64" >> predefines.h
+exec: echo "#define NY 16" >> predefines.h
+exec: echo "#define NZ 16" >> predefines.h
+exec: echo "#define FUNCTIONAL SLDA" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfslda1d" >> input.txt
+exec: make 1d
+test: td-wslda-1d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
+test: qfslda1d.ok
+diff: qfslda1d.cmp qfslda1d.ref
+
+tag: qf-1d-aslda
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 64" >> predefines.h
+exec: echo "#define NY 16" >> predefines.h
+exec: echo "#define NZ 16" >> predefines.h
+exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfaslda1d" >> input.txt
+exec: make 1d
+test: td-wslda-1d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
+test: qfaslda1d.ok
+diff: qfaslda1d.cmp qfaslda1d.ref
+
+tag: qf-1d-bdg
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 64" >> predefines.h
+exec: echo "#define NY 16" >> predefines.h
+exec: echo "#define NZ 16" >> predefines.h
+exec: echo "#define FUNCTIONAL BDG" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfbdg1d" >> input.txt
+exec: make 1d
+test: td-wslda-1d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
+test: qfbdg1d.ok
+diff: qfbdg1d.cmp qfbdg1d.ref
+
+# -------------- 2D ---------------------
+tag: qf-2d-slda
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 24" >> predefines.h
+exec: echo "#define NY 24" >> predefines.h
+exec: echo "#define NZ 8" >> predefines.h
+exec: echo "#define FUNCTIONAL SLDA" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfslda2d" >> input.txt
+exec: echo "params2     1.9" >> input.txt
+exec: make 2d
+test: td-wslda-2d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
+test: qfslda2d.ok
+diff: qfslda2d.cmp qfslda2d.ref
+
+tag: qf-2d-aslda
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 24" >> predefines.h
+exec: echo "#define NY 24" >> predefines.h
+exec: echo "#define NZ 8" >> predefines.h
+exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfaslda2d" >> input.txt
+exec: echo "params2     1.9" >> input.txt
+exec: make 2d
+test: td-wslda-2d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
+test: qfaslda2d.ok
+diff: qfaslda2d.cmp qfaslda2d.ref
+
+tag: qf-2d-bdg
+exec: pwd
+exec: cp -f predefines.h.template predefines.h
+exec: echo "#define NX 24" >> predefines.h
+exec: echo "#define NY 24" >> predefines.h
+exec: echo "#define NZ 8" >> predefines.h
+exec: echo "#define FUNCTIONAL BDG" >> predefines.h
+exec: cp -f input.txt.template input.txt
+exec: echo "outprefix qfbdg2d" >> input.txt
+exec: echo "params2     1.9" >> input.txt
+exec: make 2d
+test: td-wslda-2d
+exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
+test: qfbdg2d.ok
+diff: qfbdg2d.cmp qfbdg2d.ref

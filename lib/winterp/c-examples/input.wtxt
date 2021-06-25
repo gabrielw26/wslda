@@ -1,0 +1,17 @@
+NX                       32   # lattice
+NY                       32   # lattice
+NZ                        1   # lattice
+DX                      1.0   # spacing
+DY                      1.0   # spacing
+DZ                      1.0   # spacing
+datadim                   2   # dimension of block size: 1=NX, 2=NX*NY, 3=NX*NY*NZ
+prefix                 input   # prefix for files belonging to this data set, binary files have names prefix_variable.format
+cycles                    1   # number of cycles (measurements)
+t0                        0   # time value for the first cycle
+dt                        1   # time interval between cycles
+ 
+# variables
+# tag                  name                    type                    unit                  format
+var                       f                    real                    none                    wdat
+
+

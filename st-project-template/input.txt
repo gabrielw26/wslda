@@ -1,5 +1,9 @@
-# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0       #  0 - create uniform solution and start from it                                                                                                                                                
+# Documentation - Wiki: 
+# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
+
+# ------------------- INITIALIZATION ------------------
+# See: Wiki -> Initialization of the solver
+inittype                0       #  0 - create uniform solution and start from it,
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #  
                                 #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
@@ -42,7 +46,7 @@ nomixstart              0        # do not do mixing for the first iteration
 # mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
 
 # ----------------- Broyden algorithm ----------------------
-# wiki: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Broyden%20algorithm
+# See: Wiki -> Broyden algorithm
 broyden                 1        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
 broydenmixing           0.75     # mixing parameter (alpha) for Broyden mixing, default=0.75
 Mbroyden                5        # number of previous iterations used by Broyden, default=5 
@@ -87,7 +91,7 @@ mb                      32
 nb                      32
 
 # ----------- IN CASE OF: inittype=0 ----------------
-# For more info see wiki pages: Initialization of the st wslda solvers
+# See: Wiki -> Initialization of the solver
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
 # init0muchange           0.1    # change rate of chemical potentials, default muchange

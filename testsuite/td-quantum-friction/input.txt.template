@@ -1,9 +1,13 @@
-# Documentation - Wiki: 
-# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
+params0     0.25 # gauss amplitude [eF]
+params1     2.0 # width in x direction (=0 - igonore)
+params2     0.0 # width in y direction (=0 - igonore)
+params3     0.0 # width in z direction (=0 - igonore)
+params4     0.0 # turn-on
+params5     50.0 # turn-off
+params6     10.0 # switch-time
 
-# ------------------- INITIALIZATION ------------------
-# See: Wiki -> Initialization of the solver
-inittype                0       #  0 - create uniform solution and evolve it,
+# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
+inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #                                                                                                                   
                                 #  1 - start from st-wslda-1d solution, inprefix points to folder with s1dpca binary files 
@@ -13,7 +17,7 @@ inittype                0       #  0 - create uniform solution and evolve it,
                                 #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                    
        
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test    # all output file with start with this prefix
+outprefix               qftest    # all output file with start with this prefix
 inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # 1 - allow for overwriting existing files, 0 - do not allow for overwriting existing files
 iogroups                32      # number of IO groups used for parallel reading of data
@@ -26,16 +30,15 @@ walltime                11.9    # after this time force the checkpoint [hr]
 # default = rho delta j
 writevar           default
 
-# aBdG                -0.9 # scattering length for BDG mode, used only when FUNCTIONAL==BDG
+aBdG                -0.9 # scattering length for BDG mode, used only when FUNCTIONAL==BDG
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1
-measurements            100      # number of requested mesurments
-timesteps               100      # number of time steps between each measurement
+measurements            150      # number of requested mesurments
+timesteps               286      # number of time steps between each measurement
                                  # measurements are written with time resolution: timesteps*dt
                                  # the total trajectory length is: measurements*timesteps*dt
 selfstart               0        # use Taylor expansion for first 5 steps? 
-                                 # See: Wiki -> Starting ABM algorithm
 
 
 
@@ -46,29 +49,28 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # gpuspernode             1        # number of GPUs per node (resource set), default=1
 
 # --------------------- OTHER -----------------
-spinsymmetry            0       # spin symmetric system
+spinsymmetry            1       # spin symmetric system
 # current corrections
 # ccstart                 0.
 # ccswitch                10.
 # ccstop                  1000.
-
-# --------------- QUANTUM FRICTION ------------------
-# See: Wiki -> Quantum friction
-# qfalpha                 0.0     # alpha parameter for quantum friction term
-# qfstart                 0.0     # start time for evolving with quantum friction [eF]
-# qfstop                  0.0     # stop time for evolving with quantum friction [eF]
-# qfswitch                0.0     # the friction will be activated and deactivated gradually over this period of time [eF] 
+qfalpha                 0.75     # alpha parameter for quantum friction term
+# qfbeta                  0.0     # beta parameter for quantum friction - parring channel
+# qfgamma                 0.0     # gamma parameter for particle number control
+qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
+qfstop                  250.0     # stop time for evolving with quantum friction, in units of eF
+qfswitch                1.0     # time for switch function
 
 # ----------- IN CASE OF: inittype=0 ----------------
-# See: Wiki -> Initialization of the solver
 init0Na                 28. # will be ignored for UNIFORM_TEST_MODE
 init0Nb                 28. # will be ignored for UNIFORM_TEST_MODE
 init0muchange           0.1   # Change rate of chemical potential
-init0Tstart             0.05  # Start temperature, in units of eF, default 0.2
-init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
-init0DeltaT             0.01  # change of temperature in units of eF, default 0.01
+#init0Tstart             0.05  # Start temperature, in units of eF, default 0.2
+#init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
+#init0DeltaT             0.01  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
 init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
 init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution
+

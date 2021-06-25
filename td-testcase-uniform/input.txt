@@ -35,8 +35,9 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 
 
 # ------------------ GPUS THREADING SET --------------
-nthreads                512
-batch                   100000
+# nthreads                512      # number of parallel threads executing by each GPU, default=512
+# batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
+# gpuspernode             1        # number of GPUs per node (resource set), default=1
 
 # --------------------- OTHER -----------------
 spinsymmetry            0       # spin symmetric system
@@ -44,12 +45,13 @@ spinsymmetry            0       # spin symmetric system
 # ccstart                 0.
 # ccswitch                10.
 # ccstop                  1000.
+
+# --------------- QUANTUM FRICTION ------------------
+# See: Wiki -> Quantum friction
 # qfalpha                 0.0     # alpha parameter for quantum friction term
-# qfbeta                  0.0     # beta parameter for quantum friction - parring channel
-# qfgamma                 0.0     # gamma parameter for particle number control
-# qfstart                 0.0     # start time for evolving with quantum friction, in units of eF
-# qfstop                  0.0     # stop time for evolving with quantum friction, in units of eF
-# qfswitch                0.0     # time for switch function
+# qfstart                 0.0     # start time for evolving with quantum friction [eF]
+# qfstop                  0.0     # stop time for evolving with quantum friction [eF]
+# qfswitch                0.0     # the friction will be activated and deactivated gradually over this period of time [eF] 
 
 # ----------- IN CASE OF: inittype=0 ----------------
 init0Na                 28. # will be ignored for UNIFORM_TEST_MODE
