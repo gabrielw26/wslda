@@ -703,7 +703,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
 //         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
-    if(tnwf!=*nwf) return -1;
+    if(tnwf!=*nwf) return WSLDA_ERR_SCAN_INFO_FILES_SUM_FAILED;
     
     tnwf=0;
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)  tnwf+=nwf_per_kz[ikz];
@@ -744,7 +744,7 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
 //         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
-    if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
+    if(tnwf!=*nwf) return WSLDA_ERR_SCAN_INFO_FILES_SUM_FAILED;
     
     double *kytmp, *kztmp;
     cppmallocl(kytmp,NY*NZ,double);
