@@ -42,6 +42,11 @@ void report_error(int errcode, FILE *stream)
         case WSLDA_ERR_CANNOT_OPEN_FILE:
             wfprintf(stream, "\tCannot open binary file.\n");
             wfprintf(stream, "\tCheck if `inprefix` tag is correctly set in input file.\n");
+            wfprintf(stream, "\tYou can do it by executing\n");
+            wfprintf(stream, "\t\tls inprefix\n");
+            wfprintf(stream, "\tand checking if there are binary files *.wfu and *wfv.\n");
+            wfprintf(stream, "\tNote that these files are created only if `writewf` is set to 1\n");
+            wfprintf(stream, "\tin the static calculations.\n");
             break;
             
         case WSLDA_ERR_CANNOT_OVERWRITE:
@@ -64,9 +69,23 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\tInput binary files do not satisfy expected sum-rules.\n");
             wfprintf(stream, "\tThis situation may occur if value of iogroups used in static code (st)\n");
             wfprintf(stream, "\t   is different from value of iogroups provided for time-dependent (td) code.\n");
-            wfprintf(stream, "\tCorrect iogropus in input file.\n");
-            wfprintf(stream, "\tIf iogroups is set correctly this error indicates that binary files\n");
-            wfprintf(stream, "\t   with wave-functions from static code may to be damaged.\n");
+            wfprintf(stream, "\t   Solution: Correct iogropus in input file.\n");
+            wfprintf(stream, "\tThe problem can also appear if `writeecut` has been applied in static calculations.\n");
+            wfprintf(stream, "\t   Then not all wave-functions needed for time evolution were written to disk.\n");
+            wfprintf(stream, "\t   Solution: Regenerate wave-functions with deactivated `writeecut`.\n");
+            wfprintf(stream, "\tIf cases listed above do not apply this error indicates that binary files\n");
+            wfprintf(stream, "\t   with wave-functions from static code may be damaged.\n");
+            break;
+            
+        case WSLDA_ERR_SCAN_INFO_FILES_SUM_FAILED:
+            wfprintf(stream, "\tInput binary files do not satisfy expected sum-rules.\n");
+            wfprintf(stream, "\tThis situation may occur if value of iogroups is set too large.\n");
+            wfprintf(stream, "\t   Solution: Decrease value of iogroups.\n");
+            wfprintf(stream, "\tThe problem can also appear if `writeecut` has been applied in static calculations.\n");
+            wfprintf(stream, "\t   Then not all wave-functions needed for time evolution were written to disk.\n");
+            wfprintf(stream, "\t   Solution: Regenerate wave-functions with deactivated `writeecut`.\n");
+            wfprintf(stream, "\tIf cases listed above do not apply this error indicates that binary files\n");
+            wfprintf(stream, "\t   with wave-functions from static code may be damaged.\n");
             break;
             
         case WSLDA_ERR_S3DPCA_INFO_FILES_MISSING_FILE:
