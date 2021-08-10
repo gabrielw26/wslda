@@ -1496,4 +1496,25 @@ int check_if_can_overwrite_files()
     return WSLDA_OK;
 }
 
+
+int check_if_consistent_spinsymmetry_mode(MPI_Comm comm, int nwfip, double *En, int spinsymmetry)
+{
+    int comm_size, comm_rank;
+    MPI_Comm_size(comm, &comm_size);
+    MPI_Comm_rank(comm, &comm_rank); 
+ 
+    // check is negative eigenstates are provided
+    int i, itest=0, igtest;
+    for(i=0; i<nwfip; i++) if(En[i]<0.0) itest++;
+    MPI_Reduce( &itest, &igtest, 1, MPI_INT, MPI_SUM, 0, comm);
+    
+    // further tests only by master
+    if(comm_rank==0)
+    {
+        if(spinsymmetry==1 && igtest >0) return WSLDA_ERR_SPINSYMMETRY1;
+        if(spinsymmetry==0 && igtest==0) return WSLDA_ERR_SPINSYMMETRY0;
+    }
+    
+    return WSLDA_OK;
+}
 #endif

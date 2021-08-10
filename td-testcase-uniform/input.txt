@@ -40,7 +40,10 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # gpuspernode             1        # number of GPUs per node (resource set), default=1
 
 # --------------------- OTHER -----------------
-spinsymmetry            0       # spin symmetric system
+# spinsymmetry            0       # !!! IGNORE HERE, set in predefines.h !!!
+                                  # NOTE: This flag is controlled via predefines.h !
+                                  #       Select SPINSYMMETRY_MODE to run with spinsymmetry==1,
+                                  #       otherwise it is assumes spinsymmetry==0
 # current corrections
 # ccstart                 0.
 # ccswitch                10.

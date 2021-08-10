@@ -185,10 +185,10 @@ int main( int argc , char ** argv )
 #endif
 
 #ifdef SPINSYMMETRY_MODE
-    if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
+//     if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
     md.spinsymmetry=1;
 #else
-    if(ip==0 && md.spinsymmetry==1) print_warning(WSLDA_WRN_SPINSYMMETRY1);
+//     if(ip==0 && md.spinsymmetry==1) print_warning(WSLDA_WRN_SPINSYMMETRY1);
     md.spinsymmetry=0;
 #endif
     
@@ -424,6 +424,7 @@ int main( int argc , char ** argv )
             MPI_Barrier(MPI_COMM_WORLD);
         }
         
+        cpu_exec( check_if_consistent_spinsymmetry_mode(MPI_COMM_WORLD, nwfip, h_fbetaEn, md.spinsymmetry) ); 
         for(i=0; i<nwfip; i++) h_fbetaEn[i]=fbeta(h_fbetaEn[i],beta); // convert quasiparticle energies into weights
         
         // load u and delta
