@@ -166,6 +166,22 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\tPlease report this error to W-SLDA Teams and help us to improve the Toolkit.\n");
             break;
             
+        case WSLDA_ERR_SPINSYMMETRY1:
+            wfprintf(stream, "\t The code is compiled with SPINSYMMETRY_MODE option in predefines.h,\n");
+            wfprintf(stream, "\t while the provided wave-functions contain SPINA and SPINB components separately.\n");
+            wfprintf(stream, "\t Recreate wave-functions with selected `spinsymmetry 1` and rerun td code again,\n");
+            wfprintf(stream, "\t\t or\n");
+            wfprintf(stream, "\t Recompile td code with commented out SPINSYMMETRY_MODE, and rerun it again.\n");
+            break;
+            
+        case WSLDA_ERR_SPINSYMMETRY0:
+            wfprintf(stream, "\t The code is compiled with commented out SPINSYMMETRY_MODE option in predefines.h,\n");
+            wfprintf(stream, "\t while the provided wave-functions contain only SPINB component.\n");
+            wfprintf(stream, "\t Recreate wave-functions with selected `spinsymmetry 0` and rerun td code again,\n");
+            wfprintf(stream, "\t\t or\n");
+            wfprintf(stream, "\t Recompile td code with selected SPINSYMMETRY_MODE, and rerun it again.\n");
+            break;
+            
         default: 
             wfprintf(stream, "\tThis error does not have description.\n");
     }
