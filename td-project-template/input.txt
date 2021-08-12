@@ -38,8 +38,6 @@ selfstart               0        # use Taylor expansion for first 5 steps?
                                  # See: Wiki -> Starting ABM algorithm
 
 
-
-
 # ------------------ GPUS THREADING SET --------------
 # nthreads                512      # number of parallel threads executing by each GPU, default=512
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
