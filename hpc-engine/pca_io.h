@@ -1496,7 +1496,7 @@ int check_if_can_overwrite_files()
     return WSLDA_OK;
 }
 
-
+#ifndef __WSLDA_TOOLKIT__
 int check_if_consistent_spinsymmetry_mode(MPI_Comm comm, int nwfip, double *En, int spinsymmetry)
 {
     int comm_size, comm_rank;
@@ -1517,4 +1517,6 @@ int check_if_consistent_spinsymmetry_mode(MPI_Comm comm, int nwfip, double *En, 
     
     return WSLDA_OK;
 }
+#endif
+
 #endif
