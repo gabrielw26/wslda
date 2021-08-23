@@ -6,7 +6,7 @@
  * New lattice it taken from corresponding predefines.h file
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o interpolate-dataset -lm -lfftw3
+ *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdatac -o interpolate-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
  *    cd $WSLDA/lib-wdata

@@ -5,10 +5,10 @@
  * Use this code to learn how to use resize routines. 
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 resize-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o resize-dataset -lm -lfftw3
+ *    gcc -std=gnu99 resize-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdatac -o resize-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
- *    cd $WSLDA/lib-wdata
+ *    cd $WSLDA/lib/wdata
  *    make libc
  * */   
 
@@ -84,7 +84,7 @@ int main( int argc , char ** argv )
     int ivar, icycle;
     for(ivar=0; ivar<wdmdo.nvar; ivar++)
     {
-        printf("# INTERPOLATING `%s`...\n", wdmdo.var[ivar].name);
+        printf("# RESIZING `%s`...\n", wdmdo.var[ivar].name);
         for(icycle=0; icycle<wdmdo.cycles; icycle++) // for each cycle
         {
             file_operationl( wdata_read_cycle(&wdmd, wdmdo.var[ivar].name, icycle, indata) );
