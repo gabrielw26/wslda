@@ -19,6 +19,7 @@
 #include <math.h>
 #include <complex.h>
 
+static int wsldapid;
 #include "pca_settings.h"
 #include "wslda_errors.h"
 #include "pca_macro.h"
