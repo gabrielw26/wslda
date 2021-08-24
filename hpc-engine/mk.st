@@ -53,6 +53,11 @@ WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
 WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
 WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 
+# Default values for variables
+ifeq ($(strip $(PYTHON)),)
+PYTHON=python
+endif
+
 all: 1d 2d 3d
 
 1d: dirs d1d
@@ -96,7 +101,7 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WINTERPOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 		
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
-	python $(SRCDIR)reproducibility.py $(OBJDIR)
+	$(PYTHON) $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
 
 $(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)

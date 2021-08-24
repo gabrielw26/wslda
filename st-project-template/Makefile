@@ -1,6 +1,7 @@
 
 # COMPILER
 CXX=mpicc
+PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
 # W-SLDA instalation folder (for read only)
