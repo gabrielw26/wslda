@@ -1,7 +1,5 @@
 # LOAD BEFORE COMPILATION
-# 
-# module load gcc/7.4.0
-# module load libtool
+# module load gcc/9.1.0
 # module load cuda 
 # module load essl
 # module load netlib-lapack
@@ -9,22 +7,21 @@
 # module load fftw
 # export LD_LIBRARY_PATH=/gpfs/alpine/proj-shared/nph139/share/elpa/lib:$LD_LIBRARY_PATH
 
-# NOTE:
-# Best performance is obtained with ELPA lib.
-# See: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/summit
-
 # COMPILER
 CXX=mpicc
+PYTHON=python2
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=../
+WSLDADIR=/gpfs/alpine/nph139/proj-shared/share/wslda/
 OBJDIR=./obj/
+# folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3 -I/gpfs/alpine/proj-shared/nph139/share/elpa/include/elpa-2020.05.001 
+CFLAGS= -std=gnu99 -O3 -I/gpfs/alpine/proj-shared/nph139/share/elpa/include/elpa-2021.05.002 
 #-DFOTRAN_NO_UNDERSCORE
 LIBS=-lfftw3 -lm -L${OLCF_NETLIB_SCALAPACK_ROOT}/lib -lscalapack -L${OLCF_ESSL_ROOT}/lib64 -lessl -L${OLCF_NETLIB_LAPACK_ROOT}/lib64 -llapack -L/gpfs/alpine/proj-shared/nph139/share/elpa/lib -lelpa
 
 # ----- DO NOT MODIFY -----
 include $(WSLDADIR)hpc-engine/mk.st
+ 
