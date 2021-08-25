@@ -18,7 +18,9 @@ extern int wsldapid; // process id - global variable
 #include "wderiv.h"
 #include "winterp.h"
 #undef Complex
+#define printf wprintf
 #include "problem-definition.h"
+#undef printf
 
 #define Complex(a,b) (a + I*b)
 #define cnorm(a) (creal(a)*creal(a) + cimag(a)*cimag(a)) 

@@ -148,7 +148,9 @@ double dc_ec;
 // BdG mode
 double aBdG;
 
+#define printf wprintf
 #include "logger.h"
+#undef printf
 
 typedef char * string;
 

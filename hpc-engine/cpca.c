@@ -35,10 +35,12 @@
 #include "wslda_writevars.h"
 #include "wslda_reproducibility.h"
 
-#include "tdwslda_static_vars.h"
-#include "logger.h"
-
 int wsldapid; // process id - global variable
+#include "tdwslda_static_vars.h"
+#define printf wprintf
+#include "logger.h"
+#undef printf
+
 
 int main( int argc , char ** argv ) 
 {
