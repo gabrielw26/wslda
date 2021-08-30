@@ -1,31 +1,38 @@
 
-# C++ compiler
-CXX=g++
+# C compiler (with C99 dialect)
+CC=gcc -std=gnu99
 
-# C compiler
-CC=gcc
+# To compile tools you need to install first winterp library
+# https://gitlab.fizyka.pw.edu.pl/wtools/winterp
+WINTERP=-I../winterp/c -L../winterp/ -lwinterp -lfftw3
 
-# lib: generates lib static and dynamic (using C++ compiler)
-# lic: generates lib static and dynamic (using C compiler)
+# lib: generates lib static and dynamic (using C compiler)
 # examples: generates example codes
+# tools: generates set of auxiliary tools for manipulating wdata format
 
-all: libc lib examples
-libs: lib libc
+all: lib examples tools
+lib: libwdata.a libwdata.so
 
-lib: 
-	$(CXX) -O3 -c ./c/wdata.c -fPIC
-	ar crf libwdata.a wdata.o
-	$(CXX) -O3 -c ./c/wdata.c -fPIC -shared -o libwdata.so
-	
-libc: 
+
+libwdata.a: ./c/wdata.c ./c/wdata.h
 	$(CC) -O3 -c ./c/wdata.c -fPIC
-	ar crf libwdatac.a wdata.o 
-	$(CC) -O3 -c ./c/wdata.c -fPIC -shared -o libwdatac.so
-
+	ar crf libwdata.a wdata.o
+	
+libwdata.so: ./c/wdata.c ./c/wdata.h
+	$(CC) -O3 -c ./c/wdata.c -fPIC -shared -o libwdata.so
+	
 examples: lib
-	$(CXX) ./c-examples/example-write.c -o ./c-examples/example-write -I./c/ -L. -lwdata -lm 
-	$(CXX) ./c-examples/example-read.c -o ./c-examples/example-read -I./c/ -L. -lwdata -lm 
-	$(CXX) ./c-examples/example-addvar.c -o ./c-examples/example-addvar -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write.c -o ./c-examples/example-write -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write-many.c -o ./c-examples/example-write-many -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write-many-t_varying.c -o ./c-examples/example-write-many-t_varying -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-read.c -o ./c-examples/example-read -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-addvar.c -o ./c-examples/example-addvar -I./c/ -L. -lwdata -lm 
+	
+tools: lib
+	mkdir -p ./bin/
+	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
+	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
 
 clean:
 	rm *.o
@@ -34,3 +41,7 @@ clean:
 	rm ./c-examples/example-write
 	rm ./c-examples/example-read
 	rm ./c-examples/example-addvar
+	rm ./c-examples/example-write-many
+	rm ./c-examples/example-write-many-t_varying
+	rm ./bin/wdata-cut
+	rm ./bin/wdata-interpolate
