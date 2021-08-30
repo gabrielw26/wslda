@@ -1,42 +1,47 @@
 
-# C compiler
-CC=gcc -std=c99
+# C compiler (with C99 dialect)
+CC=gcc -std=gnu99
 
-# fftw linking statment
-FFTW=-lfftw3
-
+# To compile tools you need to install first winterp library
+# https://gitlab.fizyka.pw.edu.pl/wtools/winterp
+WINTERP=-I../winterp/c -L../winterp/ -lwinterp -lfftw3
 
 # lib: generates lib static and dynamic (using C compiler)
 # examples: generates example codes
+# tools: generates set of auxiliary tools for manipulating wdata format
 
-all: lib examples tests
-tests: test test1d test2d
-lib: libwderiv.a libwderiv.so	
+all: lib examples tools
+lib: libwdata.a libwdata.so
 
-libwderiv.a: ./c/wderiv.c ./c/wderiv.h
-	$(CC) -O3 -c ./c/wderiv.c -fPIC
-	ar crf libwderiv.a wderiv.o 
+
+libwdata.a: ./c/wdata.c ./c/wdata.h
+	$(CC) -O3 -c ./c/wdata.c -fPIC
+	ar crf libwdata.a wdata.o
 	
-libwderiv.so: ./c/wderiv.c ./c/wderiv.h
-	$(CC) -O3 -c ./c/wderiv.c -fPIC -shared -o libwderiv.so
-
+libwdata.so: ./c/wdata.c ./c/wdata.h
+	$(CC) -O3 -c ./c/wdata.c -fPIC -shared -o libwdata.so
+	
 examples: lib
-	$(CC) -O3 ./c-examples/simple-1d.c -o ./c-examples/simple-1d -I./c/ -L. -lwderiv $(FFTW) -lm 
-
-test: lib
-	$(CC) -std=c99 ./c/test-wderiv.c -o ./c/test-wderiv -I./c/ -L. -lwderiv $(FFTW) -lm 
-
-test2d: lib
-	$(CC) -std=c99 ./c/test-wderiv2D.c -o ./c/test-wderiv2D -I./c/ -L. -lwderiv $(FFTW) -lm
-
-test1d: lib
-	$(CC) -std=c99 ./c/test-wderiv1D.c -o ./c/test-wderiv1D -I./c/ -L. -lwderiv $(FFTW) -lm 
+	$(CC) ./c-examples/example-write.c -o ./c-examples/example-write -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write-many.c -o ./c-examples/example-write-many -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write-many-t_varying.c -o ./c-examples/example-write-many-t_varying -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-read.c -o ./c-examples/example-read -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-addvar.c -o ./c-examples/example-addvar -I./c/ -L. -lwdata -lm 
 	
+tools: lib
+	mkdir -p ./bin/
+	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
+	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
+
 clean:
-	rm -f *.o
-	rm -f *.a
-	rm -f *.so
-	rm -f ./c-examples/simple-1d
-	rm -f ./c/test-wderiv
-	rm -f ./c/test-wderiv2D
-	rm -f ./c/test-wderiv1D
+	rm *.o
+	rm *.a
+	rm *.so
+	rm ./c-examples/example-write
+	rm ./c-examples/example-read
+	rm ./c-examples/example-addvar
+	rm ./c-examples/example-write-many
+	rm ./c-examples/example-write-many-t_varying
+	rm ./bin/wdata-cut
+	rm ./bin/wdata-interpolate
