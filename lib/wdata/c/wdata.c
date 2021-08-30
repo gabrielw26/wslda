@@ -861,6 +861,7 @@ void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue
 
     wdata_const _const;
     strcpy(_const.name, constname);
+    strcpy(_const.unit, "none");
     _const.value = constvalue;
     md->consts[md->nconsts] = _const;
     md->nconsts++;
