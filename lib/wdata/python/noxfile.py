@@ -13,3 +13,4 @@ def test(session: Session) -> None:
     # session.run("poetry", "shell", external=True)
     session.run("poetry", "install", external=True)
     session.run("poetry", "run", "pytest", external=True)
+    session.run("poetry", "run", "coverage", "xml", "--fail-under=0", external=True)

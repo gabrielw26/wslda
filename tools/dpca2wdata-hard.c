@@ -98,7 +98,7 @@ int main( int argc , char ** argv )
     wdata_metadata md;
     
     double eF;
-    int ierr = read_measurement_file_header(file_name, &md.NX, &md.NY, &md.NZ, &md.DX, &md.DY, &md.DZ, &eF, &md.t0, &md.dt, &md.cycles);
+    int ierr = read_measurement_file_header(file_name, &md.nx, &md.ny, &md.nz, &md.dx, &md.dy, &md.dz, &eF, &md.t0, &md.dt, &md.cycles);
     if(ierr!=0)
     {
         printf("CANNOT FIND `%s` FILE!\n", file_name);
@@ -108,8 +108,8 @@ int main( int argc , char ** argv )
     // set other parameters
     strcpy(md.prefix,basename(argv[1]));
     md.datadim=3;
-    if(md.NZ==1) md.datadim--;
-    if(md.NY==1) md.datadim--;
+    if(md.nz==1) md.datadim--;
+    if(md.ny==1) md.datadim--;
     
     
     // add variables
@@ -138,7 +138,7 @@ int main( int argc , char ** argv )
     md2=md;
     int ivar, icycle;
     double *data;
-    cppmallocl(data,3*md.NX*md.NY*md.NZ,double);
+    cppmallocl(data,3*md.nx*md.ny*md.nz,double);
     
     // hard conversion 
     for(ivar=0; ivar<md.nvar; ivar++) 

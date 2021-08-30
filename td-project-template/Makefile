@@ -4,7 +4,8 @@
 
 # COMPILERS
 CXX=mpicc
-NVCC=nvcc 
+NVCC=nvcc
+PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
 WSLDADIR=/home2/archive/wslda/

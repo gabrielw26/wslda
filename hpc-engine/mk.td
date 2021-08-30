@@ -73,6 +73,11 @@ WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
 WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
 WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 
+# Default values for variables
+ifeq ($(strip $(PYTHON)),)
+PYTHON=python
+endif
+
 all: 1d 2d 3d
 
 1d: dirs d1d

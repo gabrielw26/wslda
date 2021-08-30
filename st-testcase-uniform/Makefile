@@ -9,6 +9,7 @@
 
 # COMPILER
 CXX=mpicc
+PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
 WSLDADIR=/home2/archive/wslda/

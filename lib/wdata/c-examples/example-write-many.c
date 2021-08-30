@@ -35,6 +35,11 @@ double function_xyz(double x, double y, double z, double time)
     return val;
 }
 
+double function_time(const wdata_metadata *md, const int icycle)
+{
+    return md->t0 + md->dt * icycle;
+}
+
 #define cppmallocl(pointer, size, type)                                     \
     if ((pointer = (type *)malloc((size) * sizeof(type))) == NULL)          \
     {                                                                       \
@@ -62,15 +67,12 @@ int main()
     md.dt = 1.0;
 
     // add variables to data set
-    // for each variable binary file of name `prefix_`varname`.wdat will be created
-    wdata_variable vdensity_a = {"density_a", "real", "none", "wdat"};
-    wdata_add_variable(&md, &vdensity_a);
-
-    wdata_variable vdelta = {"delta", "complex", "none", "wdat"};
-    wdata_add_variable(&md, &vdelta);
-
-    wdata_variable vcurrent_a = {"current_a", "vector", "none", "wdat"};
-    wdata_add_variable(&md, &vcurrent_a);
+    // for each variable binary file of name `prefix_`varname`.wdat` will be created
+    wdata_variable_many vars_many = {{"density_a", "delta", "current_a"},
+                                     {"real", "complex", "vector"},
+                                     {"none", "none", "none"},
+                                     {"wdat", "wdat", "wdat"}};
+    wdata_add_variable_many(&md, &vars_many);
 
     // add links to data sets
     // links are alternative names of the same variable
@@ -138,26 +140,11 @@ int main()
         wdata_add_cycle(&md);
 
         // and add cycle to binary sets
-        ierr = wdata_write_cycle(&md, "density_a", dataR);
-        // alternatively you can use:
-        // ierr=wdata_add_datablock(&md, &vdensity_a, dataR);
+        void *pointers[] = {dataR, dataC, dataV}; // IMPORTANT: ordering matter. See your `wdata_variable_many.names`
+        ierr = wdata_write_cycle_many(&md, &vars_many, pointers);
         if (ierr != 0)
         {
-            printf("ERROR: Cannot add density_a!\n");
-            return 1;
-        }
-
-        ierr = wdata_write_cycle(&md, "delta", dataC);
-        if (ierr != 0)
-        {
-            printf("ERROR: Cannot add delta!\n");
-            return 1;
-        }
-
-        ierr = wdata_write_cycle(&md, "current_a", dataV);
-        if (ierr != 0)
-        {
-            printf("ERROR: Cannot add delta!\n");
+            printf("ERROR: Cannot add many!\n");
             return 1;
         }
     }

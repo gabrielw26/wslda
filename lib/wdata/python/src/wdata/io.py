@@ -29,7 +29,6 @@ See Also
 * https://numpy.org/doc/stable/reference/generated/numpy.memmap.html
 
 """
-import collections.abc
 from collections import OrderedDict
 import os.path
 from warnings import warn
@@ -41,7 +40,6 @@ from pytz import timezone
 import tzlocal
 
 from zope.interface import implementer, Attribute, Interface
-from zope.interface.common.collections import IMapping
 
 
 class IVar(Interface):
@@ -54,16 +52,19 @@ class IVar(Interface):
 
     * Abscissa data: ``(N,)``
     * Scalar data: ``(Nt,) + Nxyz``
-    * Vector data: ``(Nt, 3) + Nxyz``
+    * Vector data: ``(Nt, Nv) + Nxyz``
 
-    Assumes that ``Nx > 3`` so that if ``shape[1] <= 3``, the data is vector.
+    Assumes that ``Nx > 3`` so that if ``shape[1] <= 3``, the data is vector with ``Nv``
+    components.  Physically, one can have ``Nv == dim`` or ``Nv == 3``.  For example, a
+    ``dim = 2`` dataset might still have ``Nv == 3`` vectors where the third component
+    indicates that there is a persistent current in the z-direction.  Although the code
+    allows ``Nv < dim``, this does not make much sense.
     """
 
     # Required attributes
     name = Attribute("Name of variable")
     data = Attribute("Array-like object with access to the data.")
     description = Attribute("Single-line description of the data.")
-    ext = Attribute("Extension for data file format.")
     unit = Attribute("String representation of units for the data.")
     filename = Attribute("Full path of the data file.")
 
@@ -75,7 +76,6 @@ class IVar(Interface):
         name=None,
         data=None,
         description=None,
-        ext=None,
         unit="none",
         filename=None,
         descr=None,
@@ -97,9 +97,6 @@ class IVar(Interface):
 
         description : str
            Single-line comment for variable.  Defaults to the name.
-        ext : str
-           Extension for data file format - will override default from
-           IWData object if provided.
         unit : str
            Unit of data for metadata file.
         shape : tuple, None
@@ -107,21 +104,22 @@ class IVar(Interface):
            files can be loaded.
         """
 
-    def write_data(force=False, ext="wdat"):
+    def write_data(filename=None, force=False):
         """Write the data to disk.
 
         Arguments
         ---------
+        filename : str, None
+           Filename.  Data type is determined by the extension.
+           Currently supported values are ``'wdat'`` (pure binary) and ``'npy'`` for the
+           numpy NPY format.  Uses ``self.filename`` if not provided.
         force : bool
            If True, overwrite existing files, otherwise raise IOError
            if file exists.
-        ext : str
-           File format.  Currently supported values are ``'wdat'`` (pure
-           binary) and ``'npy'`` for the numpy NPY format.
         """
 
 
-class IWData(IMapping):
+class IWData(Interface):
     """Interface of a complete dataset.
 
     Also used to define abscissa as follows::
@@ -149,12 +147,12 @@ class IWData(IMapping):
     Nxyz = Attribute("Shape of data (Nx, Ny, Nz) and lattice shape.")
     xyz0 = Attribute("Offsets (x0, y0, z0).")
 
-    dxyz = Attribute("Spacing (dx, dy, dz).  `NotImplemented` if not uniform.")
+    dxyz = Attribute("Spacing (dx, dy, dz).  ``np.nan`` if not uniform.")
 
     t = Attribute("Times for each frame")
 
     t0 = Attribute("Time of initial frame.")
-    dt = Attribute("Time steps between frames.  None if not uniform.")
+    dt = Attribute("Time steps between frames.  ``np.nan`` if not uniform.")
 
     infofile = Attribute("Name of infofile")
 
@@ -163,6 +161,7 @@ class IWData(IMapping):
         description="",
         data_dir=".",
         ext="wdat",
+        dim=None,
         Nxyz=None,
         dxyz=(1, 1, 1),
         xyz0=None,
@@ -174,6 +173,7 @@ class IWData(IMapping):
         variables=None,
         aliases=None,
         constants=None,
+        check_data=True,
     ):
         """Constructor.
 
@@ -197,6 +197,10 @@ class IWData(IMapping):
            If these are provided, then the abscissa ``xyz`` are computed
            with equal spacings ``x = np.arange(Nx)*dx + x0``.  Default
            offeset (if ``xyz0 == None``) is centered ``x0 = -Lx/2 = -Nx*dx/2``.
+
+           New in version 0.1.4, we allow `dim <= len(Nxyz)` etc.  In this case, `Nxyz` can
+           still be fully specified, indicating that the underlying W-SLDA code used a
+           certain number of plane-waves in the extra dimensions.
         xyz : (array_like,)*dim
            Alternatively, the abscissa can be provided and the
            previous properties will be computed (if defined).
@@ -209,6 +213,11 @@ class IWData(IMapping):
 
         variables : [IVar]
            List of Variables.
+
+        check_data : bool
+           If True, then upon initialization try to load all the data and check
+           that the dimensions are consistent.
+           (New in version 0.1.4)
         """
 
     def get_metadata(header=None):
@@ -277,6 +286,9 @@ class IWData(IMapping):
         Returns the data of the named variable or the named
         constant, following aliases if defined."""
 
+    def keys():
+        """Return the valid keys."""
+
 
 @implementer(IVar)
 class Var(object):
@@ -286,7 +298,6 @@ class Var(object):
         data=None,
         description=None,
         filename=None,
-        ext=None,
         unit="none",
         descr=None,
         shape=None,
@@ -304,7 +315,6 @@ class Var(object):
         self.description = description
         self.filename = filename
         self.unit = unit
-        self.ext = ext
         self._descr = descr
         self._data = data
         self.shape = shape
@@ -319,7 +329,7 @@ class Var(object):
             # Convert data and check some properties
             args = {}
             if self._descr is not None:
-                args.update(astype=np.dtype(self._descr))
+                args.update(dtype=np.dtype(self._descr))
             self._data = np.ascontiguousarray(self._data, **args)
 
         if self.description is None:
@@ -359,14 +369,17 @@ class Var(object):
 
     @shape.setter
     def shape(self, shape):
-        if self._data is not None and shape is not None and shape != self._data.shape:
-            raise ValueError(
-                f"Property shape={shape} incompatible "
-                + f"with data.shape={self._data.shape}"
-            )
+        if self._data is not None and shape is not None:
+            if np.prod(shape) != np.prod(self._data.shape):
+                raise ValueError(
+                    f"Property shape={shape} incompatible "
+                    + f"with data.shape={self._data.shape}"
+                )
+            self._data = self._data.reshape(shape)
+
         self._shape = shape
 
-    def write_data(self, filename=None, force=False, ext="wdat"):
+    def write_data(self, filename=None, force=False):
         """Write self.data to the specified file."""
         self.init()
 
@@ -377,41 +390,65 @@ class Var(object):
             raise ValueError("No filename specified in Var.")
 
         if self._data is None:
-            raise IOError(f"Missing data for '{self.name}'!")
+            raise ValueError(f"Missing data for '{self.name}'!")
 
         if os.path.exists(filename) and not force:
-            raise IOError("File '{filename}' already exists!")
+            raise IOError(f"File '{filename}' already exists!")
 
         A = self._data
-        if self.ext is not None:
-            ext = self.ext
 
-        if ext == "wdat":
-            with open(".".join([filename, ext]), "wb") as fd:
+        if filename.endswith(".wdat"):
+            with open(filename, "wb") as fd:
                 fd.write(A.tobytes())
-        elif ext == "npy":
+        elif filename.endswith(".npy"):
             np.save(filename, A)
         else:
-            raise NotImplementedError("Unsupported ext={self.ext}")
+            raise NotImplementedError(f"Unsupported extension for '{filename}'")
 
     def load_data(self):
         """Load the data from file."""
-        if self.ext == "npy":
-            self._data = np.load(self.filename, mmap_mode="r")
-        elif self.ext == "wdat":
-            self._data = np.memmap(self.filename, dtype=np.dtype(self.descr)).reshape(
-                self.shape
-            )
+        if self.filename.endswith(".npy"):
+            _data = np.load(self.filename, mmap_mode="r")
+        elif self.filename.endswith(".wdat"):
+            shape = self.shape
+            _data = np.memmap(self.filename, dtype=np.dtype(self.descr), mode="r")
+            try:
+                _data = _data.reshape(shape)
+            except ValueError:
+                if self.vector:
+                    # Allow for the possibility that the vector has less than 3
+                    # dimensions.
+                    NtNvNxyz = np.prod(_data.shape)
+                    NtNxyz = shape[0] * np.prod(shape[2:])
+                    Nv = NtNvNxyz // NtNxyz
+                    shape = (shape[0], Nv) + shape[2:]
+                    if not NtNvNxyz % NtNxyz == 0:
+                        # Inconsistent data size
+                        raise ValueError(
+                            f"Shape of data in '{self.filename}' inconsistent "
+                            + f"with shape={shape}: Nv={NtNvNxyz / NtNxyz} must be an integer."
+                        )
+                    self._shape = shape
+                    _data = _data.reshape(shape)
+                else:  # pragma: nocover
+                    raise
         else:
-            raise NotImplementedError(f"Data format ext={self.ext} not supported.")
+            raise NotImplementedError(
+                f"Data format of '{self.filename}' not supported."
+            )
+        self._data = _data
 
 
 @implementer(IWData)
-class WData(collections.abc.Mapping):
+class WData(object):
     """Base implementation."""
 
     # This is the extension used for infofiles
     _infofile_extension = "wtxt"
+
+    # Allowed values for dx, dt, etc. for variable dimensions.  We use np.nan
+    # internally.
+    _varying = set([np.nan, None, NotImplemented, "varying"])
 
     def __init__(
         self,
@@ -419,6 +456,7 @@ class WData(collections.abc.Mapping):
         description="",
         data_dir=".",
         ext="wdat",
+        dim=None,
         Nxyz=None,
         dxyz=(1, 1, 1),
         xyz0=None,
@@ -430,6 +468,7 @@ class WData(collections.abc.Mapping):
         variables=None,
         aliases=None,
         constants=None,
+        check_data=True,
     ):
         self.prefix = prefix
         self.description = description
@@ -438,8 +477,10 @@ class WData(collections.abc.Mapping):
         self.variables = variables
         self.aliases = aliases
         self.constants = constants
+        self._dim = dim
         self.xyz, self.Nxyz, self.dxyz, self.xyz0 = xyz, Nxyz, dxyz, xyz0
         self.t, self.Nt, self.dt, self.t0 = t, Nt, dt, t0
+        self.check_data = check_data
         self.init()
 
     def init(self):
@@ -453,9 +494,10 @@ class WData(collections.abc.Mapping):
             Nxyz, dxyz, xyz0 = [], [], []
             for x in xyz:
                 dxs = np.diff(x)
-                dx = dxs.mean()
-                if not np.allclose(dxs, dx):
-                    dx = NotImplemented
+                if len(dxs) > 0:
+                    dx = dxs.mean()
+                if len(dxs) == 0 or not np.allclose(dxs, dx):
+                    dx = np.nan
 
                 Nxyz.append(len(x))
                 dxyz.append(dx)
@@ -465,17 +507,25 @@ class WData(collections.abc.Mapping):
                 raise ValueError("Must provide one of xyz or Nxyz")
 
             Nxyz, dxyz, xyz0 = self.Nxyz, self.dxyz, self.xyz0
-            _xyz0 = -np.multiply(Nxyz, dxyz) / 2
+            if Nxyz[0] <= 3:
+                raise ValueError(f"First dimension of Nxyz=={Nxyz} must be > 3.")
+
+            _xyz0 = -np.array([_N * _d / 2 for _N, _d in zip(Nxyz, dxyz)])
             if xyz0 is None:
                 xyz0 = _xyz0
             else:
                 # Allow for individual None values or NaN values.
                 xyz0 = tuple(
-                    _x0 if (x0 is None or x0 != x0) else x0
+                    _x0 if (x0 is None or np.isnan(x0)) else x0
                     for x0, _x0 in zip(xyz0, _xyz0)
                 )
 
             xyz = [np.arange(_N) * _dx + _x0 for _N, _dx, _x0 in zip(Nxyz, dxyz, xyz0)]
+
+            # While Nxyz etc. can be longer than dim, if dim is specified, we must
+            # truncate xyz so broadcasting works.
+            if self._dim is not None:
+                xyz = xyz[: self._dim]
 
         # Make sure abscissa are appropriately broadcast.
         self.xyz = np.meshgrid(*xyz, indexing="ij", sparse=True)
@@ -486,9 +536,10 @@ class WData(collections.abc.Mapping):
             t = np.ravel(self.t)
             Nt = len(t)
             dts = np.diff(t)
-            dt = dts.mean()
-            if not np.allclose(dts, dt):
-                dt = NotImplemented
+            if len(dts) > 0:
+                dt = dts.mean()
+            if len(dts) == 0 or not np.allclose(dts, dt):
+                dt = np.nan
             t0 = t[0]
         else:
             Nt, dt, t0 = self.Nt, self.dt, self.t0
@@ -506,7 +557,7 @@ class WData(collections.abc.Mapping):
         self.t, self.Nt, self.dt, self.t0 = t, Nt, dt, t0
 
         # Check variables
-        if self.variables is not None:
+        if self.check_data and self.variables is not None:
             dim = self.dim
             Nt = self.Nt
             for var in self.variables:
@@ -514,13 +565,13 @@ class WData(collections.abc.Mapping):
                     name, data = var.name, var.data
                     if Nt != var.data.shape[0]:
                         raise ValueError(
-                            f"Variable '{name}'has incompatible Nt={Nt}:"
-                            + f" shape[0] = {data.shape[0]}"
+                            f"Variable '{name}' has incompatible Nt={Nt}:"
+                            + f" data.shape[0] = {data.shape[0]}"
                         )
-                    if var.data.shape[-self.dim :] != self.Nxyz:
+                    if var.data.shape[-self.dim :] != self.Nxyz[: self.dim]:
                         raise ValueError(
                             f"Variable '{name}' has incompatible Nxyz={Nxyz}:"
-                            + f" shape[-{self.dim}:] = {data.shape[-self.dim:]}"
+                            + f" data.shape[-{self.dim}:] = {data.shape[-self.dim:]}"
                         )
                     if (var.vector and len(var.shape) - 2 != dim) or (
                         not var.vector and len(var.shape) - 1 != dim
@@ -532,15 +583,26 @@ class WData(collections.abc.Mapping):
 
     @property
     def dim(self):
-        return len(self.xyz)
+        dim = self._dim
+        if dim is None:
+            dim = len(self.xyz)
+        return dim
+
+    def _get_ext(self, var):
+        """Return the extension of ``var``."""
+        if var.filename:
+            return var.filename.split(".")[-1]
+        return self.ext
 
     def get_metadata(self, header=None):
         # Pad these with 1's for backwards compatibility with
         # Gabriel's existing code
         Nxyz = self.Nxyz + (1,) * (3 - len(self.Nxyz))
-        dxyz = self.dxyz + (1,) * (3 - len(self.dxyz))
-        if "None" in dxyz:
-            dxyz = tuple(_dx if _dx is not None else "varying" for _dx in dxyz)
+        dxyz = tuple(
+            _dx if _dx not in self._varying else "varying"
+            for _dx in self.dxyz + (1,) * (3 - len(self.dxyz))
+        )
+        dt = self.dt if self.dt not in self._varying else "varying"
 
         descriptors = [
             ("NX", Nxyz[0], "Lattice size in X direction"),
@@ -553,16 +615,12 @@ class WData(collections.abc.Mapping):
             ("datadim", self.dim, "Block size: 1:NX, 2:NX*NY, 3:NX*NY*NZ"),
             ("cycles", self.Nt, "Number Nt of frames/cycles per dataset"),
             ("t0", self.t0, "Time value of first frame"),
-            (
-                "dt",
-                self.dt if self.dt is not None else "varying",
-                "Time interval between frames",
-            ),
+            ("dt", dt, "Time interval between frames"),
         ]
 
         # Add X0, Y0, Z0 if not default
         for x0, dx, Nx, X in zip(self.xyz0, self.dxyz, self.Nxyz, "XYZ"):
-            if dx is not None and np.allclose(x0, -Nx * dx / 2):
+            if dx not in self._varying and np.allclose(x0, -Nx * dx / 2):
                 continue
             descriptors.append((f"{X}0", x0, f"First point in {X} lattice"))
 
@@ -600,7 +658,7 @@ class WData(collections.abc.Mapping):
                             _v.name,
                             self._get_type(_v),
                             _v.unit,
-                            _v.ext if _v.ext is not None else self.ext,
+                            self._get_ext(var=_v),
                             f"# {_v.description}",
                         )
                         for _v in self.variables
@@ -627,7 +685,8 @@ class WData(collections.abc.Mapping):
                     + [("const", _k, repr(self.constants[_k])) for _k in self.constants]
                 )
             )
-        return "\n".join(lines)
+        metadata = "\n".join([_l.rstrip() for _l in "\n".join(lines).splitlines()])
+        return metadata
 
     @property
     def infofile(self):
@@ -648,30 +707,33 @@ class WData(collections.abc.Mapping):
 
         infofile = self.infofile
         if os.path.exists(infofile) and not force:
-            raise IOError(f"File {infofile} already exists!")
+            raise IOError(f"File '{infofile}' already exists!")
 
         with open(infofile, "w") as f:
             f.write(metadata)
 
-        variables = list(self.variables)
+        if self.variables:
+            variables = list(self.variables)
 
-        if self.xyz is not None:
-            for _x, _n in zip(self.xyz, "xyz"):
-                variables.append(Var(**{_n: np.ravel(_x)}))
+            if self.xyz is not None:
+                for _x, _n in zip(self.xyz, "xyz"):
+                    variables.append(Var(**{_n: np.ravel(_x)}))
 
-        if self.t is not None:
-            variables.append(Var(t=np.ravel(self.t)))
+            if self.t is not None:
+                variables.append(Var(t=np.ravel(self.t)))
 
-        for var in self.variables:
-            filename = os.path.join(data_dir, "{}_{}".format(self.prefix, var.name))
-            var.write_data(filename=filename, force=force, ext=self.ext)
+            for var in self.variables:
+                filename = os.path.join(
+                    data_dir, f"{self.prefix}_{var.name}.{self.ext}"
+                )
+                var.write_data(filename=filename, force=force)
 
     @classmethod
-    def load(cls, infofile=None, full_prefix=None):
+    def load(cls, infofile=None, full_prefix=None, **kw):
         if infofile is not None:
             # Load from infofile
             if full_prefix is None:
-                return cls.load_from_infofile(infofile=infofile)
+                return cls.load_from_infofile(infofile=infofile, **kw)
             raise ValueError(
                 f"Got both infofile={infofile} and" + f" full_prefix={full_prefix}."
             )
@@ -681,13 +743,13 @@ class WData(collections.abc.Mapping):
         # Check if full_prefix shows an infofile.
         infofile = ".".join([full_prefix, cls._infofile_extension])
         if os.path.exists(infofile):
-            return cls.load_from_infofile(infofile=infofile)
+            return cls.load_from_infofile(infofile=infofile, **kw)
 
         # No infofile option.
-        raise NotImplementedError()
+        raise NotImplementedError("infofile={infofile} must currently exist.")
 
     @classmethod
-    def load_from_infofile(cls, infofile):
+    def load_from_infofile(cls, infofile, **kw):
         """Load data from specified infofile."""
         with open(infofile, "r") as f:
             lines = f.readlines()
@@ -701,7 +763,7 @@ class WData(collections.abc.Mapping):
                 pass
             elif lines[0].startswith("#"):
                 header.append(lines[0][1:].strip())
-            else:
+            else:  # pragma: nocover  https://github.com/nedbat/coveragepy/issues/772
                 break
             lines.pop(0)
 
@@ -734,7 +796,7 @@ class WData(collections.abc.Mapping):
                     Var(
                         name=name,
                         unit=unit,
-                        ext=ext,
+                        filename=ext,  # Until we know prefix...
                         shape=shape,
                         descr=cls._get_descr(type=type),
                         description=" ".join(comments),
@@ -753,8 +815,8 @@ class WData(collections.abc.Mapping):
         # Process parameters
         if "prefix" not in parameters:
             prefix = os.path.basename(infofile)
-            if prefix.endswith("." + cls._infofile_ext):
-                prefix = prefix[: -1 + len(cls._infofile_ext)]
+            if prefix.endswith("." + cls._infofile_extension):
+                prefix = prefix[: -1 - len(cls._infofile_extension)]
             else:
                 prefix = prefix.rsplit(".", 1)[0]
 
@@ -765,60 +827,50 @@ class WData(collections.abc.Mapping):
 
         Nxyz = tuple(int(parameters.pop(f"N{X}", 1)) for X in "XYZ")
         dim = int(parameters.pop("datadim", len(Nxyz)))
-        Nxyz = Nxyz[:dim]
 
         Nt = int(parameters.pop("cycles", 0))
 
         # Add filenames and shapes.  Defer loading until the user needs the data
         for var in variables:
-            var.filename = os.path.join(data_dir, f"{prefix}_{var.name}.{var.ext}")
+            ext = var.filename.split(".")[-1]
+            var.filename = os.path.join(data_dir, f"{prefix}_{var.name}.{ext}")
             if var.vector:
-                var.shape = (Nt, dim) + Nxyz
+                var.shape = (Nt, 3) + Nxyz[:dim]
             else:
-                var.shape = (Nt,) + Nxyz
+                var.shape = (Nt,) + Nxyz[:dim]
 
         args = dict(
             prefix=prefix,
             description=description,
             data_dir=data_dir,
+            dim=dim,
             Nxyz=Nxyz,
-            dxyz=tuple(float(parameters.pop(f"D{X}", 1.0)) for X in "XYZ")[:dim],
-            xyz0=tuple(float(parameters.pop(f"{X}0", np.nan)) for X in "XYZ")[:dim],
+            dxyz=tuple(
+                cls._float(parameters.pop(f"D{X}", "varying").lower()) for X in "XYZ"
+            ),
+            xyz0=tuple(float(parameters.pop(f"{X}0", np.nan)) for X in "XYZ"),
             Nt=Nt,
             t0=float(parameters.pop("t0", 0)),
-            dt=float(parameters.pop("dt", 1)),
+            dt=cls._float(parameters.pop("dt", "varying").lower()),
             variables=variables,
             aliases=aliases,
             constants=constants,
         )
+        args.update(kw)
 
         wdata = cls(**args)
         return wdata
 
-    def load_data(self, *names):
+    @classmethod
+    def _float(cls, val):
+        """Return float(value) defaulting to np.nan for varying values."""
+        if val in cls._varying:
+            return np.nan
+        return float(val)
+
+    def load_data(self, *names):  # pragma: nocover
         """Load the specified data."""
         raise NotImplementedError
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            return super().__getattribute__(key)
-
-    ######################################################################
-    # Methods for the IMapping interface.  Used by collections.abc.Mapping
-    def __getitem__(self, key):
-        key = self.aliases.get(key, key)
-        for var in self.variables:
-            if var.name == key:
-                if key in self.constants:
-                    warn(f"Variable {key} hides constant of the same name")
-                return var.data
-
-        if key in self.constants:
-            return self.constants[key]
-
-        raise KeyError(key)
 
     def keys(self):
         keys = set([_var.name for _var in self.variables])
@@ -828,11 +880,29 @@ class WData(collections.abc.Mapping):
             keys.update(self.constants)
         return sorted(keys)
 
-    def __iter__(self):
+    def __dir__(self):
         return self.keys()
+
+    def __iter__(self):
+        return self.keys().__iter__()
 
     def __len__(self):
         return len(self.keys())
+
+    def __getattr__(self, key):
+        if self.aliases:
+            key = self.aliases.get(key, key)
+        if self.variables:
+            for var in self.variables:
+                if var.name == key:
+                    if key in self.constants:
+                        warn(f"Variable {key} hides constant of the same name")
+                    return var.data
+
+        if self.constants and key in self.constants:
+            return self.constants[key]
+
+        return super().__getattribute__(key)
 
     ######################################################################
     ####################
@@ -879,6 +949,8 @@ class WData(collections.abc.Mapping):
 def load_wdata(prefix=None, infofile=None):
     if infofile is not None:
         return WData.load(infofile=infofile)
+    else:
+        raise NotImplementedError()
 
 
 ######################################################################

@@ -149,7 +149,9 @@ double aBdG;
 
 int wsldapid; // process id - global variable
 
+#define printf wprintf
 #include "logger.h"
+#undef printf
 
 typedef char * string;
 
