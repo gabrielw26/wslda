@@ -868,6 +868,26 @@ void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue
     return;
 }
 
+void wdata_setconst_unit(wdata_metadata *md, const char *constname, double constvalue, const char *unit)
+{
+    int i;
+    for (i = 0; i < md->nconsts; i++)
+        if (strcmp(md->consts[i].name, constname) == 0)
+        {
+            md->consts[i].value = constvalue;
+            return;
+        }
+
+    wdata_const _const;
+    strcpy(_const.name, constname);
+    strcpy(_const.unit, unit);
+    _const.value = constvalue;
+    md->consts[md->nconsts] = _const;
+    md->nconsts++;
+
+    return;
+}
+
 int wdata_file_exists(wdata_metadata *md, const char *varname)
 {
     wdata_goto_wrkdir(md);
