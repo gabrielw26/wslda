@@ -1,29 +1,3 @@
-# Info - wderiv
-
-C library for computation derivatives of functions defined on a lattice. The library uses spectral methods to achieve high accuracy.
-
-# Compiling lib
-Edit header of `Makefile` and:
-```bash
-make
-```
-*Note*: you need to have installed [FFTW](http://www.fftw.org/).  
-
-The compilation process will produce:
-* `libwderiv.a` - static library
-* `libwderiv.so` - dyanamic library
-
-Header file is located in `./c/` folder.
-
-In addition, testcases and example codes will be compiled. In order to compile only the lib:
-```bash
-make lib
-```
-
-# Basic usage
-The simples code:
-
-```c
 /**
  * Simple example showing usage of wderiv
  * 
@@ -87,14 +61,3 @@ int main()
     
     return 0; 
 }
-```
-
-# Documentation
-See [wiki pages](https://gitlab.fizyka.pw.edu.pl/wtools/wderiv/-/wikis/home) for documentation.
-
-# Contributors
-* Ruszczak Bartosz, Warsaw University of Technology, Faculty of Physics
-* Gabriel Wlazłowski, Warsaw University of Technology, Faculty of Physic
-
-
-
