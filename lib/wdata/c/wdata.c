@@ -65,7 +65,7 @@ void wdata_goback_wrkdir(wdata_metadata *md)
     }
 }
 
-char *str_tolower(char *str)
+static char *str_tolower(char *str)
 {
     int str_len = strlen(str) + 1;
     int j;
@@ -78,7 +78,7 @@ char *str_tolower(char *str)
 
 // Taken from:
 // https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
-void replace_str(char *str, char *org, char *rep)
+static void replace_str(char *str, char *org, char *rep)
 {
     char *ToRep = strstr(str, org);
     char *Rest = (char *)malloc(strlen(ToRep));
@@ -91,7 +91,7 @@ void replace_str(char *str, char *org, char *rep)
     free(Rest);
 }
 
-int check_metadata(wdata_metadata *md)
+static int check_metadata(wdata_metadata *md)
 {
     // Issue if User does not provide (nx, ny, nz)
     if (md->nx == 0 && md->ny == 0 && md->nz == 0)
