@@ -244,6 +244,11 @@ extern "C"
  * Functions sets value of constant. If constant was not added before it adds it and sets its value.
  * */
   void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue);
+  
+  /**
+ * Functions sets value of constant and corresponding unit. If constant was not added before it adds it and sets its value.
+ * */
+  void wdata_setconst_unit(wdata_metadata *md, const char *constname, double constvalue, const char *unit);
 
   /**
  * Function checks if binary file exists for variable.
