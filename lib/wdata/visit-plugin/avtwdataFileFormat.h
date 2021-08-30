@@ -48,14 +48,14 @@
 #include <vector>
 #include <complex>
 
-typedef std::complex<double> Complex;
+typedef std::complex<float> Complex;
 
 #include "wdata.h"
 
 class wdataVariable
 {
     public:
-        wdataVariable(wdata_metadata *wdmd, int varid);
+        wdataVariable(wdata_metadata *wdmd, int varid, int precdowngrade);
         virtual ~wdataVariable( ) { ;};
                 
         virtual bool getVariable(const char * _varname, int cycleid, float * data_for_visit) { ;};
@@ -71,6 +71,7 @@ class wdataVariable
         int loadCycle(int cycleid);
                 
         int vid; // index of varaiable in md->vars table
+        int d2f; // downgrade double to float
         wdata_metadata *md; // variable info
         int loadedcycle; 
         
@@ -83,7 +84,7 @@ class wdataVariable
 class wdataRealVariable : public wdataVariable
 {
     public:
-        wdataRealVariable(wdata_metadata *wdmd, int varid);
+        wdataRealVariable(wdata_metadata *wdmd, int varid, int precdowngrade);
         ~wdataRealVariable( ) {free(data);};
         
         bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
@@ -92,14 +93,14 @@ class wdataRealVariable : public wdataVariable
         bool isVector() {return false;};
                 
     protected:
-        double *dataR;
+        float *dataR;
 };
 
 enum cplxtrans  {cabs, carg, cre, cim};
 class wdataComplexVariable : public wdataVariable
 {
     public:
-        wdataComplexVariable(wdata_metadata *wdmd, int varid);
+        wdataComplexVariable(wdata_metadata *wdmd, int varid, int precdowngrade);
         ~wdataComplexVariable( ) {free(data);};
         
         bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
@@ -115,7 +116,7 @@ class wdataComplexVariable : public wdataVariable
 class wdataVectorVariable : public wdataVariable
 {
     public:
-        wdataVectorVariable(wdata_metadata *wdmd, int varid);
+        wdataVectorVariable(wdata_metadata *wdmd, int varid, int precdowngrade);
         ~wdataVectorVariable( ) {free(data);};
         
         bool getVariable(const char * _varname, int cycleid, float * data_for_visit);
@@ -124,9 +125,9 @@ class wdataVectorVariable : public wdataVariable
         bool isVector() {return true;};
                 
     protected:
-        double *dataVx;
-        double *dataVy;
-        double *dataVz;
+        float *dataVx;
+        float *dataVy;
+        float *dataVz;
 };
 
 // ****************************************************************************

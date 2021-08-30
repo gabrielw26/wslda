@@ -9,5 +9,9 @@ _misc
 examples/*.ipynb
 src/visit-plugin
 *.npy
+*.pyc
+*.pyo
 *.wdat
 *.wtxt
+__pycache__/
+.ipynb_checkpoints/
