@@ -109,8 +109,8 @@ int main( int argc , char ** argv )
     ierr = wdata_parse_metadata_file(argv[1], &md);
     if(ierr!=0) {printf("Cannot read metadata file!\n"); return 1;} 
     
-    NX=md.NX; NY=md.NY, NZ=md.NZ; 
-    DX=md.DX; DY=md.DY; DZ=md.DZ;
+    NX=md.nx; NY=md.ny, NZ=md.nz; 
+    DX=md.dx; DY=md.dy; DZ=md.dz;
     
     int cycleid = md.cycles-1;
     if(argc>=4) cycleid = atoi(argv[3]);
@@ -247,9 +247,9 @@ int main( int argc , char ** argv )
     double npart[2] = {0.0, 0.0};
     for(i=0; i<blocklength; i++) npart[0]+=rho_a[i]; 
     for(i=0; i<blocklength; i++) npart[1]+=rho_b[i]; 
-    if     (md.datadim==1) {npart[0]*=md.DX*md.DY*md.DZ*md.NY*md.NZ; npart[1]*=md.DX*md.DY*md.DZ*md.NY*md.NZ;}
-    else if(md.datadim==2) {npart[0]*=md.DX*md.DY*md.DZ*md.NZ      ; npart[1]*=md.DX*md.DY*md.DZ*md.NZ      ;}
-    else if(md.datadim==3) {npart[0]*=md.DX*md.DY*md.DZ            ; npart[1]*=md.DX*md.DY*md.DZ            ;}
+    if     (md.datadim==1) {npart[0]*=md.dx*md.dy*md.dz*md.ny*md.nz; npart[1]*=md.dx*md.dy*md.dz*md.ny*md.nz;}
+    else if(md.datadim==2) {npart[0]*=md.dx*md.dy*md.dz*md.nz      ; npart[1]*=md.dx*md.dy*md.dz*md.nz      ;}
+    else if(md.datadim==3) {npart[0]*=md.dx*md.dy*md.dz            ; npart[1]*=md.dx*md.dy*md.dz            ;}
     double Effg = 0.6*(npart[0]+npart[1])*eF; // hard set!
     double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a, dc_mu_b, dc_ec, beta, eF, kF, Effg, npart[0], npart[1]};
     
