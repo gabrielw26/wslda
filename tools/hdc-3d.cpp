@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 		wdata_get_time(&md, inom, &time);		
 
 		// Read binary files
-// 		if(ip==0)
+		if(ip==0)
 // 			if(inom%p==0)
 			{
 				printf("\t Reading frame [%d], currently at ", inom);
