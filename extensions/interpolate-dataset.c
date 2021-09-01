@@ -6,7 +6,7 @@
  * New lattice it taken from corresponding predefines.h file
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o interpolate-dataset -lm -lfftw3
+ *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdatac -o interpolate-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
  *    cd $WSLDA/lib-wdata
@@ -26,6 +26,7 @@
 // W-DATA Format
 // Must be before wslda_toolkit.h !
 #include "wdata.h"
+#include "winterp.h"
 
 // W-SLDA Toolkit API
 int wsldapid;
@@ -93,9 +94,9 @@ int main( int argc , char ** argv )
         for(icycle=0; icycle<wdmdo.cycles; icycle++) // for each cycle
         {
             file_operationl( wdata_read_cycle(&wdmd, wdmdo.var[ivar].name, icycle, indata) );
-            if     (wdmdo.datadim==3) wslda_interpolation_3d(wdmdo.var[ivar].type[0], inNX, inNY, inNZ, indata, NX, NY, NZ, outdata);
-            else if(wdmdo.datadim==2) wslda_interpolation_2d(wdmdo.var[ivar].type[0], inNX, inNY,       indata, NX, NY,     outdata);
-            else                      wslda_interpolation_1d(wdmdo.var[ivar].type[0], inNX,             indata, NX,         outdata);
+            if     (wdmdo.datadim==3) winterp_interpolation_3d(wdmdo.var[ivar].type[0], inNX, inNY, inNZ, indata, NX, NY, NZ, outdata);
+            else if(wdmdo.datadim==2) winterp_interpolation_2d(wdmdo.var[ivar].type[0], inNX, inNY,       indata, NX, NY,     outdata);
+            else                      winterp_interpolation_1d(wdmdo.var[ivar].type[0], inNX,             indata, NX,         outdata);
             file_operationl( wdata_write_cycle(&wdmdo, wdmdo.var[ivar].name, outdata) );
         }
     }

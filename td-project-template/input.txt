@@ -38,15 +38,16 @@ selfstart               0        # use Taylor expansion for first 5 steps?
                                  # See: Wiki -> Starting ABM algorithm
 
 
-
-
 # ------------------ GPUS THREADING SET --------------
 # nthreads                512      # number of parallel threads executing by each GPU, default=512
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
 # gpuspernode             1        # number of GPUs per node (resource set), default=1
 
 # --------------------- OTHER -----------------
-spinsymmetry            0       # spin symmetric system
+# spinsymmetry            0       # !!! IGNORE HERE, set in predefines.h !!!
+                                  # NOTE: This flag is controlled via predefines.h !
+                                  #       Select SPINSYMMETRY_MODE to run with spinsymmetry==1,
+                                  #       otherwise it is assumes spinsymmetry==0
 # current corrections
 # ccstart                 0.
 # ccswitch                10.

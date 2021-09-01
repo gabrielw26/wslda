@@ -703,7 +703,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
 //         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
-    if(tnwf!=*nwf) return -1;
+    if(tnwf!=*nwf) return WSLDA_ERR_SCAN_INFO_FILES_SUM_FAILED;
     
     tnwf=0;
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)  tnwf+=nwf_per_kz[ikz];
@@ -744,7 +744,7 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
 //         wprintf("# scan_kzpca_info_files: %4d %4d %4d\n", ikz, i, tnwf);
     }
     
-    if(tnwf!=*nwf) return WSLDA_ERR_BINARY_FILE_CORRUPTED;
+    if(tnwf!=*nwf) return WSLDA_ERR_SCAN_INFO_FILES_SUM_FAILED;
     
     double *kytmp, *kztmp;
     cppmallocl(kytmp,NY*NZ,double);
@@ -1495,5 +1495,28 @@ int check_if_can_overwrite_files()
     
     return WSLDA_OK;
 }
+
+#ifndef __WSLDA_TOOLKIT__
+int check_if_consistent_spinsymmetry_mode(MPI_Comm comm, int nwfip, double *En, int spinsymmetry)
+{
+    int comm_size, comm_rank;
+    MPI_Comm_size(comm, &comm_size);
+    MPI_Comm_rank(comm, &comm_rank); 
+ 
+    // check is negative eigenstates are provided
+    int i, itest=0, igtest;
+    for(i=0; i<nwfip; i++) if(En[i]<0.0) itest++;
+    MPI_Reduce( &itest, &igtest, 1, MPI_INT, MPI_SUM, 0, comm);
+    
+    // further tests only by master
+    if(comm_rank==0)
+    {
+        if(spinsymmetry==1 && igtest >0) return WSLDA_ERR_SPINSYMMETRY1;
+        if(spinsymmetry==0 && igtest==0) return WSLDA_ERR_SPINSYMMETRY0;
+    }
+    
+    return WSLDA_OK;
+}
+#endif
 
 #endif

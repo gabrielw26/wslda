@@ -135,3 +135,19 @@ extensions/resize-dataset
 *.eps
 
 st-testcase-uniform/interpolate-dataset
+
+tools/libwinterp\.a
+
+st-project-template/test-external-potentials-2d
+
+st-project-template/test-external-potentials-1d
+
+st-project-template/solve-uniform
+
+st-project-template/interpolate-dataset
+
+lib/wderiv/c/test-wderiv2D
+
+lib/wderiv/c/test-wderiv1D
+
+lib/wderiv/c/test-wderiv

@@ -1,7 +1,8 @@
 
 # COMPILERS
 CXX=mpicc
-NVCC=nvcc 
+NVCC=nvcc
+PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
 # W-SLDA instalation folder (for read only)

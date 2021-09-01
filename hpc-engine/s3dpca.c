@@ -30,6 +30,7 @@
 
 #include "wdata.h"
 #include "wderiv.h"
+#include "winterp.h"
 
 #include "pca_settings.h"
 #include "pca_macro.h"
@@ -48,7 +49,6 @@
 #include "wslda_writevars.h"
 #include "wslda_functionals.h"
 #include "wslda_reproducibility.h"
-#include "wslda_interpolation.h"
 #include "wslda_resize.h"
 #include "wslda_st_checkpoint.h"
 
@@ -149,7 +149,9 @@ double aBdG;
 
 int wsldapid; // process id - global variable
 
+#define printf wprintf
 #include "logger.h"
+#undef printf
 
 typedef char * string;
 
