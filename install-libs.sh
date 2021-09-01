@@ -27,6 +27,6 @@ cmd=export\ WSLDA=$(pwd)
 echo $cmd
 cmd=export\ LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$(pwd)/lib/wdata:$(pwd)/lib/wderiv:$(pwd)/lib/winterp
 echo $cmd
-cmd=export\ PATH=\$PATH:$(pwd)/lib/wdata:$(pwd)/tools/bin
+cmd=export\ PATH=\$PATH:$(pwd)/lib/wdata/bin:$(pwd)/tools/bin
 echo $cmd
 echo " "
