@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
 	{
         printf("\t Creating file: %s\n", file_name);
 		es = fopen(file_name, "w");
-        fprintf(es, "# %10s %12s %12s %12s %12s\n", "time*eF", "Ec", "Ei", "EcSpec", "EiSpec");
+        fprintf(es, "# %10s %12s %12s %12s %12s\n", "time", "Ec", "Ei", "EcSpec", "EiSpec");
         fclose(es);
         
         printf("\t Creating file: %s\n", file_name2);
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 		wdata_get_time(&md, inom, &time);		
 
 		// Read binary files
-// 		if(ip==0)
+		if(ip==0)
 // 			if(inom%p==0)
 			{
 				printf("\t Reading frame [%d], currently at ", inom);

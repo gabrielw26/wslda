@@ -5,7 +5,7 @@
  * Use this code to learn how to use resize routines. 
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 resize-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdatac -o resize-dataset -lm -lfftw3
+ *    gcc -std=gnu99 resize-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -o resize-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
  *    cd $WSLDA/lib/wdata
@@ -47,8 +47,8 @@ int main( int argc , char ** argv )
     file_operationl( wdata_parse_metadata_file(argv[1], &wdmd) );
     
     // Check
-    int inNX=wdata_getNX(&wdmd), inNY=wdata_getNY(&wdmd), inNZ=wdata_getNZ(&wdmd);
-    double inDX=wdata_getDX(&wdmd), inDY=wdata_getDY(&wdmd), inDZ=wdata_getDZ(&wdmd);
+    int inNX=wdata_getnx(&wdmd), inNY=wdata_getny(&wdmd), inNZ=wdata_getnx(&wdmd);
+    double inDX=wdata_getdx(&wdmd), inDY=wdata_getdy(&wdmd), inDZ=wdata_getdz(&wdmd);
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;
     int newdim = atoi(argv[3]);
     printf("# ************************ LATTICE ***************************\n");
