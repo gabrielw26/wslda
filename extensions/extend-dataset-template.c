@@ -8,11 +8,11 @@
  *      w_a = j_a / sqrt(rho_a) (vector type)
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 extend-dataset-template.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdatac -o extend-dataset-template -lm -lfftw3 
+ *    gcc -std=gnu99 extend-dataset-template.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -o extend-dataset-template -lm -lfftw3 
  * 
  * NOTE: you need before generate wdata lib for C compiler:
- *    cd $WSLDA/lib-wdata
- *    make libc
+ *    cd $WSLDA/lib/wdata
+ *    make lib
  * */  
 
 
