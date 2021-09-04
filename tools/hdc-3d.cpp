@@ -8,6 +8,9 @@
 // Execution (Unitarity)	=> mpirun -n 50 ./mpihh /home2/scratch/td-qt-48-study/run2.wtxt 0
 //
 
+// very small number
+#define EPS 1.0e-14
+
 #include "fftw3.h"
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -367,37 +370,37 @@ int main(int argc, char *argv[])
 		if(c==0)									// Only for "a" component
 		{
 			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
-				waxr[ixyz] = j_a_x[ixyz]/sqrt(rho_a[ixyz]);
+				waxr[ixyz] = j_a_x[ixyz]/sqrt(rho_a[ixyz]+EPS);
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wayr[ixyz] = j_a_y[ixyz]/sqrt(rho_a[ixyz]);
+				wayr[ixyz] = j_a_y[ixyz]/sqrt(rho_a[ixyz]+EPS);
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wazr[ixyz] = j_a_z[ixyz]/sqrt(rho_a[ixyz]);
+				wazr[ixyz] = j_a_z[ixyz]/sqrt(rho_a[ixyz]+EPS);
 		}	
 
 		if(c==1)									// Only for "b" component
 		{
 			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
-				waxr[ixyz] = j_b_x[ixyz]/sqrt(rho_b[ixyz]);
+				waxr[ixyz] = j_b_x[ixyz]/sqrt(rho_b[ixyz]+EPS);
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wayr[ixyz] = j_b_y[ixyz]/sqrt(rho_b[ixyz]);
+				wayr[ixyz] = j_b_y[ixyz]/sqrt(rho_b[ixyz]+EPS);
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wazr[ixyz] = j_b_z[ixyz]/sqrt(rho_b[ixyz]);
+				wazr[ixyz] = j_b_z[ixyz]/sqrt(rho_b[ixyz]+EPS);
 		}
 
 		if(c==2)									// "a+b" components
 		{
 			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
-				waxr[ixyz] = (j_a_x[ixyz]+ j_b_x[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz])); // + sqrt(rho_b[ixyz]));
+				waxr[ixyz] = (j_a_x[ixyz]+ j_b_x[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // + sqrt(rho_b[ixyz]));
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wayr[ixyz] = (j_a_y[ixyz]+ j_b_y[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz])); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
+				wayr[ixyz] = (j_a_y[ixyz]+ j_b_y[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
 
 			for(int ixyz=0; ixyz<nxyz; ixyz++) 
-				wazr[ixyz] = (j_a_z[ixyz]+ j_b_z[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz])); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
+				wazr[ixyz] = (j_a_z[ixyz]+ j_b_z[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
 		}
 
 		// Initialize w(r) in coordinate space
