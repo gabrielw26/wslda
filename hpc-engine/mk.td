@@ -4,14 +4,26 @@
 # =====================================================================
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
+
 WDATAINC=$(WSLDADIR)lib/wdata/c/
 WDATASRC=$(WSLDADIR)lib/wdata/c/
+
+WDERIVINC=$(WSLDADIR)lib/wderiv/c/
+WDERIVSRC=$(WSLDADIR)lib/wderiv/c/
+
+WINTERPINC=$(WSLDADIR)lib/winterp/c/
+WINTERPSRC=$(WSLDADIR)lib/winterp/c/
+
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h ../VERSION.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h
+
 WDATADEPS = wdata.h
+WDERIVDEPS = wderiv.h
+WINTERPDEPS = winterp.h
+
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
 
 SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o
@@ -26,8 +38,10 @@ SRCS3D = pca.o pca_checkpoint.o
 NVCCSRCS3D = pca_derivative.o pca_kernels.o pca_dens.o
 
 WDATALIB = wdata.o
+WDERIVLIB = wderiv.o
+WINTERPLIB = winterp.o
 
-CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I./ -DTDWSLDA
+CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
 NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 
 OBJS := $(addprefix $(OBJDIR),$(SRCS:.c=.o))
@@ -46,9 +60,23 @@ NVCCOBJS3D := $(addprefix $(OBJDIR),$(NVCCSRCS3D:.cu=.o))
 NVCCSRCS3D := $(addprefix $(SRCDIR),$(NVCCSRCS3D))
 DEPS := $(addprefix $(INCLUDEDIR),$(DEPS))
 NVCCDEPS := $(addprefix $(INCLUDEDIR),$(NVCCDEPS))
+
 WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
 WDATAOBJS := $(addprefix $(OBJDIR),$(WDATALIB:.c=.o))
 WDATALIB := $(addprefix $(WDATASRC),$(WDATALIB))
+
+WDERIVDEPS := $(addprefix $(WDERIVINC),$(WDERIVDEPS))
+WDERIVOBJS := $(addprefix $(OBJDIR),$(WDERIVLIB:.c=.o))
+WDERIVLIB := $(addprefix $(WDERIVSRC),$(WDERIVLIB))
+
+WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
+WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
+WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
+
+# Default values for variables
+ifeq ($(strip $(PYTHON)),)
+PYTHON=python
+endif
 
 all: 1d 2d 3d
 
@@ -62,45 +90,51 @@ ext: dirs \
      (BINDIR)solve-uniform \
      (BINDIR)interpolate-dataset
 
-d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS)
+d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $(LIBS) $^ 
+	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS) 
 
-d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS)
+d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $(LIBS) $^ 
+	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $^ $(LIBS) 
 
-d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS)
+d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $(LIBS) $^
+	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $^ $(LIBS)
 
-(BINDIR)solve-uniform: $(WDATAOBJS) $(DEPSLOCAL)
+(BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
 	
-(BINDIR)interpolate-dataset: $(WDATAOBJS) $(DEPSLOCAL)
-	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
+(BINDIR)interpolate-dataset: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
+	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WINTERPOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 
-$(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
+$(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
 	
-$(OBJDIR)cpca.o: $(SRCDIR)cpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
+$(OBJDIR)cpca.o: $(SRCDIR)cpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
 	
-$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
+$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
 
-$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
+$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
 	python $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -I$(OBJDIR) -c -o $@ $<
 	
-$(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS)
+$(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $< 
+	
+$(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
+	
+$(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
 	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $< 

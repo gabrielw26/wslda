@@ -6,11 +6,13 @@
  * New lattice it taken from corresponding predefines.h file
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o interpolate-dataset -lm -lfftw3
+ *    gcc -std=gnu99 interpolate-dataset.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -I$WSLDA/lib/winterp/c -L$WSLDA/lib/winterp -lwinterp -o interpolate-dataset -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
- *    cd $WSLDA/lib-wdata
- *    make libc
+ *    cd $WSLDA/lib/wdata
+ *    make lib
+ *    cd $WSLDA/lib/winterp
+ *    make lib
  * */   
 
 
@@ -26,9 +28,9 @@
 // W-DATA Format
 // Must be before wslda_toolkit.h !
 #include "wdata.h"
+#include "winterp.h"
 
 // W-SLDA Toolkit API
-int wsldapid;
 #include "wslda_toolkit.h"
 
 int main( int argc , char ** argv ) 
@@ -50,8 +52,8 @@ int main( int argc , char ** argv )
     file_operationl( wdata_parse_metadata_file(argv[1], &wdmd) );
     
     // Check
-    int inNX=wdata_getNX(&wdmd), inNY=wdata_getNY(&wdmd), inNZ=wdata_getNZ(&wdmd);
-    double inDX=wdata_getDX(&wdmd), inDY=wdata_getDY(&wdmd), inDZ=wdata_getDZ(&wdmd);
+    int inNX=wdata_getnx(&wdmd), inNY=wdata_getny(&wdmd), inNZ=wdata_getnz(&wdmd);
+    double inDX=wdata_getdx(&wdmd), inDY=wdata_getdy(&wdmd), inDZ=wdata_getdz(&wdmd);
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;
     printf("# **********************  INPUT LATTICE **********************\n");
     printf("# LATTICE: %d x %d x %d\n", inNX, inNY, inNZ);
@@ -73,8 +75,8 @@ int main( int argc , char ** argv )
     
     // prepare set output set
     wdata_metadata wdmdo = wdmd;
-    wdata_setNX(&wdmdo,NX); wdata_setNY(&wdmdo,NY); wdata_setNZ(&wdmdo,NZ); 
-    wdata_setDX(&wdmdo,DX); wdata_setDY(&wdmdo,DY); wdata_setDZ(&wdmdo,DZ); 
+    wdata_setnx(&wdmdo,NX); wdata_setny(&wdmdo,NY); wdata_setnz(&wdmdo,NZ); 
+    wdata_setdx(&wdmdo,DX); wdata_setdy(&wdmdo,DY); wdata_setdz(&wdmdo,DZ); 
     wdata_setprefix(&wdmdo,argv[2]);
     wdmdo.issetwrkdir=0;
     wdata_clear_database(&wdmdo);
@@ -93,9 +95,9 @@ int main( int argc , char ** argv )
         for(icycle=0; icycle<wdmdo.cycles; icycle++) // for each cycle
         {
             file_operationl( wdata_read_cycle(&wdmd, wdmdo.var[ivar].name, icycle, indata) );
-            if     (wdmdo.datadim==3) wslda_interpolation_3d(wdmdo.var[ivar].type[0], inNX, inNY, inNZ, indata, NX, NY, NZ, outdata);
-            else if(wdmdo.datadim==2) wslda_interpolation_2d(wdmdo.var[ivar].type[0], inNX, inNY,       indata, NX, NY,     outdata);
-            else                      wslda_interpolation_1d(wdmdo.var[ivar].type[0], inNX,             indata, NX,         outdata);
+            if     (wdmdo.datadim==3) winterp_interpolation_3d(wdmdo.var[ivar].type[0], inNX, inNY, inNZ, indata, NX, NY, NZ, outdata);
+            else if(wdmdo.datadim==2) winterp_interpolation_2d(wdmdo.var[ivar].type[0], inNX, inNY,       indata, NX, NY,     outdata);
+            else                      winterp_interpolation_1d(wdmdo.var[ivar].type[0], inNX,             indata, NX,         outdata);
             file_operationl( wdata_write_cycle(&wdmdo, wdmdo.var[ivar].name, outdata) );
         }
     }

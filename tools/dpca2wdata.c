@@ -90,7 +90,7 @@ int main( int argc , char ** argv )
     wdata_metadata md;
     
     double eF;
-    read_measurement_file_header(file_name, &md.NX, &md.NY, &md.NZ, &md.DX, &md.DY, &md.DZ, &eF, &md.t0, &md.dt, &md.cycles);
+    read_measurement_file_header(file_name, &md.nx, &md.ny, &md.nz, &md.dx, &md.dy, &md.dz, &eF, &md.t0, &md.dt, &md.cycles);
 
     // set other parameters
     strcpy(md.prefix,basename(argv[1]));

@@ -24,9 +24,7 @@ int wslda_resize_array_2d_to_3d(char type, int nx, int ny, void *in_2d, int nz, 
 int wslda_resize_array_1d_to_3d(char type, int nx, void *in_1d, int ny, int nz, void *out_3d);
 int wslda_resize_array_1d_to_2d(char type, int nx, void *in_1d, int ny, void *out_2d);
 
-int wslda_interpolation_1d(char type, int nxi, void *funIn, int nxo, void *funOut);
-int wslda_interpolation_2d(char type, int nxi, int nyi, void *funIn, int nxo, int nyo, void *funOut);
-int wslda_interpolation_3d(char type, int nxi, int nyi, int nzi, void *funIn, int nxo, int nyo, int nzo, void *funOut);
+#include "winterp.h"
 
 /**
  * This file implements functions for reading and writing checkpoint
@@ -341,15 +339,15 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
         {
             if(lattice1_in[0]==1) 
             {
-                if(wslda_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
             else if(lattice1_in[0]==2) 
             {
-                if(wslda_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
             else
             {
-                if(wslda_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
         }
         if(type[j]=='c') { ptr_in+=bs_in*2; ptr+=bs_out*2; k+=2;}
@@ -382,15 +380,15 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
         {
             if(lattice1_in[0]==1) 
             {
-                if(wslda_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
             else if(lattice1_in[0]==2) 
             {
-                if(wslda_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
             else
             {
-                if(wslda_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                if(winterp_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
             }
         }
         if(type[j]=='c') { ptr_in+=bs_in*2; ptr+=bs_out*2; k+=2;}
@@ -432,15 +430,15 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
                 {
                     if(lattice1_in[0]==1) 
                     {
-                        if(wslda_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                     else if(lattice1_in[0]==2) 
                     {
-                        if(wslda_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                     else
                     {
-                        if(wslda_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                 }
                 if(type[j]=='c') { ptr_in+=bs_in*2; ptr+=bs_out*2; k+=2;}
@@ -475,15 +473,15 @@ int wslda_st_checkpoint_convert(int operation, int fileidx, int codedim, int *it
                 {
                     if(lattice1_in[0]==1) 
                     {
-                        if(wslda_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_1d(type[j], interNX, ptr_in, NX, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                     else if(lattice1_in[0]==2) 
                     {
-                        if(wslda_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_2d(type[j], interNX, interNY, ptr_in, NX, NY, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                     else
                     {
-                        if(wslda_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
+                        if(winterp_interpolation_3d(type[j], interNX, interNY, interNZ, ptr_in, NX, NY, NZ, ptr)!=WSLDA_OK) return WSLDA_ERR_INTRISTIC_ERROR;
                     }
                 }
                 if(type[j]=='c') { ptr_in+=bs_in*2; ptr+=bs_out*2; k+=2;}

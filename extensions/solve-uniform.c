@@ -19,7 +19,6 @@
 #include <complex.h>
 
 // W-SLDA Toolkit API
-int wsldapid;
 #include "wslda_toolkit.h"
 
 int main( int argc , char ** argv ) 

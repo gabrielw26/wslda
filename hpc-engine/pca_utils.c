@@ -69,7 +69,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0, // writewf
 1.0e12, // writeecut
 0.0, // aBdG
-0, // nocurrents
+-1, // nocurrents - DEPRECATED
+0, // killcurrents
 0, // nomixstart
 'p', // mixingtype
 0, // broyden
@@ -123,6 +124,7 @@ int parse_input_file(char * file_name)
     
     int i;
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
+    for(i=0; i<MAX_USER_PARAMS; i++) sprintf(md.strings[i], ""); // reset strings
     
     // reset list of variables
     md.nwritevar=0;
@@ -131,6 +133,7 @@ int parse_input_file(char * file_name)
     char tag[MAX_REC_LEN];
     char ptag[MAX_REC_LEN];
     double tmpparam;
+    char tmpstr[MD_CHAR_LGTH];
     while(fgets(s, MAX_REC_LEN, fp) != NULL)
     {
         // Read first element of line
@@ -247,6 +250,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
         else if (strcmp (tag,"nocurrents") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nocurrents);
+        else if (strcmp (tag,"killcurrents") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.killcurrents);
         else if (strcmp (tag,"nomixstart") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nomixstart);
         else if (strcmp (tag,"mixingtype") == 0)
@@ -299,6 +304,17 @@ int parse_input_file(char * file_name)
                 {
                     sscanf (s,"%s %lf %*s",tag,&tmpparam);
                     md.params[i]=(double)tmpparam;
+                    break;
+                }
+            }
+            
+            for(i=0; i<MAX_USER_PARAMS; i++)
+            {
+                sprintf(ptag,"strings%d",i);
+                if (strcmp (tag,ptag) == 0)
+                {
+                    sscanf (s,"%s %s %*s",tag,tmpstr);
+                    strcpy(md.strings[i], tmpstr);
                     break;
                 }
             }
@@ -390,6 +406,7 @@ int parse_input_file(char * file_name)
     md.ec=1.0e16;
     md.kc=1.0e16;
 #endif
+    if(md.nocurrents==-1) md.nocurrents=md.killcurrents; // nocurrents is replace by killcurrents
     
     fclose(fp);
     return 1;

@@ -5,11 +5,11 @@
  * and creates a new dataset where differences of all variables are saved. 
  * 
  * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 compare-datasets.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib-wdata -L$WSLDA/lib-wdata -lwdatac -o compare-datasets -lm -lfftw3
+ *    gcc -std=gnu99 compare-datasets.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -o compare-datasets -lm -lfftw3
  * 
  * NOTE: you need before generate wdata lib for C compiler:
- *    cd $WSLDA/lib-wdata
- *    make libc
+ *    cd $WSLDA/lib/wdata
+ *    make lib
  * */  
 
 

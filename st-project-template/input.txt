@@ -1,5 +1,9 @@
-# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0       #  0 - create uniform solution and start from it                                                                                                                                                
+# Documentation - Wiki: 
+# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
+
+# ------------------- INITIALIZATION ------------------
+# See: Wiki -> Initialization of the solver
+inittype                0       #  0 - create uniform solution and start from it,
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #  
                                 #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
@@ -37,12 +41,15 @@ maxiters                1000     # maximum number of iterations, default=10000
 # referencekF             1.0      # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
 # aBdG                    -0.9     # scattering length for BDG mode, used only when FUNCTIONAL==BDG
 spinsymmetry            0        # set to 1 if you want to impose Na=Nb, default=0
-nocurrents              0        # set to 1 if you want to impose ja=jb=0 (solution has no currents), default=0
-nomixstart              0        # do not do mixing for the first iteration
+# killcurrents              0        # set to 1 if you want to impose by hand ja=jb=0 (solution has no currents), default=0
+nomixstart              0        # do not execute mixing for the first iteration
+                                 # use this option if you expect that memory buffers representing previous iterations 
+                                 # are not completely filled. It typically happens if automatic interpolation is used. 
+                                 # For more details see: Wiki -> Convergence control -> Disabling mixing in the first iteration
 # mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
 
 # ----------------- Broyden algorithm ----------------------
-# wiki: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Broyden%20algorithm
+# See: Wiki -> Broyden algorithm
 broyden                 1        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
 broydenmixing           0.75     # mixing parameter (alpha) for Broyden mixing, default=0.75
 Mbroyden                5        # number of previous iterations used by Broyden, default=5 
@@ -60,13 +67,13 @@ Mbroyden                5        # number of previous iterations used by Broyden
                                  # with linear mixing and used linearmixing value for mixing
                                  # default=999999
 #broydenautores          1        # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
-#broydenEmaxchg          0.1      # if the total energy between iteration change be more than broydenEmaxchg 
+#broydenEmaxchg          0.1      # if the total energy between iteration change by more than broydenEmaxchg 
                                  # then Broyden is restarted, (default=0.1)
 #broydenEdelay           5        # scan energy changes only after broydenEdelay with Broyden has been executed 
                                  # typically, just after starting the Broyden energy fluctuations are observed 
                                  # which should decay within a few iterations (default=5)
 # Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
-#                 According experience of our collaborators, there are cases (physical problems)
+#                 According to our experience, there are cases (physical problems)
 #                 where activating Broyden only for some number of iteration provides the best performance 
 
 # -------------- PARALLELIZATION SETTINGS --------------
@@ -87,7 +94,7 @@ mb                      32
 nb                      32
 
 # ----------- IN CASE OF: inittype=0 ----------------
-# For more info see wiki pages: Initialization of the st wslda solvers
+# See: Wiki -> Initialization of the solver
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
 # init0muchange           0.1    # change rate of chemical potentials, default muchange

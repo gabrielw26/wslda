@@ -84,7 +84,8 @@ typedef struct
     int writewf; // if 1 the code will write wave-functions on exit, default writewf=0
     double writeecut; // only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
     double aBdG; // scattering length for BdG mode, if aBdG=0.0 then ASLDA is activated, default aBdG=0.0
-    int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0
+    int nocurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0 - DEPRECATED
+    int killcurrents; // if 1 then code imposes by hand no currents, default: nocurrents=0, the same as no currents; 
     int nomixstart; // if 1 then in the first iteration do not do mixing, default nomixstart=0
     char mixingtype; // 'd' - mix densities, 'p' - mix potentials (default)
     
@@ -116,7 +117,8 @@ typedef struct
     char stdoutfile[MD_CHAR_LGTH]; // technical variable,
 
     // POTENTIAL PARAMETERS
-    double params[MAX_USER_PARAMS];
+    double params[MAX_USER_PARAMS]; // double parameters
+    char strings[MAX_USER_PARAMS][MD_CHAR_LGTH]; // strings
     
     // variables to write
     int nwritevar; // number of variables to write

@@ -28,6 +28,8 @@ st-checkpoint
 td-uniform-aslda
 td-uniform-slda
 td-uniform-bdg
+# -> test quantum friction algorithm
+td-quantum-friction
 
 # -> checkpoint/restart
 td-checkpoint
