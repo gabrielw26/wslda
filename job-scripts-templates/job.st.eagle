@@ -1,0 +1,35 @@
+#!/bin/bash -l
+#SBATCH -J test # name that will be displayed in queue system
+#SBATCH --output="test.out" # stdout will be saved here
+#SBATCH -N 2 # here set number of nodes 
+#SBATCH -n 56 # must be: for altair n=N*32; for standard n=N*28 
+#SBATCH --mem-per-cpu=2GB  
+#SBATCH --time=00:10:00 # here set walltime hh:mm:ss
+#SBATCH --mail-type=BEGIN,END,FAIL # notifications for job started, done & fail
+#SBATCH --mail-user=your@email # send-to address
+#SBATCH -p standard   # altair or standard
+
+## ------ QUEUE SYSTEM ------
+## For submission use:
+##      sbatch job.sh
+## For checking status use:
+##      squeue
+## To kill job use:
+##      scancel pid
+## 
+## ------ COMPUTATION -------     
+## For computation it is recomended to use location:
+## cd ~/grant_518/scratch/
+
+cd $SLURM_SUBMIT_DIR 
+module load impi/2020.4.912
+module load mkl/2020.0.4
+module load cudatoolkit/8.0.61-21551265
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/storage_2/project_data/grant_518/share/elpa/lib/ 
+module list
+cat $WSLDA/VERSION.h
+
+## NOTE: YOU MUST ASSURE: -np=N*32 for altair
+##                        -np=N*28 for standard
+mpirun -np 56 ./st-wslda-2d input.txt
+ 

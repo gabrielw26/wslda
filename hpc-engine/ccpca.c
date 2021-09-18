@@ -58,7 +58,7 @@ int main( int argc , char ** argv )
     double t0=0.0, dt; 
     int it=0;
     double kF;
-    double beta;
+    double beta=-1.0;
 
     int HowMany = 24;
 #ifdef MPI_NP_PER_IO_GROUP
@@ -316,6 +316,7 @@ int main( int argc , char ** argv )
         
         // initialize wf
         cpu_exec( create_uniform_wf_1d(mylidx, myuidx, h_wavefun, &mu[SPINA], &mu[SPINB], &ec, h_fbetaEn, h_kkyz, h_cnt, h_En, ip==0) );
+        beta=__md_pca_uniform.beta;
         
         // initialize potentials
         for(ixyz=0; ixyz<NX; ixyz++)
@@ -426,7 +427,6 @@ int main( int argc , char ** argv )
         }
         
         cpu_exec( check_if_consistent_spinsymmetry_mode(MPI_COMM_WORLD, nwfip, h_fbetaEn, md.spinsymmetry) ); 
-        for(i=0; i<nwfip; i++) h_fbetaEn[i]=fbeta(h_fbetaEn[i],beta); // convert quasiparticle energies into weights
         
         // load u and delta
         if(ip==0)
@@ -447,8 +447,8 @@ int main( int argc , char ** argv )
             ixyz=0;
             for ( ix = 0 ; ix < NX ; ix++ )
             {
-                Nmya+=(pow(creal(h_wavefun[         iwf*NX+ixyz]),2)+pow(cimag(h_wavefun[         iwf*NX+ixyz]),2))*h_fbetaEn[iwf]*wcnt;
-                Nmyb+=(pow(creal(h_wavefun[nwfip*NX+iwf*NX+ixyz]),2)+pow(cimag(h_wavefun[nwfip*NX+iwf*NX+ixyz]),2))*(1.0-h_fbetaEn[iwf])*wcnt;
+                Nmya+=(pow(creal(h_wavefun[         iwf*NX+ixyz]),2)+pow(cimag(h_wavefun[         iwf*NX+ixyz]),2))*fbeta(h_fbetaEn[iwf],beta)*wcnt;
+                Nmyb+=(pow(creal(h_wavefun[nwfip*NX+iwf*NX+ixyz]),2)+pow(cimag(h_wavefun[nwfip*NX+iwf*NX+ixyz]),2))*(1.0-fbeta(h_fbetaEn[iwf],beta))*wcnt;
                 ixyz++;
             }  
         }
@@ -518,7 +518,7 @@ int main( int argc , char ** argv )
                   d_wf, d_fkm1, d_fkm2, d_fkm3, 
 		  d_potentials, &t0, 
                   &nwf, &nwfip,
-                  h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg,
+                  h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, &beta,
 		  HowMany) );
         memsize = (size_t)(nwf)*(NX)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
@@ -526,7 +526,7 @@ int main( int argc , char ** argv )
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
                      d_potentials, &t0,
                      &nwf, &nwfip,
-                     h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg,
+                     h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, &beta,
                      HowMany) );
         memsize = (size_t)(nwf)*(NX)*2*5*16;
 #else
@@ -566,10 +566,43 @@ int main( int argc , char ** argv )
         // copy potentials
         gpu_exec( memcopy_host2gpu(h_potentials, d_potentials,  (size_t)4*NX*sizeof(double)) );  
     }
+    
     // copy weights
-    gpu_exec( memcopy_host2gpu(h_fbetaEn, d_fbetaEn,  (size_t)nwfip  *sizeof(double)) ); 
+    for(i=0; i<nwfip; i++) h_qpe_nwfip[i]=fbeta(h_fbetaEn[i],beta); 
+    gpu_exec( memcopy_host2gpu(h_qpe_nwfip, d_fbetaEn,  (size_t)nwfip*sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkyz   , d_kkyz   ,  (size_t)nwfip*2*sizeof(double)) );
     gpu_exec( memcopy_host2gpu(h_cnt    , d_cnt    ,  (size_t)nwfip  *sizeof(int)) );
+    if(beta<-0.0001) ABORT_NOBARRIER; // TODO - remove later when code is agressively tested
+    
+    // subset tracking
+    double *h_weight_subset=NULL , *d_weight_subset=NULL;
+    double *h_densities_subset=NULL; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
+    double *d_densities_subset=NULL ; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
+    if(md.subsetMinEn!=md.subsetMaxEn)
+    {
+        if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
+        
+        gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_subset ) );
+        gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_subset ) );
+        
+        gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_subset ) );
+        cppmallocl(h_weight_subset, nwfip, double);
+        double __min = md.subsetMinEn*eF;
+        double __max = md.subsetMaxEn*eF;
+        if(md.subsetShiftDmu==1) { __min+=(mu[SPINA]-mu[SPINB])/2.0; __max+=(mu[SPINA]-mu[SPINB])/2.0; }
+        if(ip==0 && md.subsetShiftDmu==1) wprintf("# EXTRA SHIFT OF En's BY (mu[SPINA]-mu[SPINB])/2.0=%f HAS BEEN APPLIED.\n", (mu[SPINA]-mu[SPINB])/2.0);
+        for(i=0; i<nwfip; i++) 
+        {            
+            if(h_fbetaEn[i]>=__min && h_fbetaEn[i]<=__max) h_weight_subset[i]=1.0; 
+            else                                           h_weight_subset[i]=0.0;
+        }
+        gpu_exec( memcopy_host2gpu(h_weight_subset , d_weight_subset ,  (size_t)nwfip*sizeof(double)) ); 
+        
+        double subset_states=0.0, subset_states_t=0.0;
+        for(i=0; i<nwfip; i++) subset_states+=h_weight_subset[i];
+        MPI_Allreduce( &subset_states, &subset_states_t, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        if(ip==0) wprintf("# NUMBER OF TRACKING SUBSTATES=%.1f\n", subset_states_t);
+    }
         
     // ===================================================================================
     // ================================== EXTRA DATA =====================================
@@ -651,7 +684,7 @@ int main( int argc , char ** argv )
     // derivatives
     gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
     // densities - local reduction
-    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+    gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -751,6 +784,19 @@ int main( int argc , char ** argv )
 #endif
     }
     
+    // subset densities
+    if(md.subsetMinEn!=md.subsetMaxEn) 
+    {
+        // densities_subset - local reduction
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_weight_subset, d_cnt, d_densities_subset, gradients_computed, md.nthreads) );
+        // densities_subset - global reduction
+        gpu_exec( memcopy_gpu2host(d_densities_subset, h_densities_subset,  (size_t)12*NX*sizeof(double)) ); 
+        MPI_Allreduce( MPI_IN_PLACE, h_densities_subset, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        
+        wslda_density densall_subset = convert_into_wslda_density(h_densities_subset, NX);
+        file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
+    }
+    
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
     // ====================================================================================
@@ -796,7 +842,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -879,7 +925,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_fkm3, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -979,7 +1025,7 @@ int main( int argc , char ** argv )
         gradients_computed=1;
         gpu_exec( compute_derivatives(2*nwfip, d_wf, d_wf_d_dx, NULL, NULL, d_wf_laplace, md.nthreads) ); 
         // densities - local reduction
-        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+        gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1061,7 +1107,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1112,7 +1158,7 @@ int main( int argc , char ** argv )
                 gpu_exec( compute_laplace(2*nwfip, d_wf, d_wf_laplace, md.nthreads) );
             }
             // densities - local reduction
-            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_cnt, d_densities, gradients_computed, md.nthreads) );
+            gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NX*sizeof(double)) ); 
@@ -1122,6 +1168,18 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+            // subset densities
+            if(i_step==md.timesteps-1 && md.subsetMinEn!=md.subsetMaxEn) 
+            {
+                // densities_subset - local reduction
+                gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, d_weight_subset, d_cnt, d_densities_subset, gradients_computed, md.nthreads) );
+                // densities_subset - global reduction
+                gpu_exec( memcopy_gpu2host(d_densities_subset, h_densities_subset,  (size_t)12*NX*sizeof(double)) ); 
+                MPI_Allreduce( MPI_IN_PLACE, h_densities_subset, 12*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                
+                wslda_density densall_subset = convert_into_wslda_density(h_densities_subset, NX);
+                file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
+            }
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
@@ -1249,7 +1307,7 @@ int main( int argc , char ** argv )
                     d_wf, d_fkm1, d_fkm2, d_fkm3,
                     d_potentials, &time, 
             nwf, nwfip,
-            h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, 
+            h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
             HowMany);
         memsize = (size_t)(nwf)*(NX)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
@@ -1257,7 +1315,7 @@ int main( int argc , char ** argv )
                     d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
                     d_potentials, &time,
                     nwf, nwfip,
-                    h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, 
+                    h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
                     HowMany);
         memsize = (size_t)(nwf)*(NX)*2*5*16;
 #else

@@ -110,6 +110,11 @@ typedef struct
     double ccstop;                      // stop time for the current corrections, in units of eF
     double ccswitch;                    // time for switch function
     
+    // subset tracking
+    double subsetMinEn;     // if subsetMinEn!=subsetMaxEn then td code track densities arising from states
+    double subsetMaxEn;     // where En in [subsetMinEn,subsetMaxEn], default subsetMinEn=subsetMaxEn=0
+    int subsetShiftDmu;     // if 1 then apply extra shift of quasiparticle energies by (mu_a-mu_b)/2, default=0
+    
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat

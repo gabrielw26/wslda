@@ -75,7 +75,7 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
     		cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
 		double* d_potentials, double* t0,
 		int* nwf, int* nwfip_out,
-		double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+		double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
 		int HowMany)
 {
  char file_name[256];
@@ -121,6 +121,8 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
  MPI_File_read_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
  MPI_File_read_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+ MPI_File_read_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 //compute nwfip
@@ -194,7 +196,7 @@ int save_all(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
                 cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
                 double* d_potentials, double *t0,
 		int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
  char file_name[256];
@@ -242,6 +244,8 @@ if (ip==0) MPI_File_write_at(in, shift_0, &nwf, 1, MPI_INT, &status);
 if(ip==0) MPI_File_write_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+if(ip==0) MPI_File_write_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 
@@ -313,7 +317,7 @@ int load_all_45 (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,		
                 double* d_potentials, double* t0,
                 int* nwf, int* nwfip_out,
-                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
 char file_name[256];
@@ -359,6 +363,8 @@ char file_name[256];
  MPI_File_read_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
  MPI_File_read_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+ MPI_File_read_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 //compute nwfip
@@ -440,7 +446,7 @@ int save_all_45(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,
                 double* d_potentials, double *t0,
                 int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
  char file_name[256];
@@ -488,6 +494,8 @@ if (ip==0) MPI_File_write_at(in, shift_0, &nwf, 1, MPI_INT, &status);
 if(ip==0) MPI_File_write_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+if(ip==0) MPI_File_write_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 
