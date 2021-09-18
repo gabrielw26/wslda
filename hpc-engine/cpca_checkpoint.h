@@ -7,7 +7,7 @@ int load_all(double complex * h_wavefun, MPI_Comm comm, char* inprefix,
     		cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
 		double* d_potentials, double *t0,
                 int* nwf, int* nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
 		int HowMany);
 
 int save_all(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
@@ -15,7 +15,7 @@ int save_all(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
                 cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
                 double* d_potentials, double *t0,
                 int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu,double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany);
 
 int load_all_45(double complex * h_wavefun, MPI_Comm comm, char* inprefix,
@@ -24,7 +24,7 @@ int load_all_45(double complex * h_wavefun, MPI_Comm comm, char* inprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,
                 double* d_potentials, double *t0,
                 int* nwf, int* nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
                 int HowMany);
 
 int save_all_45(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
@@ -33,6 +33,6 @@ int save_all_45(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,
                 double* d_potentials, double *t0,
                 int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu,double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany);
 

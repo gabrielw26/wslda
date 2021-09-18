@@ -16,7 +16,7 @@ The toolkit allows for simulating fermionic superfluids like ultracold atomic ga
 * Integration with visualization tool (VisIt)
 * Extensions: templates for codes supporting data analysis, python lib for working with and manipulating data
 * Speeding up of convergence: Broyden mixing, automatic interpolations, quantum friction
-
+* Results reporoducibility
 
 ## Codes
 * **td-wslda-3d** - code for solving time-dependent density functional equations in 3D Cartesian mesh.
@@ -33,6 +33,11 @@ See instructions provided [here](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/
 For documenation see [Wiki Pages](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home)
 
 ## Developers
-* Gabriel Wlazłowski, Warsaw University of Technology,<br/> Main developer
-* Maciej Marchwiany, Interdisciplinary Centre for Mathematical and Computational Modelling (ICM), <br/> contribution to _td-wslda-3d_ code (2016-2018)
-* Wojciech Pudełko, Warsaw University of Technology,<br/> Implementation of Broyden algorithm (engineer thesis, 2020)
+For complete list of developers and contributors see [here](https://wslda.fizyka.pw.edu.pl/index.php/Info2/Contributors).
+
+## Bug reporting
+To report bug:  
+* use [Issues reporting system](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues)
+* write email to wslda@fizyka.pw.edu.pl
+
+    wfprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");

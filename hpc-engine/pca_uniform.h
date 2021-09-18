@@ -74,6 +74,7 @@ inline double fbeta(double E, double beta)
     else return 1.0/(exp(bE)+1.0);
 }
 
+
 /**
  * @param n0_a requested density for population "a" (INPUT)
  * @param n0_b requested density for population "b" (INPUT)
@@ -582,7 +583,7 @@ int read_uniform(int *nwf, int printout)
  * @param mu_a chemical potential for population "a" (OUTPUT)
  * @param mu_b chemical potential for population "b" (OUTPUT)
  * @param ec energy cut-off for the solution (OUTPUT)
- * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param fEn weights used for computation densities, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param printout, function prints on output info if printout is true
  * @return 0 - OK, otherwise error
@@ -716,7 +717,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // eigen energy
                 En[nwf-idxfrom]=ek;
@@ -774,7 +775,7 @@ int create_uniform_wf(int idxfrom, int idxto, double complex *wf, double *mu_a, 
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // eigen energy
                 En[nwf-idxfrom]=ek;
@@ -1420,7 +1421,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
  * @param mu_a chemical potential for population "a" (OUTPUT)
  * @param mu_b chemical potential for population "b" (OUTPUT)
  * @param ec energy cut-off for the solution (OUTPUT)
- * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param fEn weights used for computation densities, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param printout, function prints on output info if printout is true
@@ -1568,7 +1569,7 @@ int create_uniform_wf_2d_generic(int idxfrom, int idxto, double complex *wf, dou
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // kkz value
                 kkzvals[nwf-idxfrom]=kkz[iz];
@@ -1629,7 +1630,7 @@ int create_uniform_wf_2d_generic(int idxfrom, int idxto, double complex *wf, dou
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // kkz value
                 kkzvals[nwf-idxfrom]=kkz[iz];
@@ -1665,7 +1666,7 @@ int create_uniform_wf_2d_generic(int idxfrom, int idxto, double complex *wf, dou
  * @param mu_a chemical potential for population "a" (OUTPUT)
  * @param mu_b chemical potential for population "b" (OUTPUT)
  * @param ec energy cut-off for the solution (OUTPUT)
- * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param fEn weights used for computation densities, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param printout, function prints on output info if printout is true
@@ -1696,7 +1697,7 @@ int get_nwf_to_evolve_2d(int *nwf)
  * @param mu_a chemical potential for population "a" (OUTPUT)
  * @param mu_b chemical potential for population "b" (OUTPUT)
  * @param ec energy cut-off for the solution (OUTPUT)
- * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param fEn weights used for computation densities, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param cnt degenerecies of states (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
@@ -1836,7 +1837,7 @@ int create_uniform_wf_1d_generic(int idxfrom, int idxto, double complex *wf, dou
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // kkz value
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
@@ -1901,7 +1902,7 @@ int create_uniform_wf_1d_generic(int idxfrom, int idxto, double complex *wf, dou
                 }
                 
                 // weight
-                fEn[nwf-idxfrom]=fbeta(ek,beta);
+                fEn[nwf-idxfrom]=ek;
                 
                 // kkz value
                 kkyzvals[                  nwf-idxfrom]=kky[iy];
@@ -1940,7 +1941,7 @@ int create_uniform_wf_1d_generic(int idxfrom, int idxto, double complex *wf, dou
  * @param mu_a chemical potential for population "a" (OUTPUT)
  * @param mu_b chemical potential for population "b" (OUTPUT)
  * @param ec energy cut-off for the solution (OUTPUT)
- * @param fEn weights used for computation densities, fEn=fbeta(E_n), array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
+ * @param fEn weights used for computation densities, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param kkzvals values of corresponding kkz values, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)
  * @param cnt degenerecies of states (OUTPUT)
  * @param En eigen energies, E_n, array of size (idxto-idxfrom)*sizeof(double) (OUTPUT)

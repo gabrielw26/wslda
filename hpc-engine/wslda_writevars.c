@@ -134,21 +134,16 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
             
-//             // legacy mode
-//             if(spinsymmetry==0)
-//             {
-//                 wdata_link l1 = {"density_a", "rho_a"};
-//                 wdata_link l2 = {"density_b", "rho_b"};
-//                 wdata_add_link(&tmd, &l1);
-//                 wdata_add_link(&tmd, &l2);
-//             }
-//             else
-//             {
-//                 wdata_link l1 = {"density_a", "rho_a"};
-//                 wdata_link l2 = {"density_b", "rho_a"};
-//                 wdata_add_link(&tmd, &l1);
-//                 wdata_add_link(&tmd, &l2);
-//             }
+            // subset densities
+            if(input->subsetMinEn!=input->subsetMaxEn)
+            {
+                wdata_variable sva = {"subset_rho_a", "real", "none", "wdat"}; strcpy(sva.format, md.dataformat); // set format of output results
+                wdata_variable svb = {"subset_rho_b", "real", "none", "wdat"}; strcpy(svb.format, md.dataformat); // set format of output results
+                wdata_link sl = {"subset_rho_b", "subset_rho_a"};
+                wdata_add_variable(&tmd, &sva);
+                if(spinsymmetry==0) wdata_add_variable(&tmd, &svb);
+                else                wdata_add_link(&tmd, &sl);
+            }
 
         }
         else if(strcmp (lvars[i],"current") == 0 || strcmp (lvars[i],"j") == 0)
@@ -160,21 +155,17 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
             
-//             // legacy mode
-//             if(spinsymmetry==0)
-//             {
-//                 wdata_link l1 = {"current_a", "j_a"};
-//                 wdata_link l2 = {"current_b", "j_b"};
-//                 wdata_add_link(&tmd, &l1);
-//                 wdata_add_link(&tmd, &l2);
-//             }
-//             else
-//             {
-//                 wdata_link l1 = {"current_a", "j_a"};
-//                 wdata_link l2 = {"current_b", "j_a"};
-//                 wdata_add_link(&tmd, &l1);
-//                 wdata_add_link(&tmd, &l2);
-//             }
+            // subset densities
+            if(input->subsetMinEn!=input->subsetMaxEn)
+            {
+                wdata_variable sva = {"subset_j_a", "vector", "none", "wdat"}; strcpy(sva.format, md.dataformat); // set format of output results
+                wdata_variable svb = {"subset_j_b", "vector", "none", "wdat"}; strcpy(svb.format, md.dataformat); // set format of output results
+                wdata_link sl = {"subset_j_b", "subset_j_a"};
+                wdata_add_variable(&tmd, &sva);
+                if(spinsymmetry==0) wdata_add_variable(&tmd, &svb);
+                else                wdata_add_link(&tmd, &sl);
+            }
+            
         }
         else if(strcmp (lvars[i],"tau") == 0)
         {
@@ -249,6 +240,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
 #endif
         
     }
+    
+
     
     *wdmd = tmd; // copy to output buffers
     return 0;
@@ -428,3 +421,54 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
     return 0;
 }
 
+/**
+ * Writes measurements for subset
+ * @param wdmd metadata for wdata format
+ * @param mpi_comm mpi communicator: function utilizes parrallel method of writing
+ * @param codetype "st" - static code, "td" - timependent code 
+ * @param h_densities array of densities
+ * @return 0: ok, otherwise error
+ * */
+int write_measurments_subset(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, int it, wslda_density h_densities)
+{
+    int iam, np;
+    MPI_Comm_size( mpi_comm , &np ) ; /* total number of processes */
+    MPI_Comm_rank( mpi_comm , &iam ) ; /* id of process st 0 <= iam < np */    
+    
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
+    
+    int bs; // block size
+    if(wdmd->datadim==1) bs = NX;
+    else if(wdmd->datadim==2) bs = NX*NY;
+    else bs = NX*NY*NZ;
+
+    // write variables
+    int ivar, ierr;
+    for(ivar=0; ivar<wdmd->nvar; ivar++) if(ivar%np == iam) // each process handles different variable
+    {
+
+        ierr=0;
+        if      (strcmp (wdmd->var[ivar].name,"subset_rho_a") == 0) ierr = wdata_write_cycle(wdmd, "subset_rho_a", rho_a);
+        else if (strcmp (wdmd->var[ivar].name,"subset_rho_b") == 0) ierr = wdata_write_cycle(wdmd, "subset_rho_b", rho_b);
+//         else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
+        else if (strcmp (wdmd->var[ivar].name,"subset_j_a") == 0) ierr = wdata_write_cycle(wdmd, "subset_j_a", j_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"subset_j_b") == 0) ierr = wdata_write_cycle(wdmd, "subset_j_b", j_b_x);
+//         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
+//         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
+//         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
+
+        if(ierr>0) return 100*iam+10*ivar+ierr;
+    }
+    
+    return 0;
+}

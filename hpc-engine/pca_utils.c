@@ -85,9 +85,12 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.1, // broydenEmaxchg
 5, // broydenEdelay
 10000.0, // walltime
--10.0, // ccstart; 
-99999.0, // ccstop;
-10.0, // ccswitch;
+-10.0, // ccstart 
+99999.0, // ccstop
+10.0, // ccswitch
+0.0, // subsetMinEn
+0.0, // subsetMaxEn
+0, // subsetShiftDmu
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -288,7 +291,14 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"ccstop") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ccstop);
         else if (strcmp (tag,"ccswitch") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.ccswitch);       
+            sscanf (s,"%s %lf %*s",tag,&md.ccswitch);
+        // subset tracking 
+        else if (strcmp (tag,"subsetMinEn") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.subsetMinEn);
+        else if (strcmp (tag,"subsetMaxEn") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.subsetMaxEn);
+        else if (strcmp (tag,"subsetShiftDmu") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.subsetShiftDmu);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -407,6 +417,13 @@ int parse_input_file(char * file_name)
     md.kc=1.0e16;
 #endif
     if(md.nocurrents==-1) md.nocurrents=md.killcurrents; // nocurrents is replace by killcurrents
+    
+    if(md.subsetMinEn>md.subsetMaxEn)
+    {
+        md.subsetMinEn=0.0;
+        md.subsetMaxEn=0.0;
+        wfprintf(stdout, "#\tsubsetMinEn>subsetMaxEn is not allowed! Forcing subsetMinEn=subsetMaxEn=0!\n");
+    }
     
     fclose(fp);
     return 1;

@@ -12,7 +12,7 @@ typedef thrust::complex<double> Complex;
 // ================================================================================================
 __global__ void kernel_calculate_densities(size_t n, Complex *wf, 
                                          Complex *wf_d_dx, Complex *d_wf_laplace, double *kky, double *kkz, 
-                                         double *fbetaEn,
+                                         double *fbetaEn, double *d_weights,
                                          double *rho_a, double *rho_b,
                                          double *tau_a, double *tau_b,
                                          Complex *nu,
@@ -38,6 +38,8 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
     
     size_t iwf;
     
+    double wght=1.0;
+    
     if(ixyz<NX)
     {
         // reduce over each wave-function
@@ -46,6 +48,8 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             // weight
             fbEn=fbetaEn[iwf]*DENS_FACTOR_M;
             fbmEn = DENS_FACTOR_M - fbEn;
+            if(d_weights!=NULL) wght=d_weights[iwf];
+            fbEn*=wght; fbmEn*=wght; 
             ky = kky[iwf];
             kz = kkz[iwf];
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
@@ -141,7 +145,7 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
 }
 
 __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double *kky, double *kkz,
-                                         double *fbetaEn,
+                                         double *fbetaEn, double *d_weights,
                                          double *rho_a, double *rho_b,
                                          double *tau_a, double *tau_b,
                                          Complex *nu,
@@ -160,6 +164,8 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
     
     size_t iwf;
     
+    double wght=1.0;
+    
     if(ixyz<NX)
     {
         // reduce over each wave-function
@@ -168,6 +174,8 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
             // weight
             fbEn=fbetaEn[iwf]*DENS_FACTOR_M;
             fbmEn = DENS_FACTOR_M - fbEn;
+            if(d_weights!=NULL) wght=d_weights[iwf];
+            fbEn*=wght; fbmEn*=wght; 
 //             ky = kky[iwf];
 //             kz = kkz[iwf];
             wcnt = cnt[iwf];  
@@ -214,6 +222,7 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf, double
  * @param wf_d_dx derivative with respect to dx (INPUT)
  * @param kkyz value of ky and kz (INPUT)
  * @param fbetaEn weight of wave-function (INPUT)
+ * @param weights extra weights, for computing subset densities, NULL - no weights (INPUT)
  * @param d_densites (OUTPUT)
  *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
  *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NX,
@@ -229,6 +238,7 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
                             cufftDoubleComplex *wf_d_dx,
                             cufftDoubleComplex *d_wf_laplace, double *kkyz,
                             double *d_fbetaEn, 
+                            double *weights,
                             int *cnt,
                             double *d_densities,
                             int gradients_computed, int nthreads)
@@ -257,7 +267,7 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     {
         kernel_calculate_densities<<<nblocks, nthreads>>>(n, (Complex *)wf, 
                                             (Complex *)wf_d_dx, (Complex *)d_wf_laplace, kky, kkz, 
-                                            d_fbetaEn,
+                                            d_fbetaEn, weights,
                                             rho_a, rho_b,
                                             tau_a, tau_b,
                                             nu,
@@ -266,7 +276,7 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     else // only normal and anomalus density will be computed, other are set to zero
     {
         kernel_calculate_densities_limited<<<nblocks, nthreads>>>(n, (Complex *)wf, kky, kkz,
-                                            d_fbetaEn,
+                                            d_fbetaEn, weights,
                                             rho_a, rho_b,
                                             tau_a, tau_b,
                                             nu,
@@ -276,124 +286,6 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
     return 0;
 }
 
-// ----------------------------------------------------------------------------------------
-// ----------------------------------calculate_densities_weighted -------------------------
-// ----------------------------------------------------------------------------------------
-__global__ void kernel_calculate_densities_weighted(size_t n, Complex *wf, double *kky, double *kkz,
-                                         double *fbetaEn, double *weights,
-                                         double *rho_a, double *rho_b,
-                                         double *tau_a, double *tau_b,
-                                         Complex *nu,
-                                         double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                         int *cnt
-                                        )
-{
-    // TODO: kernel_calculate_densities_weighted does not support SPINSYMMETRY_MODE
-    // See: issue #5
-    
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-
-    double na=0.0, nb=0.0;
-
-    Complex u, v;
-    double fbEn, fbmEn, /*ky, kz,*/ wcnt;
-    #define DENS_FACTOR_M 10000.
-    
-    size_t iwf;
-    
-    if(ixyz<NX)
-    {
-        // reduce over each wave-function
-        for(iwf=0; iwf<n; iwf++)
-        {    
-            // weight
-            fbEn=fbetaEn[iwf]*DENS_FACTOR_M;
-            fbmEn = DENS_FACTOR_M - fbEn;
-//             ky = kky[iwf];
-//             kz = kkz[iwf];
-            wcnt = cnt[iwf]; 
-            
-            wcnt*=weights[iwf]; // add external weight 
-            
-            // read u and v
-            u=wf[       iwf*NX+ixyz];
-            v=wf[n*NX+iwf*NX+ixyz];
-            
-            // form na, nb, nu
-            na+=thrust::norm(u)*fbEn *wcnt;
-            nb+=thrust::norm(v)*fbmEn*wcnt;
-        }
-        
-        // save result to global memory
-        rho_a[ixyz]=na/DENS_FACTOR_M/(double)(LY*LZ);
-        rho_b[ixyz]=nb/DENS_FACTOR_M/(double)(LY*LZ);
-        tau_a[ixyz]=0.0;
-        tau_b[ixyz]=0.0;
-        nu[ixyz]=0.0;
-        j_a_x[ixyz]=0.0;
-        j_a_y[ixyz]=0.0;
-        j_a_z[ixyz]=0.0;
-        j_b_x[ixyz]=0.0;
-        j_b_y[ixyz]=0.0;
-        j_b_z[ixyz]=0.0;
-    }
-}
-
-
-/**
- * Function computes density.
- * @param n  number of wave-functions (u,v pairs) to process
- * @param wf array with wave-functions (INPUT)
- * @param kkyz values of ky and kz (INPUT)
- * @param fbetaEn weight of wave-function (INPUT)
- * @param weights for density computation (INPUT)
- * @param d_densites (OUTPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
- *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NX,
- *                          nu - double complex array of size NX,
- *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NX
- *                   In total size of d_densites is 12*NX
- * @param nthreads number of threads per block
- * @return 0 - OK, otherwise ERROR 
- * */
-extern "C" int calculate_densities_weighted(int n, cufftDoubleComplex *wf,
-                            double *kkyz, 
-                            double *d_fbetaEn, 
-                            int *cnt,
-                            double *d_weights, 
-                            double *d_densities, 
-                            int nthreads)
-{
-    // number of blocks
-    int nblocks = (int)ceil((float)NX/nthreads);
-    
-    // Set pointers for to simplify notation
-    // densities 
-    Complex *nu   =(Complex *)(d_densities +  0*NX);
-    double *rho_a = (double *)(d_densities +  2*NX);
-    double *tau_a = (double *)(d_densities +  3*NX);
-    double *j_a_x = (double *)(d_densities +  4*NX);
-    double *j_a_y = (double *)(d_densities +  5*NX);
-    double *j_a_z = (double *)(d_densities +  6*NX);
-    double *rho_b = (double *)(d_densities +  7*NX);
-    double *tau_b = (double *)(d_densities +  8*NX);
-    double *j_b_x = (double *)(d_densities +  9*NX);
-    double *j_b_y = (double *)(d_densities + 10*NX);
-    double *j_b_z = (double *)(d_densities + 11*NX);
-    
-    double *kky = kkyz;
-    double *kkz = kkyz+n;
-
-    kernel_calculate_densities_weighted<<<nblocks, nthreads>>>(n, (Complex *)wf, kky, kkz,
-                                        d_fbetaEn, d_weights, 
-                                        rho_a, rho_b,
-                                        tau_a, tau_b,
-                                        nu,
-                                        j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z, cnt);        
-
-
-    return 0;
-}
 
 // ----------------------------------------------------------------------------------------
 // ----------------------------------density_caculate_tau ---------------------------------
