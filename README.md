@@ -40,4 +40,3 @@ To report bug:
 * use [Issues reporting system](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues)
 * write email to wslda@fizyka.pw.edu.pl
 
-    wfprintf(stream, "\t\tor by e-mail: wslda@fizyka.pw.edu.pl\n");
