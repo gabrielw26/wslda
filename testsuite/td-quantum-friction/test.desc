@@ -23,6 +23,7 @@ exec: echo "#define NZ 16" >> predefines.h
 exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfaslda1d" >> input.txt
+exec: echo "params10 0.0005" >> input.txt
 exec: make 1d
 test: td-wslda-1d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
@@ -38,6 +39,7 @@ exec: echo "#define NZ 16" >> predefines.h
 exec: echo "#define FUNCTIONAL BDG" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfbdg1d" >> input.txt
+exec: echo "qfalpha 0.50" >> input.txt
 exec: make 1d
 test: td-wslda-1d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
@@ -71,6 +73,7 @@ exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfaslda2d" >> input.txt
 exec: echo "params2     1.9" >> input.txt
+exec: echo "params10 0.0005" >> input.txt
 exec: make 2d
 test: td-wslda-2d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
@@ -87,6 +90,7 @@ exec: echo "#define FUNCTIONAL BDG" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfbdg2d" >> input.txt
 exec: echo "params2     1.9" >> input.txt
+exec: echo "qfalpha 0.25" >> input.txt
 exec: make 2d
 test: td-wslda-2d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt

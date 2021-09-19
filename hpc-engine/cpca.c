@@ -695,7 +695,6 @@ int main( int argc , char ** argv )
     for(i=0; i<nwfip; i++) h_qpe_nwfip[i]=fbeta(h_fbetaEn[i],beta); 
     gpu_exec( memcopy_host2gpu(h_qpe_nwfip, d_fbetaEn,  (size_t)nwfip*sizeof(double)) ); 
     gpu_exec( memcopy_host2gpu(h_kkz    , d_kkz    ,  (size_t)nwfip*sizeof(double)) );
-    if(beta<-0.0001) ABORT_NOBARRIER; // TODO - remove later when code is agressively tested
     
     // subset tracking
     double *h_weight_subset=NULL , *d_weight_subset=NULL;
