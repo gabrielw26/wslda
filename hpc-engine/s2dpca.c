@@ -666,6 +666,8 @@ int main( int argc , char ** argv )
         energy[EKIN]=__md_pca_uniform.ekin;
         energy[EPOT]=__md_pca_uniform.epot;
         energy[EPAIR]=__md_pca_uniform.epair;
+        npart[SPINA] = __md_pca_uniform.n0_a*LXYZ;
+        npart[SPINB] = __md_pca_uniform.n0_b*LXYZ;
     }
     else if(md.inittype==5) // start from checkpoint
     {

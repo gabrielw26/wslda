@@ -11,7 +11,7 @@ exec: echo "outprefix qfslda1d" >> input.txt
 exec: make 1d
 test: td-wslda-1d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
-test: qfslda1d.ok
+test: qfslda1d_testsuite.ok
 diff: qfslda1d.cmp qfslda1d.ref
 
 tag: qf-1d-aslda
@@ -23,10 +23,11 @@ exec: echo "#define NZ 16" >> predefines.h
 exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfaslda1d" >> input.txt
+exec: echo "params10 0.0005" >> input.txt
 exec: make 1d
 test: td-wslda-1d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
-test: qfaslda1d.ok
+test: qfaslda1d_testsuite.ok
 diff: qfaslda1d.cmp qfaslda1d.ref
 
 tag: qf-1d-bdg
@@ -38,10 +39,11 @@ exec: echo "#define NZ 16" >> predefines.h
 exec: echo "#define FUNCTIONAL BDG" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfbdg1d" >> input.txt
+exec: echo "qfalpha 0.50" >> input.txt
 exec: make 1d
 test: td-wslda-1d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.txt
-test: qfbdg1d.ok
+test: qfbdg1d_testsuite.ok
 diff: qfbdg1d.cmp qfbdg1d.ref
 
 # -------------- 2D ---------------------
@@ -58,7 +60,7 @@ exec: echo "params2     1.9" >> input.txt
 exec: make 2d
 test: td-wslda-2d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
-test: qfslda2d.ok
+test: qfslda2d_testsuite.ok
 diff: qfslda2d.cmp qfslda2d.ref
 
 tag: qf-2d-aslda
@@ -71,10 +73,11 @@ exec: echo "#define FUNCTIONAL ASLDA" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfaslda2d" >> input.txt
 exec: echo "params2     1.9" >> input.txt
+exec: echo "params10 0.0005" >> input.txt
 exec: make 2d
 test: td-wslda-2d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
-test: qfaslda2d.ok
+test: qfaslda2d_testsuite.ok
 diff: qfaslda2d.cmp qfaslda2d.ref
 
 tag: qf-2d-bdg
@@ -87,8 +90,9 @@ exec: echo "#define FUNCTIONAL BDG" >> predefines.h
 exec: cp -f input.txt.template input.txt
 exec: echo "outprefix qfbdg2d" >> input.txt
 exec: echo "params2     1.9" >> input.txt
+exec: echo "qfalpha 0.25" >> input.txt
 exec: make 2d
 test: td-wslda-2d
 exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.txt
-test: qfbdg2d.ok
+test: qfbdg2d_testsuite.ok
 diff: qfbdg2d.cmp qfbdg2d.ref

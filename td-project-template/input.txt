@@ -60,6 +60,14 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # qfstop                  0.0     # stop time for evolving with quantum friction [eF]
 # qfswitch                0.0     # the friction will be activated and deactivated gradually over this period of time [eF] 
 
+# ---------------- SUBSET TRACKING ------------------
+# See: Wiki -> Tracking of selected states
+# observables (densities, currents) arising from state in the energy interval En in [subsetMinEn,subsetMaxEn]
+# will be computed, if  subsetMinEn=subsetMaxEn=0  the functionality is disables
+# subsetMinEn             0.0     # in eF units, deafault=0.0
+# subsetMaxEn             0.0     # in eF units, deafault=0.0
+# subsetShiftDmu          1       # if 1 then apply extra shift of quasiparticle energies by (mu_a-mu_b)/2, default=0
+
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver
 init0Na                 28. # will be ignored for UNIFORM_TEST_MODE
