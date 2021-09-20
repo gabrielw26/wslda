@@ -1,4 +1,3 @@
-// hello!
 /** 
  * This file is part of W-SLDA Toolkit
  * For more info see webpage:
@@ -14,6 +13,10 @@
 #include "pca_settings.h"
 #include "pca_utils.h"
 #include "wslda_functionals.h"
+
+#include "sldae_tools.h"
+#include "sldae_functional.h"
+#include "sldae_parameters.h"
 
 extern int wsldapid; // process id - global variable
 #include "wderiv.h"
@@ -32,6 +35,11 @@ extern int wsldapid; // process id - global variable
 #undef UD_MIX_COEFF
 #define UD_MIX_COEFF 0.25
 #define UD_EPSILON 1.0e-12
+
+// minimal density and coupling constant to avoid numerical issues
+#define DENSITY_EPSILON 1.0e-8
+#define CC_EPSILON 1.0e-9
+// declaration of external variable use in pairing renormaization scheme
 
 extern double *dc_params; /* Declaration of the variable */
 extern size_t dc_extra_data_size;
@@ -624,6 +632,402 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
     return 0;
 }
 
+
+// --------------------------------------------------------------------------------------------------
+// ------------------------------------- SLDAe variant ----------------------------------------------
+// --------------------------------------------------------------------------------------------------
+/**
+ * This function computes potentials defining Hamiltonian in case is SLDAE functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages.
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials from PREVIOUS iteration as input,
+ *                     updated values as output (INPUT/OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
+{
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+
+    //##
+
+    int FUNCTIONAL_ID = -2; // SLDAe id
+    int PAIRING_ID = -2;    // SLDAe id
+    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
+    int RENORMALIZATION_SCHEME = 0;
+        /* select pairing renormalization scheme [0:1]
+                #    0: in-meduim regularization (default for SLDAe)
+                #    1: in-vacuum regularization (Bulgac et al.)
+        */
+    int PAIRING_COUPLING_CONSTANT = 0;
+
+    //##
+
+    double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
+
+    double alpha_, beta_, inverse_gamma_;    // HFB paremeters
+    double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
+    double af_, bf_, cf_;    // functional parameters
+    double af_p, bf_p, cf_p; // functional parameters (fderiv)
+
+    double nt_, nt_1o3, nt_2o3; // power of total local density
+    double dx_dnt_; // derivative of x_ according to nt_ = x_ / (3.*nt_)
+    double deF_dnt_;
+
+
+    double ctilde_, ctilde_p;        // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
+    double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
+    double lambda_,lambda_p; // spherical cutoff integral
+
+    double a_ln_a, a_ln_a_p;
+    double zeta_, zeta_p, b_, b_p, mu_, mu_p, lmu_sc, lmu_sc_p;
+    double utilde_, utilde_p, mutilde_, mutilde_p;
+    double lutilde, lmutilde;
+
+    //##
+
+    // densities - decode
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
+
+    // registers
+    double na, nb, taua, taub, lmu; // lmu = averaged local chemical potential
+    double Va, Vb, v_ext_a, v_ext_b, Vanew, Vbnew, Va_const, Vb_const;
+    double complex lnu, ldelta;
+    double delta_abs_sq, delta_dag_nu;
+    int ix, iy, iz, ixyz; // lattice coordinates
+    int i, is_converged;   // self-consistent loop
+    double tmp_cst, h_d0, h_d1, ic_d0, ic_d1; // temporary constants
+
+
+    ixyz = 0;
+    for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
+    {
+        // store value of densities
+        na = rho_a[ixyz];
+        nb = rho_b[ixyz];
+        taua = tau_a[ixyz];
+        taub = tau_b[ixyz];
+        lnu = nu[ixyz];
+
+        // store value of potentials in separate variables, will be used later
+        v_ext_a = v_ext(ix, iy, iz, it, SPINA, params, extra_data_size, extra_data);
+        v_ext_b = v_ext(ix, iy, iz, it, SPINB, params, extra_data_size, extra_data);
+
+        // register for total density
+        nt_ = na + nb + DENSITY_EPSILON;
+        nt_1o3 = pow(nt_, 1. / 3.);
+        nt_2o3 = pow(nt_, 2. / 3.);
+
+        dx_dnt_ = x_ / (3. * nt_);
+        deF_dnt_ = pow(kF_, 2) / (3. * nt_);
+
+        // register for local Fermi momentum and Fermi energy
+        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+        eF_ = pow(kF_, 2) / 2.;
+        as_ = params[0];      // s-wave scattering length
+        if (as_ == 0.) as_ -= CC_EPSILON;
+        x_ = fabs(as_ * kF_); // density-dependent coupling constant
+
+        // select functional and HFB paramters
+        /*
+          - functional derivative of quantity Z_
+            according to the total density is noted Z_p
+          - the renormalized coupling consants due to pairing
+            are ended by _eff, e.g. g_eff
+          (Note that renormalization procedure does not require cf_ and cf_p)
+        */
+        alpha_ = alpha_parameter(0, x_, id);
+        beta_ = beta_parameter(0, x_, id);
+        inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
+        alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
+        beta_p = dx_dnt_ * beta_parameter(1, x_, id);
+        inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
+        af_ = a_functional(x_, id);
+        bf_ = b_functional(x_, id);
+        cf_ = c_functional(x_, id); // unrequired
+        // definition independent of the functional and pairing form used
+        af_p = (alpha_ - af_) / nt_;
+        bf_p = 5. / 3. * (beta_ - bf_) / nt_;
+        cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+
+        zeta_ = chemical_potential (0, x_, id);
+        b_ = b_hfb (0, x_, id);
+
+        zeta_p = dx_dnt_ * chemical_potential (1, x_, id);
+        b_p = dx_dnt_ * b_hfb (1, x_, id);
+
+        //##
+
+        // start computation of delta and mean-field
+        Va_const = v_ext_a; // external potential
+        Vb_const = v_ext_b; // external potential
+
+        Va_const += af_p * (taua + taub) / 2.; // kinetic contribution
+        Vb_const += af_p * (taua + taub) / 2.; // kinetic contribution
+
+        Va_const += beta_ * eF_; // mean-field contribution
+        Vb_const += beta_ * eF_; // mean-field contribution
+
+        // prepare other variables for self-consistent process
+        // used in case of RENORMALIZATION_SCHEME == 1
+        Va = V_a[ixyz] + v_ext_a; // initial values
+        Vb = V_b[ixyz] + v_ext_b; // initial values
+
+        ldelta = delta[ixyz];
+        delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
+        delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
+
+
+        // self-consistent computation of Va and Vb and delta
+        for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
+        {
+
+            // effective pairing coupling constants and pairing field
+            if (RENORMALIZATION_SCHEME == 0) {
+
+              mu_ = zeta_ * eF_;
+              lmu = (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.;
+              // mu_ = density dependent chemical potential (analytical)
+              // lmu = local chemical potential (numeric)
+
+              utilde_ = (b_ + zeta_) * eF_;
+              lutilde = (Va + Vb) / 2. - af_p * (taua + taub) / 2.;
+              // we remove kinetic part of the potential
+              // due to the fact that af_ != alpha_
+
+              mutilde_ = mu_ - (utilde_ - mu_);
+              lmutilde = lmu - (lutilde - lmu);
+
+              lmu_sc = (mutilde_ + lmutilde) / 2.;
+              // mix analytic and numeric to improve convergence and accuracy
+
+              // store functional derivative
+              // for estimate loop correction to the potential
+              mu_p = zeta_p * eF_ + zeta_ * deF_dnt_;
+              utilde_p = (b_p + zeta_p) * eF_ + (b_ + zeta_) * deF_dnt_;
+              mutilde_p = mu_p - (utilde_p - mu_p);
+
+            } else if (RENORMALIZATION_SCHEME == 1) {
+              // we must remove kinetic part of the potential
+              // due to the fact that af_ != alpha_ (warning for ASLDA...)
+              lmu_sc = (dc_mu_a - Va + dc_mu_a - Vb) / 2. + af_p * (taua + taub) / 2.;
+              lmu_sc = (dc_mu_a - Va + dc_mu_a - Vb) / 2. + af_p * (taua + taub) / 2.;
+            } else {
+              lmu_sc = 0.;
+            }
+
+            lambda_ = pcc_renormalization (x_, lmu_sc, id);
+
+            // in case of in-medium regularization
+            // the loop correction to the potential is implemented bellow
+            if (RENORMALIZATION_SCHEME == 0) {
+              lambda_p = 4. * mutilde_ / dc_ec * (1. + mutilde_ / dc_ec);
+              lambda_p = log(1. + 2. * mutilde_ / dc_ec + sqrt(fabs(lambda_p)));
+              lambda_p *= sqrt(fabs(mutilde_ / alpha_ / 2.)) / (4. * M_PI_SQ * alpha_) * (alpha_p / alpha_ - mutilde_p / mutilde_);
+              lambda_p -= alpha_p * sqrt(fabs(dc_ec + mutilde_)/ 2. /alpha_) / (2. * M_PI_SQ *pow(alpha_, 2));
+              lambda_p *= alpha_;
+            } else {
+              // default for vacuum regularization
+              lambda_p = 0.;
+            }
+
+
+
+            if (PAIRING_COUPLING_CONSTANT == -1) { // DO NOT USE IT!
+              // example for custom pairing coulping constant
+              a_ln_a = alpha_ * log (alpha_);
+              a_ln_a_p = alpha_p * (1. + log (alpha_));
+              ctilde_ = alpha_ * (alpha_ * nt_1o3 * inverse_gamma_) +
+                        kF_ / (2. * M_PI_SQ) * a_ln_a;
+            } else {
+              // default: correct one
+              ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
+            }
+
+            inverse_gamma_eff = inverse_gamma_ *
+              (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+
+            ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
+              alpha_p * nt_1o3 * inverse_gamma_;
+
+            if (PAIRING_COUPLING_CONSTANT == -1) { // DO NOT USE IT!
+              // example for custom pairing coulping constant
+              ctilde_p *= alpha_;
+              ctilde_p += alpha_p * alpha_ * nt_1o3 * inverse_gamma_;
+              ctilde_p += kF_ / (2. * M_PI_SQ) *
+                (a_ln_a_p + a_ln_a / (3. * nt_));
+            }
+
+            g_eff = alpha_ / (ctilde_ - lambda_);
+            ldelta = -lnu * g_eff; //##
+
+            // potential
+            delta_dag_nu = creal(conj(ldelta) * lnu);
+                           // delta^+ * nu
+            delta_abs_sq = creal(ldelta) * creal(ldelta) +
+                           cimag(ldelta) * cimag(ldelta);
+                           // delta^+ * delta
+
+            Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
+                    (ctilde_p - lambda_p) / alpha_ * delta_abs_sq;
+            Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
+                    (ctilde_p - lambda_p) / alpha_ * delta_abs_sq;
+
+
+            // check convergence for original renormalization scheme
+            is_converged = 1;
+            if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
+            if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
+            if (is_converged) break;
+
+            // mixing of potentials
+            Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
+            Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
+        }
+
+        // save potentials
+        V_a[ixyz] = Va - v_ext_a; // mean-field only
+        V_b[ixyz] = Vb - v_ext_b; // mean-field only
+        delta[ixyz] = ldelta;
+
+        // potentials that do not require self-cosistent iteration
+        h_potentials.alpha_a[ixyz] = af_;
+        h_potentials.alpha_b[ixyz] = af_;
+        h_potentials.A_a_x[ixyz] = 0.; // we are in vacum
+        h_potentials.A_a_y[ixyz] = 0.; // we are in vacum
+        h_potentials.A_a_z[ixyz] = 0.; // we are in vacum
+        h_potentials.A_b_x[ixyz] = 0.; // we are in vacum
+        h_potentials.A_b_y[ixyz] = 0.; // we are in vacum
+        h_potentials.A_b_z[ixyz] = 0.; // we are in vacum
+
+        ixyz++; // go to next lattice point
+    }
+
+    return 0;
+}
+
+/**
+ * This function computes internal energy in case is SLDAE functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages.
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT)
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{
+    int lNX = h_densities.nx, lNY = h_densities.ny, lNZ = h_densities.nz; // local sizes
+
+    //##
+
+    int FUNCTIONAL_ID = -2; // SLDAe id
+    int PAIRING_ID = -2;    // SLDAe id
+    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
+
+    double as_, x_, kF_, eF_;   // local Fermi momentum and energy
+    double af_, bf_, cf_;       // functional parameters
+    double nt_, nt_1o3, nt_2o3; // power of total local density
+
+    //##
+
+    // registers
+    double na, nb, taua, taub;
+    double complex lnu, ldelta;
+    int ix, iy, iz, ixyz; // lattice coordinates
+
+    // reset buffers
+    energy[EKIN] = 0.;
+    energy[EPOT] = 0.;
+    energy[EPAIR] = 0.;
+    energy[ECURRENT] = 0.;
+    npart[SPINA] = 0.;
+    npart[SPINB] = 0.;
+
+    ixyz = 0;
+    for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
+    {
+
+        // densities
+        na = h_densities.rho_a[ixyz];
+        nb = h_densities.rho_b[ixyz];
+        taua = h_densities.tau_a[ixyz];
+        taub = h_densities.tau_b[ixyz];
+        lnu = h_densities.nu[ixyz];
+
+        // particle number
+        npart[SPINA] += na;
+        npart[SPINB] += nb;
+
+        // pairing gap function
+        ldelta = h_potentials.delta[ixyz];
+
+        // register for total density
+        nt_ = na + nb + DENSITY_EPSILON;
+        nt_1o3 = pow(nt_, 1. / 3.);
+        nt_2o3 = pow(nt_, 2. / 3.);
+
+        // register for local Fermi momentum and Fermi energy
+        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+        eF_ = pow(kF_, 2) / 2.;
+        as_ = params[0];      // s-wave scattering length
+        x_ = fabs(as_ * kF_); // density-dependent coupling constant
+
+        af_ = a_functional(x_, id);
+        bf_ = b_functional(x_, id);
+
+        //##
+
+        // kinetic energy, only aglilean invariant contribution
+        energy[EKIN] += af_ * (taua + taub) / 2.; //##
+
+        // potential energy
+        energy[EPOT] += (3. / 5.) * bf_ * eF_ * nt_; //##
+
+        // pairing energy
+        energy[EPAIR] -= creal(ldelta * conj(lnu));
+
+        ixyz++;
+    }
+
+    // take into account variants of code
+    double volume_element = 0.;
+
+    if (h_densities.datadim == 3) volume_element = DX * DY * DZ;
+    if (h_densities.datadim == 2) volume_element = DX * DY * LZ;
+    if (h_densities.datadim == 1) volume_element = DX * LY * LZ;
+
+    energy[EKIN] *= volume_element;
+    energy[EPOT] *= volume_element;
+    energy[EPAIR] *= volume_element;
+    energy[ECURRENT] *= volume_element;
+    npart[SPINA] *= volume_element;
+    npart[SPINB] *= volume_element;
+
+    return 0;
+}
+
+
+
+
 // --------------------------------------------------------------------------------------------------
 // -------------------------------------- Selector --------------------------------------------------
 // --------------------------------------------------------------------------------------------------
@@ -634,7 +1038,9 @@ int compute_potentials(int it, wslda_density h_densities, wslda_potential h_pote
 #elif FUNCTIONAL==SLDA    
     return compute_potentials_aslda(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==ASLDA    
-    return compute_potentials_aslda(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);    
+    return compute_potentials_aslda(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data);
+#elif FUNCTIONAL==SLDAE    
+    return compute_potentials_sldae(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data); 
 #elif FUNCTIONAL==CUSTOMEDF    
     return compute_potentials_custom(it, h_densities, h_potentials, dc_params,dc_extra_data_size,dc_extra_data); 
 #endif
@@ -649,6 +1055,8 @@ int compute_energy(int it, wslda_density h_densities, wslda_potential h_potentia
     return compute_energy_aslda(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==ASLDA    
     return compute_energy_aslda(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
+#elif FUNCTIONAL==SLDAE    
+    return compute_energy_sldae(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
 #elif FUNCTIONAL==CUSTOMEDF    
     return compute_energy_custom(it, h_densities, h_potentials, energy, npart, dc_params,dc_extra_data_size,dc_extra_data);
 #endif
