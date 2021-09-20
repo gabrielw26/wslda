@@ -711,7 +711,8 @@ int main( int argc , char ** argv )
         cppmallocl(h_weight_subset, nwfip, double);
         double __min = md.subsetMinEn*eF;
         double __max = md.subsetMaxEn*eF;
-        if(md.subsetShiftDmu==1) { __min+=(mu[SPINA]-mu[SPINB])/2.0; __max+=(mu[SPINA]-mu[SPINB])/2.0; }
+        if(md.subsetShiftDmu==1) { __min-=(mu[SPINA]-mu[SPINB])/2.0; __max-=(mu[SPINA]-mu[SPINB])/2.0; }
+                                      // <-- NOTE: it is equivalent ot h_fbetaEn[i]+(mu[SPINA]-mu[SPINB])/2.0>=md.subsetMaxEn*eF
         if(ip==0 && md.subsetShiftDmu==1) wprintf("# EXTRA SHIFT OF En's BY (mu[SPINA]-mu[SPINB])/2.0=%f HAS BEEN APPLIED.\n", (mu[SPINA]-mu[SPINB])/2.0);
         for(i=0; i<nwfip; i++) 
         {            
