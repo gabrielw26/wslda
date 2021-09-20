@@ -1,3 +1,4 @@
+// hello!
 /** 
  * This file is part of W-SLDA Toolkit
  * For more info see webpage:
