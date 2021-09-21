@@ -29,8 +29,9 @@
  *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
+// #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL BDG
+#define FUNCTIONAL SLDAE
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
@@ -56,9 +57,9 @@
  * In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
  * For more info see: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/Parallelization-settings
  * */
-#define DIAGONALIZATION_ROUTINE PZHEEVR
+// #define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
-// #define DIAGONALIZATION_ROUTINE ELPA
+#define DIAGONALIZATION_ROUTINE ELPA
 
 /**
  * Maximal number of parameters in params array
@@ -100,7 +101,7 @@
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-// #define ELPA_USE_GPU
+#define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,
