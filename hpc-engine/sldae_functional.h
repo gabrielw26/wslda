@@ -1,11 +1,14 @@
 /**
  * W-SLDA Toolkit
  * Author: Antoine Boulet
- * Creation date: 2021/09/21
+ * Creation date: 2021.09.21
  * */
 
 #ifndef _SLDAE_FUNCTIONAL_
 #define _SLDAE_FUNCTIONAL_
+
+#include <math.h>
+#include <complex.h>
 
 /**
   ================================== TOOLS ===================================
@@ -39,7 +42,6 @@ double composed_lrule (int dn, double _x, int dkf, int dkg, int * idf, int * idg
 double b_expansion (int dp, double y_x, int * idx);
 double c_expansion (int dp, double y_x, int * idx);
 // ---------------------------------------------------------------------------
-// ###########################################################################
 
 
 // ---------------------------------------------------------------------------
@@ -85,7 +87,6 @@ double c_series_coefficient (int dn, double _x, int * idp);
 double b_series (int dn, double _x, int * id);
 double c_series (int dn, double _x, int * id);
 // ---------------------------------------------------------------------------
-// ###########################################################################
 
 
 // ---------------------------------------------------------------------------
@@ -109,6 +110,5 @@ double c_functional (double _x, int * id);
 // ---------------------------------------------------------------------------
 double pcc_renormalization(double _x, double lmu, int * id);
 // ---------------------------------------------------------------------------
-// ###########################################################################
 
 #endif

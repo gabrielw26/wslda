@@ -1,10 +1,92 @@
 /**
  * W-SLDA Toolkit
  * Author: Antoine Boulet
- * Creation date: 2021/09/21
+ * Creation date: 2021.09.21
  * */
 
 #include "sldae_functional.h"
+
+/**
+    //////////////////////////////////////////////////////////////////////
+    ===  IMPLEMENTATION OF FUNCTIONS FOR THE SLDA extended FUNCTIONAL  ===
+    //////////////////////////////////////////////////////////////////////
+
+  # -- NOTATIONS AND CONVENTIONS
+       =========================
+       FUNCTIONAL_ID / PAIRING_ID: select functional
+       Note: only APS[x,y,z] is implemented
+
+  1/ variables
+     _x = |akF|
+          [density dependent coupling constant (DDCC)]
+    y_x = \ln (\eta_x / \alpha_x)
+          [appearing in b and c function expansions]
+     dn = (\partial / \partial  _x)^n := \partial_n
+          [functional derivative of order n according to the DDCC]
+     dp = (\partial / \partial y_x)^n
+          [derivative of coefficients appearing in b and c function expansions]
+     id [2] = {FUNCTIONAL_ID, PAIRING_ID} := {fid, pid}
+
+  2/ functions
+     f(int dk, double x, int id[]) = \partial_k f_id(x)
+
+  # -- REQUIRMENTS (defined by user)
+       ===========
+  1/ ground state energy (and derivatives) as a function of _x
+    [ground_state_energy(dn, _x, id)]
+  2/ chemical potential (and derivatives) as a function of _x
+    [chemical_potential(dn, _x, id)]
+  3/ inverse effective mass (and derivatives) as a function of _x
+    [inverse_effective_mass(dn, _x, id)]
+  4/ pairing gap (and derivatives) as a function of _x
+    [pairing_gap(dn, _x, id)]
+  User can define its own functional through the custom_* functions
+  using FUNCTIONAL_ID = -1 and/or PAIRING_ID = -1 (to be done)
+
+  * remark 1 *
+  The rest of the function provide automatic results for the SLDA
+  extended methods as described in the notes.
+  Eventually, higher order correction, necesarry in case of
+  (\eta_x / \alpha_x) > 0.5, can be implemented by adding
+  higer order in functions:
+        - b_expansion(int dp, double y_x, int idx[])
+        - c_expansion(int dp, double y_x, int idx[])
+          * notations *
+              idx[0]: coefficient indices
+              y_x = \ln (\eta_x / \alpha_x)
+              dp correspond to the pth derivative according to y_x
+  The trucation of such expansion is controled by HFB_ORDER corresponding
+  to the tructation of the HFB series (set by user).
+  This improvment require full version of Mathematica (free Wolfram cloud is
+  unable to provide higher order terms).
+
+  * remark 2 *
+  The derivatives (of product, compostition, etc.) are obtained using
+  general Leibniz rules such that, only the derivatives of the required
+  function are needed up to FUNCTIONAL_ORDER (see bellow) in order to
+  express functional parameters as a series of the SLDA parameters, i.e.
+  FUNCTIONAL_ORDER correspond to the tructation of the functional series.
+
+  # -- functions defiend (follow the notes)
+       =================
+      [to be called in the main code to calculate energy and potentials]
+  1/ HFB parameters: a_x, b_x, c_x
+      - a_hfb(dn, _x, id)
+      - b_hfb(dn, _x, id)
+      - inverse_c_hfb(dn, _x, id)
+  2/ SLDA parameters: \alpha_x, \beta_x, \gamma_x
+      - alpha_parameter(dn, _x, id)
+      - beta_parameter(dn, _x, id)
+      - inverse_gamma_parameter(dn, _x, id)
+  3/ functional parameters: A_x, B_x, C_x
+      - a_functional(_x, id)
+      - b_functional(_x, id)
+      - c_functional(_x, id)
+  These functions are general and do not need to be modified if the
+  functional or the parameters FUNCTIONAL_ORDER and HFB_ORDER are changed.
+**/
+// ---------------------------------------------------------------------------
+
 
 /**
   ================================== TOOLS ===================================
@@ -896,6 +978,8 @@ c_functional (double _x, int id [])
 // ---------------------------------------------------------------------------
 // pairing coupling constant regularization routine
 // ---------------------------------------------------------------------------
+extern double dc_ec;
+
 double
 pcc_renormalization(double _x, double lmu, int id [])
 {

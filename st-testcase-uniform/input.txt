@@ -1,12 +1,17 @@
 # -------------------- CUSTOM PARAMS ------------------
 params31            0.0 # add noise
 
-# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0       #  0 - create uniform solution and start from it                                                                                                                                                
+# -------------------- SLDAE PARAMS -------------------
+# spinsymmetry = 1
+# only SPHERICAL_CUTOFF mode
+aSLDAe               -1.0 # s-wave scattering length, default = -1.00
+
+# ------------------- INITIALIZATION ------------------
+inittype                0       #  0 - create uniform solution and start from it
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
-                                #  
+                                #
                                 #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
-                                #  
+                                #
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
 
 # ------------------- INPUT/OUTPUT ------------------
@@ -36,7 +41,7 @@ linearmixing            0.5      # mixing parameter for densities, default=0.5
 muchange                0.5      # coefficient for changing chemical potential, default=0.5
 maxiters                200     # maximum number of iterations, default=10000
 temperature             0.01      # requested temperature in units of eF, default T=0
-# referencekF             1.0    # reference kF
+#referencekF             1.0    # reference kF
 aBdG                    -0.9   # akF about 0.9
 spinsymmetry            1       # set to 1 if you want to impose Na=Nb
 nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
@@ -51,10 +56,10 @@ broydenmixing           0.75
 # startbroyden            5
 # stopbroyden             10
 # broydenautores          1      # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
-# broydenEmaxchg          0.1    # if the total energy between iteration change be more than broydenEmaxchg 
+# broydenEmaxchg          0.1    # if the total energy between iteration change be more than broydenEmaxchg
                                # then Broyden is restarted, (default=0.1)
-# broydenEdelay           5      # scan energy changes only after broydenEdelay with Broyden has been executed 
-                               # typically, just after starting the Broyden energy fluctuations are observed 
+# broydenEdelay           5      # scan energy changes only after broydenEdelay with Broyden has been executed
+                               # typically, just after starting the Broyden energy fluctuations are observed
                                # which should decay within a few iterations (default=5)
 
 
@@ -67,7 +72,7 @@ broydenmixing           0.75
 #p                       2
 #q                       2
 
-# data block size 
+# data block size
 # if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
 mb                      8
 nb                      8
@@ -78,11 +83,10 @@ nb                      8
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
 # init0muchange           0.1    # change rate of chemical potentials, default muchange
 init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
-# init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
+# init0Tstop              0.01   # Temperature, in units of eF, default=temperature
 # init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
 # init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
 # init0maxiter            1000   # maximum number of iterations, default=maxiters
 init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
-init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 
-
+init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file
