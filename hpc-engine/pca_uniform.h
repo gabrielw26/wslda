@@ -176,6 +176,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
 
+    if(printout && md.init0debug>0) wprintf("# DEBUG: solve_uniform_problem\n");
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
     if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
     if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
@@ -1143,6 +1144,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double mu_a=0.96087287*eF_a; // value for akF=-1
     double mu_b=0.96087287*eF_b; // value for akF=-1
 
+    if(printout && md.init0debug>0) wprintf("# DEBUG: solve_uniform_problem_bdg\n");
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
     if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
     if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
@@ -1618,7 +1620,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double kc=md.kc;
     double mu_a=zeta_*eF_a; //0.37*eF_a;
     double mu_b=zeta_*eF_b; //0.37*eF_b;
-
+    
+    if(printout && md.init0debug>0) wprintf("# DEBUG: solve_uniform_problem_sldae\n");
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
     if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
     if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);

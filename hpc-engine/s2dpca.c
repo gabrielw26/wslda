@@ -603,8 +603,13 @@ int main( int argc , char ** argv )
             if(iam==0) wprintf("# CREATING UNIFORM SOLUTION...\n");
 
             // Generate uniform initial
-            if(fabs(aBdG)<1.0e-12) solve_uniform_problem    (md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
-            else                   solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+#if FUNCTIONAL==BDG
+            solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+#elif FUNCTIONAL==SLDAE
+            solve_uniform_problem_sldae(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+#else
+            solve_uniform_problem    (md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, iam==0);
+#endif
 
             // Save solution
             if(iam==0 && md.init0save)
