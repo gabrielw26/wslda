@@ -37,6 +37,8 @@ static int wsldapid;
 #ifndef WSLDA_NO_MAIN_FUNCTION
 #include "wslda_errors.c"
 #include "pca_utils.c"
+double dc_ec;
+#include "sldae_functional.c"
 #endif
 
 #endif

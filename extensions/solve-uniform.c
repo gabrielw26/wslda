@@ -64,6 +64,9 @@ int main( int argc , char ** argv )
     printf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
 #endif
 
+    if(md.ec>0.0) dc_ec = md.ec;
+    else          dc_ec = M_PI*M_PI/(2.*DX*DX);
+    
     double aBdG;
 #if FUNCTIONAL==BDG
     aBdG = input->aBdG; // copy to global momeory
