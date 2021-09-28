@@ -4,7 +4,12 @@
  * Creation date: 2021.09.21
  * */
 
+
+
 #include "sldae_functional.h"
+
+
+
 
 /**
     //////////////////////////////////////////////////////////////////////
@@ -521,9 +526,10 @@ s_aps (int dn, double _x, int id [])
   if (dn == 0) {
     return atan (_x * U_APS / (1. + _x * V_APS));
   } else if (dn > 0) {
+    double complex z_one = 1.00 + I * 0.00;
     return tgamma (dn) / 2. *
-           creal(I * pow (+(U_APS - I * V_APS) / (I * (1. + V_APS * _x) - U_APS * _x), dn) -
-                 I * pow (-(U_APS + I * V_APS) / (I * (1. + V_APS * _x) + U_APS * _x), dn));
+           creal(I * cpow (+(U_APS - I * V_APS) / (I * (1. + V_APS * _x) - U_APS * _x), dn) -
+                 I * cpow (-(U_APS + I * V_APS) / (I * (1. + V_APS * _x) + U_APS * _x), dn));
   } else {
     return 0.;
   }
@@ -636,12 +642,9 @@ inverse_effective_mass (int dn, double _x, int id [])
   int fid = id [0];       // FUNCTIONAL_ID
   int pid = id [1];       // PAIRING_ID
 
-  return x0 + A_APS *
-              product_lrule (dn, _x, 0, 1, ip2, id, xm, s_aps) +
-              B_APS *
-              product_lrule (dn, _x, 0, 0, ip2, id, xm, s_aps_2d1) +
-              B_APS * V_APS *
-              product_lrule (dn, _x, 0, 0, ip3, id, xm, s_aps_2d1);
+  return x0 + A_APS * product_lrule (dn, _x, 0, 1, ip2, id, xm, s_aps) +
+              B_APS * product_lrule (dn, _x, 0, 0, ip2, id, xm, s_aps_2d1) +
+              B_APS * V_APS * product_lrule (dn, _x, 0, 0, ip3, id, xm, s_aps_2d1);
 }
 
 // pairing gap

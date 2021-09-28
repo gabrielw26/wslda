@@ -7,8 +7,16 @@
 #ifndef _SLDAE_FUNCTIONAL_
 #define _SLDAE_FUNCTIONAL_
 
+
+
+#include <stdlib.h>
+#include <stddef.h>
 #include <math.h>
 #include <complex.h>
+
+
+
+
 
 /**
   ================================== TOOLS ===================================

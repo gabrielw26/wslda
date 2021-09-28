@@ -35,8 +35,8 @@ extern int wsldapid; // process id - global variable
 #define UD_EPSILON 1.0e-12
 
 // minimal density and coupling constant to avoid numerical issues
-#define DENSITY_EPSILON 1.0e-8
-#define CC_EPSILON 1.0e-9
+#define DENSITY_EPSILON 1.0e-16
+#define CC_EPSILON 1.0e-16
 // declaration of external variable use in pairing renormaization scheme
 
 extern double *dc_params; /* Declaration of the variable */
@@ -660,40 +660,29 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
 
     //##
-
+    //  select functional
+    // [useful to add more functional in sldae_functional.c]
     int FUNCTIONAL_ID = -2; // SLDAe id
     int PAIRING_ID = -2;    // SLDAe id
     int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
-    int RENORMALIZATION_SCHEME = 0;
-        /* select pairing renormalization scheme [0:1]
-                #    0: in-meduim regularization (default for SLDAe)
-                #    1: in-vacuum regularization (Bulgac et al.)
-        */
-    int PAIRING_COUPLING_CONSTANT = 0;
-
+    /** select pairing renormalization scheme [0:1]
+        #    0: in-meduim regularization (default for SLDAe)
+        #    1: in-vacuum regularization (Bulgac et al.)
+    **/
+    int RENORMALIZATION_SCHEME = md.pccrSLDAe;
     //##
-
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
-
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters
     double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
     double af_, bf_, cf_;    // functional parameters
     double af_p, bf_p, cf_p; // functional parameters (fderiv)
-
     double nt_, nt_1o3, nt_2o3; // power of total local density
-    double dx_dnt_; // derivative of x_ according to nt_ = x_ / (3.*nt_)
-    double deF_dnt_;
-
-
-    double ctilde_, ctilde_p;        // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
+    double dx_dnt_;  // derivative of x_ according to nt_ = x_ / (3.*nt_)
+    double deF_dnt_; // derivative of eF_ according to nt_ = kF_ * kF_ / (3.*nt_)
+    double ctilde_, ctilde_p; // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
-    double lambda_,lambda_p; // spherical cutoff integral
-
-    double a_ln_a, a_ln_a_p;
-    double zeta_, zeta_p, b_, b_p, mu_, mu_p, lmu_sc, lmu_sc_p;
-    double utilde_, utilde_p, mutilde_, mutilde_p;
-    double lutilde, lmutilde;
-
+    double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
+    double ec = md.ec;
     //##
 
     // densities - decode
@@ -708,12 +697,10 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double *j_b_x = h_densities.j_b_x;
     double *j_b_y = h_densities.j_b_y;
     double *j_b_z = h_densities.j_b_z;
-
     // potentials - decode
     double *V_a = h_potentials.V_a;
     double *V_b = h_potentials.V_b;
     double complex *delta = h_potentials.delta;
-
     // registers
     double na, nb, taua, taub, lmu; // lmu = averaged local chemical potential
     double Va, Vb, v_ext_a, v_ext_b, Vanew, Vbnew, Va_const, Vb_const;
@@ -721,9 +708,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double delta_abs_sq, delta_dag_nu;
     int ix, iy, iz, ixyz; // lattice coordinates
     int i, is_converged;   // self-consistent loop
-    double tmp_cst, h_d0, h_d1, ic_d0, ic_d1; // temporary constants
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
-
 
     ixyz = 0;
     for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
@@ -744,15 +729,15 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         nt_1o3 = pow(nt_, 1. / 3.);
         nt_2o3 = pow(nt_, 2. / 3.);
 
-        dx_dnt_ = x_ / (3. * nt_);
-        deF_dnt_ = pow(kF_, 2) / (3. * nt_);
-
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
         as_ = md.aSLDAe; // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
+        dx_dnt_ = x_ / (3. * nt_);
+        deF_dnt_ = pow(kF_, 2) / (3. * nt_);
 
+        //##
         // select functional and HFB paramters
         /*
           - functional derivative of quantity Z_
@@ -774,13 +759,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         af_p = (alpha_ - af_) / nt_;
         bf_p = 5. / 3. * (beta_ - bf_) / nt_;
         cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
-
-        zeta_ = chemical_potential (0, x_, id);
-        b_ = b_hfb (0, x_, id);
-
-        zeta_p = dx_dnt_ * chemical_potential (1, x_, id);
-        b_p = dx_dnt_ * b_hfb (1, x_, id);
-
         //##
 
         // start computation of delta and mean-field
@@ -850,64 +828,30 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         {
 
             // effective pairing coupling constants and pairing field
-            if (RENORMALIZATION_SCHEME == 0) {
-
-              mu_ = zeta_ * eF_;
-              lmu = (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.;
-              // mu_ = density dependent chemical potential (analytical)
-              // lmu = local chemical potential (numeric)
-
-              utilde_ = (b_ + zeta_) * eF_;
-              lutilde = (Va + Vb) / 2. - af_p * (taua + taub) / 2.;
-              // we remove kinetic part of the potential
-              // due to the fact that af_ != alpha_ (warning for ASLDA...)
-
-              mutilde_ = mu_ - (utilde_ - mu_);
-              lmutilde = lmu - (lutilde - lmu);
-
-              lmu_sc = (mutilde_ + lmutilde) / 2.;
-              // mix analytic and numeric to improve convergence and accuracy
-
-#ifdef CURRENT_CORRECTIONS
-              lmu_sc = lmutilde;
-              // do not use analytic-numeric mix with current corrections
-#endif
-
-              // store functional derivative
-              // for estimate loop correction to the potential
-              mu_p = zeta_p * eF_ + zeta_ * deF_dnt_;
-              utilde_p = (b_p + zeta_p) * eF_ + (b_ + zeta_) * deF_dnt_;
-              mutilde_p = mu_p - (utilde_p - mu_p);
-
+            if (RENORMALIZATION_SCHEME == 0) { // factor 2 for mu
+              lmu_sc = (2. * dc_mu_a - Va - v_ext_a + 2. * dc_mu_b - Vb - v_ext_b) / 2. + af_p * (taua + taub) / 2.;
+              // minus v_ext because of factor 2 in front of mu
             } else if (RENORMALIZATION_SCHEME == 1) {
-              // we must remove kinetic part of the potential
-              // due to the fact that af_ != alpha_ (warning for ASLDA...)
               lmu_sc = (dc_mu_a - Va + dc_mu_a - Vb) / 2. + af_p * (taua + taub) / 2.;
             } else {
               lmu_sc = 0.;
             }
+            // we must remove kinetic part of the potential
+            // due to the fact that af_ != alpha_ (warning for ASLDA...)
 
-            lambda_ = pcc_renormalization (x_, lmu_sc, id);
-
-            // in case of in-medium regularization
-            // the loop correction to the potential is implemented bellow
-            if (RENORMALIZATION_SCHEME == 0) {
-              lambda_p = 4. * mutilde_ / dc_ec * (1. + mutilde_ / dc_ec);
-              lambda_p = log(1. + 2. * mutilde_ / dc_ec + sqrt(fabs(lambda_p)));
-              lambda_p *= sqrt(fabs(mutilde_ / alpha_ / 2.)) / (4. * M_PI_SQ * alpha_) * (alpha_p / alpha_ - mutilde_p / mutilde_);
-              lambda_p -= alpha_p * sqrt(fabs(dc_ec + mutilde_)/ 2. /alpha_) / (2. * M_PI_SQ *pow(alpha_, 2));
-              lambda_p *= alpha_;
-
-#ifdef CURRENT_CORRECTIONS
-              lambda_p = 0.;
-              // do not use loop correction with current corrections
-#endif
+            //lambda_ = pcc_renormalization (x_, lmu_sc, id);
+            p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
+            kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
+            if (lmu_sc >= 0) {
+              lambda_ = (kc + p0) / (kc - p0);
+              lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
+              lambda_ *= kc / (2. * M_PI_SQ);
             } else {
-              // default for vacuum regularization
-              lambda_p = 0.;
+              lambda_ = p0 / kc;
+              lambda_ = 1. + p0 / kc * atan(lambda_);
+              lambda_ *= kc / (2. * M_PI_SQ);
             }
 
-            // default
             ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
 
             inverse_gamma_eff = inverse_gamma_ *
@@ -927,10 +871,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                            // delta^+ * delta
 
             Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
-                    (ctilde_p - lambda_p) / alpha_ * delta_abs_sq;
+                    ctilde_p / alpha_ * delta_abs_sq;
             Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
-                    (ctilde_p - lambda_p) / alpha_ * delta_abs_sq;
-
+                    ctilde_p / alpha_ * delta_abs_sq;
 
             // check convergence for original renormalization scheme
             is_converged = 1;

@@ -92,6 +92,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // subsetMaxEn
 0, // subsetShiftDmu
 -1.0, // aSLDAe
+0, // pccrSLDAe
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -303,6 +304,8 @@ int parse_input_file(char * file_name)
         // SLDAE
         else if (strcmp (tag,"aSLDAe") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.aSLDAe);
+        else if (strcmp (tag,"pccrSLDAe") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
