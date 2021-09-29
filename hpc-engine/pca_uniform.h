@@ -1873,6 +1873,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
         if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
+        if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, S/NkB=%16.12f\n", T, S/((n0_a+n0_a)*LXYZ));
         fflush(stdout);
     }
 
