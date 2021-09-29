@@ -892,8 +892,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         delta[ixyz] = ldelta;
 
         // potentials that do not require self-cosistent iteration
-        h_potentials.alpha_a[ixyz] = af_;
-        h_potentials.alpha_b[ixyz] = af_;
+        h_potentials.alpha_a[ixyz] = alpha_; //af_;
+        h_potentials.alpha_b[ixyz] = alpha_; //af_;
+        // HERE
 
         t1 = polarization(na, nb); // = 0.;
         t7 = p_regularization(rho_a[ixyz]);

@@ -1429,6 +1429,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
  * Update: 2021.09.21
  * */
 
+
+
 /**
  * @param n0_a requested density for population "a" (INPUT)
  * @param n0_b requested density for population "b" (INPUT)
@@ -1739,10 +1741,10 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
                 #endif
                 #endif
                 {
-                    eta_a = alph_a*kk2[ixyz]/2.0 + V_a - mu_a;
-                    eta_b = alph_b*kk2[ixyz]/2.0 + V_b - mu_b;
-                    //eta_a = alpha_*kk2[ixyz]/2.0 + (V_a-0.*af_p*tau_a_old/2.) - mu_a;
-                    //eta_b = alpha_*kk2[ixyz]/2.0 + (V_b-0.*af_p*tau_b_old/2.) - mu_b;
+                    //eta_a = alph_a*kk2[ixyz]/2.0 + V_a - mu_a;
+                    //eta_b = alph_b*kk2[ixyz]/2.0 + V_b - mu_b;
+                    eta_a = alpha_*kk2[ixyz]/2.0 + (V_a-af_p*tau_a_old/2.) - mu_a;
+                    eta_b = alpha_*kk2[ixyz]/2.0 + (V_b-af_p*tau_b_old/2.) - mu_b;
                     // we must remove kinetic part of the potential
                     // due to the fact that af_ != alpha_ (warning for ASLDA...)
 
@@ -1896,11 +1898,11 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     __md_pca_uniform.mu_a=mu_a;
     __md_pca_uniform.mu_b=mu_b;
     //##
-    __md_pca_uniform.V_a=V_a;
-    __md_pca_uniform.V_b=V_b;
-    __md_pca_uniform.alph_a=alph_a;
-    __md_pca_uniform.alph_b=alph_b;
-    //##
+    __md_pca_uniform.V_a=(V_a-af_p*tau_a/2.);//V_a;
+    __md_pca_uniform.V_b=(V_b-af_p*tau_b/2.);//V_b;
+    __md_pca_uniform.alph_a=alpha_; //alph_a;
+    __md_pca_uniform.alph_b=alpha_; //alph_b;
+    //## HERE
     __md_pca_uniform.kc=kc;
     __md_pca_uniform.ec=ec;
     __md_pca_uniform.nu=nu;
