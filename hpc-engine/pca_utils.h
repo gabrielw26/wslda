@@ -120,6 +120,10 @@ typedef struct
     int pccrSLDAe;  // pairing coupling constant renormalization scheme
                     // 0: in-medium (default)
                     // 1: in-vacuum (Bulgac et al.)
+                    
+    double sclgth; // scattering length in units of lattice spacing
+                   // meaningful only for FUNCTIONAL=BDG,SLDAE
+                   // in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
 
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1

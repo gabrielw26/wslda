@@ -91,8 +91,9 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // subsetMinEn
 0.0, // subsetMaxEn
 0, // subsetShiftDmu
--1.0, // aSLDAe
+0.0, // aSLDAe
 0, // pccrSLDAe
+0.0, // sclgth
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -306,6 +307,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.aSLDAe);
         else if (strcmp (tag,"pccrSLDAe") == 0)
             sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
+        else if (strcmp (tag,"sclgth") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.sclgth);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -431,6 +434,18 @@ int parse_input_file(char * file_name)
         md.subsetMaxEn=0.0;
         wfprintf(stdout, "#\tsubsetMinEn>subsetMaxEn is not allowed! Forcing subsetMinEn=subsetMaxEn=0!\n");
     }
+    
+    // scttaering length
+#if FUNCTIONAL==SLDA || FUNCTIONAL==ASLDA
+    md.sclgth=-1.0e16; // infinity
+#elif FUNCTIONAL==SLDAE || FUNCTIONAL==BDG
+    if(md.sclgth!=0.0) // provided in the input file, 
+    {
+        md.aSLDAe= md.sclgth;
+        md.aBdG  = md.sclgth;
+    }
+#endif
+
 
     fclose(fp);
     return 1;

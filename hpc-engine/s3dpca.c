@@ -290,7 +290,7 @@ int main( int argc , char ** argv )
     if ( fabs(aBdG)<1.0e-12 )
     {
         ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET aBdG IN INPUT FILE!\n");
+        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
         something_to_cheer_you_up_pid0(stdout);
         fflush(stdout);
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;
@@ -298,6 +298,18 @@ int main( int argc , char ** argv )
     }
 #else
     aBdG = 0.0; // deactivate BdG functional
+#endif
+
+#if FUNCTIONAL==SLDAE
+    if ( fabs(md.aSLDAe)<1.0e-12 )
+    {
+        ierr = -1 ;
+        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
+        something_to_cheer_you_up_pid0(stdout);
+        fflush(stdout);
+        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
+        return( EXIT_FAILURE ) ;
+    }
 #endif
 
 #if FUNCTIONAL==BDG

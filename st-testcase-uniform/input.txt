@@ -3,8 +3,10 @@ params31            0.0 # add noise
 
 # -------------------- SLDAE PARAMS -------------------
 # spinsymmetry = 1
-# only SPHERICAL_CUTOFF mode
-aSLDAe               -1.0 # s-wave scattering length, default = -1.00
+# pccrSLDAe               0       # pairing coupling constant renormalization scheme
+                                # 0: in-medium (default)
+                                # 1: in-vacuum (Bulgac et al.)
+
 
 # ------------------- INITIALIZATION ------------------
 inittype                0       #  0 - create uniform solution and start from it
@@ -29,6 +31,12 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # default = rho delta j
 writevar           default all
 
+# ----------------- SCATTERING LENGTH -----------------
+sclgth    -1.0 # scattering length in units of lattice spacing
+               # meaningful only for FUNCTIONAL=BDG,SLDAE
+               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+#referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
+
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.  # Requested number of particles a-type
 Nb                      28.  # Requested number of particles b-type
@@ -41,8 +49,6 @@ linearmixing            0.5      # mixing parameter for densities, default=0.5
 muchange                0.5      # coefficient for changing chemical potential, default=0.5
 maxiters                200     # maximum number of iterations, default=10000
 temperature             0.01      # requested temperature in units of eF, default T=0
-#referencekF             1.0    # reference kF
-aBdG                    -0.9   # akF about 0.9
 spinsymmetry            1       # set to 1 if you want to impose Na=Nb
 nocurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
@@ -82,7 +88,7 @@ nb                      8
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
 # init0muchange           0.1    # change rate of chemical potentials, default muchange
-init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
+# init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
 # init0Tstop              0.01   # Temperature, in units of eF, default=temperature
 # init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
