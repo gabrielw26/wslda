@@ -634,6 +634,8 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
 // --------------------------------------------------------------------------------------------------
 // ------------------------------------- SLDAe variant ----------------------------------------------
 // --------------------------------------------------------------------------------------------------
+extern int wsldapid; // process id - global variable
+extern int wsldapnp; // total number of processes - global variable
 
 /**
  * SLDAe variant
@@ -683,7 +685,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
     double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
     double ec = md.ec;
-    double analytic_mu;
     double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
     //##
 
@@ -712,225 +713,255 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int i, is_converged;   // self-consistent loop
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
 
+    // get range of points for computation
+    int myuidx=0, mylidx=0;
+    for(i=0; i<=wsldapid; i++)
+    {
+        mylidx=myuidx;
+        getnwfip( wsldapid , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
+        myuidx+=ix;
+    }
+//     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
+    
+    
     ixyz = 0;
     for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
     {
-        // store value of densities
-        na = rho_a[ixyz];
-        nb = rho_b[ixyz];
-        taua = tau_a[ixyz];
-        taub = tau_b[ixyz];
-        lnu = nu[ixyz];
-
-        // store value of potentials in separate variables, will be used later
-        v_ext_a = v_ext(ix, iy, iz, it, SPINA, params, extra_data_size, extra_data);
-        v_ext_b = v_ext(ix, iy, iz, it, SPINB, params, extra_data_size, extra_data);
-
-        // register for total density
-        nt_ = na + nb + DENSITY_EPSILON;
-        nt_1o3 = pow(nt_, 1. / 3.);
-        nt_2o3 = pow(nt_, 2. / 3.);
-
-        // register for local Fermi momentum and Fermi energy
-        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
-        eF_ = pow(kF_, 2) / 2.;
-        as_ = md.aSLDAe; // s-wave scattering length
-        x_ = fabs(as_ * kF_); // density-dependent coupling constant
-        dx_dnt_ = x_ / (3. * nt_);
-        deF_dnt_ = pow(kF_, 2) / (3. * nt_);
-
-        //##
-        // select functional and HFB paramters
-        /*
-          - functional derivative of quantity Z_
-            according to the total density is noted Z_p
-          - the renormalized coupling consants due to pairing
-            are ended by _eff, e.g. g_eff
-          (Note that renormalization procedure does not require cf_ and cf_p)
-        */
-        alpha_ = alpha_parameter(0, x_, id);
-        beta_ = beta_parameter(0, x_, id);
-        inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
-        alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
-        beta_p = dx_dnt_ * beta_parameter(1, x_, id);
-        inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
-        af_ = a_functional(x_, id);
-        bf_ = b_functional(x_, id);
-        cf_ = c_functional(x_, id); // unrequired
-        // definition independent of the functional and pairing form used
-        af_p = (alpha_ - af_) / nt_;
-        bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-        cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
-        analytic_mu = chemical_potential(0, x_, id) * eF_;
-        //##
-
-        // start computation of delta and mean-field
-        Va_const = v_ext_a; // external potential
-        Vb_const = v_ext_b; // external potential
-
-        Vkin_a = af_p * (taua + taub) / 2.;
-        Vkin_b = af_p * (taua + taub) / 2.;
-        Va_const += Vkin_a; // kinetic contribution
-        Vb_const += Vkin_b; // kinetic contribution
-
-        Va_const += beta_ * eF_; // mean-field contribution
-        Vb_const += beta_ * eF_; // mean-field contribution
-
-#ifdef CURRENT_CORRECTIONS
-        // current terms
-        t1=j_a_x[ixyz];
-        t2=j_a_y[ixyz];
-        t3=j_a_z[ixyz];
-        t4=j_b_x[ixyz];
-        t5=j_b_y[ixyz];
-        t6=j_b_z[ixyz];
-        // terms with ja^2
-        t7 = p_regularization(na);
-        Vcurr_a = 0.;
-        Vcurr_b = 0.;
-        if(t7!=0.0)
+        if(ixyz>=mylidx && ixyz<myuidx) // only for my range of points
         {
-            // SLDAE (spin-symmetry):
-            // alph_plus  = af_;
-            // alph_minus = 0.0;
-            // dalphp_dna = af_p;
-            // dalphm_dna = 0.0;
-            // dalphp_dnb = af_p;
-            // dalphm_dnb = 0.0;
-            t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
-            Vcurr_a+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7;
-            // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
-            Vcurr_a-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
-            Vcurr_b-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
-        }
-        // terms with jb^2
-        t7 = p_regularization(nb);
-        if(t7!=0.0)
-        {
-            // SLDAE (spin-symmetry):
-            // alph_plus  = af_;
-            // alph_minus = 0.0;
-            // dalphp_dna = af_p;
-            // dalphm_dna = 0.0;
-            // dalphp_dnb = af_p;
-            // dalphm_dnb = 0.0;
-            t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
-            Vcurr_a-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
-            Vcurr_b+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
-            Vcurr_b-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
-        }
-        Va_const+=Vcurr_a;
-        Vb_const+=Vcurr_b;
-#endif
+            // store value of densities
+            na = rho_a[ixyz];
+            nb = rho_b[ixyz];
+            taua = tau_a[ixyz];
+            taub = tau_b[ixyz];
+            lnu = nu[ixyz];
 
-        // prepare other variables for self-consistent process
-        // used in case of RENORMALIZATION_SCHEME == 1
-        Va = V_a[ixyz] + v_ext_a; // initial values
-        Vb = V_b[ixyz] + v_ext_b; // initial values
+            // store value of potentials in separate variables, will be used later
+            v_ext_a = v_ext(ix, iy, iz, it, SPINA, params, extra_data_size, extra_data);
+            v_ext_b = v_ext(ix, iy, iz, it, SPINB, params, extra_data_size, extra_data);
 
-        ldelta = delta[ixyz];
-        delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
-        delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
+            // register for total density
+            nt_ = na + nb + DENSITY_EPSILON;
+            nt_1o3 = pow(nt_, 1. / 3.);
+            nt_2o3 = pow(nt_, 2. / 3.);
 
+            // register for local Fermi momentum and Fermi energy
+            kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+            eF_ = pow(kF_, 2) / 2.;
+            as_ = md.sclgth; // s-wave scattering length
+            x_ = fabs(as_ * kF_); // density-dependent coupling constant
+            dx_dnt_ = x_ / (3. * nt_);
+            deF_dnt_ = pow(kF_, 2) / (3. * nt_);
 
-        // self-consistent computation of Va and Vb and delta
-        for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
-        {
+            //##
+            // select functional and HFB paramters
+            /*
+            - functional derivative of quantity Z_
+                according to the total density is noted Z_p
+            - the renormalized coupling consants due to pairing
+                are ended by _eff, e.g. g_eff
+            (Note that renormalization procedure does not require cf_ and cf_p)
+            */
+            alpha_ = alpha_parameter(0, x_, id);
+            beta_ = beta_parameter(0, x_, id);
+            inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
+            alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
+            //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id);
+            inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
+            af_ = a_functional(x_, id);
+            //&& bf_ = b_functional(x_, id);
+            //&& cf_ = c_functional(x_, id); // unrequired
+            // definition independent of the functional and pairing form used
+            af_p = (alpha_ - af_) / nt_;
+            //&& bf_p = 5. / 3. * (beta_ - bf_) / nt_;
+            //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+            //##
 
-            // effective pairing coupling constants and pairing field
-            if (RENORMALIZATION_SCHEME == 0) { // factor 2 for mu
-              lmu_sc = 2. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
-            } else if (RENORMALIZATION_SCHEME == 1) {
-              lmu_sc = 1. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
-            } else {
-              lmu_sc = 0.;
+            // start computation of delta and mean-field
+            Va_const = v_ext_a; // external potential
+            Vb_const = v_ext_b; // external potential
+
+            Vkin_a = af_p * (taua + taub) / 2.;
+            Vkin_b = af_p * (taua + taub) / 2.;
+            Va_const += Vkin_a; // kinetic contribution
+            Vb_const += Vkin_b; // kinetic contribution
+
+            Va_const += beta_ * eF_; // mean-field contribution
+            Vb_const += beta_ * eF_; // mean-field contribution
+
+    #ifdef CURRENT_CORRECTIONS
+            // current terms
+            t1=j_a_x[ixyz];
+            t2=j_a_y[ixyz];
+            t3=j_a_z[ixyz];
+            t4=j_b_x[ixyz];
+            t5=j_b_y[ixyz];
+            t6=j_b_z[ixyz];
+            // terms with ja^2
+            t7 = p_regularization(na);
+            Vcurr_a = 0.;
+            Vcurr_b = 0.;
+            if(t7!=0.0)
+            {
+                // SLDAE (spin-symmetry):
+                // alph_plus  = af_;
+                // alph_minus = 0.0;
+                // dalphp_dna = af_p;
+                // dalphm_dna = 0.0;
+                // dalphp_dnb = af_p;
+                // dalphm_dnb = 0.0;
+                t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
+                Vcurr_a+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7;
+                // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
+                Vcurr_a-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
+                Vcurr_b-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
             }
-            // we must remove kinetic part of the potential
-            // due to the fact that af_ != alpha_ (warning for ASLDA...)
+            // terms with jb^2
+            t7 = p_regularization(nb);
+            if(t7!=0.0)
+            {
+                // SLDAE (spin-symmetry):
+                // alph_plus  = af_;
+                // alph_minus = 0.0;
+                // dalphp_dna = af_p;
+                // dalphm_dna = 0.0;
+                // dalphp_dnb = af_p;
+                // dalphm_dnb = 0.0;
+                t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
+                Vcurr_a-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
+                Vcurr_b+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
+                Vcurr_b-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
+            }
+            Va_const+=Vcurr_a;
+            Vb_const+=Vcurr_b;
+    #endif
 
-            //lambda_ = pcc_renormalization (x_, lmu_sc, id);
-            p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
-            kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
-            if (lmu_sc >= 0) {
-              lambda_ = (kc + p0) / (kc - p0);
-              lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
-              lambda_ *= kc / (2. * M_PI_SQ);
-            } else {
-              lambda_ = p0 / kc;
-              lambda_ = 1. + p0 / kc * atan(lambda_);
-              lambda_ *= kc / (2. * M_PI_SQ);
+            // prepare other variables for self-consistent process
+            // used in case of RENORMALIZATION_SCHEME == 1
+            Va = V_a[ixyz] + v_ext_a; // initial values
+            Vb = V_b[ixyz] + v_ext_b; // initial values
+
+            ldelta = delta[ixyz];
+            delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
+            delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
+
+
+            // self-consistent computation of Va and Vb and delta
+            for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
+            {
+
+                // effective pairing coupling constants and pairing field
+                if (RENORMALIZATION_SCHEME == 0) { // factor 2 for (local) mu
+                lmu_sc = 2. * (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.
+                        - (Va - Vkin_a + Vb - Vkin_b) / 2.;
+                } else if (RENORMALIZATION_SCHEME == 1) {
+                lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
+                } else {
+                lmu_sc = 0.;
+                }
+                // we must remove kinetic part of the potential
+                // due to the fact that af_ != alpha_ (warning for ASLDA...)
+
+                //lambda_ = pcc_renormalization (x_, lmu_sc, id);
+                p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
+                kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
+                if (lmu_sc >= 0) {
+                lambda_ = (kc + p0) / (kc - p0);
+                lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
+                lambda_ *= kc / (2. * M_PI_SQ);
+                } else {
+                lambda_ = p0 / kc;
+                lambda_ = 1. + p0 / kc * atan(lambda_);
+                lambda_ *= kc / (2. * M_PI_SQ);
+                }
+
+                ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
+
+                inverse_gamma_eff = inverse_gamma_ *
+                (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+
+                ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
+                alpha_p * nt_1o3 * inverse_gamma_;
+
+                g_eff = alpha_ / (ctilde_ - lambda_);
+                ldelta = -lnu * g_eff; //##
+
+                // potential
+                delta_dag_nu = creal(conj(ldelta) * lnu);
+                            // delta^+ * nu
+                delta_abs_sq = creal(ldelta) * creal(ldelta) +
+                            cimag(ldelta) * cimag(ldelta);
+                            // delta^+ * delta
+
+                Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
+                        ctilde_p / alpha_ * delta_abs_sq;
+                Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
+                        ctilde_p / alpha_ * delta_abs_sq;
+
+                // check convergence for original renormalization scheme
+                is_converged = 1;
+                if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
+                if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
+                if (is_converged) break;
+
+                // mixing of potentials
+                Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
+                Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
             }
 
-            ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
+            //if(i==UD_SCITERS) return -1; // error
 
-            inverse_gamma_eff = inverse_gamma_ *
-              (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+            // save potentials
+            V_a[ixyz] = Va - v_ext_a; // mean-field only
+            V_b[ixyz] = Vb - v_ext_b; // mean-field only
+            delta[ixyz] = ldelta;
 
-            ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
-              alpha_p * nt_1o3 * inverse_gamma_;
+            // potentials that do not require self-cosistent iteration
+            h_potentials.alpha_a[ixyz] = af_;
+            h_potentials.alpha_b[ixyz] = af_;
+            // HERE
 
-            g_eff = alpha_ / (ctilde_ - lambda_);
-            ldelta = -lnu * g_eff; //##
-
-            // potential
-            delta_dag_nu = creal(conj(ldelta) * lnu);
-                           // delta^+ * nu
-            delta_abs_sq = creal(ldelta) * creal(ldelta) +
-                           cimag(ldelta) * cimag(ldelta);
-                           // delta^+ * delta
-
-            Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
-                    ctilde_p / alpha_ * delta_abs_sq;
-            Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
-                    ctilde_p / alpha_ * delta_abs_sq;
-
-            // check convergence for original renormalization scheme
-            is_converged = 1;
-            if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
-            if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
-            if (is_converged) break;
-
-            // mixing of potentials
-            Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
-            Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
-        }
-
-        // save potentials
-        V_a[ixyz] = Va - v_ext_a; // mean-field only
-        V_b[ixyz] = Vb - v_ext_b; // mean-field only
-        delta[ixyz] = ldelta;
-
-        // potentials that do not require self-cosistent iteration
-        h_potentials.alpha_a[ixyz] = af_;
-        h_potentials.alpha_b[ixyz] = af_;
-        // HERE
-
-        t1 = polarization(na, nb); // = 0.;
-        t7 = p_regularization(rho_a[ixyz]);
-        if(t7!=0.0)
+            t1 = polarization(na, nb); // = 0.;
+            t7 = p_regularization(rho_a[ixyz]);
+            if(t7!=0.0)
+            {
+                h_potentials.A_a_x[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_x[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_x
+                h_potentials.A_a_y[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_y[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_y
+                h_potentials.A_a_z[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_z[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_z
+            }
+            else
+            {
+                h_potentials.A_a_x[ixyz]=0.0; // we are in vacum
+                h_potentials.A_a_y[ixyz]=0.0; // we are in vacum
+                h_potentials.A_a_z[ixyz]=0.0; // we are in vacum
+            }
+            t7 = p_regularization(rho_b[ixyz]);
+            if(t7!=0.0)
+            {
+                h_potentials.A_b_x[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_x[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_x
+                h_potentials.A_b_y[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_y[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_y
+                h_potentials.A_b_z[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_z[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_z
+            }
+            else
+            {
+                h_potentials.A_b_x[ixyz]=0.0; // we are in vacum
+                h_potentials.A_b_y[ixyz]=0.0; // we are in vacum
+                h_potentials.A_b_z[ixyz]=0.0; // we are in vacum
+            }
+        } // if(ixyz>=mylidx && ixy<myuidx)
+        else // skip computation and set potentials to zeros
         {
-            h_potentials.A_a_x[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_x[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_x
-            h_potentials.A_a_y[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_y[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_y
-            h_potentials.A_a_z[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_z[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_z
-        }
-        else
-        {
-            h_potentials.A_a_x[ixyz]=0.0; // we are in vacum
-            h_potentials.A_a_y[ixyz]=0.0; // we are in vacum
-            h_potentials.A_a_z[ixyz]=0.0; // we are in vacum
-        }
-        t7 = p_regularization(rho_b[ixyz]);
-        if(t7!=0.0)
-        {
-            h_potentials.A_b_x[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_x[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_x
-            h_potentials.A_b_y[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_y[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_y
-            h_potentials.A_b_z[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_z[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_z
-        }
-        else
-        {
-            h_potentials.A_b_x[ixyz]=0.0; // we are in vacum
-            h_potentials.A_b_y[ixyz]=0.0; // we are in vacum
-            h_potentials.A_b_z[ixyz]=0.0; // we are in vacum
+            h_potentials.delta[ixyz] = 0.0 + I*0.0;
+            h_potentials.V_a[ixyz] = 0.0;
+            h_potentials.V_b[ixyz] = 0.0;
+            h_potentials.alpha_a[ixyz] = 0.0;
+            h_potentials.alpha_b[ixyz] = 0.0;
+            h_potentials.A_a_x[ixyz]=0.0; 
+            h_potentials.A_a_y[ixyz]=0.0; 
+            h_potentials.A_a_z[ixyz]=0.0; 
+            h_potentials.A_b_x[ixyz]=0.0; 
+            h_potentials.A_b_y[ixyz]=0.0; 
+            h_potentials.A_b_z[ixyz]=0.0; 
         }
 
         ixyz++; // go to next lattice point
@@ -1016,7 +1047,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = md.aSLDAe; // s-wave scattering length
+        as_ = md.sclgth; // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
 
         af_ = a_functional(x_, id);
