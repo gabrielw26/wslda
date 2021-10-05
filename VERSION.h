@@ -1,2 +1,2 @@
-#define CODE "W-SLDA-TOOLKIT"
-#define VERSION "2021.09.18"
+#define CODE "W-SLDA-TOOLKIT-SLDAE-DEV"
+#define VERSION "2021.09.21"
