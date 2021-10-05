@@ -1531,6 +1531,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double ctilde_, ctilde_p; // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
     double lambda_, lmu_sc; // spherical cutoff integral
+    double analytic_mu;
     //##
     // register for total density
     nt_ = n0_a + n0_b;
@@ -1576,6 +1577,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
     ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
       alpha_p * nt_1o3 * inverse_gamma_;
+
+    analytic_mu = chemical_potential(0, x_, id) * eF_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
@@ -1687,14 +1690,17 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
             // effective pairing coupling constants and pairing field
             if (RENORMALIZATION_SCHEME == 0) {
-              lmu_sc = (2. * mu_a - V_a + 2. * mu_b - V_b) / 2. + af_p * (tau_a + tau_b) / 2.;
+              lmu_sc = 2. * analytic_mu - (V_a + V_b) / 2. + af_p * (tau_a + tau_b) / 2.;
             } else if (RENORMALIZATION_SCHEME == 1) {
-              lmu_sc = (mu_a - V_a + mu_b - V_b) / 2. + af_p * tau_p / 2.;
+              //lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
+              lmu_sc = 1. * analytic_mu - (V_a + V_b) / 2. + af_p * (tau_a + tau_b) / 2.;
             } else {
               lmu_sc = 0.;
             }
             // we must remove kinetic part of the potential
             // due to the fact that af_ != alpha_ (warning for ASLDA...)
+            // actually, regularization must be performed
+            // from analytic point of view, hence 'analytic_mu'
 
             // lambda_ = pcc_renormalization (x_, lmu_sc, id);
             p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
@@ -1741,12 +1747,11 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
                 #endif
                 #endif
                 {
-                    //eta_a = alph_a*kk2[ixyz]/2.0 + V_a - mu_a;
-                    //eta_b = alph_b*kk2[ixyz]/2.0 + V_b - mu_b;
-                    eta_a = alpha_*kk2[ixyz]/2.0 + (V_a-af_p*tau_a_old/2.) - mu_a;
-                    eta_b = alpha_*kk2[ixyz]/2.0 + (V_b-af_p*tau_b_old/2.) - mu_b;
-                    // we must remove kinetic part of the potential
-                    // due to the fact that af_ != alpha_ (warning for ASLDA...)
+                    eta_a = alph_a*kk2[ixyz]/2.0 + V_a - mu_a;
+                    eta_b = alph_b*kk2[ixyz]/2.0 + V_b - mu_b;
+                    // due to renormalization, we must consider
+                    // af_ * k*k / 2 + V - mu
+                    // and not "alpha_ * k*k"
 
                     // solution 1:
                     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));
@@ -1857,8 +1862,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             tau_b = (1.-scmix)*tau_b_old + scmix*tau_b;
             delta = (1.-scmix)*delta_old + scmix*delta;
             nu = (1.-scmix)*nu_old + scmix*nu;
-            mu_a += md.init0muchange*(md.init0Tstart/T)*(n0_a-n_a)/n0_a*eF_a;
-            mu_b += md.init0muchange*(md.init0Tstart/T)*(n0_b-n_b)/n0_b*eF_b;
+            mu_a += md.init0muchange*(n0_a-n_a)/n0_a*eF_a;
+            mu_b += md.init0muchange*(n0_b-n_b)/n0_b*eF_b;
             // divided by n0_c to improve convergeance
             // by factor 4 in terms of iterations
             if(md.spinsymmetry>0) mu_b=mu_a;
@@ -1899,11 +1904,11 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     __md_pca_uniform.mu_a=mu_a;
     __md_pca_uniform.mu_b=mu_b;
     //##
-    __md_pca_uniform.V_a=(V_a-af_p*tau_a/2.);//V_a;
-    __md_pca_uniform.V_b=(V_b-af_p*tau_b/2.);//V_b;
-    __md_pca_uniform.alph_a=alpha_; //alph_a;
-    __md_pca_uniform.alph_b=alpha_; //alph_b;
-    //## HERE
+    __md_pca_uniform.V_a=V_a;
+    __md_pca_uniform.V_b=V_b;
+    __md_pca_uniform.alph_a=alph_a;
+    __md_pca_uniform.alph_b=alph_b;
+    //##
     __md_pca_uniform.kc=kc;
     __md_pca_uniform.ec=ec;
     __md_pca_uniform.nu=nu;

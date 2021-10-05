@@ -19,6 +19,9 @@
  *      for simulating unitary Fermi gas,
  *      at qualitative level it produces results compatible with SLDA, however it is more accurate,
  *      due to presence of current terms in the functional it has worse convergence properties.
+ *  - SLDAE:
+ *      for simulating Fermi gas for an arbitrary value of akF,
+ *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
