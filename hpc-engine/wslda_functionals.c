@@ -683,7 +683,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
     double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
     double ec = md.ec;
-    double analytic_mu;
     double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
     //##
 
@@ -734,7 +733,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = md.aSLDAe; // s-wave scattering length
+        as_ = md.sclgth; // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
         dx_dnt_ = x_ / (3. * nt_);
         deF_dnt_ = pow(kF_, 2) / (3. * nt_);
@@ -752,16 +751,15 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         beta_ = beta_parameter(0, x_, id);
         inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
         alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
-        beta_p = dx_dnt_ * beta_parameter(1, x_, id);
+        //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id);
         inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
         af_ = a_functional(x_, id);
-        bf_ = b_functional(x_, id);
-        cf_ = c_functional(x_, id); // unrequired
+        //&& bf_ = b_functional(x_, id);
+        //&& cf_ = c_functional(x_, id); // unrequired
         // definition independent of the functional and pairing form used
         af_p = (alpha_ - af_) / nt_;
-        bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-        cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
-        analytic_mu = chemical_potential(0, x_, id) * eF_;
+        //&& bf_p = 5. / 3. * (beta_ - bf_) / nt_;
+        //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
         //##
 
         // start computation of delta and mean-field
@@ -838,10 +836,11 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         {
 
             // effective pairing coupling constants and pairing field
-            if (RENORMALIZATION_SCHEME == 0) { // factor 2 for mu
-              lmu_sc = 2. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
+            if (RENORMALIZATION_SCHEME == 0) { // factor 2 for (local) mu
+              lmu_sc = 2. * (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.
+                     - (Va - Vkin_a + Vb - Vkin_b) / 2.;
             } else if (RENORMALIZATION_SCHEME == 1) {
-              lmu_sc = 1. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
+              lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
             } else {
               lmu_sc = 0.;
             }
@@ -894,6 +893,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
             Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
         }
+
+        //if(i==UD_SCITERS) return -1; // error
 
         // save potentials
         V_a[ixyz] = Va - v_ext_a; // mean-field only
@@ -1016,7 +1017,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = md.aSLDAe; // s-wave scattering length
+        as_ = md.sclgth; // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
 
         af_ = a_functional(x_, id);

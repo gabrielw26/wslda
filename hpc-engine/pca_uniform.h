@@ -1541,7 +1541,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     // register for local Fermi momentum and Fermi energy
     kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
     eF_ = pow(kF_, 2) / 2.;
-    as_ = md.aSLDAe; // s-wave scattering length
+    as_ = md.sclgth; // s-wave scattering length
     x_ = fabs(as_ * kF_); // density-dependent coupling constant
     dx_dnt_ = x_ / (3. * nt_);
     deF_dnt_ = pow(kF_, 2) / (3. * nt_);
@@ -1567,7 +1567,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     // definition independent of the functional and pairing form used
     af_p = (alpha_ - af_) / nt_;
     bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-    cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+    //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
     //##
     // initial values
     ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
@@ -1578,7 +1578,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
       alpha_p * nt_1o3 * inverse_gamma_;
 
-    analytic_mu = chemical_potential(0, x_, id) * eF_;
+    //&& analytic_mu = chemical_potential(0, x_, id) * eF_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
@@ -1690,17 +1690,17 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
             // effective pairing coupling constants and pairing field
             if (RENORMALIZATION_SCHEME == 0) {
-              lmu_sc = 2. * analytic_mu - (V_a + V_b) / 2. + af_p * (tau_a + tau_b) / 2.;
+              lmu_sc = 2. * (mu_a + mu_b) / 2. - (V_a + V_b) / 2.
+                     + af_p * (tau_a + tau_b) / 2.;
             } else if (RENORMALIZATION_SCHEME == 1) {
-              //lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
-              lmu_sc = 1. * analytic_mu - (V_a + V_b) / 2. + af_p * (tau_a + tau_b) / 2.;
+              lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
             } else {
               lmu_sc = 0.;
             }
             // we must remove kinetic part of the potential
             // due to the fact that af_ != alpha_ (warning for ASLDA...)
             // actually, regularization must be performed
-            // from analytic point of view, hence 'analytic_mu'
+            // from analytic point of view
 
             // lambda_ = pcc_renormalization (x_, lmu_sc, id);
             p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
