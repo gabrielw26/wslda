@@ -13,17 +13,17 @@ WDERIVSRC=$(WSLDADIR)lib/wderiv/c/
 WINTERPINC=$(WSLDADIR)lib/winterp/c/
 WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
-DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_resize.h jdb.h ../VERSION.h
+DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h sldae_functional.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_resize.h jdb.h ../VERSION.h
 
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
-SRCS = wslda_functionals.o wslda_potdens.o sxdpca_broyden.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o wslda_st_checkpoint.o
+SRCS = wslda_functionals.o wslda_potdens.o sldae_functional.o sxdpca_broyden.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o wslda_st_checkpoint.o
 SRCS1D = s1dpca.o s1dpca_fft.o s1dpca_me.o s1dpca_densities.o
-SRCS2D = s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o 
-SRCS3D = s3dpca.o s3dpca_fft.o s3dpca_densities.o s3dpca_me.o 
+SRCS2D = s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o
+SRCS3D = s3dpca.o s3dpca_fft.o s3dpca_densities.o s3dpca_me.o
 
 WDATALIB = wdata.o
 WDERIVLIB = wderiv.o
@@ -75,11 +75,11 @@ ext: dirs \
 
 d1d: $(OBJS1D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) -DWSLDA $^ $(LIBS) 
+	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) -DWSLDA $^ $(LIBS)
 
 d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) -DWSLDA $^ $(LIBS) 
+	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) -DWSLDA $^ $(LIBS)
 
 d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
@@ -87,42 +87,42 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
-	
+
 (BINDIR)test-external-potentials-1d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)test-external-potentials-1d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=1 -lm -lfftw3
-	
+
 (BINDIR)test-external-potentials-2d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)test-external-potentials-2d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=2 -lm -lfftw3
-	
+
 (BINDIR)test-external-potentials-3d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)test-external-potentials-3d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=3 -lm -lfftw3
-	
+
 (BINDIR)interpolate-dataset: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WINTERPOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
-		
+
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
 	$(PYTHON) $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
 
 $(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=1 -c -o $@ $<
-	
+
 $(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=2 -c -o $@ $<
-	
+
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
-	
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
 $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
-	
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
 $(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
-	
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
 $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
-	
-.PHONY: clean all ver dirs 
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
+.PHONY: clean all ver dirs
 
 dirs:
 	mkdir -p $(OBJDIR)
@@ -139,7 +139,6 @@ clean:
 	rm -f $(BINDIR)test-external-potentials-3d
 	rm -f $(BINDIR)solve-uniform
 	rm -f $(BINDIR)interpolate-dataset
-	
+
 ver:
 	$(CXX) --version
- 
