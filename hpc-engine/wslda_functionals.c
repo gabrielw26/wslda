@@ -634,6 +634,470 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
 // --------------------------------------------------------------------------------------------------
 // ------------------------------------- SLDAe variant ----------------------------------------------
 // --------------------------------------------------------------------------------------------------
+extern int wsldapid; // process id - global variable
+extern int wsldapnp; // total number of processes - global variable
+
+/**
+ * SLDAe variant
+ * Author: Antoine Boulet
+ * Update: 2021.09.21
+ * */
+
+// md.aSLDAe == s-wave scattering length
+/**
+ * This function computes potentials defining Hamiltonian in case is SLDAE functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages.
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials from PREVIOUS iteration as input,
+ *                     updated values as output (INPUT/OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
+{
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+
+    //##
+    //  select functional
+    // [useful to add more functional in sldae_functional.c]
+    int FUNCTIONAL_ID = -2; // SLDAe id
+    int PAIRING_ID = -2;    // SLDAe id
+    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
+    /** select pairing renormalization scheme [0:1]
+        #    0: in-meduim regularization (default for SLDAe)
+        #    1: in-vacuum regularization (Bulgac et al.)
+    **/
+    int RENORMALIZATION_SCHEME = md.pccrSLDAe;
+    //##
+    double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
+    double alpha_, beta_, inverse_gamma_;    // HFB paremeters
+    double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
+    double af_, bf_, cf_;    // functional parameters
+    double af_p, bf_p, cf_p; // functional parameters (fderiv)
+    double nt_, nt_1o3, nt_2o3; // power of total local density
+    double dx_dnt_;  // derivative of x_ according to nt_ = x_ / (3.*nt_)
+    double deF_dnt_; // derivative of eF_ according to nt_ = kF_ * kF_ / (3.*nt_)
+    double ctilde_, ctilde_p; // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
+    double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
+    double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
+    double ec = md.ec;
+    double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
+    //##
+
+    // densities - decode
+    double *rho_a = h_densities.rho_a;
+    double *rho_b = h_densities.rho_b;
+    double *tau_a = h_densities.tau_a;
+    double *tau_b = h_densities.tau_b;
+    double complex *nu = h_densities.nu;
+    double *j_a_x = h_densities.j_a_x;
+    double *j_a_y = h_densities.j_a_y;
+    double *j_a_z = h_densities.j_a_z;
+    double *j_b_x = h_densities.j_b_x;
+    double *j_b_y = h_densities.j_b_y;
+    double *j_b_z = h_densities.j_b_z;
+    // potentials - decode
+    double *V_a = h_potentials.V_a;
+    double *V_b = h_potentials.V_b;
+    double complex *delta = h_potentials.delta;
+    // registers
+    double na, nb, taua, taub, lmu; // lmu = averaged local chemical potential
+    double Va, Vb, v_ext_a, v_ext_b, Vanew, Vbnew, Va_const, Vb_const;
+    double complex lnu, ldelta;
+    double delta_abs_sq, delta_dag_nu;
+    int ix, iy, iz, ixyz; // lattice coordinates
+    int i, is_converged;   // self-consistent loop
+    double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
+
+    // get range of points for computation
+    int myuidx=0, mylidx=0;
+    for(i=0; i<=wsldapid; i++)
+    {
+        mylidx=myuidx;
+        getnwfip( wsldapid , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
+        myuidx+=ix;
+    }
+//     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
+    
+    
+    ixyz = 0;
+    for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
+    {
+        if(ixyz>=mylidx && ixyz<myuidx) // only for my range of points
+        {
+            // store value of densities
+            na = rho_a[ixyz];
+            nb = rho_b[ixyz];
+            taua = tau_a[ixyz];
+            taub = tau_b[ixyz];
+            lnu = nu[ixyz];
+
+            // store value of potentials in separate variables, will be used later
+            v_ext_a = v_ext(ix, iy, iz, it, SPINA, params, extra_data_size, extra_data);
+            v_ext_b = v_ext(ix, iy, iz, it, SPINB, params, extra_data_size, extra_data);
+
+            // register for total density
+            nt_ = na + nb + DENSITY_EPSILON;
+            nt_1o3 = pow(nt_, 1. / 3.);
+            nt_2o3 = pow(nt_, 2. / 3.);
+
+            // register for local Fermi momentum and Fermi energy
+            kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+            eF_ = pow(kF_, 2) / 2.;
+            as_ = md.sclgth; // s-wave scattering length
+            x_ = fabs(as_ * kF_); // density-dependent coupling constant
+            dx_dnt_ = x_ / (3. * nt_);
+            deF_dnt_ = pow(kF_, 2) / (3. * nt_);
+
+            //##
+            // select functional and HFB paramters
+            /*
+            - functional derivative of quantity Z_
+                according to the total density is noted Z_p
+            - the renormalized coupling consants due to pairing
+                are ended by _eff, e.g. g_eff
+            (Note that renormalization procedure does not require cf_ and cf_p)
+            */
+            alpha_ = alpha_parameter(0, x_, id);
+            beta_ = beta_parameter(0, x_, id);
+            inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
+            alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
+            //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id);
+            inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
+            af_ = a_functional(x_, id);
+            //&& bf_ = b_functional(x_, id);
+            //&& cf_ = c_functional(x_, id); // unrequired
+            // definition independent of the functional and pairing form used
+            af_p = (alpha_ - af_) / nt_;
+            //&& bf_p = 5. / 3. * (beta_ - bf_) / nt_;
+            //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+            //##
+
+            // start computation of delta and mean-field
+            Va_const = v_ext_a; // external potential
+            Vb_const = v_ext_b; // external potential
+
+            Vkin_a = af_p * (taua + taub) / 2.;
+            Vkin_b = af_p * (taua + taub) / 2.;
+            Va_const += Vkin_a; // kinetic contribution
+            Vb_const += Vkin_b; // kinetic contribution
+
+            Va_const += beta_ * eF_; // mean-field contribution
+            Vb_const += beta_ * eF_; // mean-field contribution
+
+    #ifdef CURRENT_CORRECTIONS
+            // current terms
+            t1=j_a_x[ixyz];
+            t2=j_a_y[ixyz];
+            t3=j_a_z[ixyz];
+            t4=j_b_x[ixyz];
+            t5=j_b_y[ixyz];
+            t6=j_b_z[ixyz];
+            // terms with ja^2
+            t7 = p_regularization(na);
+            Vcurr_a = 0.;
+            Vcurr_b = 0.;
+            if(t7!=0.0)
+            {
+                // SLDAE (spin-symmetry):
+                // alph_plus  = af_;
+                // alph_minus = 0.0;
+                // dalphp_dna = af_p;
+                // dalphm_dna = 0.0;
+                // dalphp_dnb = af_p;
+                // dalphm_dnb = 0.0;
+                t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
+                Vcurr_a+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7;
+                // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
+                Vcurr_a-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
+                Vcurr_b-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
+            }
+            // terms with jb^2
+            t7 = p_regularization(nb);
+            if(t7!=0.0)
+            {
+                // SLDAE (spin-symmetry):
+                // alph_plus  = af_;
+                // alph_minus = 0.0;
+                // dalphp_dna = af_p;
+                // dalphm_dna = 0.0;
+                // dalphp_dnb = af_p;
+                // dalphm_dnb = 0.0;
+                t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
+                Vcurr_a-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
+                Vcurr_b+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
+                Vcurr_b-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
+            }
+            Va_const+=Vcurr_a;
+            Vb_const+=Vcurr_b;
+    #endif
+
+            // prepare other variables for self-consistent process
+            // used in case of RENORMALIZATION_SCHEME == 1
+            Va = V_a[ixyz] + v_ext_a; // initial values
+            Vb = V_b[ixyz] + v_ext_b; // initial values
+
+            ldelta = delta[ixyz];
+            delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
+            delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
+
+
+            // self-consistent computation of Va and Vb and delta
+            for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
+            {
+
+                // effective pairing coupling constants and pairing field
+                if (RENORMALIZATION_SCHEME == 0) { // factor 2 for (local) mu
+                lmu_sc = 2. * (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.
+                        - (Va - Vkin_a + Vb - Vkin_b) / 2.;
+                } else if (RENORMALIZATION_SCHEME == 1) {
+                lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
+                } else {
+                lmu_sc = 0.;
+                }
+                // we must remove kinetic part of the potential
+                // due to the fact that af_ != alpha_ (warning for ASLDA...)
+
+                //lambda_ = pcc_renormalization (x_, lmu_sc, id);
+                p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
+                kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
+                if (lmu_sc >= 0) {
+                lambda_ = (kc + p0) / (kc - p0);
+                lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
+                lambda_ *= kc / (2. * M_PI_SQ);
+                } else {
+                lambda_ = p0 / kc;
+                lambda_ = 1. + p0 / kc * atan(lambda_);
+                lambda_ *= kc / (2. * M_PI_SQ);
+                }
+
+                ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
+
+                inverse_gamma_eff = inverse_gamma_ *
+                (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+
+                ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
+                alpha_p * nt_1o3 * inverse_gamma_;
+
+                g_eff = alpha_ / (ctilde_ - lambda_);
+                ldelta = -lnu * g_eff; //##
+
+                // potential
+                delta_dag_nu = creal(conj(ldelta) * lnu);
+                            // delta^+ * nu
+                delta_abs_sq = creal(ldelta) * creal(ldelta) +
+                            cimag(ldelta) * cimag(ldelta);
+                            // delta^+ * delta
+
+                Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
+                        ctilde_p / alpha_ * delta_abs_sq;
+                Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
+                        ctilde_p / alpha_ * delta_abs_sq;
+
+                // check convergence for original renormalization scheme
+                is_converged = 1;
+                if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
+                if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
+                if (is_converged) break;
+
+                // mixing of potentials
+                Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
+                Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
+            }
+
+            //if(i==UD_SCITERS) return -1; // error
+
+            // save potentials
+            V_a[ixyz] = Va - v_ext_a; // mean-field only
+            V_b[ixyz] = Vb - v_ext_b; // mean-field only
+            delta[ixyz] = ldelta;
+
+            // potentials that do not require self-cosistent iteration
+            h_potentials.alpha_a[ixyz] = af_;
+            h_potentials.alpha_b[ixyz] = af_;
+            // HERE
+
+            t1 = polarization(na, nb); // = 0.;
+            t7 = p_regularization(rho_a[ixyz]);
+            if(t7!=0.0)
+            {
+                h_potentials.A_a_x[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_x[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_x
+                h_potentials.A_a_y[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_y[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_y
+                h_potentials.A_a_z[ixyz]=(1.0 - h_potentials.alpha_a[ixyz]) * t7 *j_a_z[ixyz] / rho_a[ixyz]; // derivative with respect to j_a_z
+            }
+            else
+            {
+                h_potentials.A_a_x[ixyz]=0.0; // we are in vacum
+                h_potentials.A_a_y[ixyz]=0.0; // we are in vacum
+                h_potentials.A_a_z[ixyz]=0.0; // we are in vacum
+            }
+            t7 = p_regularization(rho_b[ixyz]);
+            if(t7!=0.0)
+            {
+                h_potentials.A_b_x[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_x[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_x
+                h_potentials.A_b_y[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_y[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_y
+                h_potentials.A_b_z[ixyz]=(1.0 - h_potentials.alpha_b[ixyz]) * t7 *j_b_z[ixyz] / rho_b[ixyz]; // derivative with respect to j_b_z
+            }
+            else
+            {
+                h_potentials.A_b_x[ixyz]=0.0; // we are in vacum
+                h_potentials.A_b_y[ixyz]=0.0; // we are in vacum
+                h_potentials.A_b_z[ixyz]=0.0; // we are in vacum
+            }
+        } // if(ixyz>=mylidx && ixy<myuidx)
+        else // skip computation and set potentials to zeros
+        {
+            h_potentials.delta[ixyz] = 0.0 + I*0.0;
+            h_potentials.V_a[ixyz] = 0.0;
+            h_potentials.V_b[ixyz] = 0.0;
+            h_potentials.alpha_a[ixyz] = 0.0;
+            h_potentials.alpha_b[ixyz] = 0.0;
+            h_potentials.A_a_x[ixyz]=0.0; 
+            h_potentials.A_a_y[ixyz]=0.0; 
+            h_potentials.A_a_z[ixyz]=0.0; 
+            h_potentials.A_b_x[ixyz]=0.0; 
+            h_potentials.A_b_y[ixyz]=0.0; 
+            h_potentials.A_b_z[ixyz]=0.0; 
+        }
+
+        ixyz++; // go to next lattice point
+    }
+
+    return 0;
+}
+
+/**
+ * This function computes internal energy in case is SLDAE functional is selected.
+ * Otherwise the function is ignored.
+ * For more info see wiki pages.
+ * @param it iteration number
+ * @param h_densities array with all densities (INPUT)
+ * @param h_potentials potentials corresponding to the densities (INPUT)
+ * @param energy array with contributions to the energy (OUTPUT)
+ * @param npart array with contributions to the particle number (OUTPUT)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
+{
+    int lNX = h_densities.nx, lNY = h_densities.ny, lNZ = h_densities.nz; // local sizes
+
+    //##
+
+    int FUNCTIONAL_ID = -2; // SLDAe id
+    int PAIRING_ID = -2;    // SLDAe id
+    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
+
+    double as_, x_, kF_, eF_;   // local Fermi momentum and energy
+    double af_, bf_, cf_;       // functional parameters
+    double nt_, nt_1o3, nt_2o3; // power of total local density
+
+    //##
+
+    // registers
+    double na, nb, taua, taub;
+    double complex lnu, ldelta;
+    int ix, iy, iz, ixyz; // lattice coordinates
+
+    double tx1, ty1, tz1, tx2, ty2, tz2; // registers for current corrections
+
+    // reset buffers
+    energy[EKIN] = 0.;
+    energy[EPOT] = 0.;
+    energy[EPAIR] = 0.;
+    energy[ECURRENT] = 0.;
+    npart[SPINA] = 0.;
+    npart[SPINB] = 0.;
+
+    ixyz = 0;
+    for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
+    {
+
+        // densities
+        na = h_densities.rho_a[ixyz];
+        nb = h_densities.rho_b[ixyz];
+        taua = h_densities.tau_a[ixyz];
+        taub = h_densities.tau_b[ixyz];
+        lnu = h_densities.nu[ixyz];
+        tx1=h_densities.j_a_x[ixyz];
+        ty1=h_densities.j_a_y[ixyz];
+        tz1=h_densities.j_a_z[ixyz];
+        tx2=h_densities.j_b_x[ixyz];
+        ty2=h_densities.j_b_y[ixyz];
+        tz2=h_densities.j_b_z[ixyz];
+
+        // particle number
+        npart[SPINA] += na;
+        npart[SPINB] += nb;
+
+        // pairing gap function
+        ldelta = h_potentials.delta[ixyz];
+
+        // register for total density
+        nt_ = na + nb + DENSITY_EPSILON;
+        nt_1o3 = pow(nt_, 1. / 3.);
+        nt_2o3 = pow(nt_, 2. / 3.);
+
+        // register for local Fermi momentum and Fermi energy
+        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+        eF_ = pow(kF_, 2) / 2.;
+        as_ = md.sclgth; // s-wave scattering length
+        x_ = fabs(as_ * kF_); // density-dependent coupling constant
+
+        af_ = a_functional(x_, id);
+        bf_ = b_functional(x_, id);
+
+
+        // current corrections
+        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
+        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
+
+        //##
+
+        // kinetic energy, only aglilean invariant contribution
+        energy[EKIN] += af_ * (taua + taub) / 2.; //##
+
+        // potential energy
+        energy[EPOT] += (3. / 5.) * bf_ * eF_ * nt_; //##
+
+        // pairing energy
+        energy[EPAIR] -= creal(ldelta * conj(lnu));
+
+        // energy related to currents (j^2/2n)
+        energy[ECURRENT] += p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na) + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb);
+
+        ixyz++;
+    }
+
+    // take into account variants of code
+    double volume_element = 0.;
+
+    if (h_densities.datadim == 3) volume_element = DX * DY * DZ;
+    if (h_densities.datadim == 2) volume_element = DX * DY * LZ;
+    if (h_densities.datadim == 1) volume_element = DX * LY * LZ;
+
+    energy[EKIN] *= volume_element;
+    energy[EPOT] *= volume_element;
+    energy[EPAIR] *= volume_element;
+    energy[ECURRENT] *= volume_element;
+    npart[SPINA] *= volume_element;
+    npart[SPINB] *= volume_element;
+
+    return 0;
+}
+
+
+
+
+// --------------------------------------------------------------------------------------------------
+// ------------------------------------- SLDAe variant ----------------------------------------------
+// --------------------------------------------------------------------------------------------------
 
 /**
  * SLDAe variant
