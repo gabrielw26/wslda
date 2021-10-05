@@ -683,6 +683,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
     double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
     double ec = md.ec;
+    double analytic_mu;
+    double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
     //##
 
     // densities - decode
@@ -759,14 +761,17 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         af_p = (alpha_ - af_) / nt_;
         bf_p = 5. / 3. * (beta_ - bf_) / nt_;
         cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+        analytic_mu = chemical_potential(0, x_, id) * eF_;
         //##
 
         // start computation of delta and mean-field
         Va_const = v_ext_a; // external potential
         Vb_const = v_ext_b; // external potential
 
-        Va_const += af_p * (taua + taub) / 2.; // kinetic contribution
-        Vb_const += af_p * (taua + taub) / 2.; // kinetic contribution
+        Vkin_a = af_p * (taua + taub) / 2.;
+        Vkin_b = af_p * (taua + taub) / 2.;
+        Va_const += Vkin_a; // kinetic contribution
+        Vb_const += Vkin_b; // kinetic contribution
 
         Va_const += beta_ * eF_; // mean-field contribution
         Vb_const += beta_ * eF_; // mean-field contribution
@@ -781,6 +786,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         t6=j_b_z[ixyz];
         // terms with ja^2
         t7 = p_regularization(na);
+        Vcurr_a = 0.;
+        Vcurr_b = 0.;
         if(t7!=0.0)
         {
             // SLDAE (spin-symmetry):
@@ -791,9 +798,10 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             // dalphp_dnb = af_p;
             // dalphm_dnb = 0.0;
             t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
-            Va_const+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7; // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
-            Va_const-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
-            Vb_const-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
+            Vcurr_a+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7;
+            // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
+            Vcurr_a-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
+            Vcurr_b-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
         }
         // terms with jb^2
         t7 = p_regularization(nb);
@@ -807,10 +815,12 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             // dalphp_dnb = af_p;
             // dalphm_dnb = 0.0;
             t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
-            Va_const-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
-            Vb_const+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
-            Vb_const-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
+            Vcurr_a-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
+            Vcurr_b+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
+            Vcurr_b-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
         }
+        Va_const+=Vcurr_a;
+        Vb_const+=Vcurr_b;
 #endif
 
         // prepare other variables for self-consistent process
@@ -829,10 +839,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
 
             // effective pairing coupling constants and pairing field
             if (RENORMALIZATION_SCHEME == 0) { // factor 2 for mu
-              lmu_sc = (2. * dc_mu_a - Va - v_ext_a + 2. * dc_mu_b - Vb - v_ext_b) / 2. + af_p * (taua + taub) / 2.;
-              // minus v_ext because of factor 2 in front of mu
+              lmu_sc = 2. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
             } else if (RENORMALIZATION_SCHEME == 1) {
-              lmu_sc = (dc_mu_a - Va + dc_mu_a - Vb) / 2. + af_p * (taua + taub) / 2.;
+              lmu_sc = 1. * analytic_mu - (Va-Vkin_a-Vcurr_a-v_ext_a + Vb-Vkin_b-Vcurr_b-v_ext_b) / 2.;
             } else {
               lmu_sc = 0.;
             }
@@ -892,8 +901,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         delta[ixyz] = ldelta;
 
         // potentials that do not require self-cosistent iteration
-        h_potentials.alpha_a[ixyz] = alpha_; //af_;
-        h_potentials.alpha_b[ixyz] = alpha_; //af_;
+        h_potentials.alpha_a[ixyz] = af_;
+        h_potentials.alpha_b[ixyz] = af_;
         // HERE
 
         t1 = polarization(na, nb); // = 0.;
