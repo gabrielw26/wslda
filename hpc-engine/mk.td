@@ -17,7 +17,7 @@ WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
-       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h ../VERSION.h
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h ../VERSION.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h
 
 WDATADEPS = wdata.h
@@ -26,7 +26,7 @@ WINTERPDEPS = winterp.h
 
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
 
-SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o
+SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o sldae_functional.o
 
 SRCS1D = ccpca.o ccpca_checkpoint.o
 NVCCSRCS1D = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o

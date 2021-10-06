@@ -1676,7 +1676,7 @@ int main( int argc , char ** argv )
 
         // ------------------ timing------------------
         rt_tot=rt_zheev+rt_dens+rt_pot+rt_other+rt_me+rt_redistrib;
-        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_zheev=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
+        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_diag=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
             rt_tot, rt_zheev, rt_zheev/rt_tot*100., rt_dens, rt_dens/rt_tot*100., rt_pot, rt_pot/rt_tot*100., rt_me, rt_me/rt_tot*100., rt_redistrib, rt_redistrib/rt_tot*100., rt_other, rt_other/rt_tot*100.);
         fflush(stdout);
 

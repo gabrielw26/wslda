@@ -36,6 +36,7 @@
 #include "wslda_reproducibility.h"
 
 int wsldapid; // process id - global variable
+int wsldapnp; // total number of processes - global variable
 #include "tdwslda_static_vars.h"
 #define printf wprintf
 #include "logger.h"
@@ -126,6 +127,7 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &ip ) ; /* id of process st 0 <= ip < np */
     wsldapid=ip; // save to global variable
+    wsldapnp=np; // save to global variable
     
     if(ip==0) wprintf("# START OF THE MAIN FUNCTION\n");
     
