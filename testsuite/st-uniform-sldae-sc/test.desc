@@ -1,0 +1,66 @@
+# ---------------------- COMPLEX ARITHMETICS -------------------------------
+# --------------------------------------------------------------------------
+# Spin symmetric system, noise, linear mixing
+# --------------------------------------------------------------------------
+tag: ss1-noise1-1d-lm
+exec: pwd
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input* .
+exec: echo "sclgth    -2.1" >> input.ss1.noise1.txt.lm
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: timeout 1200 mpirun -np 20 ./st-wslda-1d input.ss1.noise1.txt.lm
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
+tag: ss1-noise1-2d-lm
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c 2d
+test: st-wslda-2d
+exec: timeout 1200 mpirun -np 20 ./st-wslda-2d input.ss1.noise1.txt.lm
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
+tag: ss1-noise1-3d-lm
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c 3d
+test: st-wslda-3d
+exec: timeout 3600 mpirun -np 20 ./st-wslda-3d input.ss1.noise1.txt.lm
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
+
+# --------------------------------------------------------------------------
+# Spin symmetric system, noise, Broyden mixing
+# --------------------------------------------------------------------------
+tag: ss1-noise1-1d-br
+exec: pwd
+exec: cp ../st-templates-full/*.h .
+exec: cp ../st-templates-full/input* .
+exec: echo "sclgth    -2.1" >> input.ss1.noise1.txt.br
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: timeout 1200 mpirun -np 20 ./st-wslda-1d input.ss1.noise1.txt.br
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
+tag: ss1-noise1-2d-br
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c 2d
+test: st-wslda-2d
+exec: timeout 1200 mpirun -np 20 ./st-wslda-2d input.ss1.noise1.txt.br
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
+tag: ss1-noise1-3d-br
+exec: rm -rf test.ss1.noise1*
+exec: make -f ../st-templates-full/Makefile.c 3d
+test: st-wslda-3d
+exec: timeout 3600 mpirun -np 20 ./st-wslda-3d input.ss1.noise1.txt.br
+test: test.ss1.noise1_testsuite.ok
+diff: test.ss1.noise1.cmp test.ss1.noise1_uniform.ref
+
