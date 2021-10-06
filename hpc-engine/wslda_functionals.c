@@ -722,8 +722,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         myuidx+=ix;
     }
 //     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
-    
-    
+
+
     ixyz = 0;
     for(ix = 0; ix < lNX; ix++) for(iy = 0; iy < lNY; iy++) for(iz = 0; iz < lNZ; iz++)
     {
@@ -956,12 +956,12 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             h_potentials.V_b[ixyz] = 0.0;
             h_potentials.alpha_a[ixyz] = 0.0;
             h_potentials.alpha_b[ixyz] = 0.0;
-            h_potentials.A_a_x[ixyz]=0.0; 
-            h_potentials.A_a_y[ixyz]=0.0; 
-            h_potentials.A_a_z[ixyz]=0.0; 
-            h_potentials.A_b_x[ixyz]=0.0; 
-            h_potentials.A_b_y[ixyz]=0.0; 
-            h_potentials.A_b_z[ixyz]=0.0; 
+            h_potentials.A_a_x[ixyz]=0.0;
+            h_potentials.A_a_y[ixyz]=0.0;
+            h_potentials.A_a_z[ixyz]=0.0;
+            h_potentials.A_b_x[ixyz]=0.0;
+            h_potentials.A_b_y[ixyz]=0.0;
+            h_potentials.A_b_z[ixyz]=0.0;
         }
 
         ixyz++; // go to next lattice point
@@ -1051,7 +1051,8 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
 
         af_ = a_functional(x_, id);
-        bf_ = b_functional(x_, id);
+        //bf_ = b_functional(x_, id);
+        bf_ = b_functional_aps(x_, id);
 
 
         // current corrections
