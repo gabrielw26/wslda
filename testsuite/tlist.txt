@@ -20,6 +20,7 @@ st-uniform-sldae-elpa1-cpu
 st-uniform-aslda-sc
 st-uniform-slda-sc
 st-uniform-bdg-sc
+st-uniform-sldae-sc
 
 # -> checkpoint/restart
 st-checkpoint

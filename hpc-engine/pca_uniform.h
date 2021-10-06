@@ -1562,7 +1562,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     beta_p = dx_dnt_ * beta_parameter(1, x_, id);
     inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
     af_ = a_functional(x_, id);
-    bf_ = b_functional(x_, id);
+    // bf_ = b_functional(x_, id);
+    bf_ = b_functional_aps(x_, id);
     cf_ = c_functional(x_, id); // unrequired
     // definition independent of the functional and pairing form used
     af_p = (alpha_ - af_) / nt_;
@@ -1704,8 +1705,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
             // lambda_ = pcc_renormalization (x_, lmu_sc, id);
             p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
+            // ec = alpha_*kc*kc/2.0 - lmu_sc; // kc is fixed, and it will be translated into ec (do not work very well: probably wrong...?)
             kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
-            //ec = alpha_*kc*kc/2.0 - lmu_sc; // kc is fixed, and it will be translated into ec (do not work very well: probably wrong...?)
             if (lmu_sc >= 0) {
               lambda_ = (kc + p0) / (kc - p0);
               lambda_ = 1. - p0 / (2. * kc) * log(lambda_);

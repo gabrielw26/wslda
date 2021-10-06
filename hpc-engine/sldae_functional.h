@@ -114,6 +114,7 @@ double inverse_gamma_parameter (int dn, double _x, int * id);
 // ---------------------------------------------------------------------------
 double a_functional (double _x, int * id);
 double b_functional (double _x, int * id);
+double b_functional_aps (double _x, int * id);
 double c_functional (double _x, int * id);
 // ---------------------------------------------------------------------------
 double pcc_renormalization(double _x, double lmu, int * id);
