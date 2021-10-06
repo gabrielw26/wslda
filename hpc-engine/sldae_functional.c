@@ -981,7 +981,14 @@ c_functional (double _x, int id [])
 // ---------------------------------------------------------------------------
 // pairing coupling constant regularization routine
 // ---------------------------------------------------------------------------
+#ifdef TDWSLDA
+#include "pca_settings.h"
+#include "stdio.h"
+#include "pca_utils.h"
+#define dc_ec md.ec
+#else
 extern double dc_ec;
+#endif
 
 double
 pcc_renormalization(double _x, double lmu, int id [])

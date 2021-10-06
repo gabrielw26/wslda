@@ -63,6 +63,11 @@
 #define A2 -0.532
 #endif
 
+#if FUNCTIONAL==SLDAE
+// effective mass - not 1.0 then current corrections are needed!
+#define CURRENT_CORRECTIONS
+#endif
+
 #if FUNCTIONAL==SLDA
 // effective mass - equal 1.0 then no current corrections
 // activate this flag to skip computation of gradients of wf - significant spped up
