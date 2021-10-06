@@ -811,10 +811,10 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // dalphp_dnb = af_p;
                 // dalphm_dnb = 0.0;
                 t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
-                Vcurr_a+=( (af_+0.0-1.0)/na - (af_p+0.0) ) *t7;
+                Vcurr_a+=( (af_-1.0)/na - af_p ) *t7;
                 // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
-                Vcurr_a-=der_p_regularization(na)*(af_+0.0-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
-                Vcurr_b-=(af_+0.0) *t7; // -dalpha_dnb*fr(na)*ja^2/2na
+                Vcurr_a-=der_p_regularization(na)*(af_-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
+                Vcurr_b-= af_p *t7; // -dalpha_dnb*fr(na)*ja^2/2na
             }
             // terms with jb^2
             t7 = p_regularization(nb);
@@ -828,9 +828,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // dalphp_dnb = af_p;
                 // dalphm_dnb = 0.0;
                 t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
-                Vcurr_a-=(af_p-0.0) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
-                Vcurr_b+=( (af_-0.0-1.0)/nb - (af_p-0.0-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
-                Vcurr_b-=der_p_regularization(nb)*(af_-0.0-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
+                Vcurr_a-= af_p *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
+                Vcurr_b+=( (af_-1.0)/nb - af_p ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
+                Vcurr_b-=der_p_regularization(nb)*(af_-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
             }
             Va_const+=Vcurr_a;
             Vb_const+=Vcurr_b;
@@ -853,14 +853,20 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // effective pairing coupling constants and pairing field
                 if (RENORMALIZATION_SCHEME == 0) { // factor 2 for (local) mu
                 lmu_sc = 2. * (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.
-                        - (Va - Vkin_a + Vb - Vkin_b) / 2.;
+                        - (Va - v_ext_a - Vkin_a + Vb - v_ext_b - Vkin_b) / 2.;
                 } else if (RENORMALIZATION_SCHEME == 1) {
                 lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
                 } else {
                 lmu_sc = 0.;
                 }
-                // we must remove kinetic part of the potential
+                // in case of RENORMALIZATION_SCHEME == 0
+                // We must remove kinetic part of the potential
                 // due to the fact that af_ != alpha_ (warning for ASLDA...)
+                // Then we remove v_ext contribution only to the local
+                // chemical potential
+                // Also, do not remove currents contribution because
+                // V - Vkin remove properly galilean covarient terms, ie.
+                // af_p * (tau - j^2/n) / 2.
 
                 //lambda_ = pcc_renormalization (x_, lmu_sc, id);
                 p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
