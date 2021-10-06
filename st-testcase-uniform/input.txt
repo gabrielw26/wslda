@@ -92,6 +92,6 @@ nb                      8
 # init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
 # init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
-# init0maxiter            1000   # maximum number of iterations, default=maxiters
+init0maxiter            1000   # maximum number of iterations, default=maxiters
 init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
 init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file
