@@ -812,9 +812,11 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // dalphm_dnb = 0.0;
                 t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
                 Vcurr_a+=( (af_-1.0)/na - af_p ) *t7;
+                Vkin_a -= af_p *t7; // @*
                 // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
                 Vcurr_a-=der_p_regularization(na)*(af_-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
                 Vcurr_b-= af_p *t7; // -dalpha_dnb*fr(na)*ja^2/2na
+                Vkin_b -= af_p *t7; // @*
             }
             // terms with jb^2
             t7 = p_regularization(nb);
@@ -829,11 +831,14 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // dalphm_dnb = 0.0;
                 t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
                 Vcurr_a-= af_p *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
+                Vkin_a -= af_p *t7; // @*
                 Vcurr_b+=( (af_-1.0)/nb - af_p ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
+                Vkin_b -= af_p *t7; // @*
                 Vcurr_b-=der_p_regularization(nb)*(af_-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
             }
             Va_const+=Vcurr_a;
             Vb_const+=Vcurr_b;
+            // @* for in-medium renormalization (keep Galilean invariance)
     #endif
 
             // prepare other variables for self-consistent process
@@ -865,8 +870,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 // Then we remove v_ext contribution only to the local
                 // chemical potential
                 // Also, do not remove currents contribution because
-                // V - Vkin remove properly galilean covarient terms, ie.
-                // af_p * (tau - j^2/n) / 2.
+                // Vkin remove properly galilean covariant terms, ie.
+                // V_kin = af_p * (tau - j^2/n) / 2.
 
                 //lambda_ = pcc_renormalization (x_, lmu_sc, id);
                 p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
