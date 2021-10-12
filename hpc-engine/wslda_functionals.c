@@ -718,7 +718,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     for(i=0; i<=wsldapid; i++)
     {
         mylidx=myuidx;
-        getnwfip( wsldapid , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
+        getnwfip( i , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
         myuidx+=ix;
     }
 //     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
