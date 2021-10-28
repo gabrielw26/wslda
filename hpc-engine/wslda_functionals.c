@@ -35,7 +35,7 @@ extern int wsldapid; // process id - global variable
 #define UD_EPSILON 1.0e-12
 
 // minimal density and coupling constant to avoid numerical issues
-#define DENSITY_EPSILON 1.0e-6
+#define DENSITY_EPSILON DENSEPSILON
 #define CC_EPSILON 1.0e-16
 // declaration of external variable use in pairing renormaization scheme
 
@@ -750,9 +750,11 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             eF_ = pow(kF_, 2) / 2.;
             as_ = md.sclgth; // s-wave scattering length
             x_ = fabs(as_ * kF_); // density-dependent coupling constant
-            if (nt_ > 1.e-4) {
-              dx_dnt_ = x_ / (3. * nt_);
-              deF_dnt_ = pow(kF_, 2) / (3. * nt_);
+            t1 = p_regularization(nt_); // see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
+                                        // t1 is f_reg function
+            if (t1>0.0) {
+              dx_dnt_ = t1 * x_ / (3. * nt_);
+              deF_dnt_ = t1 * pow(kF_, 2) / (3. * nt_);
             } else {
               dx_dnt_ = 0.00;
               deF_dnt_ = 0.00;
@@ -778,8 +780,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             //&& bf_ = b_functional(x_, id);
             //&& cf_ = c_functional(x_, id); // unrequired
             // definition independent of the functional and pairing form used
-            if (nt_ > 1.e-4) {
-              af_p = (alpha_ - af_) / nt_;
+            // t1 is f_reg function computed above
+            if (t1>0.0) { 
+              af_p = t1*(alpha_ - af_) / nt_;
             } else {
               af_p = 0.00;
             }
