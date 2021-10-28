@@ -781,7 +781,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             //&& cf_ = c_functional(x_, id); // unrequired
             // definition independent of the functional and pairing form used
             // t1 is f_reg function computed above
-            if (t1>0.0) { 
+            if (t1>0.0) {
               af_p = t1*(alpha_ - af_) / nt_;
             } else {
               af_p = 0.00;
@@ -904,11 +904,11 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 inverse_gamma_eff = inverse_gamma_ *
                 (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
 
-                if (nt_ > 1.e-4) {
-                  ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
+                if (p_regularization(nt_) > 0.0) {
+                  ctilde_p = pow(p_regularization(nt_), 2./3.)*inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
                   alpha_p * nt_1o3 * inverse_gamma_;
                 } else {
-                  ctilde_p = 0.00;
+                  ctilde_p = alpha_p * nt_1o3 * inverse_gamma_;
                 }
 
 
