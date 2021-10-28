@@ -948,6 +948,22 @@ b_functional (double _x, int id [])
   return r_;
 }
 
+
+// B_x interpolation using default APS[x,y,z]
+// parametrization of the functional
+double
+b_functional_aps (double _x, int id [])
+{
+  int fid = id [0]; // FUNCTIONAL_ID
+  int pid = id [1]; // PAIRING_ID
+
+  double r_ = -0.281863;
+  r_ *= (1.26858*_x+1.46573*pow(_x,2)+0.544388*pow(_x,3)+0.130207*pow(_x,4));
+  r_ /= (1+2.26186*_x+1.11585*pow(_x,2)+1.11477*pow(_x,3)+0.130207*pow(_x,4));
+
+  return r_;
+}
+
 // C_x^{-1} = \sum_n (-x)^n (1!/(1+n)!) \partial_n [1 / \gamma_x]
 double
 c_functional (double _x, int id [])
@@ -981,7 +997,14 @@ c_functional (double _x, int id [])
 // ---------------------------------------------------------------------------
 // pairing coupling constant regularization routine
 // ---------------------------------------------------------------------------
+#ifdef TDWSLDA
+#include "pca_settings.h"
+#include "stdio.h"
+#include "pca_utils.h"
+#define dc_ec md.ec
+#else
 extern double dc_ec;
+#endif
 
 double
 pcc_renormalization(double _x, double lmu, int id [])

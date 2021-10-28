@@ -15,6 +15,7 @@
 #include <mpi.h>
 
 int wsldapid; // process id - global variable
+int wsldapnp; // total number of processes - global variable
 
 #include "wdata.h"
 #include "wderiv.h"
@@ -226,6 +227,7 @@ int main( int argc , char ** argv )
     MPI_Comm_size( MPI_COMM_WORLD , &np ) ; /* total number of processes */
     MPI_Comm_rank( MPI_COMM_WORLD , &iam ) ; /* id of process st 0 <= iam < np */
     wsldapid=iam; // save to global variable
+    wsldapnp=np; // save to global variable
 
     if(iam==0) wprintf("# START OF THE MAIN FUNCTION\n");
 
@@ -1461,6 +1463,9 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( compute_potentials(it, densall, potsall) );
+#if FUNCTIONAL==SLDAE
+        MPI_Allreduce( MPI_IN_PLACE, h_potentials, POTDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
@@ -1567,7 +1572,6 @@ int main( int argc , char ** argv )
         	if (densall.tau_a[ixyz] < 0.) densall.tau_a[ixyz] = dens_min;
         	if (densall.tau_b[ixyz] < 0.) densall.tau_b[ixyz] = dens_min;
         }
-        rt_other+=e_t(0);
 
         // ------------------------ energy ----------------------
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
@@ -1577,6 +1581,7 @@ int main( int argc , char ** argv )
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g\n",
             "S/NkB", S/(npart[SPINA]+npart[SPINB]), S_old/(npart_old[SPINA]+npart_old[SPINB]),
                            (S/(npart[SPINA]+npart[SPINB])-S_old/(npart_old[SPINA]+npart_old[SPINB])));
+        rt_other+=e_t(0);
 
         // ------------------ angular momentum ------------------
         b_t();
@@ -1671,7 +1676,7 @@ int main( int argc , char ** argv )
 
         // ------------------ timing------------------
         rt_tot=rt_zheev+rt_dens+rt_pot+rt_other+rt_me+rt_redistrib;
-        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_zheev=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
+        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_diag=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
             rt_tot, rt_zheev, rt_zheev/rt_tot*100., rt_dens, rt_dens/rt_tot*100., rt_pot, rt_pot/rt_tot*100., rt_me, rt_me/rt_tot*100., rt_redistrib, rt_redistrib/rt_tot*100., rt_other, rt_other/rt_tot*100.);
         fflush(stdout);
 

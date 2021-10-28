@@ -761,10 +761,6 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
         {
             i=wslda_kmodes_1d_getcnt2d(kvecs[ikz].ky,kvecs[ikz].kz, kytmp, kztmp);
             tnwf+=nwf_per_kyz[ikz]*i;
-            
-//             int ii;
-//             for(ii=0; ii<i; ii++)
-//                 wprintf("TTT: %6d %12.8f %12.8f %6d %6d %12.8f %12.8f\n", ikz, kvecs[ikz].ky,kvecs[ikz].kz, i, ii, kytmp[ii], kztmp[ii]); // TODO
         }
     }
     else if(codedim==3)
