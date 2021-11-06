@@ -50,9 +50,9 @@ void report_error(int errcode, FILE *stream)
             break;
             
         case WSLDA_ERR_CANNOT_OVERWRITE:
-            wfprintf(stream, "\tAttempt of overwriting existing file has taken.\n");
+            wfprintf(stream, "\tAn attempt of overwriting existing file has taken.\n");
             wfprintf(stream, "\tInput file tag overwrite=0 does not allow for this.\n");
-            wfprintf(stream, "\tChange overwrite tag or outprefix tag in input file.\n");
+            wfprintf(stream, "\tChange overwrite tag or outprefix tag in the input file.\n");
             break;
             
         case WSLDA_ERR_BINARY_FILE_CORRUPTED:

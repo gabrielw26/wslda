@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <math.h>
 #include <complex.h>
+#include <unistd.h>
 
 #define ALLOCATE_MD_STRUCTURE
 #include "pca_utils.h"
@@ -114,6 +115,12 @@ void replace_str(char *str,char *org,char *rep)
     strcat(ToRep,Rest);
 
     free(Rest);
+}
+
+// Checks if file exists
+static int _exists(const char *filename) 
+{  
+    return !access(filename, F_OK);  
 }
 
 /**
@@ -389,6 +396,16 @@ int parse_input_file(char * file_name)
 
     // prepare for wprintf()
     sprintf(md.stdoutfile, "%s.stdout", md.outprefix);
+    if(md.overwrite==0 && _exists(md.stdoutfile))
+    {
+        printf("==========================================================================\n");
+        printf("WSLDA ERROR DESCRIPTION:\n");
+        printf("\tAttempt of overwriting existing file `%s`.\n", md.stdoutfile);
+        printf("\tInput file tag overwrite=0 does not allow for this.\n");
+        printf("\tChange overwrite tag or outprefix tag in the input file.\n");
+        return 0;
+    }
+    
     FILE * f = fopen(md.stdoutfile, "w"); // clear file
     fclose(f);
     md.initialized=1;
