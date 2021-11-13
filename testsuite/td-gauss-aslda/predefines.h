@@ -25,8 +25,8 @@
  *      you MUST set aBdG value in input file when using this functional.
  * */
 // #define FUNCTIONAL SLDA
-// #define FUNCTIONAL ASLDA
-#define FUNCTIONAL BDG
+#define FUNCTIONAL ASLDA
+// #define FUNCTIONAL BDG
 
 /**
  * Select which external potentials you want to use in simulations.
