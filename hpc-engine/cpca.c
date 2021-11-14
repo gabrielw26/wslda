@@ -237,7 +237,9 @@ int main( int argc , char ** argv )
 #elif FUNCTIONAL==SLDA    
     if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
 #elif FUNCTIONAL==ASLDA    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");    
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
+#elif FUNCTIONAL==SLDAE
+    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
 #elif FUNCTIONAL==CUSTOMEDF    
     if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
 #endif
@@ -273,6 +275,8 @@ int main( int argc , char ** argv )
             // Generate initial state for testing
 #if FUNCTIONAL==BDG
             cpu_exec( solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
+#elif FUNCTIONAL==SLDAE
+            solve_uniform_problem_sldae(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0);
 #else
             cpu_exec( solve_uniform_problem(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
 #endif
@@ -776,7 +780,7 @@ int main( int argc , char ** argv )
     md.ec=ec;
     TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
-    gpu_exec( memcopy_const_BdG(md.aBdG) );
+    gpu_exec( memcopy_const_BdG(md.sclgth) );
     
     if(ip==0) wprintf("# DONE.\n"); fflush(stdout);
     

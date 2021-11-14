@@ -28,7 +28,7 @@ __constant__ double dc_dt; // itegration time step
 __constant__ double dc_kF; // reference kF
 __constant__ double dc_eF; // reference eF (=kF^2/2)
 __constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2)) 
-__constant__ double dc_gBdG;
+__constant__ double dc_sclgth;
 
 __constant__ void *dc_extra_data;
 __constant__ size_t dc_extra_data_size;
@@ -97,7 +97,7 @@ extern "C" int memcopy_const_params(double *params)
 extern "C" int memcopy_const_BdG(double aBdG)
 {
     double gBdG = 4.0*M_PI*aBdG;
-    if( cudaMemcpyToSymbol(dc_gBdG, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
+    if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
     
     return 0;
 }

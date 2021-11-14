@@ -149,3 +149,7 @@ lib/wderiv/c/test-wderiv2D
 lib/wderiv/c/test-wderiv1D
 
 lib/wderiv/c/test-wderiv
+
+td-project-template/td-wslda-3d
+
+td-project-template/td-wslda-1d

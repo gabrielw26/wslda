@@ -7,7 +7,33 @@
  * 
  * !!! READ THIS BEFORE YOU START TO IMPLEMENT NEW FUNCTIONAL !!!
  * 
-In order to define a functional you must provide body of two functions
+ * To define a functional, you must provide a body of two functions:
+ *  1. tdwslda_compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double cccoeff):
+ *     where:
+ *     - it is time index and time=dc_t0 + dc_dt*it;
+ *     - h_densities is structure storing pointers to density (INPUT), 
+ *          see: hpc-engine/wslda_potdens.h 
+ *     - h_potentials is structure storing pointers to potentials (INPUT/OUTPUT). 
+ *          On input: potentials from previews iteration
+ *          On output: you need to provide values of updated potentials
+ *          NOTE:
+ *          -- V_a and V_b: must contain sum of external potential and mean field 
+ *             see: hpc-engine/wslda_potdens.h 
+ *     - cccoeff is external coefficient controlled from input file via ccstart, ccstop, and ccswitch. 
+ *           Precisely: cccoeff=h_smooth_step(t0+it*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
+ *           We keep it due to legacy issues.
+ * 
+ *  2. tdwslda_compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, // < INPUT
+ *                            double *E_kin, double *E_pot, double *E_pair, double *E_curr)    // < OUTPUT
+ *     This function computes energy contributions to the total energy. Arguments are analogus to tdwslda_compute_potentials(…) function. 
+ * 
+ *  Other Info:
+ *     - u_ext(ix,iy,iz,it,SPINA): 
+ *          it is equivalent to: 
+ *        v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+ *     - Use CODEDIM macro-variable to identify dimensionality of the code.
+ *     - Use  decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i) to decompose global index into lattice coordinate. 
+ *          In case of 2D code iz will be set to iz=0, and for 1D code iz and iy will be set iz=iy=0. 
  * */  
 
 // DO NOT REMOVE!
@@ -336,7 +362,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         Va=u_ext(ix,iy,iz,it,SPINA);
         Vb=u_ext(ix,iy,iz,it,SPINB);
         
-        t5 = 1.0/ (dc_gBdG);
+        t5 = 1.0/ (dc_sclgth);
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
   
@@ -428,6 +454,91 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
 // ----------------------------------- SLDAE ------------------------------------------
 // ------------------------------------------------------------------------------------
 #if FUNCTIONAL==SLDAE
+__global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double cccoeff)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+//     double na,nb;
+//     double Va_ext,Vb_ext;
+    
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i); // decode cartesian coordinates
+        
+//         // external potential
+//         Va_ext=u_ext(ix,iy,iz,it,SPINA);
+//         Vb_ext=u_ext(ix,iy,iz,it,SPINB);
+//         
+//         // read densities
+//         na=h_densities.rho_a[ixyz];
+//         nb=h_densities.rho_b[ixyz];
+        
+//         // save potential to global memory
+//         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
+//         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential 
+//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
+//         ...
+    }
+}
+
+
+__global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, // <-- INPUT
+                                       double *E_kin, double *E_pot, double *E_pair, double *E_curr)    // <- OUTPUT
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    
+    double na, nb;
+    double taua, taub;
+    double jxa, jya, jza, jxb, jyb, jzb;
+    
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        // densities
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
+        
+        // kinetic energy
+        taua=h_densities.tau_a[ixyz]; // tau_a
+        taub=h_densities.tau_b[ixyz]; // tau_b  
+        
+        // currents
+#if CODEDIM>=1
+        jxa=h_densities.j_a_x[ixyz];
+        jxb=h_densities.j_b_x[ixyz];
+#endif
+#if CODEDIM>=2
+        jya=h_densities.j_a_y[ixyz];
+        jyb=h_densities.j_b_y[ixyz];
+#else        
+        jya=0.0;
+        jyb=0.0;
+#endif
+#if CODEDIM>=3
+        jza=h_densities.j_a_z[ixyz];
+        jzb=h_densities.j_b_z[ixyz];
+#else
+        jza=0.0;
+        jzb=0.0;
+#endif
+        taua-=p_regularization(na)*(jxa*jxa+jya*jya+jza*jza)/na; // -ja^2/na: correction for tilde{tau}_a
+        taub-=p_regularization(nb)*(jxb*jxb+jyb*jyb+jzb*jzb)/nb; // -jb^2/nb: correction for tilde{tau}_b
+
+        // galilean invariant contribution
+        E_kin[ixyz]=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub)*VOLUME_ELEMENT;
+        
+        // potential energy
+        E_pot[ixyz]=0.0;
+        
+        // pairing energy
+        E_pair[ixyz]=(h_potentials.delta[ixyz]*thrust::conj(h_densities.nu[ixyz])).real()*(-1.0)*VOLUME_ELEMENT;
+        
+        // flow energy
+        E_curr[ixyz]= p_regularization(na)*(jxa*jxa + jya*jya + jza*jza)/(2.*na)*VOLUME_ELEMENT  
+                    + p_regularization(nb)*(jxb*jxb + jyb*jyb + jzb*jzb)/(2.*nb)*VOLUME_ELEMENT;
+
+    }
+}
 #endif
 
 // ------------------------------------------------------------------------------------

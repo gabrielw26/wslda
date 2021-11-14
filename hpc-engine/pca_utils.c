@@ -655,6 +655,11 @@ int wslda_check_settings()
 {
 #if FUNCTIONAL==BDG
     if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aBdG;
+#endif
+#if FUNCTIONAL==SLDAE
+    if(md.aSLDAe==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aSLDAe;
 #endif
     return 0;
 }
