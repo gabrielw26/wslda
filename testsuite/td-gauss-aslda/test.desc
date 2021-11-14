@@ -24,7 +24,7 @@ exec: cp input.txt.2 input.ss0.txt
 exec: rm -rf test.ss0-2d*
 exec: echo "outprefix  test.ss0-2d" >> input.ss0.txt
 exec: echo "params7       1" >> input.ss0.txt
-exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.ss0.txt
+exec: timeout 4800 mpirun -np 8 ./td-wslda-2d input.ss0.txt
 test: test.ss0-2d_testsuite.ok
 diff: test.ss0-2d.cmp test.ss0-2d.cmp.ref
 
@@ -36,7 +36,7 @@ exec: cp input.txt.3 input.ss0.txt
 exec: rm -rf test.ss0-3d*
 exec: echo "outprefix  test.ss0-3d" >> input.ss0.txt
 exec: echo "params7       1" >> input.ss0.txt
-exec: timeout 3600 mpirun -np 8 ./td-wslda-3d input.ss0.txt
+exec: timeout 7200 mpirun -np 8 ./td-wslda-3d input.ss0.txt
 test: test.ss0-3d_testsuite.ok
 diff: test.ss0-3d.cmp test.ss0-3d.cmp.ref
 
@@ -63,7 +63,7 @@ test: td-wslda-2d
 exec: cp input.txt.2 input.ss1.txt
 exec: rm -rf test.ss1-2d*
 exec: echo "outprefix  test.ss1-2d" >> input.ss1.txt
-exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.ss1.txt
+exec: timeout 4800 mpirun -np 8 ./td-wslda-2d input.ss1.txt
 test: test.ss1-2d_testsuite.ok
 diff: test.ss1-2d.cmp test.ss1-2d.cmp.ref
 
@@ -74,6 +74,6 @@ test: td-wslda-3d
 exec: cp input.txt.3 input.ss1.txt
 exec: rm -rf test.ss1-3d*
 exec: echo "outprefix  test.ss1-3d" >> input.ss1.txt
-exec: timeout 3600 mpirun -np 8 ./td-wslda-3d input.ss1.txt
+exec: timeout 7200 mpirun -np 8 ./td-wslda-3d input.ss1.txt
 test: test.ss1-3d_testsuite.ok
 diff: test.ss1-3d.cmp test.ss1-3d.cmp.ref
