@@ -1,1 +1,3 @@
-st-uniform-bdg-sc
+td-gauss-bdg
+td-gauss-slda
+td-gauss-aslda

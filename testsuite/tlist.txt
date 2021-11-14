@@ -30,6 +30,12 @@ st-checkpoint
 td-uniform-aslda
 td-uniform-slda
 td-uniform-bdg
+
+# -> test nonuniform case
+td-gauss-bdg
+td-gauss-slda
+td-gauss-aslda
+
 # -> test quantum friction algorithm
 td-quantum-friction
 

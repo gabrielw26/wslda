@@ -364,7 +364,7 @@ int parse_input_file(char * file_name)
 #ifdef WSLDA
                         replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #else
-                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #endif
 //                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
@@ -655,6 +655,11 @@ int wslda_check_settings()
 {
 #if FUNCTIONAL==BDG
     if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aBdG;
+#endif
+#if FUNCTIONAL==SLDAE
+    if(md.aSLDAe==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aSLDAe;
 #endif
     return 0;
 }
