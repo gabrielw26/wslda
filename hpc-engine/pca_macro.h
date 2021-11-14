@@ -150,4 +150,4 @@
 #define ixy2ixiy2dD2Z(ixy,_ix,_iy) \
     _ix=ixy/(NY/2+1);              \
     _iy=ixy-_ix * (NY/2+1); 
-
+    

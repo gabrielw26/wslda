@@ -250,9 +250,8 @@ int main( int argc , char ** argv )
     gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities) );
     
     // potentials
-    gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_potentials) ); // FIXME: only 4*NXY is in use!
-    for(i=0; i<12*NXY; i++) h_potentials[i]=0.0; // reset
-    gpu_exec(     gpu_malloc((size_t)4*NXY*sizeof(double), (void **)&d_potentials) );   
+    gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_potentials) );
+    gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_potentials) );   
     
     // energy
     gpu_exec( host_malloc_pl((size_t)TDWSLDAITEMS*sizeof(double), (void **)&h_energy) );
@@ -260,6 +259,7 @@ int main( int argc , char ** argv )
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXY);
     wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY, mu);
+    reset_potentials(potsall);
     
     // ====================================================================================
     // ================================ INITIAL STATE =====================================
@@ -271,7 +271,7 @@ int main( int argc , char ** argv )
             if(ip==0) wprintf("# CREATING UNIFORM SOLUTION...\n");
             
             // Generate initial state for testing
-#ifdef BDG_MODE
+#if FUNCTIONAL==BDG
             cpu_exec( solve_uniform_problem_bdg(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
 #else
             cpu_exec( solve_uniform_problem(md.init0Na/LXYZ, md.init0Nb/LXYZ, &nwf, ip==0) );
@@ -643,7 +643,7 @@ int main( int argc , char ** argv )
 #if INTEGRATION_SCHEME==AB3AM4
          cpu_exec( load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                   d_wf, d_fkm1, d_fkm2, d_fkm3, 
-		  d_potentials, &t0, 
+		  d_potentials, &t0, // FIXME
                   &nwf, &nwfip,
                   h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,  
 		  HowMany) );
@@ -651,7 +651,7 @@ int main( int argc , char ** argv )
 #elif INTEGRATION_SCHEME==AB4AM5
         cpu_exec( load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                     d_potentials, &t0,
+                     d_potentials, &t0, // FIXME
                      &nwf, &nwfip,
                      h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
                      HowMany) );
@@ -689,7 +689,7 @@ int main( int argc , char ** argv )
 #endif
 
         // copy potentials
-        gpu_exec( memcopy_host2gpu(h_potentials, d_potentials,  (size_t)4*NXY*sizeof(double)) );  
+        gpu_exec( memcopy_host2gpu(h_potentials, d_potentials,  (size_t)12*NXY*sizeof(double)) );  
     }
     
     // copy weights
@@ -776,10 +776,7 @@ int main( int argc , char ** argv )
     md.ec=ec;
     TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
-    
-#ifdef BDG_MODE   
     gpu_exec( memcopy_const_BdG(md.aBdG) );
-#endif
     
     if(ip==0) wprintf("# DONE.\n"); fflush(stdout);
     
@@ -894,7 +891,7 @@ int main( int argc , char ** argv )
     MPI_Barrier(MPI_COMM_WORLD);
     
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
-    gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );
+    gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXY*sizeof(double)) );
     set_ptr_d_delta(d_potentials+2*NXY);
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-2d") );
@@ -1170,7 +1167,7 @@ int main( int argc , char ** argv )
         // energy
         gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)TDWSLDAITEMS*sizeof(double)) );   
         // potentials
-        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
+        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXY*sizeof(double)) );     
         // densities - they are in h_densities
     
         // report result
@@ -1359,7 +1356,7 @@ int main( int argc , char ** argv )
         // energy
         gpu_exec( memcopy_gpu2host(d_workarea, h_energy,  (size_t)TDWSLDAITEMS*sizeof(double)) );   
         // potentials
-        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
+        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXY*sizeof(double)) );     
         // densities - they are in h_densities
         
         rt=e_t(0); // get timing
@@ -1392,7 +1389,7 @@ int main( int argc , char ** argv )
         
         // add binary data
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
-        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );
+        gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXY*sizeof(double)) );
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-2d") );
                 
@@ -1433,7 +1430,7 @@ int main( int argc , char ** argv )
 #if INTEGRATION_SCHEME==AB3AM4
         save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
                     d_wf, d_fkm1, d_fkm2, d_fkm3,
-                    d_potentials, &time, 
+                    d_potentials, &time, // FIXME
             nwf, nwfip,
             h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
             HowMany);
@@ -1441,7 +1438,7 @@ int main( int argc , char ** argv )
 #elif INTEGRATION_SCHEME==AB4AM5            
         save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
                     d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                    d_potentials, &time,
+                    d_potentials, &time, // FIXME
                     nwf, nwfip,
                     h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
                     HowMany);

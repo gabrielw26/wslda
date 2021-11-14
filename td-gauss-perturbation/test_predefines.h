@@ -1,13 +1,18 @@
 /**
+ * W-SLDA Toolkit
+ * Engine version: 2021.11.12
+ * */
+
+/**
  * Define lattice size and lattice spacing.
  * */
-#define NX 8
+#define NX 48
 #define NY 10
-#define NZ 12
+#define NZ 8
 
-#define DX 1.0
-#define DY 1.0
-#define DZ 1.0
+#define DX 1.1
+#define DY 1.1
+#define DZ 1.1
 
 /**
  * Select functional:
@@ -32,9 +37,9 @@
  *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
+// #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL SLDAE
-// #define FUNCTIONAL BDG
+#define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
 
 /**

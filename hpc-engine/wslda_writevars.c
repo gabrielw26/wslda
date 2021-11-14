@@ -218,7 +218,6 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             wdata_variable va = {"nu", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
             wdata_add_variable(&tmd, &va);
         }
-#ifdef WSLDA
         else if(strcmp (lvars[i],"alpha") == 0)
         {
             wdata_variable va = {"alpha_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
@@ -237,7 +236,6 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
             else                wdata_add_link(&tmd, &l);
         }
-#endif
         
     }
     
@@ -405,12 +403,10 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             ierr = wdata_write_cycle(wdmd, "velocity_ext_b", towrt);
             free(towrt);
         }
-#ifdef WSLDA
         else if (strcmp (wdmd->var[ivar].name,"alpha_a") == 0) ierr = wdata_write_cycle(wdmd, "alpha_a", h_potentials.alpha_a);
         else if (strcmp (wdmd->var[ivar].name,"alpha_b") == 0) ierr = wdata_write_cycle(wdmd, "alpha_b", h_potentials.alpha_b);
         else if (strcmp (wdmd->var[ivar].name,"A_a") == 0) ierr = wdata_write_cycle(wdmd, "A_a", h_potentials.A_a_x);
         else if (strcmp (wdmd->var[ivar].name,"A_b") == 0) ierr = wdata_write_cycle(wdmd, "A_b", h_potentials.A_b_x);
-#endif
         
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }

@@ -364,7 +364,7 @@ int parse_input_file(char * file_name)
 #ifdef WSLDA
                         replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #else
-                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #endif
 //                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;

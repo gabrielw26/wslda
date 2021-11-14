@@ -1,3 +1,23 @@
+/**
+ * W-SLDA Toolkit
+ * Engine version: 2021.11.12
+ * */
+
+/**
+ * Switch function - performs switch in time interval [0-T]
+ * */
+__device__ __host__ inline double switch_function(double t, double T, double alpha)
+{
+    return 0.5*( 1.0+tanh( alpha*tan( M_PI_2*( 2.0*t/T-1.0 ) ) ) );
+}
+
+__device__ __host__ inline double smooth_step(double t, double step_start, double step_stop, double T, double alpha)
+{
+    if(t<=step_start || t>=step_stop) return 0.0; 
+    if(t>=step_start+T && t<=step_stop-T) return 1.0;
+    if(t>step_start && t<step_start+T) return switch_function(t-step_start, T, alpha);
+    else return 1.0-switch_function(t-step_stop+T, T, alpha);
+}
 
 /** 
  * EXTERNAL POTENTIAL V_ext
@@ -15,14 +35,22 @@
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
-//     double x = DX*(ix-NX/2);
-//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
-//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
-//     double t = dc_t0 + dc_dt*it; // time
+    double x = DX*(ix-NX/2);
+    double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+    double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+    double t = dc_t0 + dc_dt*it; // time
 
     // ADD HERE FORMULA FOR V_ext(r)
-    double V_ext = 0.0;
-
+    double _w = params[10]; // width, in lattice unit
+    double _a = params[11]; // amplitude, in eF unit
+    double s = smooth_step(t, params[12], params[13], params[14], 1.0);
+    
+    double V_ext;
+    V_ext = -1.0*_a*s*exp(-0.5*pow(x/_w,2)); // attractive
+    
+    if(spin==SPINB && params[15]>0.5) // change sign
+        V_ext*=-1.0;
+        
     return V_ext; 
 }
  
@@ -102,6 +130,12 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
 extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
+    double eF = 0.5*kF[0]*kF[0];
+    params[10] /= kF[0]; // sigma
+    params[11] *= eF; // amplitude
+    params[12]/=eF; 
+    params[13]/=eF;
+    params[14]/=eF;
 
 }
 
@@ -124,7 +158,7 @@ __global__ void modify_potentials(int it, wslda_density h_densities, wslda_poten
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
     
-    if(ixyz<NUMBER_ELEMENT)
+    if(ixyz<BLOCKLENGTH)
     {
         // decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i);
         // // Now ix, iy, iz keeps lattice coordinate. 

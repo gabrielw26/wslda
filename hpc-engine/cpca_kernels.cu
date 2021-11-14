@@ -9,9 +9,13 @@
 typedef thrust::complex<double> Complex;
 
 #include "pca_settings.h"
+#define CODEDIM 2
 #include "pca_macro.h"
 #include "pca_edf.h"
 #include "wslda_cuda_utils.h"
+#define double_complex Complex
+#define __externc
+#include "wslda_potdens.h"
 
 // ===========================================================================
 // ============================ CONSTANTS ====================================
@@ -24,10 +28,7 @@ __constant__ double dc_dt; // itegration time step
 __constant__ double dc_kF; // reference kF
 __constant__ double dc_eF; // reference eF (=kF^2/2)
 __constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2)) 
-
-#ifdef BDG_MODE
 __constant__ double dc_gBdG;
-#endif
 
 __constant__ void *dc_extra_data;
 __constant__ size_t dc_extra_data_size;
@@ -57,17 +58,10 @@ __constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input 
 #define macro_delta_ext(ix, iy, iz, it, delta) Complex(0.0,0.0)
 #endif 
 
-#else
-
-#include "pca_uext.h"
-
-#ifdef ENABLE_DELTA_EXT
-#define macro_delta_ext(ix, iy, iz, it, delta) delta_ext(ix, iy, 0, it, delta)
-#else 
-#define macro_delta_ext(ix, iy, iz, it, delta) Complex(0.0,0.0)
-#endif 
-
 #endif
+
+// Functionals
+#include "tdwslda_functionals.h"
 
 /**
  * This function copies data to constant memory buffers
@@ -98,7 +92,6 @@ extern "C" int memcopy_const_params(double *params)
     return 0;
 }
 
-#ifdef BDG_MODE
 /**
  * This function copies BdG functional data
  * */
@@ -109,7 +102,6 @@ extern "C" int memcopy_const_BdG(double aBdG)
     
     return 0;
 }
-#endif
 
 // ===========================================================================
 // ============================ FUNCTIONS ====================================
@@ -274,216 +266,6 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
 // =======================================================================================
 // ================================ compute_potentials ===================================
 // =======================================================================================
-__global__ void kernel_compute_potentials(int it, 
-                                          double *rho_a, double *rho_b, Complex *nu,
-                                          double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                          double *tau_a, double *tau_b, 
-                                          double *V_a, double *V_b, Complex *delta, double cccoeff
-                                         )
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy, i;
-    
-    // registers
-    double na, nb;
-    double t1, t2, t3, t4, t5, t6, t7; // working buffers
-    
-    double alph_plus;
-#ifdef CURRENT_CORRECTIONS
-    double alph_minus;
-#endif
-    double dalphm_dna, dalphm_dnb, dalphp_dna, dalphp_dnb;
-    double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
-    Complex p0, kc, wz_0, Zone, lnu, ldelta;
-    
-    if(ixyz<NXY)
-    {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        
-        // load data to registers from global memory and form constant part of potentials
-        Va_const=u_ext(ix,iy,0,it,SPINA);
-        Vb_const=u_ext(ix,iy,0,it,SPINB);
-        
-        // densities, and correct them
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz];
-        t1 = polarization(na, nb);
-        alph_plus = alpha_plus(t1);
-#ifdef CURRENT_CORRECTIONS
-        alph_minus = alpha_minus(t1);
-#endif
-        
-#ifdef FAST_CONST_EFFECTIVE_MASS_MODE
-        dalphm_dna=0.0;
-        dalphm_dnb=0.0;
-        dalphp_dna=0.0;
-        dalphp_dnb=0.0;
-#else
-        // term dalphm_dna*tau_m/2.0
-        t1=tau_a[ixyz]; // tau_a
-        t2=tau_b[ixyz]; // tau_b       
-        t3=t1 - t2; // tau_m
-        dalphm_dna=der_alpha_minus__der_na(na, nb);
-        dalphm_dnb=der_alpha_minus__der_nb(na, nb);
-        Va_const+=dalphm_dna*t3/2.0; // dalphm_dna*tau_m/2.0
-        Vb_const+=dalphm_dnb*t3/2.0; // dalphm_dnb*tau_m/2.0
-        
-        // term dalphp_dna*tau_p/2.0
-        t3=t1 + t2; // tau_p
-        dalphp_dna=der_alpha_plus__der_na(na, nb);
-        dalphp_dnb=der_alpha_plus__der_nb(na, nb);
-        Va_const+=dalphp_dna*t3/2.0; // dalphp_dna*tau_p/2.0
-        Vb_const+=dalphp_dnb*t3/2.0; // dalphp_dnb*tau_p/2.0
-        // no other terms with tau, now I can resue t1 and t2
-#endif
-
-        // term dD_dna and dD_dnb
-        Va_const += der_funD__der_na(na, nb);
-        Vb_const += der_funD__der_nb(na, nb);
-        
-#ifdef CURRENT_CORRECTIONS
-        // current terms
-        t1=j_a_x[ixyz];
-        t2=j_a_y[ixyz];
-        t3=0.0;
-        t4=j_b_x[ixyz];
-        t5=j_b_y[ixyz];
-        t6=0.0;
-        // terms with ja^2
-        t7 = p_regularization(na) * cccoeff;
-        if(t7!=0.0)
-        {
-            t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
-            Va_const+=( (alph_plus+alph_minus-1.0)/na - (dalphp_dna+dalphm_dna) ) *t7; // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
-            Va_const-=cccoeff*der_p_regularization(na)*(alph_plus+alph_minus-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
-            Vb_const-=(dalphp_dnb+dalphm_dnb) *t7; // -dalpha_dnb*fr(na)*ja^2/2na            
-        }
-
-        // terms with jb^2
-        t7 = p_regularization(nb) * cccoeff;
-        if(t7!=0.0)
-        {
-            t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
-            Va_const-=(dalphp_dna-dalphm_dna) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
-            Vb_const+=( (alph_plus-alph_minus-1.0)/nb - (dalphp_dnb-dalphm_dnb-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb     
-            Vb_const-=cccoeff*der_p_regularization(nb)*(alph_plus-alph_minus-1.0)*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // derivative of regularization function
-        }
-        
-// //         // terms with j+^2
-// //         t7 = p_regularization(na+nb)*((t1+t4)*(t1+t4) + (t2+t5)*(t2+t5) + (t3+t6)*(t3+t6))/(2.0*(na+nb)*(na+nb)); // j+^2/2n+^2
-// //         Va_const-=t7;
-// //         Vb_const-=t7;
-// //         t7 = der_p_regularization(na+nb)*((t1+t4)*(t1+t4) + (t2+t5)*(t2+t5) + (t3+t6)*(t3+t6))/(2.0*(na+nb)); // derivative of regularization function
-// //         Va_const+=t7;
-// //         Vb_const+=t7;
-        // NOTE: divergence terms include when applied hamiltonian - here not needed
-#endif
-        
-        // prepare other variables for self-consistent process
-        t1=dalphp_dna/alph_plus; 
-        t2=dalphp_dnb/alph_plus;
-        t3=der_tildeC__der_na(na, nb, 1.0) / alph_plus; // dtildeC_dna / alph_plus
-        t4=der_tildeC__der_nb(na, nb, 1.0) / alph_plus; // dtildeC_dnb / alph_plus
-        t5 = tildeC(na, nb, 1.0); // tC
-        Va = V_a[ixyz]; // initial values
-        Vb = V_b[ixyz]; // initial values
-        lnu = nu[ixyz];
-        Zone = Complex(1.0, 0.0);
-  
-        // computation of Va and Vb and delta
-        for(i=0; i<UD_SCITERS; i++) // self-consistent loop
-        {
-            // pairing
-#ifdef USE_CUBIC_CUTOFF
-            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
-#else
-            t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
-            p0 = thrust::sqrt( Complex(2.0*t7/ alph_plus, 0.0) );
-            if(p0.imag()<0.) p0 *= -1. ;
-            kc = thrust::sqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
-            if(kc.imag()<0.) kc *= -1. ;
-            
-            wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
-            if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
-            wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
-            wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
-            // g_eff = wz_0.real(); 
-            ldelta = lnu*(-1.0*wz_0.real());
-            
-            // potential
-            t6=(thrust::conj(ldelta)*lnu).real(); // delta^+ * nu 
-            t7=thrust::norm(ldelta);
-            Vanew = Va_const - t1*t6 - t3*t7;
-            Vbnew = Vb_const - t2*t6 - t4*t7;
-             
-            // mixing of potentials
-            Va = UD_MIX_COEFF*Vanew+(1.0-UD_MIX_COEFF)*Va;
-            Vb = UD_MIX_COEFF*Vbnew+(1.0-UD_MIX_COEFF)*Vb;
-        }
-        
-        // save results to global memory
-        V_a[ixyz]=Va;
-        V_b[ixyz]=Vb;
-        delta[ixyz]=ldelta;
-    }
-}
-
-#ifdef BDG_MODE
-__global__ void kernel_compute_potentials_bdg(int it, 
-                                          double *rho_a, double *rho_b, Complex *nu,
-                                          double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                          double *tau_a, double *tau_b, 
-                                          double *V_a, double *V_b, Complex *delta, double cccoeff
-                                         )
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    
-    // registers
-    double t5, t7; // working buffers
-    
-    double Va, Vb;
-    Complex p0, kc, wz_0, Zone, lnu, ldelta;
-    
-    if(ixyz<NXY)
-    {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        
-        // load data to registers from global memory and form constant part of potentials
-        Va=u_ext(ix,iy,0,it,SPINA);
-        Vb=u_ext(ix,iy,0,it,SPINB);
-        
-        t5 = 1.0/ (dc_gBdG);
-        lnu = nu[ixyz];
-        Zone = Complex(1.0, 0.0);
-  
-        // pairing
-#ifdef USE_CUBIC_CUTOFF
-        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0); // FIXME: account for effective mass
-#else
-        t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
-        p0 = thrust::sqrt( Complex(2.0*t7, 0.0) );
-        if(p0.imag()<0.) p0 *= -1. ;
-        kc = thrust::sqrt( Complex(2.0*(dc_ec+t7), 0.0) );
-        if(kc.imag()<0.) kc *= -1. ;
-            
-        wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
-        if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;    
-        wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
-        wz_0 = Zone / (Zone*t5 - wz_0);
-        // g_eff = wz_0.real(); 
-        ldelta = lnu*(-1.0*wz_0.real());
-                    
-        // save results to global memory
-        V_a[ixyz]=Va;
-        V_b[ixyz]=Vb;
-        delta[ixyz]=ldelta;
-    }
-}
-#endif 
-
 /**
  * Function computes potentials V_a, V_b and delta 
  * using formulas from section "9.3.2.2 Summary"
@@ -510,39 +292,14 @@ extern "C" int compute_potentials(int it, double *d_densities, double *d_potenti
     // number of blocks
     int nblocks = (int)ceil((float)NXY/nthreads);
     
-    // Set pointers for to simplify notation
-    // densities 
-    Complex *nu   =(Complex *)(d_densities +  0*NXY);
-    double *rho_a = (double *)(d_densities +  2*NXY);
-    double *tau_a = (double *)(d_densities +  3*NXY);
-    double *j_a_x = (double *)(d_densities +  4*NXY);
-    double *j_a_y = (double *)(d_densities +  5*NXY);
-    double *j_a_z = (double *)(d_densities +  6*NXY);
-    double *rho_b = (double *)(d_densities +  7*NXY);
-    double *tau_b = (double *)(d_densities +  8*NXY);
-    double *j_b_x = (double *)(d_densities +  9*NXY);
-    double *j_b_y = (double *)(d_densities + 10*NXY);
-    double *j_b_z = (double *)(d_densities + 11*NXY);
-    // pontentials
-    double *V_a = (double *)(d_potentials +  0*NXY);
-    double *V_b = (double *)(d_potentials +  1*NXY);
-    Complex *delta = (Complex *)(d_potentials +  2*NXY);    
+    wslda_density densall=convert_into_wslda_density(d_densities, NXY);
+    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXY, NULL);
     
-#ifdef BDG_MODE
-    kernel_compute_potentials_bdg<<<nblocks, nthreads>>>(it,
-                                                     rho_a, rho_b, nu, 
-                                                     j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                     tau_a, tau_b, 
-                                                     V_a, V_b, delta, cccoeff
-                                                    );
-#else
-    kernel_compute_potentials<<<nblocks, nthreads>>>(it,
-                                                     rho_a, rho_b, nu, 
-                                                     j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                     tau_a, tau_b, 
-                                                     V_a, V_b, delta, cccoeff
-                                                    );
-#endif    
+    tdwslda_compute_potentials<<<nblocks, nthreads>>>(it, densall, potsall, cccoeff);
+    
+#ifdef ENABLE_MODIFY_POTENTIALS
+    modify_potentials<<<nblocks, nthreads>>>(it, densall, potsall);
+#endif
     return 0;
 }
 
@@ -639,112 +396,6 @@ __global__ void kernel_compute_energy_velocity_ext(int it,
     }
 }
 
-__global__ void kernel_compute_energy(int it, 
-                                      double *rho_a, double *rho_b, Complex *nu,
-                                      double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                      double *tau_a, double *tau_b, 
-                                      Complex *delta,
-                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM
-                                      )
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    
-    double na, nb;
-    double p;
-    double taua, taub;
-    double tx1, ty1, tz1, tx2, ty2, tz2;
-
-    if(ixyz<NXY)
-    {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        
-        // densities, and correct them
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz];
-        
-        // kinetic energy
-        p=polarization(na, nb);
-        taua=tau_a[ixyz]; // tau_a
-        taub=tau_b[ixyz]; // tau_b    
-        
-        // current corrections
-        tx1=j_a_x[ixyz];
-        ty1=j_a_y[ixyz];
-        tz1=0.0;
-        tx2=j_b_x[ixyz];
-        ty2=j_b_y[ixyz];
-        tz2=0.0;
-        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
-        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
-
-        // galilean invariant contribution
-        E_kin[ixyz]=0.5*(alpha_a(p)*taua + alpha_b(p)*taub)*NZ*DXYZ;
-        
-        // potential energy
-        E_pot[ixyz]=funD(na, nb)*NZ*DXYZ;
-        
-        // pairing energy
-        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*NZ*DXYZ;
-        
-        // flow energy
-        E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)*NZ*DXYZ  
-                    + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb)*NZ*DXYZ;  
-    }
-}
-
-__global__ void kernel_compute_energy_bdg(int it, 
-                                      double *rho_a, double *rho_b, Complex *nu,
-                                      double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                      double *tau_a, double *tau_b, 
-                                      Complex *delta,
-                                      double *E_kin, double *E_pot, double *E_pair, double *E_CM
-                                      )
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy;
-    double tx1, ty1, tz1, tx2, ty2, tz2;
-    
-    double na, nb;
-    double taua, taub;
-    
-    if(ixyz<NXY)
-    {
-        ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
-        
-        // densities, and correct them
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz];
-
-        // kinetic energy
-        taua=tau_a[ixyz]; // tau_a
-        taub=tau_b[ixyz]; // tau_b  
-        
-        // current corrections
-        tx1=j_a_x[ixyz];
-        ty1=j_a_y[ixyz];
-        tz1=0.0;
-        tx2=j_b_x[ixyz];
-        ty2=j_b_y[ixyz];
-        tz2=0.0;
-        taua-=p_regularization(na)*(tx1*tx1+ty1*ty1+tz1*tz1)/na; // -ja^2/na: correction for tilde{tau}_a
-        taub-=p_regularization(nb)*(tx2*tx2+ty2*ty2+tz2*tz2)/nb; // -jb^2/nb: correction for tilde{tau}_b
-
-        // galilean invariant contribution
-        E_kin[ixyz]=0.5*(taua + taub)*NZ*DXYZ;
-        
-        // potential energy
-        E_pot[ixyz]=0.0;
-        
-        // pairing energy
-        E_pair[ixyz]=(delta[ixyz]*thrust::conj(nu[ixyz])).real()*(-1.0)*NZ*DXYZ;
-        
-        // flow energy
-        E_CM[ixyz]=   p_regularization(na)*(tx1*tx1 + ty1*ty1 + tz1*tz1)/(2.*na)*NZ*DXYZ  
-                    + p_regularization(nb)*(tx2*tx2 + ty2*ty2 + tz2*tz2)/(2.*nb)*NZ*DXYZ;
-
-    }
-}
 
 __global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z, 
                                       double *Laz, double *Lbz)
@@ -791,6 +442,8 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXY/nthreads);
+    wslda_density densall=convert_into_wslda_density(d_densities, NXY);
+    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXY, NULL);
     
     // Set pointers for to simplify notation
     // densities 
@@ -827,24 +480,9 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 //     zero_array(NXY,j_b_z);
     
     // Step 1: prepare buffers for local reductions
-#ifdef BDG_MODE
-    kernel_compute_energy_bdg<<<nblocks, nthreads>>>(it,
-                                                 rho_a, rho_b, nu, 
-                                                 j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                 tau_a, tau_b, 
-                                                 delta,
+    tdwslda_compute_energy<<<nblocks, nthreads>>>(it, densall, potsall,
                                                  E_kin, E_pot, E_pair, E_CM
                                                  );
-
-#else
-    kernel_compute_energy<<<nblocks, nthreads>>>(it,
-                                                 rho_a, rho_b, nu, 
-                                                 j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                 tau_a, tau_b, 
-                                                 delta,
-                                                 E_kin, E_pot, E_pair, E_CM
-                                                 );
-#endif
     
     // Step 2: do local reductions
     int ierr, i;
@@ -933,86 +571,9 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
 
-__global__ void kernel_form_alpha_j_corr(double *rho_a, double *rho_b,
-                                         double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                         double *alph_a, double *alph_b,
+__global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
+                                         double * laplace_alpha_a, double *laplace_alpha_b,
                                          double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
-                                         double cccoeff
-                                        )
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    double aa, ab;
-    double na, nb, p;
-#ifdef CURRENT_CORRECTIONS
-    double ja, jb;
-    double fra, frb; // regularization functions
-#endif
-    if(ixyz<NXY)
-    {
-        // densities, and correct them
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz]; 
-        
-        p=polarization(na, nb);
-        aa=alpha_a(p);
-        ab=alpha_b(p);
-        alph_a[ixyz]=aa;
-        alph_b[ixyz]=ab;
-        
-#ifdef CURRENT_CORRECTIONS
-        // current corrections
-//         p=na+nb; // total density
-//         fr =p_regularization(p );
-        
-        // Spin a component
-        fra=p_regularization(na) * cccoeff;
-        if(fra==0.0)
-        {
-            j_corr_a_x[ixyz]=0.0;
-            j_corr_a_y[ixyz]=0.0;
-            // j_corr_a_z[ixyz]=0.0;
-        }
-        else
-        {
-            // x-coordinate
-            ja=j_a_x[ixyz]; 
-            j_corr_a_x[ixyz] = fra*(1.-aa)*ja/na;
-            // y-coordinate
-            ja=j_a_y[ixyz]; 
-            j_corr_a_y[ixyz] = fra*(1.-aa)*ja/na;
-            // z-coordinate - no current
-            // j_corr_a_z[ixyz]=0.0;
-        }
-        
-        // Spin b component
-        frb=p_regularization(nb) * cccoeff;
-        if(frb==0.0)
-        {
-            j_corr_b_x[ixyz]=0.0;
-            j_corr_b_y[ixyz]=0.0;
-            // j_corr_b_z[ixyz]=0.0;
-        }
-        else
-        {
-            // x-coordinate
-            jb=j_b_x[ixyz]; 
-            j_corr_b_x[ixyz] = frb*(1.-ab)*jb/nb;
-            // y-coordinate
-            jb=j_b_y[ixyz]; 
-            j_corr_b_y[ixyz] = frb*(1.-ab)*jb/nb;
-            // z-coordinate - no current
-            // j_corr_b_z[ixyz]=0.0;
-        }      
-#endif
-    }
-}
-
-
-__global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
-                                         double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                         double *alph_a_x, double *alph_a_y, double *alph_a_z, double *alph_b_x, double *alph_b_y, double *alph_b_z, double * laplace_alpha_a, double *laplace_alpha_b,
-                                         double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
-                                         double *V_a, double *V_b, Complex *delta, 
                                          size_t n, Complex *wf_in, Complex *wf_out, 
                                          Complex *wf_d_dx, Complex *wf_d_dy, double *d_kkz, Complex *wf_laplace, Complex *alphawf_laplace,
                                          double cccoeff,
@@ -1021,7 +582,7 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     double aa, ab;
-    double na, nb, p;
+    double na, nb;
     double Va, Vb;
     Complex D;
     double cja=0.0, cjb=0.0;  
@@ -1043,18 +604,14 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
 #endif
         
-        // densities, and correct them
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz];
-        
-        p=polarization(na, nb);
-        aa=alpha_a(p); // will be multiplied by -1/2 later 
-        ab=alpha_b(p); // will be multiplied by -1/2 later 
+        // effective mass
+        aa=h_potentials.alpha_a[ixyz]; // will be multiplied by -1/2 later 
+        ab=h_potentials.alpha_b[ixyz]; // will be multiplied by -1/2 later 
         
         // read potentials
-        Va=V_a[ixyz];
-        Vb=V_b[ixyz];
-        D=delta[ixyz];
+        Va=h_potentials.V_a[ixyz];
+        Vb=h_potentials.V_b[ixyz];
+        D =h_potentials.delta[ixyz];
         
 #ifdef ENABLE_DELTA_EXT
         D = D + macro_delta_ext(ix, iy, 0, it, D);
@@ -1073,44 +630,10 @@ __global__ void kernel_apply_hamiltonian(int it, double *rho_a, double *rho_b,
         cja+=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]);
         cjb+=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]);
         
-//         p=na+nb;
-//         fr =p_regularization(p );
-        
-        // Spin a component
-        fra=p_regularization(na) * cccoeff;
-        if(fra==0.0)
-        {
-            gax+=Complex(0.0, 0.0);
-            gay+=Complex(0.0, 0.0);
-        }
-        else
-        {
-            // x-coordinate
-            ja=j_a_x[ixyz];
-            gax+=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
-            // y-coordinate
-            ja=j_a_y[ixyz];
-            gay+=Complex(0.0,  -1.*fra*(1.-aa)*ja/na); 
-            // z-coordinate - no current
-        }
-        
-        // Spin b component
-        frb=p_regularization(nb) * cccoeff;
-        if(frb==0.0)
-        {
-            gbx+=Complex(0.0, 0.0);
-            gby+=Complex(0.0, 0.0);
-        }
-        else
-        {
-            // x-coordinate
-            jb=j_b_x[ixyz];
-            gbx+=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
-            // y-coordinate
-            jb=j_b_y[ixyz];
-            gby+=Complex(0.0,   1.*frb*(1.-ab)*jb/nb); // note conjugate of complex number (beacuse of "-h*" operator)
-            // z-coordinate - no current
-        }
+        gax+=Complex(0.0,  -1.*h_potentials.A_a_x[ixyz]);
+        gay+=Complex(0.0,  -1.*h_potentials.A_a_y[ixyz]);
+        gbx+=Complex(0.0,   1.*h_potentials.A_b_x[ixyz]); // note conjugate of complex number (beacuse of "-h*" operator)
+        gby+=Complex(0.0,   1.*h_potentials.A_b_y[ixyz]); // note conjugate of complex number (beacuse of "-h*" operator)
 #endif
 
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE    
@@ -1458,6 +981,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     int nblocks = (int)ceil((float)NXY/nthreads);
     int ierr;
     
+    wslda_density densall=convert_into_wslda_density(d_densities, NXY);
+    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXY, NULL);
+    
     // Set pointers for to simplify notation
     // densities 
 //     Complex *nu   =(Complex *)(d_densities +  0*NXY);
@@ -1531,35 +1057,26 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                             vecvext_a, vecvext_a+NXY, divvext_a, vecvext_b, vecvext_b+NXY, divvext_b
                                                    ); 
 #else
-    // Step 2: Prepare data neded for current corrections and effective mass handling
-    kernel_form_alpha_j_corr<<<nblocks, nthreads>>>(rho_a, rho_b,
-                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    grad_alpha_a, grad_alpha_b,
-                                                    grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL,
-                                                    cccoeff
-                                                   );
     
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
     // and compute gradient and laplace of effective mass
-    ierr=compute_laplace_real_f(grad_alpha_a, laplace_alpha_a, nthreads);
+    ierr=compute_laplace_real_f(potsall.alpha_a, laplace_alpha_a, nthreads);
     if(ierr!=0) return ierr;
-    ierr=compute_laplace_real_f(grad_alpha_b, laplace_alpha_b, nthreads);
+    ierr=compute_laplace_real_f(potsall.alpha_b, laplace_alpha_b, nthreads);
     if(ierr!=0) return ierr;
 #endif
     
 #ifdef CURRENT_CORRECTIONS
-    ierr=compute_derivative_real_vector_f(grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_a, grad_j_corr_a+NXY, NULL, nthreads);
+    ierr=compute_derivative_real_vector_f(potsall.A_a_x, potsall.A_a_y, NULL, grad_j_corr_a, grad_j_corr_a+NXY, NULL, nthreads);
     if(ierr!=0) return ierr;
-    ierr=compute_derivative_real_vector_f(grad_j_corr_b, grad_j_corr_b+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL, nthreads);
+    ierr=compute_derivative_real_vector_f(potsall.A_b_x, potsall.A_b_y, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL, nthreads);
     if(ierr!=0) return ierr;  
 #endif
     
     // Step 3: apply hamiltonian
-    kernel_apply_hamiltonian<<<nblocks, nthreads>>>(it, rho_a, rho_b,
-                                            j_a_x, j_a_y, NULL, j_b_x, j_b_y, NULL,
-                                            grad_alpha_a, grad_alpha_a+NXY, NULL, grad_alpha_b, grad_alpha_b+NXY, NULL, laplace_alpha_a, laplace_alpha_b,
+    kernel_apply_hamiltonian<<<nblocks, nthreads>>>(it, potsall, 
+                                            laplace_alpha_a, laplace_alpha_b,
                                             grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL, 
-                                            V_a, V_b, delta, 
                                             n, (Complex *)wf_in, (Complex *)wf_out, 
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
                                             cccoeff,

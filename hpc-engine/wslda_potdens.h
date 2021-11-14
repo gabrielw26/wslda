@@ -7,8 +7,6 @@
  * @date 29.08.2020
  * */
 
-#include <complex.h>
-
 #ifndef _WSLDA_POTDENS_
 #define _WSLDA_POTDENS_
 
@@ -42,6 +40,15 @@
 
 #endif
 
+#ifndef double_complex
+#include <complex.h>
+#define double_complex double complex
+#endif
+
+#ifdef __externc
+extern "C" {
+#endif
+
 
 typedef struct
 {
@@ -52,7 +59,7 @@ typedef struct
     int blocklength;    /// number of elements in potential array = nx*ny*nz
     
     // densities
-    double complex *nu;
+    double_complex *nu;
     double *rho_a;
     double *rho_b;
     double *tau_a;
@@ -74,7 +81,7 @@ typedef struct
     int blocklength;    /// number of elements in potential array = nx*ny*nz
     
     // potentials
-    double complex *delta;
+    double_complex *delta;
     double *alpha_a; /// effective mass, spin-a
     double *alpha_b; /// effective mass, spin-b
     double *V_a;
@@ -100,5 +107,14 @@ wslda_density convert_into_wslda_density(double *h_densities, int blocklength);
  * Converts array into wslda_potential structure
  * */
 wslda_potential convert_into_wslda_potential(double *h_potentials, int blocklength, double *mu);
+
+/**
+ * Reset array of pontentials: all to zeros, execept effective mass which is set to 1.0
+ * */
+int reset_potentials(wslda_potential d);
+
+#ifdef __externc
+} // closing brace for extern "C"
+#endif
 
 #endif
