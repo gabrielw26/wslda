@@ -1,3 +1,6 @@
+# LOAD BEFORE COMPILATION
+# 
+# module load cuda/9.0
 
 # COMPILERS
 CXX=mpicc
@@ -5,22 +8,18 @@ NVCC=nvcc
 PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
-# W-SLDA instalation folder (for read only)
-WSLDADIR=../
-# folder where temporarry files will be stored (will be created automatically)
+WSLDADIR=/home2/archive/wslda/
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
 
-# COMPILER FLAGS & LIBRARIES
-# C compiler flags
-CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/ -DTARGET_MACHINE=TITAN
-# CUDA compiler flags
-NVCCFLAGS = -arch sm_30 -O3 
-# prescription how to link with: FFTW, CUDA
-LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lfftw3 -lm
+# COMPILER FLAGS
+CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
+NVCCFLAGS = -arch sm_35 -O3 -std=c++03
+
+# LIBRARIES
+LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lm
 
 
 # ----- DO NOT MODIFY -----
 include $(WSLDADIR)hpc-engine/mk.td
-

@@ -3,7 +3,7 @@
  * Author: Gabriel Wlazlowski
  * Creation date: 15-10-2020
  * 
- * This file constains funtions for generation of ky and kz plane waves for 2D and 1D codes
+ * This file constains functions for generation of ky and kz plane waves for 2D and 1D codes
  * */ 
 
 #ifndef __WSLDA_WAVEVECTORS__

@@ -184,6 +184,10 @@
 #define AB3AM4 34
 #define AB4AM5 45
 
+#ifdef ENABLE_MODIFY_POTENTIALS
+#undef BDG_MODE
+#endif
+
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
 #undef CURRENT_CORRECTIONS
 #endif
@@ -203,24 +207,34 @@
 
     #if FUNCTIONAL==ASLDA
     #define EXCHANGE_SIZE   7
-    #endif
-    #if FUNCTIONAL==SLDA
+    #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   3
-    #endif
-    #if FUNCTIONAL==BDG
+    #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
+    #else
+    #define EXCHANGE_SIZE   7
+    #endif
+    
+    #ifdef CURRENT_CORRECTIONS
+    #undef EXCHANGE_SIZE
+    #define EXCHANGE_SIZE 7
     #endif
 
 #else
 
     #if FUNCTIONAL==ASLDA
     #define EXCHANGE_SIZE   12
-    #endif
-    #if FUNCTIONAL==SLDA
+    #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   8
-    #endif
-    #if FUNCTIONAL==BDG
+    #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
+    #else
+    #define EXCHANGE_SIZE   12
+    #endif
+    
+    #ifdef CURRENT_CORRECTIONS
+    #undef EXCHANGE_SIZE
+    #define EXCHANGE_SIZE 12
     #endif
 
 #endif
