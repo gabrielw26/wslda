@@ -15,7 +15,11 @@
 #include <complex.h>
 
 
-
+#ifdef TDWSLDA
+#define FDECORATOR __host__ __device__
+#else
+#define FDECORATOR 
+#endif
 
 
 /**
@@ -35,8 +39,8 @@
 #define DDCC_EPSILON 1.0e-32
 // minimal _x to avoide divergences
 // ---------------------------------------------------------------------------
-double rising_factorial (double x, int in);
-double falling_factorial (double x, int in);
+FDECORATOR double rising_factorial (double x, int in);
+FDECORATOR double falling_factorial (double x, int in);
 double binomial_coefficient (int in, int ik);
 double exponential_integral (double x);
 double pexp_bell_polynomial (int in, int ik, double * g);

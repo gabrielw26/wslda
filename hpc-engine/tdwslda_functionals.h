@@ -34,6 +34,7 @@
  *     - Use CODEDIM macro-variable to identify dimensionality of the code.
  *     - Use  decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i) to decompose global index into lattice coordinate. 
  *          In case of 2D code iz will be set to iz=0, and for 1D code iz and iy will be set iz=iy=0. 
+ *     - Avoid multiple reading of the same variable from global memmory, load it before to registers.
  * */  
 
 // DO NOT REMOVE!
@@ -459,6 +460,10 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
     
+    
+    int pccrSLDAe=0;
+//     int pccrSLDAe=1;
+    
 //     double na,nb;
 //     double Va_ext,Vb_ext;
     
@@ -470,9 +475,9 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 //         Va_ext=u_ext(ix,iy,iz,it,SPINA);
 //         Vb_ext=u_ext(ix,iy,iz,it,SPINB);
 //         
-//         // read densities
-//         na=h_densities.rho_a[ixyz];
-//         nb=h_densities.rho_b[ixyz];
+        // read densities
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
         
 //         // save potential to global memory
 //         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential

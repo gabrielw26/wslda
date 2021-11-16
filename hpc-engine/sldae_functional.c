@@ -106,7 +106,7 @@
 // =================
 // (x)^n = \prod_{k=0}^{n-1} (x + k)
 // used to calulatate derivatives of the BCS pairing gap function
-double
+FDECORATOR double
 rising_factorial (double x, int in)
 {
   if (in == 0) {
