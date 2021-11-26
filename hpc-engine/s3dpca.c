@@ -958,7 +958,11 @@ int main( int argc , char ** argv )
 
 #ifdef USE_ELPA
     if(iam==0) wprintf("# SETTING UP ELPA...\n");
+#if ELPA_API>=20210430
+    if (elpa_init(ELPA_API) != ELPA_OK) error_msg_mpi_abort(iam, ELPA API version not supported);
+#else
     if (elpa_init(20181112) != ELPA_OK) error_msg_mpi_abort(iam, ELPA API version not supported);
+#endif
 
     elpa_t handle;
     handle = elpa_allocate(&info);
@@ -990,9 +994,21 @@ int main( int argc , char ** argv )
 
 #ifdef ELPA_USE_GPU
     if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
+
+#if ELPA_API>=20210430
+    elpa_set(handle, "nvidia-gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#else
     elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+
+#else
+
+#if ELPA_API>=20210430
+    elpa_set(handle, "nvidia-gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #else
     elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+    
 #endif
 #ifdef MATRIX_IS_REAL
     elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info);
