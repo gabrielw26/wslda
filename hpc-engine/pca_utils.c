@@ -32,6 +32,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 1000000, // batch;
 0, // overwrite;
 0, // checkpoint;
+0, // checkperiod
 0, // selfstart;
 0.0, //qfalpha;
 0.0, // qfbeta;
@@ -180,6 +181,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.overwrite);
         else if (strcmp (tag,"checkpoint") == 0)
             sscanf (s,"%s %d %*s",tag,&md.checkpoint);
+        else if (strcmp (tag,"checkperiod") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.checkperiod);
         else if (strcmp (tag,"selfstart") == 0)
             sscanf (s,"%s %d %*s",tag,&md.selfstart);
         // QUANTUM FRICTION
