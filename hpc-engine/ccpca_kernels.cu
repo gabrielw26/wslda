@@ -1052,6 +1052,10 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         int iwf;
         
         // compute quasi-particle energy for each wave-function
+        // TODO: ST
+        // kernel_compute_qpe_many()
+        // reduce_many(gpe)
+        
         for(iwf=0; iwf<n; iwf++) // for each wave-function
         {
             kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift, 
@@ -1362,6 +1366,10 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
     size_t shift=0;
     int iwf;
     
+    // TODO: ST
+    // kernel_compute_norm_many
+    // reduce_many(norm)
+
     // compute norm for each wave-function
     for(iwf=0; iwf<n; iwf++) // for each wave-function
     {
