@@ -18,7 +18,8 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h ../VERSION.h
-NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h
+NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h \
+        reduce_many.h
 
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
@@ -27,6 +28,7 @@ WINTERPDEPS = winterp.h
 DEPSLOCAL = predefines.h  problem-definition.h logger.h
 
 SRCS = wslda_potdens.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o sldae_functional.o
+NVCCSRCS = reduce_many.o
 
 SRCS1D = ccpca.o ccpca_checkpoint.o
 NVCCSRCS1D = ccpca_derivative.o ccpca_kernels.o ccpca_dens.o
@@ -46,6 +48,8 @@ NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 
 OBJS := $(addprefix $(OBJDIR),$(SRCS:.c=.o))
 SRCS := $(addprefix $(SRCDIR),$(SRCS))
+NVCCOBJS := $(addprefix $(OBJDIR),$(NVCCSRCS:.cu=.o))
+NVCCSRCS := $(addprefix $(SRCDIR),$(NVCCSRCS))
 OBJS1D := $(addprefix $(OBJDIR),$(SRCS1D:.c=.o))
 SRCS1D := $(addprefix $(SRCDIR),$(SRCS1D))
 NVCCOBJS1D := $(addprefix $(OBJDIR),$(NVCCSRCS1D:.cu=.o))
