@@ -718,6 +718,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
     double nt_reg;
 
+
     // get range of points for computation
     int myuidx=0, mylidx=0;
     for(i=0; i<=wsldapid; i++)
@@ -746,7 +747,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             v_ext_b = v_ext(ix, iy, iz, it, SPINB, params, extra_data_size, extra_data);
 
             // register for total density
-            nt_ = na + nb + DENSITY_EPSILON;
+            nt_ = na + nb;
             nt_1o3 = pow(nt_, 1. / 3.);
             nt_2o3 = pow(nt_, 2. / 3.);
 
@@ -773,7 +774,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 according to the total density is noted Z_p
             - the renormalized coupling consants due to pairing
                 are ended by _eff, e.g. g_eff
-            (Note that renormalization procedure does not require cf_ and cf_p)
+            (Note that in-medium renormalization procedure does not require cf_ and cf_p)
             */
             alpha_ = alpha_parameter(0, x_, id);
             beta_ = beta_parameter(0, x_, id);
@@ -806,7 +807,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             Va_const += beta_ * eF_; // mean-field contribution
             Vb_const += beta_ * eF_; // mean-field contribution
 
-    #ifdef CURRENT_CORRECTIONS
+#ifdef CURRENT_CORRECTIONS
             // current terms
             t1=j_a_x[ixyz];
             t2=j_a_y[ixyz];
@@ -856,7 +857,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             Va_const+=Vcurr_a;
             Vb_const+=Vcurr_b;
             // @* for in-medium renormalization (keep Galilean invariance)
-    #endif
+#endif
 
             // prepare other variables for self-consistent process
             Va = V_a[ixyz] + v_ext_a; // initial values
@@ -873,8 +874,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
               // effective pairing coupling constants and pairing field
               if (RENORMALIZATION_SCHEME == 0) {
                 lmu_sc = (dc_mu_a + dc_mu_b) - (Va + Vb) / 2.;
-                ec_ = af_ * md.kc * md.kc / 2. - lmu_sc - (dc_mu_a + dc_mu_b) / 2.;
-                kc_ = sqrt (fabs (2. * (ec_ + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
+                // ec_ = af_ * md.kc * md.kc / 2. - lmu_sc - (dc_mu_a + dc_mu_b) / 2.;
+                kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
                 p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
                 //
                 // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
@@ -901,13 +902,13 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 }
               } else if (RENORMALIZATION_SCHEME == 1) {
                 lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
-                ec_ = af_ * md.kc * md.kc / 2. - lmu_sc;
-                kc_ = sqrt (fabs (2. * (ec_ + lmu_sc) / af_));
+                // ec_ = af_ * md.kc * md.kc / 2. - lmu_sc;
+                kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
                 p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
                 //
                 cf_ = c_functional(x_, id); // time consuming calculation: require fit as done for b_functional(x_, id)
                 if (nt_reg > 0.) {
-                  cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
+                  cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
                 } else {
                   cf_p = 0.;
                 }
@@ -1089,7 +1090,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         ldelta = h_potentials.delta[ixyz];
 
         // register for total density
-        nt_ = na + nb + DENSITY_EPSILON;
+        nt_ = na + nb;
         nt_1o3 = pow(nt_, 1. / 3.);
         nt_2o3 = pow(nt_, 2. / 3.);
 
@@ -1099,6 +1100,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         as_ = md.sclgth; // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
 
+        // sldae functional paramters
         af_ = a_functional(x_, id);
         //bf_ = b_functional(x_, id);
         bf_ = b_functional_aps(x_, id); // fit of b_functional(x_, id)

@@ -2,14 +2,11 @@
  * W-SLDA Toolkit
  * Author: Antoine Boulet
  * Creation date: 2021.09.21
+ *
+ * td update (AB): 2021.11.25
  * */
 
-
-
 #include "sldae_functional.h"
-
-
-
 
 /**
     //////////////////////////////////////////////////////////////////////
@@ -125,7 +122,7 @@ rising_factorial (double x, int in)
 // falling factorials
 // ==================
 // (x)_n = \prod_{k=0}^{n-1} (x - k)
-double
+FDECORATOR double
 falling_factorial (double x, int in)
 {
   if (in == 0) {
@@ -144,16 +141,16 @@ falling_factorial (double x, int in)
 // binomial coefficients
 // =====================
 // C_{n,p} = n! / k! / (n-k)!
-double
+FDECORATOR double
 binomial_coefficient (int in, int ik)
 {
-  return tgamma (in + 1) / tgamma (ik + 1) / tgamma (in - ik + 1);
+  return tgamma (in + 1.) / tgamma (ik + 1.) / tgamma (in - ik + 1.);
 }
 
 // exponential integral
 // ====================
 // Ei(x) = - \int_{-x}^\infty dt e^{-t} / t
-double
+FDECORATOR double
 exponential_integral (double x)
 {
   // return std::expint(x); // does not work...
@@ -166,7 +163,7 @@ exponential_integral (double x)
 // B_{n,k}(g_1, g_2, ..., g_{n-k+1})
 // https://en.wikipedia.org/wiki/Bell_polynomials
 // used for the Faà di Bruno's formula
-double
+FDECORATOR double
 pexp_bell_polynomial (int in, int ik, double g[])
 {
   if (in == 0 && ik == 0) {
@@ -192,7 +189,7 @@ pexp_bell_polynomial (int in, int ik, double g[])
 // =========================
 // \partial_n x^p
 // [implmented following the convention: ip[0] correspond to the power of x]
-double
+FDECORATOR double
 xm (int dn, double x, int ip[])
 {
   if (ip[0] == 0 && dn != 0) {
@@ -226,7 +223,7 @@ xm (int dn, double x, int ip[])
 // ==================
 // \parial_n [f^(k)(x)]^i =
 // \sum_{p=0}^n C_{n,p} f^(k+p) \partial_{n-p} [f^(k)(x)]^{i-1}
-double
+FDECORATOR double
 power_lrule
 (
   int dn, double _x,
@@ -256,7 +253,7 @@ power_lrule
 // ====================
 // \parial_n [f^(kf)(x) * g^(kg)(x)] =
 // \sum_{p=0}^n C_{n,p} f^(kf+p) * g^(kg+n-p)(x)
-double
+FDECORATOR double
 product_lrule
 (
   int dn, double _x,
@@ -286,7 +283,7 @@ product_lrule
 // \parial_n [1 / f^(k)(x)]=
 // \sum_{p=0}^n (-1)^p C_{n,p} (n+1) / (p+1)
 //              (\partial_n [f^(k)(x)]^p) / [f^(k)(x)]^{p+1}
-double
+FDECORATOR double
 inverse_lrule
 (
   int dn, double _x,
@@ -300,7 +297,7 @@ inverse_lrule
   } else if (dn > 0) {
     int dp; double r_ = 0;
     for (dp = 0; dp <= dn; dp++) {
-      r_ += pow(-1, dp) * binomial_coefficient (dn, dp) *
+      r_ += pow(-1., dp) * binomial_coefficient (dn, dp) *
             (dn + 1.) / (dp + 1.) *
             power_lrule (dn, _x, dp, dk, id, (*f)) /
             pow((*f) (dk, _x, id), dp + 1);
@@ -314,7 +311,7 @@ inverse_lrule
 // Faà di Bruno's formula
 // ======================
 // \partial_n [f^(kf)(g^(kg)(x))]
-double
+FDECORATOR double
 composed_lrule
 (
   int dn, double _x,
@@ -328,7 +325,8 @@ composed_lrule
     return (*f) (dkf, (*g) (dkg, _x, idg), idf);
   } else if (dn > 0) {
     // vector of sucessive derivative of g
-    int dj; double dg [dn];
+    int dj;
+    double dg [dn];
     for (dj = 0; dj < dn; dj++) {
       dg [dj] = (*g) (dkg + dj + 1, _x, idg);
     }
@@ -360,7 +358,7 @@ composed_lrule
 // ---------------------------------------------------------------------------
 
 // (\partial / \partial y)^n \mathcal{B}_p(y)
-double
+FDECORATOR double
 b_expansion (int dp, double y_x, int idx []) // idx [0]: index of coefficient p
 {
   int ip0 [1] = {0}; double y0 = xm (dp, y_x, ip0);
@@ -421,7 +419,7 @@ b_expansion (int dp, double y_x, int idx []) // idx [0]: index of coefficient p
 }
 
 // (\partial / \partial y)^n \mathcal{C}_p(y)
-double
+FDECORATOR double
 c_expansion (int dp, double y_x, int idx []) // idx [0]: index of coefficient p
 {
   int ip0 [1] = {0}; double y0 = xm (dp, y_x, ip0);
@@ -520,16 +518,15 @@ c_expansion (int dp, double y_x, int idx []) // idx [0]: index of coefficient p
 
 // s_aps(n, x) =
 // \partial_n arctan (u*x / (1 + v*x))
-double
+FDECORATOR double
 s_aps (int dn, double _x, int id [])
 {
   if (dn == 0) {
     return atan (_x * U_APS / (1. + _x * V_APS));
   } else if (dn > 0) {
-    double complex z_one = 1.00 + I * 0.00;
-    return tgamma (dn) / 2. *
-           creal(I * cpow (+(U_APS - I * V_APS) / (I * (1. + V_APS * _x) - U_APS * _x), dn) -
-                 I * cpow (-(U_APS + I * V_APS) / (I * (1. + V_APS * _x) + U_APS * _x), dn));
+    return tgamma (dn + 0.) / 2. *
+      creal(I * cpow (+(U_APS - I * V_APS) / (I * (1. + V_APS * _x) - U_APS * _x), dn) -
+            I * cpow (-(U_APS + I * V_APS) / (I * (1. + V_APS * _x) + U_APS * _x), dn));
   } else {
     return 0.;
   }
@@ -538,7 +535,7 @@ s_aps (int dn, double _x, int id [])
 // s_aps_2d1(n, x) =
 // \partial_n [s_aps(1, x)]^2
 // [used for derivatives of the inverse effective mass]
-double
+FDECORATOR double
 s_aps_2d1 (int dn, double _x, int id [])
 {
   return power_lrule(dn, _x, 2, 1, id, s_aps);
@@ -547,14 +544,14 @@ s_aps_2d1 (int dn, double _x, int id [])
 // BCS pairing gap formula
 // =======================
 // \partial_n [(8/e^2)*\exp(-\pi/(2*_x))]
-double
+FDECORATOR double
 pairing_bcs (int dn, double _x, int id [])
 {
   double a = 8. / exp (2.); double b = -M_PI / 2.;
 
   int j, k; double factor_ = 0.;
   for (k = 0; k <= dn; k++) for (j = 0; j <= k; j++) {
-    factor_ += pow (-1, j) * pow (b / _x, k) *
+    factor_ += pow (-1., j) * pow (b / _x, k) *
                rising_factorial (1. + j - k - dn, dn) /
                tgamma (1. + j) / tgamma (1. + k - j);
   }
@@ -564,13 +561,13 @@ pairing_bcs (int dn, double _x, int id [])
 // Padé[1/1] approximation of the pairing field
 // ============================================
 // \parial_n [(1 + y*x) / (1 + p*y*x)]
-double
+FDECORATOR double
 pairing_fit (int dn, double _x, int id [])
 {
   if (dn == 0) {
     return (1. + Y_APS * _x) / (1. + Z_APS * Y_APS * _x);
   } else if (dn > 0) {
-    return tgamma (dn + 1) * (1. - Z_APS) / (pow (Z_APS, 2) * Y_APS) *
+    return tgamma (dn + 1.) * (1. - Z_APS) / (pow (Z_APS, 2) * Y_APS) *
            pow(-Z_APS * Y_APS / (1. + Z_APS * Y_APS * _x), dn + 1);
   } else {
     return 0.;
@@ -595,7 +592,7 @@ pairing_fit (int dn, double _x, int id [])
 // ground state energy
 // ===================
 // \parial_n \xi_x
-double
+FDECORATOR double
 ground_state_energy (int dn, double _x, int id [])
 {
   int ip0 [1] = {0}; double x0 = xm (dn, _x, ip0);
@@ -612,7 +609,7 @@ ground_state_energy (int dn, double _x, int id [])
 // chemical potential
 // ==================
 // \parial_n \zeta_x
-double
+FDECORATOR double
 chemical_potential (int dn, double _x, int id [])
 {
   int ip0 [1] = {0}; double x0 = xm (dn, _x, ip0);
@@ -631,7 +628,7 @@ chemical_potential (int dn, double _x, int id [])
 // inverse effective mass
 // ======================
 // \parial_n \alpha_x
-double
+FDECORATOR double
 inverse_effective_mass (int dn, double _x, int id [])
 {
   int ip0 [1] = {0}; double x0 = xm (dn, _x, ip0);
@@ -650,7 +647,7 @@ inverse_effective_mass (int dn, double _x, int id [])
 // pairing gap
 // ===========
 // \parial_n \eta_x
-double
+FDECORATOR double
 pairing_gap (int dn, double _x, int id [])
 {
   int ip0 [1] = {0}; double x0 = xm (dn, _x, ip0);
@@ -686,42 +683,42 @@ pairing_gap (int dn, double _x, int id [])
 // ------------------------------------------------------[! DO NOT MODIFY >>>]
 
 // \partial_n [1 / \alpha_x]
-double
+FDECORATOR double
 one_over_a (int dn, double _x, int id [])
 {
   return inverse_lrule (dn, _x, 0, id, inverse_effective_mass);
 }
 
 // \partial_n [1 / \eta_x]
-double
+FDECORATOR double
 one_over_h (int dn, double _x, int id [])
 {
   return inverse_lrule (dn, _x, 0, id, pairing_gap);
 }
 
 // \partial_n [\eta_x^2]
-double
+FDECORATOR double
 h_sq (int dn, double _x, int id [])
 {
   return power_lrule (dn, _x, 2, 0, id, pairing_gap);
 }
 
 // \partial_n [\eta_x / \alpha_x]
-double
+FDECORATOR double
 h_over_a (int dn, double _x, int id [])
 {
   return product_lrule (dn, _x, 0, 0, id, id, pairing_gap, one_over_a);
 }
 
 // \partial_n [\alpha_x / \eta_x]
-double
+FDECORATOR double
 a_over_h (int dn, double _x, int id [])
 {
   return product_lrule (dn, _x, 0, 0, id, id, one_over_h, inverse_effective_mass);
 }
 
 // \partial_n [(\partial_k \eta_x / \alpha_x)^p]
-double
+FDECORATOR double
 h_over_a_pdk (int dn, double _x, int idpk []) // idpk = {id} + {p} + {k}
 {
   int id [2] = {idpk [0],idpk [1]};
@@ -730,7 +727,7 @@ h_over_a_pdk (int dn, double _x, int idpk []) // idpk = {id} + {p} + {k}
 }
 
 // \partial_n \ln [\eta_x / \alpha_x]
-double
+FDECORATOR double
 log_h_over_a (int dn, double _x, int id [])
 {
   if (dn == 0) {
@@ -745,7 +742,7 @@ log_h_over_a (int dn, double _x, int id [])
 }
 
 // (\partial / \partial _x)^n \mathcal{B}_p(y(x))
-double
+FDECORATOR double
 b_series_coefficient (int dn, double _x, int idp []) // idp = {id} + {p}
 {
   int id [2] = {idp [0],idp [1]}; int ip [1] = {idp [2]};
@@ -753,7 +750,7 @@ b_series_coefficient (int dn, double _x, int idp []) // idp = {id} + {p}
 }
 
 // (\partial / \partial _x)^n \mathcal{C}_p(y(x))
-double
+FDECORATOR double
 c_series_coefficient (int dn, double _x, int idp []) // idp = {id} + {p}
 {
   int id [2] = {idp [0],idp [1]}; int ip [1] = {idp [2]};
@@ -761,7 +758,7 @@ c_series_coefficient (int dn, double _x, int idp []) // idp = {id} + {p}
 }
 
 // \partial_n \sum_p \mathcal{B}_p(y(x)) (\eta_x / \alpha_x)^p
-double
+FDECORATOR double
 b_series (int dn, double _x, int id [])
 {
   int idx [3] = {id [0],id [1],0}; int ip [4] = {id [0],id [1],0,0};
@@ -775,7 +772,7 @@ b_series (int dn, double _x, int id [])
 }
 
 // \partial_n \sum_p \mathcal{C}_p(y(x)) (\eta_x / \alpha_x)^p
-double
+FDECORATOR double
 c_series (int dn, double _x, int id [])
 {
   int idx[3] = {id [0],id [1],0}; int ip [4] = {id [0],id [1],0,0};
@@ -805,7 +802,7 @@ c_series (int dn, double _x, int id [])
 // ------------------------------------------------------[! DO NOT MODIFY >>>]
 
 // \partial_n a_x
-double
+FDECORATOR double
 a_hfb (int dn, double _x, int id [])
 {
   int fid = id [0];       // FUNCTIONAL_ID
@@ -815,7 +812,7 @@ a_hfb (int dn, double _x, int id [])
 }
 
 // \partial_n [a_x * b_x]
-double
+FDECORATOR double
 b_hfb (int dn, double _x, int id [])
 {
   int fid = id [0];       // FUNCTIONAL_ID
@@ -830,7 +827,7 @@ b_hfb (int dn, double _x, int id [])
 }
 
 // \partial_n [c_x / a_x]
-double
+FDECORATOR double
 inverse_c_hfb (int dn, double _x, int id [])
 {
   int fid = id [0];       // FUNCTIONAL_ID
@@ -864,7 +861,7 @@ inverse_c_hfb (int dn, double _x, int id [])
 // ------------------------------------------------------[! DO NOT MODIFY >>>]
 
 // \partial_n \alpha_x = \partial_n a_x
-double
+FDECORATOR double
 alpha_parameter (int dn, double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -874,7 +871,7 @@ alpha_parameter (int dn, double _x, int id [])
 }
 
 // \partial_n \beta_x = \partial_n [b_x + \zeta_x + \eta_x^2 / c_x]
-double
+FDECORATOR double
 beta_parameter (int dn, double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -892,7 +889,7 @@ beta_parameter (int dn, double _x, int id [])
 }
 
 // \partial_n \gamma_x^{-1} = \partial_n [6/(3\pi^2)^{2/3} / c_x]
-double
+FDECORATOR double
 inverse_gamma_parameter (int dn, double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -917,7 +914,7 @@ inverse_gamma_parameter (int dn, double _x, int id [])
 // ------------------------------------------------------[! DO NOT MODIFY >>>]
 
 // A_x = \sum_n (-x)^n (3!/(3+n)!) \partial_n \alpha_x
-double
+FDECORATOR double
 a_functional (double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -927,13 +924,13 @@ a_functional (double _x, int id [])
   int dn; double r_ = 0.;
   for (dn = 0; dn <= FUNCTIONAL_ORDER; dn++) {
     r_ += pow (-_x, dn) * alpha_parameter (dn, _x, id) *
-          tgamma (d_ + 1) / tgamma (d_ + 1 + dn);
+          tgamma (d_ + 1.) / tgamma (d_ + 1. + dn);
     }
   return r_;
 }
 
 // B_x = \sum_n (-x)^n (5!/(5+n)!) \partial_n \beta_x
-double
+FDECORATOR double
 b_functional (double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -943,7 +940,7 @@ b_functional (double _x, int id [])
   int dn; double r_ = 0.;
   for (dn = 0; dn <= FUNCTIONAL_ORDER; dn++) {
     r_ += pow (-_x, dn) * beta_parameter (dn, _x, id) *
-          tgamma (d_ + 1) / tgamma (d_ + 1 + dn);
+          tgamma (d_ + 1.) / tgamma (d_ + 1. + dn);
   }
   return r_;
 }
@@ -951,7 +948,7 @@ b_functional (double _x, int id [])
 
 // B_x interpolation using default APS[x,y,z]
 // parametrization of the functional
-double
+FDECORATOR double
 b_functional_aps (double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -965,7 +962,7 @@ b_functional_aps (double _x, int id [])
 }
 
 // C_x^{-1} = \sum_n (-x)^n (1!/(1+n)!) \partial_n [1 / \gamma_x]
-double
+FDECORATOR double
 c_functional (double _x, int id [])
 {
   int fid = id [0]; // FUNCTIONAL_ID
@@ -978,7 +975,7 @@ c_functional (double _x, int id [])
     int n; double r_ = 0.;
     for (n = 0; n <= FUNCTIONAL_ORDER; n++) {
       r_ += pow (-_x, n) * inverse_gamma_parameter (n, _x, id) *
-            tgamma (d_ + 1) / tgamma (d_ + 1 + n);
+            tgamma (d_ + 1.) / tgamma (d_ + 1. + n);
     }
     return 1 / r_;
   }
@@ -990,43 +987,3 @@ c_functional (double _x, int id [])
 
 
 // ---------------------------------------------------------------------------
-
-
-
-/// ###########################################################################
-// ---------------------------------------------------------------------------
-// pairing coupling constant regularization routine
-// ---------------------------------------------------------------------------
-#ifdef TDWSLDA
-#include "pca_settings.h"
-#include "stdio.h"
-#include "pca_utils.h"
-#define dc_ec md.ec
-#else
-extern double dc_ec;
-#endif
-
-double
-pcc_renormalization(double _x, double lmu, int id [])
-{
-  double alpha_ = inverse_effective_mass (0, _x, id);
-  //    alpha k_0^2 / 2 - lmu = E_0
-  //    alpha k_c^2 / 2 - lmu = E_c
-
-  double k0, kc, lambda_;
-  k0 = sqrt (fabs (2. * (0.000 + lmu) / alpha_));
-  kc = sqrt (fabs (2. * (dc_ec + lmu) / alpha_));
-  if (lmu >= 0) {
-    lambda_ = (kc + k0) / (kc - k0);
-    lambda_ = 1. - k0 / (2. * kc) * log(lambda_);
-    lambda_ *= kc / (2. * M_PI_SQ);
-  } else {
-    lambda_ = k0 / kc;
-    lambda_ = 1. + k0 / kc * atan(lambda_);
-    lambda_ *= kc / (2. * M_PI_SQ);
-  }
-  return lambda_;
-}
-
-// ---------------------------------------------------------------------------
-// ###########################################################################
