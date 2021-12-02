@@ -4,7 +4,6 @@
 #ifndef __PCA_UNIFORM__
 #define __PCA_UNIFORM__
 
-#include "sldae_functional.h"
 
 // The functions are used to solve ASLDA for uniform system
 
@@ -1426,14 +1425,25 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
 // -----------------------------------------------------------------
 // ----------------------- SLDAE version ---------------------------
 // -----------------------------------------------------------------
-
+// ------------------------------------------------------------------------------------
+//
+//     ######  ##       ########     ###    ########
+//    ##    ## ##       ##     ##   ## ##   ##
+//    ##       ##       ##     ##  ##   ##  ##
+//     ######  ##       ##     ## ##     ## ######
+//          ## ##       ##     ## ######### ##
+//    ##    ## ##       ##     ## ##     ## ##
+//     ######  ######## ########  ##     ## ########
+//
+// ------------------------------------------------------------------------------------
 /**
  * SLDAe variant
  * Author: Antoine Boulet
  * Update: 2021.09.21
  * */
 
-
+#include "sldae_functional.h"
+//#include "sldae_functional.c"
 
 /**
  * @param n0_a requested density for population "a" (INPUT)
@@ -1515,7 +1525,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     //##
     //  select functional
     // [useful to add more functional in sldae_functional.c]
-    int FUNCTIONAL_ID = -2; // SLDAe id
+    int FUNCTIONAL_ID = 0; // SLDAe id
     int PAIRING_ID = -2;    // SLDAe id
     int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
     /** select pairing renormalization scheme [0:1]
@@ -1562,16 +1572,16 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         are ended by _eff, e.g. g_eff
       (Note that renormalization procedure does not require cf_ and cf_p)
     */
-    alpha_ = alpha_parameter(0, x_, id);
-    beta_ = beta_parameter(0, x_, id);
-    inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
-    alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
-    beta_p = dx_dnt_ * beta_parameter(1, x_, id);
-    inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
-    af_ = a_functional(x_, id);
+    alpha_ = alpha_parameter_d0(x_);
+    beta_ = beta_parameter_d0(x_);
+    inverse_gamma_ = inverse_gamma_parameter_d0(x_);
+    alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
+    beta_p = dx_dnt_ * beta_parameter_d1(x_);
+    inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
+    af_ = a_functional_d0(x_);
     //bf_ = b_functional(x_, id);
-    bf_ = b_functional_aps(x_, id); // fit of b_functional(x_, id)
-    cf_ = c_functional(x_, id); // unrequired for in-medium renormalization
+    bf_ = b_functional_d0(x_); // fit of b_functional(x_, id)
+    cf_ = c_functional_d0(x_); // unrequired for in-medium renormalization
     // definition independent of the functional and pairing form used
     af_p = (alpha_ - af_) / nt_;
     bf_p = 5. / 3. * (beta_ - bf_) / nt_;
@@ -1585,7 +1595,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
       af_p * nt_1o3 * inverse_gamma_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
-    if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
+    //if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: A = %f, B = %f, C = %f\n", af_, bf_, cf_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: alpha = %f, beta = %f, gamma = %f\n", alpha_, beta_, 1./inverse_gamma_);
 
@@ -1619,8 +1629,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
     double kc=md.kc;
-    double mu_a=chemical_potential(0, x_, id)*eF_a; //0.37*eF_a;
-    double mu_b=chemical_potential(0, x_, id)*eF_b; //0.37*eF_b;
+    double mu_a=0.5*eF_a; //chemical_potential(0, x_, id)*eF_a; //0.37*eF_a;
+    double mu_b=0.5*eF_b; //chemical_potential(0, x_, id)*eF_b; //0.37*eF_b;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG: solve_uniform_problem_sldae\n");
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
@@ -1682,8 +1692,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             nu_old=nu;
 
             // potential (kinetic contribution)
-            V_a = af_p * (tau_a + tau_b) / 2.;
-            V_b = af_p * (tau_a + tau_b) / 2.;
+            V_a = af_p * (tau_a+tau_b) / 2.;
+            V_b = af_p * (tau_a+tau_b) / 2.;
             // potential (mean-field contribution)
             V_a += beta_ * eF_;
             V_b += beta_ * eF_;
@@ -1719,7 +1729,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
               ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
             } else { }
 
-            if (lmu_sc >= 0) {
+            if (lmu_sc >= 0.) {
               lambda_ = (kc + p0_) / (kc - p0_);
               lambda_ = 1. - p0_ / (2. * kc) * log(lambda_);
               lambda_ *= kc / (2. * M_PI_SQ);
@@ -1874,8 +1884,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
         // Compute energy
         // energy_kin=(0.5*alph_a*tau_a + 0.5*alph_b*tau_b)*LXYZ;
-        energy_kin=(0.5*af_*tau_a + 0.5*af_*tau_b)*LXYZ;
-        energy_pot=(D)*LXYZ;
+        energy_kin=(af_*tau_a + af_*tau_b) / 2. *LXYZ;
+        energy_pot=((3. / 5.) * bf_ * eF_ * nt_)*LXYZ;
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
         if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
@@ -1907,8 +1917,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     //##
     __md_pca_uniform.V_a=V_a;
     __md_pca_uniform.V_b=V_b;
-    __md_pca_uniform.alph_a=alph_a;
-    __md_pca_uniform.alph_b=alph_b;
+    __md_pca_uniform.alph_a=af_;
+    __md_pca_uniform.alph_b=af_;
     //##
     __md_pca_uniform.kc=kc;
     __md_pca_uniform.ec=ec;

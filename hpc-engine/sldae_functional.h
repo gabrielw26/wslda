@@ -4,11 +4,15 @@
  * Creation date: 2021.09.21
  *
  * td update (AB): 2021.11.25
+ * Main change for td udate:
+ * - simplification of functions (SLDA and functional parameters)
+     by Padé[4/4] approximations
+ * - avoid issue due to the use of recursive function in cuda
+ * - the "old" functions are defined in sldae_dev.h
  * */
 
 #ifndef _SLDAE_FUNCTIONAL_
 #define _SLDAE_FUNCTIONAL_
-
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -18,7 +22,6 @@
 #include <math.h>
 #include <complex.h>
 
-
 #ifdef TDWSLDA
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -26,17 +29,8 @@
 #define FDECORATOR __host__ __device__
 #else
 #define FDECORATOR
-#endif
+#endif // #ifdef TDWSLDA
 
-
-
-
-/**
-  ================================== TOOLS ===================================
- * */
-// ---------------------------------------------------------------------------
-#define HFB_ORDER 8
-#define FUNCTIONAL_ORDER 2
 // ---------------------------------------------------------------------------
 #define LN2 log(2.)
 #define LN2_2 pow(LN2, 2)
@@ -44,6 +38,34 @@
 #define LN2_4 pow(LN2, 4)
 #define LN2_5 pow(LN2, 5)
 #define M_PI_SQ pow(M_PI, 2)
+// ---------------------------------------------------------------------------
+#define AF_APS_UFG (0.8403540)
+#define BF_APS_UFG (-0.281887)
+#define CF_APS_UFG (-14.95850)
+// ---------------------------------------------------------------------------
+// Padé[4/4] functions (used by default in st and td code)
+FDECORATOR double alpha_parameter_d0 (double _x);
+FDECORATOR double beta_parameter_d0 (double _x);
+FDECORATOR double inverse_gamma_parameter_d0 (double _x);
+FDECORATOR double alpha_parameter_d1 (double _x);
+FDECORATOR double beta_parameter_d1 (double _x);
+FDECORATOR double inverse_gamma_parameter_d1 (double _x);
+FDECORATOR double alpha_parameter_d2 (double _x);
+FDECORATOR double beta_parameter_d2 (double _x);
+FDECORATOR double inverse_gamma_parameter_d2 (double _x);
+FDECORATOR double a_functional_d0 (double _x);
+FDECORATOR double b_functional_d0 (double _x);
+FDECORATOR double c_functional_d0 (double _x);
+// ---------------------------------------------------------------------------
+
+#ifdef SLDAE_DEV_MODE
+// ---------------------------------------------------------------------------
+/**
+   ================================= TOOLS ===================================
+ * */
+// ---------------------------------------------------------------------------
+#define HFB_ORDER 8
+#define FUNCTIONAL_ORDER 2
 // ---------------------------------------------------------------------------
 #define DDCC_EPSILON 1.0e-32
 // minimal _x to avoide divergences
@@ -63,13 +85,8 @@ FDECORATOR double composed_lrule (int dn, double _x, int dkf, int dkg, int * idf
 FDECORATOR double b_expansion (int dp, double y_x, int * idx);
 FDECORATOR double c_expansion (int dp, double y_x, int * idx);
 // ---------------------------------------------------------------------------
-
-
-// ---------------------------------------------------------------------------
-
-
 /**
-  ================================ FUNCTIONAL ================================
+   =============================== FUNCTIONAL ================================
 **/
 // ---------------------------------------------------------------------------
 #define GSE_UFG 0.3582341
@@ -85,10 +102,6 @@ FDECORATOR double c_expansion (int dp, double y_x, int * idx);
 #define X_APS ((9. * M_PI * pow(U_APS, 2)) / (7. * U_APS * V_APS) * ((5. * U_APS * W_APS) / (9. * M_PI * pow(U_APS, 2)) - (pow(U_APS, 2) + pow(V_APS, 2)) / U_APS * (IEM_UFG - 1.)))
 #define A_APS ((5. * U_APS * W_APS - 7. * X_APS * U_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
 #define B_APS ((2. * W_APS + 7. * X_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
-// ---------------------------------------------------------------------------
-
-
-
 // ---------------------------------------------------------------------------
 FDECORATOR double s_aps (int dn, double _x, int * id);
 FDECORATOR double s_aps_2d1 (int dn, double _x, int * id);
@@ -112,13 +125,8 @@ FDECORATOR double c_series_coefficient (int dn, double _x, int * idp);
 FDECORATOR double b_series (int dn, double _x, int * id);
 FDECORATOR double c_series (int dn, double _x, int * id);
 // ---------------------------------------------------------------------------
-
-
-// ---------------------------------------------------------------------------
-
-
 /**
-  ================================ PARAMETERS ================================
+   =============================== PARAMETERS ================================
 **/
 // ---------------------------------------------------------------------------
 FDECORATOR double a_hfb (int dn, double _x, int * id);
@@ -131,13 +139,8 @@ FDECORATOR double inverse_gamma_parameter (int dn, double _x, int * id);
 // ---------------------------------------------------------------------------
 FDECORATOR double a_functional (double _x, int * id);
 FDECORATOR double b_functional (double _x, int * id);
-FDECORATOR double b_functional_aps (double _x, int * id);
-                  // fit of b_functional
 FDECORATOR double c_functional (double _x, int * id);
 // ---------------------------------------------------------------------------
+#endif // #ifdef SLDAE_DEV_MODE
 
-
-
-
-
-#endif
+#endif // #ifndef _SLDAE_FUNCTIONAL_

@@ -466,52 +466,31 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
 // ------------------------------------------------------------------------------------
 #if FUNCTIONAL==SLDAE
 #include "sldae_functional.h"
+#include "sldae_functional.c"
+
 __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double cccoeff)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
 
-    //##
-    //  select functional
-    // [useful to add more functional in sldae_functional.c]
-    int FUNCTIONAL_ID = -2; // SLDAe id
-    int PAIRING_ID = -2;    // SLDAe id
-    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
-    /** select pairing renormalization scheme [0:1]
-        #    0: in-meduim regularization (default for SLDAe)
-        #    1: in-vacuum regularization (Bulgac et al.)
-    **/
-    int RENORMALIZATION_SCHEME = 0;
-    // in-medium regularization by default
-    //##
-    double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
-    double alpha_, beta_, inverse_gamma_;    // HFB paremeters
-    double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
-    double af_, bf_, cf_;    // functional parameters
-    double af_p, bf_p, cf_p; // functional parameters (fderiv)
-    double nt_, nt_reg, nt_1o3, nt_2o3; // power of total local density
-    double dx_dnt_;  // derivative of x_ according to nt_ = x_ / (3.*nt_)
-    double deF_dnt_; // derivative of eF_ according to nt_ = kF_ * kF_ / (3.*nt_)
+    double as_, x_, kF_, eF_;
+    double alpha_, beta_, inverse_gamma_;
+    double alpha_p, inverse_gamma_p;
+    double af_, af_p;
+    double nt_, nt_reg, nt_1o3, nt_2o3;
+    double dx_dnt_;
+    double deF_dnt_;
     double ctilde_, ctilde_p;
-        // ctilde_ ~ alpha_ * nt_1o3 * inverse_gamma_
-        // but depends on regularization scheme
-    double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
-    double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
-    double ec_, kc_, p0_;
-    // double ec = md.ec;
-    double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
-    double a_ln_a, a_ln_a_p; // log correction to ctilde_
+    double g_eff, inverse_gamma_eff, lambda_, lmu_sc;
+    double kc_, p0_;
+    double a_ln_a, a_ln_a_p;
     Complex lnu, ldelta;
     double delta_dag_nu, delta_abs_sq;
-    //##
 
-    double na, nb;
+    double na, nb, taua, taub;
     double Va, Vb, Va_const, Vb_const, Vanew, Vbnew;
     double t1, t2, t3, t4, t5, t6, t7;
 
-
-//     double na,nb;
-//     double Va_ext,Vb_ext;
 
     if(ixyz<NUMBER_ELEMENT)
     {
@@ -524,6 +503,14 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         // read densities
         na=h_densities.rho_a[ixyz];
         nb=h_densities.rho_b[ixyz];
+        taua=h_densities.tau_a[ixyz]; // tau_a
+        taub=h_densities.tau_b[ixyz]; // tau_b
+        lnu = h_densities.nu[ixyz];
+
+        // prepare other variables for self-consistent process
+        Va = h_potentials.V_a[ixyz];        // initial values
+        Vb = h_potentials.V_b[ixyz];        // initial values
+        ldelta = h_potentials.delta[ixyz];  // initial values
 
         //##
         // register for total density
@@ -534,11 +521,9 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = dc_sclgth; // md.sclgth; // s-wave scattering length
-        x_ = fabs(as_ * kF_); // density-dependent coupling constant
-
+        as_ = dc_sclgth / 4. / M_PI; // ISSUE HERE
+        x_ = fabs(as_ * kF_);
         nt_reg = p_regularization(nt_);
-        // see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
         if (nt_reg > 0.0) {
           dx_dnt_ = nt_reg * x_ / (3. * nt_);
           deF_dnt_ = nt_reg * pow(kF_, 2) / (3. * nt_);
@@ -546,48 +531,23 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
           dx_dnt_ = 0.00;
           deF_dnt_ = 0.00;
         }
-        //##
-
-        //##
-        // select functional and HFB paramters
-        /*
-        - functional derivative of quantity Z_
-            according to the total density is noted Z_p
-        - the renormalized coupling consants due to pairing
-            are ended by _eff, e.g. g_eff
-        (Note that in-medium renormalization procedure does not require cf_ and cf_p)
-        */
-        alpha_ = alpha_parameter(0, x_, id);
-        beta_ = beta_parameter(0, x_, id);
-        inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
-        alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
-        //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id); // unrequired
-        inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
-        af_ = a_functional(x_, id);
-        //&& bf_ = b_functional(x_, id); // unrequired
-        //&& cf_ = c_functional(x_, id); // unrequired for in-medium regularization
-        // definition independent of the functional and pairing form used
+        alpha_ = alpha_parameter_d0(x_);
+        beta_ = beta_parameter_d0(x_);
+        inverse_gamma_ = inverse_gamma_parameter_d0(x_);
+        alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
+        inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
+        af_ = a_functional_d0(x_);
         if (nt_reg > 0.0) {
           af_p = nt_reg * (alpha_ - af_) / nt_;
         } else {
           af_p = 0.00;
         }
-        //&& bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-        //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired for in-medium regularization
-        //##
-
 
         // CURRENT CORRECTION SAVE
-        //?? t1 = polarization(na, nb);
-        //?? alph_plus = alpha_plus(t1);
 #ifdef CURRENT_CORRECTIONS
-        //?? alph_minus = alpha_minus(t1);
-
         // compute effecctive masses
-        t2 = af_;
-        t3 = af_;
-        h_potentials.alpha_a[ixyz] = t2; // save
-        h_potentials.alpha_b[ixyz] = t3; // save
+        h_potentials.alpha_a[ixyz] = af_; // save
+        h_potentials.alpha_b[ixyz] = af_; // save
 
         // compute vector potentials
         // Spin a component
@@ -609,17 +569,17 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 #if CODEDIM>=1
             // x-coordinate
             t5=h_densities.j_a_x[ixyz];
-            h_potentials.A_a_x[ixyz] = t4*(1.-t2)*t5/na;
+            h_potentials.A_a_x[ixyz] = t4*(1.-af_)*t5/na;
 #endif
 #if CODEDIM>=2
             // y-coordinate
             t5=h_densities.j_a_y[ixyz];
-            h_potentials.A_a_y[ixyz] = t4*(1.-t2)*t5/na;
+            h_potentials.A_a_y[ixyz] = t4*(1.-af_)*t5/na;
 #endif
 #if CODEDIM>=3
             // z-coordinate
             t5=h_densities.j_a_z[ixyz];
-            h_potentials.A_a_z[ixyz] = t4*(1.-t2)*t5/na;
+            h_potentials.A_a_z[ixyz] = t4*(1.-af_)*t5/na;
 #endif
         }
 
@@ -642,32 +602,25 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 #if CODEDIM>=1
             // x-coordinate
             t5=h_densities.j_b_x[ixyz];
-            h_potentials.A_b_x[ixyz] = t4*(1.-t3)*t5/nb;
+            h_potentials.A_b_x[ixyz] = t4*(1.-af_)*t5/nb;
 #endif
 #if CODEDIM>=2
             // y-coordinate
             t5=h_densities.j_b_y[ixyz];
-            h_potentials.A_b_y[ixyz] = t4*(1.-t3)*t5/nb;
+            h_potentials.A_b_y[ixyz] = t4*(1.-af_)*t5/nb;
 #endif
 #if CODEDIM>=3
             // z-coordinate
             t5=h_densities.j_b_z[ixyz];
-            h_potentials.A_b_z[ixyz] = t4*(1.-t3)*t5/nb;
+            h_potentials.A_b_z[ixyz] = t4*(1.-af_)*t5/nb;
 #endif
         }
 #endif
 
 
         // KINETIC (Galilean) CONTRIBUTION
-        t1=h_densities.tau_a[ixyz]; // tau_a
-        t2=h_densities.tau_b[ixyz]; // tau_b
-
-        t3=t1 + t2; // tau_p
-
-        Va_const+=af_p*t3/2.0; // dalphp_dna*tau_p/2.0
-        Vb_const+=af_p*t3/2.0; // dalphp_dnb*tau_p/2.0
-        // no other terms with tau, now I can resue t1 and t2
-
+        Va_const += af_p * (taua+taub) / 2.;
+        Vb_const += af_p * (taua+taub) / 2.;
 
         // MEAN-FIELD CONTRIBUTION
         Va_const += beta_ * eF_; // mean-field contribution
@@ -699,13 +652,6 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         t7 = p_regularization(na) * cccoeff;
         if(t7!=0.0)
         {
-            // SLDAE (spin-symmetry):
-            // alph_plus  = af_;
-            // alph_minus = 0.0;
-            // dalphp_dna = af_p;
-            // dalphm_dna = 0.0;
-            // dalphp_dnb = af_p;
-            // dalphm_dnb = 0.0;
             t7 = t7*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // fr(na)*ja^2/2na
             Va_const+=( (af_-1.0)/na - af_p ) *t7; // fr(na)*(alpha_a-1)*ja^2/2na^2 - fr(na)*dalpha_dna*ja^2/2na
             Va_const-=cccoeff*der_p_regularization(na)*(af_-1.0)*(t1*t1 + t2*t2 + t3*t3)/(2.0*na); // derivative of regularization function
@@ -716,13 +662,6 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         t7 = p_regularization(nb) * cccoeff;
         if(t7!=0.0)
         {
-            // SLDAE (spin-symmetry):
-            // alph_plus  = af_;
-            // alph_minus = 0.0;
-            // dalphp_dna = af_p;
-            // dalphm_dna = 0.0;
-            // dalphp_dnb = af_p;
-            // dalphm_dnb = 0.0;
             t7 = t7*(t4*t4 + t5*t5 + t6*t6)/(2.0*nb); // fr(nb)*jb^2/2nb
             Va_const-=(af_p) *t7; // -dalphb_dna*fr(nb)*jb^2/2nb
             Vb_const+=( (af_-1.0)/nb - (af_p-1.0) ) *t7; // fr(nb)*(alpha_b-1)*jb^2/2nb^2 - fr(nb)*dalphb_dnb*jb^2/2nb
@@ -730,25 +669,11 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         }
 #endif
 
-
-        // prepare other variables for self-consistent process
-        Va = h_potentials.V_a[ixyz]; // initial values
-        Vb = h_potentials.V_b[ixyz]; // initial values
-
-        lnu = h_densities.nu[ixyz];
-        ldelta = h_potentials.delta[ixyz];
-
-        delta_dag_nu = (thrust::conj(ldelta) * lnu).real(); // delta^+ * nu
-        delta_abs_sq = (ldelta).real() * (ldelta).real() + (ldelta).imag() * (ldelta).imag(); // delta^+ * delta
-
-
         // computation of Va and Vb and delta
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
         // effective pairing coupling constants and pairing field
-        if (RENORMALIZATION_SCHEME == 0) {
           lmu_sc = (dc_mu_a + dc_mu_b) - (Va + Vb) / 2.;
-          // ec_ = af_ * md.kc * md.kc / 2. - lmu_sc - (dc_mu_a + dc_mu_b) / 2.;
           kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
           p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
           //
@@ -774,30 +699,8 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
           } else {
             ctilde_p += 0.;
           }
-        } else if (RENORMALIZATION_SCHEME == 1) {
-          lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
-          // ec_ = af_ * md.kc * md.kc / 2. - lmu_sc;
-          kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
-          p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-          //
-          cf_ = c_functional(x_, id); // time consuming calculation: require fit as done for b_functional(x_, id)
-          if (nt_reg > 0.) {
-            cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
-          } else {
-            cf_p = 0.;
-          }
-          //
-          ctilde_ = af_ * nt_1o3 / cf_;
-          inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
-          if (nt_reg > 0.) {
-            ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
-          } else {
-            ctilde_p = 0.;
-          }
-          ctilde_p += af_p * nt_1o3 / cf_;
-        } else { }
 
-        if (lmu_sc >= 0) {
+        if (lmu_sc >= 0.) {
           lambda_ = (kc_ + p0_) / (kc_ - p0_);
           lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
           lambda_ *= kc_ / (2. * M_PI_SQ);
@@ -808,25 +711,17 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         }
 
         g_eff = af_ / (ctilde_ - lambda_);
-        ldelta = -lnu * g_eff; //##
+        ldelta = -lnu * g_eff;
 
         // potential
         delta_dag_nu = (thrust::conj(ldelta) * lnu).real();
-                    // delta^+ * nu
         delta_abs_sq = (ldelta).real() * (ldelta).real() +
                     (ldelta).imag() * (ldelta).imag();
-                    // delta^+ * delta
 
         Vanew = Va_const - (af_p / af_) * delta_dag_nu -
                 ctilde_p / af_ * delta_abs_sq;
         Vbnew = Vb_const - (af_p / af_) * delta_dag_nu -
                 ctilde_p / af_ * delta_abs_sq;
-
-        // check convergence for original renormalization scheme
-        //?? is_converged = 1;
-        //?? if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
-        //?? if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
-        //?? if (is_converged) break;
 
         // mixing of potentials
         Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
@@ -838,15 +733,6 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
       h_potentials.V_b[ixyz]=Vb;
       h_potentials.delta[ixyz]=ldelta;
 
-
-
-
-
-//         // save potential to global memory
-//         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
-//         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential
-//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
-//         ...
     }
 }
 
@@ -856,17 +742,9 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
 
-    //##
-
-    int FUNCTIONAL_ID = -2; // SLDAe id
-    int PAIRING_ID = -2;    // SLDAe id
-    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
-
-    double as_, x_, kF_, eF_;   // local Fermi momentum and energy
-    double af_, bf_, cf_;       // functional parameters
-    double nt_, nt_1o3, nt_2o3; // power of total local density
-
-    //##
+    double as_, x_, kF_, eF_;
+    double af_, bf_;
+    double nt_;
 
     double na, nb;
     double taua, taub;
@@ -877,20 +755,6 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
         // densities
         na=h_densities.rho_a[ixyz];
         nb=h_densities.rho_b[ixyz];
-        //##
-        // register for total density
-        nt_ = na + nb;
-        // register for local Fermi momentum and Fermi energy
-        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
-        eF_ = pow(kF_, 2) / 2.;
-        as_ = dc_sclgth; // md.sclgth; // s-wave scattering length
-        x_ = fabs(as_ * kF_); // density-dependent coupling constant
-
-        // sldae functional paramters
-        // af_ = a_functional(x_, id);
-        // bf_ = b_functional(x_, id);
-        bf_ = b_functional_aps(x_, id); // fit of b_functional(x_, id)
-        //##
 
         // kinetic energy
         taua=h_densities.tau_a[ixyz]; // tau_a
@@ -918,11 +782,23 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
         taua-=p_regularization(na)*(jxa*jxa+jya*jya+jza*jza)/na; // -ja^2/na: correction for tilde{tau}_a
         taub-=p_regularization(nb)*(jxb*jxb+jyb*jyb+jzb*jzb)/nb; // -jb^2/nb: correction for tilde{tau}_b
 
+        // register for total density
+        nt_ = na + nb;
+        kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
+        eF_ = pow(kF_, 2) / 2.;
+        as_ = dc_sclgth / 4. / M_PI;
+        x_ = fabs(as_ * kF_);
+
+        // sldae functional paramters
+        af_ = a_functional_d0(x_);
+        //af_ = (h_potentials.alpha_a[ixyz] + h_potentials.alpha_b[ixyz]) / 2.;
+        bf_ = b_functional_d0(x_);
+
         // galilean invariant contribution
-        E_kin[ixyz]=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub)*VOLUME_ELEMENT;
+        E_kin[ixyz]=af_*(taua + taub) / 2. *VOLUME_ELEMENT;
 
         // potential energy
-        E_pot[ixyz] = (3. / 5.) * bf_ * eF_ * nt_; //##
+        E_pot[ixyz]=(3. / 5.) * bf_ * eF_ * nt_ * VOLUME_ELEMENT;
 
         // pairing energy
         E_pair[ixyz]=(h_potentials.delta[ixyz]*thrust::conj(h_densities.nu[ixyz])).real()*(-1.0)*VOLUME_ELEMENT;
