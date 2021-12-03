@@ -20,14 +20,14 @@ typedef thrust::complex<double> Complex;
 // ===========================================================================
 // ============================ CONSTANTS ====================================
 // ===========================================================================
-__constant__ double dc_mu_a; // chemical potentials 
-__constant__ double dc_mu_b; // chemical potentials 
-__constant__ double dc_ec; // energy cut-off 
+__constant__ double dc_mu_a; // chemical potentials
+__constant__ double dc_mu_b; // chemical potentials
+__constant__ double dc_ec; // energy cut-off
 __constant__ double dc_t0; // initial time, time=dc_t0 + dc_dt*it
 __constant__ double dc_dt; // itegration time step
 __constant__ double dc_kF; // reference kF
 __constant__ double dc_eF; // reference eF (=kF^2/2)
-__constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2)) 
+__constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2))
 __constant__ double dc_sclgth;
 
 __constant__ void *dc_extra_data;
@@ -47,15 +47,15 @@ __constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input 
 
 #ifdef ENABLE_V_EXT
 #define u_ext(ix, iy, iz, it, spin) v_ext(ix, iy, iz, it, spin, dc_params, dc_extra_data_size, dc_extra_data)
-#else 
+#else
 #define u_ext(ix, iy, iz, it, spin) 0.0
-#endif 
+#endif
 
 #ifdef ENABLE_DELTA_EXT
 #define macro_delta_ext(ix, iy, iz, it, delta) delta_ext(ix, iy, iz, it, delta, dc_params, dc_extra_data_size, dc_extra_data)
-#else 
+#else
 #define macro_delta_ext(ix, iy, iz, it, delta) Complex(0.0,0.0)
-#endif 
+#endif
 
 #endif
 
@@ -77,7 +77,7 @@ extern "C" int memcopy_const(double mu_a, double mu_b, double ec, double t0, dou
     if( cudaMemcpyToSymbol(dc_eF, &eF, sizeof(double))!= cudaSuccess ) return 7;
     double nF = kF*kF*kF / (3.*M_PI*M_PI);
     if( cudaMemcpyToSymbol(dc_nF, &nF, sizeof(double))!= cudaSuccess ) return 7;
-    
+
     return 0;
 }
 
@@ -87,7 +87,7 @@ extern "C" int memcopy_const(double mu_a, double mu_b, double ec, double t0, dou
 extern "C" int memcopy_const_params(double *params)
 {
     if( cudaMemcpyToSymbol(dc_params, params, MAX_USER_PARAMS*sizeof(double))!= cudaSuccess ) return 1;
-    
+
     return 0;
 }
 
@@ -98,7 +98,7 @@ extern "C" int memcopy_const_BdG(double aBdG)
 {
     double gBdG = aBdG;
     if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
-    
+
     return 0;
 }
 
@@ -109,7 +109,7 @@ extern "C" int memcopy_const_BdG(double aBdG)
 extern "C" int set_gpu(int device)
 {
     cudaError err=cudaSetDevice( device );
-    return (int)(err);    
+    return (int)(err);
 }
 
 extern "C" int gpu_malloc(size_t size, void ** pointer)
@@ -140,19 +140,19 @@ extern "C" int host_free_pl(void * pointer)
 
 extern "C" int memcopy_host2gpu(void * host, void * gpu, size_t size)
 {
-    cudaError err=cudaMemcpy( gpu , host , size, cudaMemcpyHostToDevice );    
+    cudaError err=cudaMemcpy( gpu , host , size, cudaMemcpyHostToDevice );
     return (int)(err);
 }
 
 extern "C" int memcopy_gpu2host(void * gpu, void * host, size_t size)
 {
-    cudaError err=cudaMemcpy( host , gpu , size, cudaMemcpyDeviceToHost );   
+    cudaError err=cudaMemcpy( host , gpu , size, cudaMemcpyDeviceToHost );
     return (int)(err);
 }
 
 extern "C" int memcopy_gpu2gpu(void * gpusrc, void * gpudst, size_t size)
 {
-    cudaError err=cudaMemcpy( gpudst , gpusrc , size, cudaMemcpyDeviceToDevice );   
+    cudaError err=cudaMemcpy( gpudst , gpusrc , size, cudaMemcpyDeviceToDevice );
     return (int)(err);
 }
 
@@ -162,11 +162,11 @@ extern "C" int memcopy_gpu2gpu(void * gpusrc, void * gpudst, size_t size)
 int opt_threads(int new_blocks,int threads, int current_size)
 {
     int new_threads;
-    if(new_blocks==1) 
+    if(new_blocks==1)
     {
-        new_threads=2; 
-        while(new_threads<threads) 
-        { 
+        new_threads=2;
+        while(new_threads<threads)
+        {
             if(new_threads>=current_size) break;
             new_threads*=2;
         }
@@ -176,7 +176,7 @@ int opt_threads(int new_blocks,int threads, int current_size)
 }
 
 template <unsigned int blockSize>
-__device__ void warpReduceR(volatile double *sdata, unsigned int tid) 
+__device__ void warpReduceR(volatile double *sdata, unsigned int tid)
 {
     if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
     if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
@@ -193,7 +193,7 @@ __global__ void __reduce_kernelR__(double *g_idata, double *g_odata, int n, int 
     unsigned int tid = threadIdx.x;
     unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
     unsigned int ishift=i+blockDim.x;
-    
+
     // Loading data
 //     if(mode==0) // sum of doubles
     {
@@ -202,10 +202,10 @@ __global__ void __reduce_kernelR__(double *g_idata, double *g_odata, int n, int 
         else         sdata[tid] = 0.0;
     }
 //     else // add here other modes
-    
+
 
     __syncthreads();
-    
+
     if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
     if (blockSize >=  512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
     if (blockSize >=  256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
@@ -230,14 +230,14 @@ void call_reduction_kernelR(int dimGrid, int dimBlock, int size, double *d_idata
             __reduce_kernelR__< 128><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
         case 64:
             __reduce_kernelR__<  64><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-    }   
+    }
 }
 /**
- * Function does fast reduction (sum of elements) of array. 
+ * Function does fast reduction (sum of elements) of array.
  * Result is located in partial_sums[0] element
  * If partial_sums==array then array will be destroyed
  * @param mode 0: add numbers (no transformation)
- * */ 
+ * */
 extern "C" int local_reductionR(double *array, int size, double *partial_sums, int threads, int mode)
 {
     int blocks=(int)ceil((float)size/threads);
@@ -247,7 +247,7 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
 
     // First reduction of the array
     call_reduction_kernelR(blocks, lthreads, size, array, partial_sums, mode);
-    
+
     // Do iteratively reduction of partial_sums
     current_size=blocks;
     while(current_size>1)
@@ -257,8 +257,8 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
         if(lthreads<64) lthreads=64; // at least 2*warp_size
         call_reduction_kernelR(new_blocks, lthreads, current_size, partial_sums, partial_sums, 0);
         current_size=new_blocks;
-    }    
-    
+    }
+
     return 0;
 }
 
@@ -267,11 +267,11 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
 // ================================ compute_potentials ===================================
 // =======================================================================================
 /**
- * Function computes potentials V_a, V_b and delta 
+ * Function computes potentials V_a, V_b and delta
  * using formulas from section "9.3.2.2 Summary"
  * @param it index of time step, it is ised for proper evaluation of external potential
  * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
+ *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
  *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXYZ,
  *                          nu - double complex array of size NXYZ,
  *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXYZ
@@ -286,16 +286,16 @@ extern "C" int local_reductionR(double *array, int size, double *partial_sums, i
  * @param cccoeff the current corrections coefficient
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
- **/ 
+ **/
 extern "C" int compute_potentials(int it, double *d_densities, double *d_potentials, double cccoeff, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
     wslda_density densall=convert_into_wslda_density(d_densities, NXYZ);
     wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXYZ, NULL);
-    
+
     tdwslda_compute_potentials<<<nblocks, nthreads>>>(it, densall, potsall, cccoeff);
-    
+
 #ifdef ENABLE_MODIFY_POTENTIALS
     modify_potentials<<<nblocks, nthreads>>>(it, densall, potsall);
 #endif
@@ -327,63 +327,63 @@ int zero_array(int asize, double *array)
 // =======================================================================================
 // ================================== compute_energy =====================================
 // =======================================================================================
-__global__ void kernel_compute_energy_v_ext(int it, 
+__global__ void kernel_compute_energy_v_ext(int it,
                                       double *rho_a, double *rho_b, Complex *nu,
                                       double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                      double *tau_a, double *tau_b, 
+                                      double *tau_a, double *tau_b,
                                       Complex *delta,
                                       double *E_ext
                                       )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
-        
+
         // External potential energy
         E_ext[ixyz]=(rho_a[ixyz]*u_ext(ix,iy,iz,it,SPINA) + rho_b[ixyz]*u_ext(ix,iy,iz,it,SPINB))*DXYZ;
     }
 }
 
-__global__ void kernel_compute_energy_delta_ext(int it, 
+__global__ void kernel_compute_energy_delta_ext(int it,
                                       double *rho_a, double *rho_b, Complex *nu,
                                       double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                      double *tau_a, double *tau_b, 
+                                      double *tau_a, double *tau_b,
                                       Complex *delta,
                                       double *E_ext
                                       )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     double na, nb;
-    
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
-        
+
         // External potential energy
         E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, iz, it, delta[ixyz])).real()*(-1.0)*DXYZ;
     }
 }
 
-__global__ void kernel_compute_energy_velocity_ext(int it, 
+__global__ void kernel_compute_energy_velocity_ext(int it,
                                       double *rho_a, double *rho_b, Complex *nu,
                                       double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
-                                      double *tau_a, double *tau_b, 
+                                      double *tau_a, double *tau_b,
                                       Complex *delta,
                                       double *E_ext
                                       )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
-        
+
         // External potential energy
         E_ext[ixyz]=  (
                          j_a_x[ixyz]*velocity_ext(ix, iy, iz, it, SPINA, XAXIS, dc_params, dc_extra_data_size, dc_extra_data)
@@ -393,36 +393,36 @@ __global__ void kernel_compute_energy_velocity_ext(int it,
                         +j_b_y[ixyz]*velocity_ext(ix, iy, iz, it, SPINB, YAXIS, dc_params, dc_extra_data_size, dc_extra_data)
                         +j_b_z[ixyz]*velocity_ext(ix, iy, iz, it, SPINB, ZAXIS, dc_params, dc_extra_data_size, dc_extra_data)
                        )*(-1.0)*DXYZ;
-        
+
     }
 }
 
-__global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z, 
+__global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, double *j_a_z, double *j_b_x, double *j_b_y, double *j_b_z,
                                       double *Laz, double *Lbz)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     double _x, _y;
-    
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
-        
+
         _x = (double)(ix-NX/2)*DX;
         _y = (double)(iy-NY/2)*DY;
-        
+
         Laz[ixyz] = (_x*j_a_y[ixyz] - _y*j_a_x[ixyz])*DXYZ;
         Lbz[ixyz] = (_x*j_b_y[ixyz] - _y*j_b_x[ixyz])*DXYZ;
     }
 }
-    
+
 /**
  * Function computes energy and particle number
  * NOTE: this function executes cudaMemcpy, thus it is BLOCKING!
  * @param it index of time step, it is ised for proper evaluation of external potential
  * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
+ *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
  *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXYZ,
  *                          nu - double complex array of size NXYZ,
  *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXYZ
@@ -433,10 +433,10 @@ __global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, 
  *                            delta - double complex array of size NXYZ
  *                     In total size of d_potentials is 4*NXYZ
  * @param d_workarea (INPUT/OUTPUT)
- *                   working buffer of size 5*NXYZ, 
+ *                   working buffer of size 5*NXYZ,
  *                   On OUTPUT first 9 elements contain energies and particle number [E_kin, E_pot, E_pair, E_CM, E_ext, Na, Nb, Laz, Lbz]
  * @param nthreads number of threads per block
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads)
 {
@@ -444,9 +444,9 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
     int nblocks = (int)ceil((float)NXYZ/nthreads);
     wslda_density densall=convert_into_wslda_density(d_densities, NXYZ);
     wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXYZ, NULL);
-    
+
     // Set pointers for to simplify notation
-    // densities 
+    // densities
     Complex *nu   =(Complex *)(d_densities +  0*NXYZ);
     double *rho_a = (double *)(d_densities +  2*NXYZ);
     double *tau_a = (double *)(d_densities +  3*NXYZ);
@@ -461,15 +461,15 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
     // pontentials
 //     double *V_a = (double *)(d_potentials +  0*NXYZ);
 //     double *V_b = (double *)(d_potentials +  1*NXYZ);
-    Complex *delta = (Complex *)(d_potentials +  2*NXYZ);  
-    
+    Complex *delta = (Complex *)(d_potentials +  2*NXYZ);
+
     // buffers for energies
     double *E_kin = (double *)(d_workarea +  0*NXYZ);
     double *E_pot = (double *)(d_workarea +  1*NXYZ);
     double *E_pair= (double *)(d_workarea +  2*NXYZ);
     double *E_CM  = (double *)(d_workarea +  3*NXYZ);
     double *E_ext = (double *)(d_workarea +  4*NXYZ);
-    
+
 //     // TODO - remove
 //     zero_array(NXYZ,j_a_x);
 //     zero_array(NXYZ,j_a_y);
@@ -478,12 +478,12 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 //     zero_array(NXYZ,j_b_y);
 //     zero_array(NXYZ,j_b_z);
 //     zero_array(NXYZ,j_b_z);
-    
+
     // Step 1: prepare buffers for local reductions
     tdwslda_compute_energy<<<nblocks, nthreads>>>(it, densall, potsall,
                                                  E_kin, E_pot, E_pair, E_CM
                                                  );
-    
+
     // Step 2: do local reductions
     int ierr, i;
     for(i=0; i<4; i++)
@@ -491,19 +491,19 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
         ierr = local_reductionR(d_workarea +  i*NXYZ, NXYZ, d_workarea +  i*NXYZ, nthreads, 0);
         if(ierr!=0) return ierr;
     }
-    
+
     // Step 3: copy data to correct elements of d_workarea
     if( cudaMemcpy( d_workarea+EKIN     , d_workarea +  0*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -100;
     if( cudaMemcpy( d_workarea+EPOT     , d_workarea +  1*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -101;
     if( cudaMemcpy( d_workarea+EPAIR    , d_workarea +  2*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -102;
     if( cudaMemcpy( d_workarea+ECURRENT , d_workarea +  3*NXYZ , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -103;
-    
+
     // Step 4: external energies
 #ifdef ENABLE_V_EXT
     kernel_compute_energy_v_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu, 
+                                                    rho_a, rho_b, nu,
                                                     j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b, 
+                                                    tau_a, tau_b,
                                                     delta,
                                                     E_ext
                                                     );
@@ -513,12 +513,12 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 #else
     cuda_set_array_elements(1, d_workarea+EPOTEXT,  0.0, 1); // set this contribution to 0.0
 #endif
-    
+
 #ifdef ENABLE_DELTA_EXT
     kernel_compute_energy_delta_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu, 
+                                                    rho_a, rho_b, nu,
                                                     j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b, 
+                                                    tau_a, tau_b,
                                                     delta,
                                                     E_ext
                                                     );
@@ -528,12 +528,12 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 #else
     cuda_set_array_elements(1, d_workarea+EPAIREXT,  0.0, 1); // set this contribution to 0.0
 #endif
-    
+
 #ifdef ENABLE_VELOCITY_EXT
     kernel_compute_energy_velocity_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu, 
+                                                    rho_a, rho_b, nu,
                                                     j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b, 
+                                                    tau_a, tau_b,
                                                     delta,
                                                     E_ext
                                                     );
@@ -544,21 +544,21 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
     cuda_set_array_elements(1, d_workarea+EVELEXT,  0.0, 1); // set this contribution to 0.0
 #endif
 
-    
+
     // Step 5: compute particle number
     ierr = local_reductionR(rho_a, NXYZ, d_workarea +  NPARTA, nthreads, 0);
-    if(ierr!=0) return ierr;  
+    if(ierr!=0) return ierr;
     ierr = local_reductionR(rho_b, NXYZ, d_workarea +  NPARTB, nthreads, 0);
     if(ierr!=0) return ierr;
-    cuda_scale_array_elements(2, d_workarea +  NPARTA,  DXYZ, 1); // add missing volume element 
-    
+    cuda_scale_array_elements(2, d_workarea +  NPARTA,  DXYZ, 1); // add missing volume element
+
     // Step 6: commpute angular momentum
     kernel_compute_angular_momentum_z<<<nblocks, nthreads>>>(j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z, d_workarea + LZA, d_workarea + LZB + NXYZ);
     ierr = local_reductionR(d_workarea + LZA,        NXYZ, d_workarea + LZA, nthreads, 0);
-    if(ierr!=0) return ierr;  
+    if(ierr!=0) return ierr;
     ierr = local_reductionR(d_workarea + LZB + NXYZ, NXYZ, d_workarea + LZB, nthreads, 0);
     if(ierr!=0) return ierr;
-    
+
     return 0;
 }
 
@@ -575,7 +575,7 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
 __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
                                          double * laplace_alpha_a, double *laplace_alpha_b,
                                          double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
-                                         size_t n, Complex *wf_in, Complex *wf_out, 
+                                         size_t n, Complex *wf_in, Complex *wf_out,
                                          Complex *wf_d_dx, Complex *wf_d_dy, Complex *wf_d_dz, Complex *wf_laplace, Complex *alphawf_laplace,
                                          double cccoeff,
                                          double *vx_a, double *vy_a, double *vz_a, double *divv_a, double *vx_b, double *vy_b, double *vz_b, double *divv_b
@@ -586,7 +586,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
     double na, nb;
     double Va, Vb;
     Complex D;
-    double cja=0.0, cjb=0.0;  
+    double cja=0.0, cjb=0.0;
 #ifdef CURRENT_CORRECTIONS
     Complex gax, gay, gaz, gbx, gby, gbz;
     double ja, jb/*, jp*/;
@@ -595,10 +595,10 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
 #if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
     int ix, iy, iz, i; // need to decode coordinate
 #endif
-    
+
     size_t iwf;
     Complex u, v, tu, tv;
-    
+
     if(ixyz<NXYZ)
     {
 #if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
@@ -606,18 +606,18 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
 #endif
 
         // effective mass
-        aa=h_potentials.alpha_a[ixyz]; // will be multiplied by -1/2 later 
-        ab=h_potentials.alpha_b[ixyz]; // will be multiplied by -1/2 later 
-        
+        aa=h_potentials.alpha_a[ixyz]; // will be multiplied by -1/2 later
+        ab=h_potentials.alpha_b[ixyz]; // will be multiplied by -1/2 later
+
         // read potentials
         Va=h_potentials.V_a[ixyz];
         Vb=h_potentials.V_b[ixyz];
         D =h_potentials.delta[ixyz];
-        
+
 #ifdef ENABLE_DELTA_EXT
         D = D + macro_delta_ext(ix, iy, iz, it, D);
 #endif
-        
+
 #ifdef CURRENT_CORRECTIONS
         // reset
         gax=Complex(0.0, 0.0);
@@ -627,12 +627,12 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
         gby=Complex(0.0, 0.0);
         gbz=Complex(0.0, 0.0);
 #endif
-            
+
         // read gradient corrections
 #if FUNCTIONAL==ASLDA || FUNCTIONAL==SLDAE
         cja+=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]+j_corr_a_z[ixyz]);
         cjb+=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]+j_corr_b_z[ixyz]);
-        
+
         gax+=Complex(0.0,  -1.*h_potentials.A_a_x[ixyz]);
         gay+=Complex(0.0,  -1.*h_potentials.A_a_y[ixyz]);
         gaz+=Complex(0.0,  -1.*h_potentials.A_a_z[ixyz]);
@@ -641,7 +641,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
         gbz+=Complex(0.0,   1.*h_potentials.A_b_z[ixyz]); // note conjugate of complex number (beacuse of "-h*" operator)
 #endif
 
-#ifdef FAST_CONST_EFFECTIVE_MASS_MODE    
+#ifdef FAST_CONST_EFFECTIVE_MASS_MODE
         // multiply mass by -1/4
         aa*=-0.5;
         ab*=-0.5;
@@ -654,49 +654,49 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
         na=0.25*laplace_alpha_a[ixyz];
         nb=0.25*laplace_alpha_b[ixyz];
 #endif
-        
+
 #ifdef ENABLE_VELOCITY_EXT
         gax+=Complex(0.0, 1.0*vx_a[ixyz]);
         gbx+=Complex(0.0,-1.0*vx_b[ixyz]); // NOTE: complex conjugate included
-        
+
         gay+=Complex(0.0, 1.0*vy_a[ixyz]);
         gby+=Complex(0.0,-1.0*vy_b[ixyz]); // NOTE: complex conjugate included
-        
+
         gaz+=Complex(0.0, 1.0*vz_a[ixyz]);
         gbz+=Complex(0.0,-1.0*vz_b[ixyz]); // NOTE: complex conjugate included
-        
+
         cja+=  0.5*divv_a[ixyz];
         cjb+=  0.5*divv_b[ixyz];
 #endif
-        
+
         // apply to each wave-function
         for(iwf=0; iwf<n; iwf++)
         {
             // reset
             u=Complex(0.0, 0.0);
             v=Complex(0.0, 0.0);
-            
+
             // read wf
             tu=wf_in[       iwf*NXYZ+ixyz];
             tv=wf_in[n*NXYZ+iwf*NXYZ+ixyz];
-            
+
             u+=tu*Complex(Va-dc_mu_a,     cja); // V_a*u
             v-=tv*Complex(Vb-dc_mu_b,-1.0*cjb); // V_b*v, note conjugate of complex number (beacuse of "-h*" operator)
-            
+
             u+=tv*D;                // delta   * v
             v+=tu*thrust::conj(D);  // delta^* * u
 
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE            
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // kinetic part - contribution: (1/4)*laplace(alpha)*u, see further
             u+=tu*na; // note: na keeps (1/4)*laplace(alpha_a)
             v-=tv*nb; // note: nb keeps (1/4)*laplace(alpha_b)
 #endif
 
-#ifdef CURRENT_CORRECTIONS            
+#ifdef CURRENT_CORRECTIONS
             // read gradients of wf: x-coordinate
             tu=wf_d_dx[       iwf*NXYZ+ixyz];
             tv=wf_d_dx[n*NXYZ+iwf*NXYZ+ixyz];
-            u+=tu*gax; 
+            u+=tu*gax;
             v-=tv*gbx;
 
             // read gradients of wf: y-coordinate
@@ -704,7 +704,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
             tv=wf_d_dy[n*NXYZ+iwf*NXYZ+ixyz];
             u+=tu*gay;
             v-=tv*gby;
-            
+
             // read gradients of wf: z-coordinate
             tu=wf_d_dz[       iwf*NXYZ+ixyz];
             tv=wf_d_dz[n*NXYZ+iwf*NXYZ+ixyz];
@@ -712,30 +712,30 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
             v-=tv*gbz;
 #endif
 
-            
+
             // kinetic part
             // note: (-1/2)\nabla(alpha * nabla u) = -(1/4)*laplace(alpha*u) - (1/4)*alpha*laplace(u) + (1/4)*laplace(alpha)*u
             // (1/4)*laplace(alpha)*u already done
             // read laplace of wf
             tu=wf_laplace[       iwf*NXYZ+ixyz];
-            tv=wf_laplace[n*NXYZ+iwf*NXYZ+ixyz];          
+            tv=wf_laplace[n*NXYZ+iwf*NXYZ+ixyz];
             u+=tu*aa; // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_a is given by aa
-            v-=tv*ab; // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_b is given by ab    
+            v-=tv*ab; // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_b is given by ab
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // read laplace(alpha*u)
             u+=alphawf_laplace[       iwf*NXYZ+ixyz]*(-0.25);
             v-=alphawf_laplace[n*NXYZ+iwf*NXYZ+ixyz]*(-0.25);
-#endif      
-            // save to global memory wf 
+#endif
+            // save to global memory wf
             wf_out[       iwf*NXYZ+ixyz]=u;
             wf_out[n*NXYZ+iwf*NXYZ+ixyz]=v;
         }
     }
 }
 
-__global__ void kernel_apply_hamiltonian_bdg(int it, 
-                                         double *V_a, double *V_b, Complex *delta, 
-                                         size_t n, Complex *wf_in, Complex *wf_out, 
+__global__ void kernel_apply_hamiltonian_bdg(int it,
+                                         double *V_a, double *V_b, Complex *delta,
+                                         size_t n, Complex *wf_in, Complex *wf_out,
                                          Complex *wf_d_dx, Complex *wf_d_dy, Complex *wf_d_dz, Complex *wf_laplace,
                                          double *vx_a, double *vy_a, double *vz_a, double *divv_a, double *vx_b, double *vy_b, double *vz_b, double *divv_b
                                         )
@@ -748,16 +748,16 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
 #if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
     int ix, iy, iz, i; // need to decode coordinate
 #endif
-        
+
     double cja=0.0, cjb=0.0;
 #ifdef CURRENT_CORRECTIONS
     Complex gax, gay, gaz;
     Complex gbx, gby, gbz;
 #endif
-    
+
     size_t iwf;
     Complex u, v, tu, tv;
-    
+
     if(ixyz<NXYZ)
     {
 #if defined(ENABLE_DELTA_EXT) || defined(ENABLE_VELOCITY_EXT)
@@ -767,47 +767,47 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
         Va=V_a[ixyz];
         Vb=V_b[ixyz];
         D=delta[ixyz];
-      
+
 #ifdef ENABLE_DELTA_EXT
         D = D + macro_delta_ext(ix, iy, iz, it, D);
 #endif
-        
+
 #ifdef ENABLE_VELOCITY_EXT
         gax=Complex(0.0, 1.0*vx_a[ixyz]);
         gbx=Complex(0.0,-1.0*vx_b[ixyz]); // NOTE: complex conjugate included
-        
+
         gay=Complex(0.0, 1.0*vy_a[ixyz]);
         gby=Complex(0.0,-1.0*vy_b[ixyz]); // NOTE: complex conjugate included
-        
+
         gaz=Complex(0.0, 1.0*vz_a[ixyz]);
         gbz=Complex(0.0,-1.0*vz_b[ixyz]); // NOTE: complex conjugate included
-        
+
         cja=  0.5*divv_a[ixyz];
         cjb=  0.5*divv_b[ixyz];
 #endif
-        
+
         // apply to each wave-function
         for(iwf=0; iwf<n; iwf++)
         {
             // reset
             u=Complex(0.0, 0.0);
             v=Complex(0.0, 0.0);
-            
+
             // read wf
             tu=wf_in[        iwf*NXYZ+ixyz];
             tv=wf_in[n*NXYZ +iwf*NXYZ+ixyz];
 
             u+=tu*Complex(Va-dc_mu_a,      cja); // V_a*u
             v-=tv*Complex(Vb-dc_mu_b, -1.0*cjb); // V_b*v, note conjugate of complex number (beacuse of "-h*" operator)
-            
+
             u+=tv*D;                // delta   * v
             v+=tu*thrust::conj(D);  // delta^* * u
 
-#ifdef CURRENT_CORRECTIONS            
+#ifdef CURRENT_CORRECTIONS
             // read gradients of wf: x-coordinate
             tu=wf_d_dx[       iwf*NXYZ+ixyz];
             tv=wf_d_dx[n*NXYZ+iwf*NXYZ+ixyz];
-            u+=tu*gax; 
+            u+=tu*gax;
             v-=tv*gbx;
 
             // read gradients of wf: y-coordinate
@@ -815,33 +815,33 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
             tv=wf_d_dy[n*NXYZ+iwf*NXYZ+ixyz];
             u+=tu*gay;
             v-=tv*gby;
-            
+
             // read gradients of wf: z-coordinate
             tu=wf_d_dz[       iwf*NXYZ+ixyz];
             tv=wf_d_dz[n*NXYZ+iwf*NXYZ+ixyz];
             u+=tu*gaz;
             v-=tv*gbz;
-#endif            
+#endif
             // kinetic part
-            
+
             // read laplace of wf
             tu=wf_laplace[        iwf*NXYZ+ixyz];
-            tv=wf_laplace[n*NXYZ +iwf*NXYZ+ixyz];          
+            tv=wf_laplace[n*NXYZ +iwf*NXYZ+ixyz];
             u+=tu*(-0.5); // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_a is given by aa
-            v-=tv*(-0.5); // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_b is given by ab    
-     
-            // save to global memory wf 
+            v-=tv*(-0.5); // (-1/4)*alpha*laplace(u), note (-1/4)*alpha_b is given by ab
+
+            // save to global memory wf
             wf_out[        iwf*NXYZ+ixyz]=u;
             wf_out[n*NXYZ +iwf*NXYZ+ixyz]=v;
         }
     }
 }
 
-__global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, 
+__global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
                                             double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
                                             double *V_a, double *V_b, double qfalpha)
 {
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point    
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     if(ixyz<NXYZ)
     {
         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
@@ -886,7 +886,7 @@ __global__ void kernel_subtruct_qpe(int n, Complex *wf, Complex *Hwf, double *qp
     if(ixyz<NXYZ)
     {
         for(iwf=0; iwf<n; iwf++)
-        {       
+        {
             e=qpe[iwf];
             Hwf[ixyz+iwf*NXYZ       ]-=wf[ixyz+iwf*NXYZ       ]*e;
             Hwf[ixyz+iwf*NXYZ+n*NXYZ]-=wf[ixyz+iwf*NXYZ+n*NXYZ]*e;
@@ -903,18 +903,18 @@ __global__ void kernel_subtruct_qpe_norm(int n, Complex *wf, Complex *Hwf, doubl
     if(ixyz<NXYZ)
     {
         for(iwf=0; iwf<n; iwf++)
-        {       
+        {
             e=qpe[iwf];
             c=1.0/sqrt(norm[iwf]);
-            
+
             // normalize wf
             _u=wf[ixyz+iwf*NXYZ       ]; _u*=c;
             _v=wf[ixyz+iwf*NXYZ+n*NXYZ]; _v*=c;
-            
+
             //subtruct <H>, note: <c*psi|H|c*psi>=c*c*<H>
             Hwf[ixyz+iwf*NXYZ       ]=(Hwf[ixyz+iwf*NXYZ       ]*c - _u*e*c*c);
             Hwf[ixyz+iwf*NXYZ+n*NXYZ]=(Hwf[ixyz+iwf*NXYZ+n*NXYZ]*c - _v*e*c*c);
-            
+
             // save normalized wave-functions
             wf[ixyz+iwf*NXYZ       ]=_u;
             wf[ixyz+iwf*NXYZ+n*NXYZ]=_v;
@@ -927,15 +927,15 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy,
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
-      
+
         vx[ixyz]=velocity_ext(ix, iy, iz, it, spin, XAXIS, dc_params, dc_extra_data_size, dc_extra_data);
         vy[ixyz]=velocity_ext(ix, iy, iz, it, spin, YAXIS, dc_params, dc_extra_data_size, dc_extra_data);
         vz[ixyz]=velocity_ext(ix, iy, iz, it, spin, ZAXIS, dc_params, dc_extra_data_size, dc_extra_data);
-        
+
 //         if(ixyz==0) printf("TEST1: %12.6f %12.6f %12.6f %12.6f\n", 0.1*it, vx[ixyz], vy[ixyz], vz[ixyz]);
     }
 }
@@ -954,7 +954,7 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy,
  * @param wf_d_dz derivative with respect to dz (INPUT)
  * @param wf_d_laplace laplace of wave-functions (INPUT)
  * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
+ *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
  *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXYZ,
  *                          nu - double complex array of size NXYZ,
  *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXYZ
@@ -968,25 +968,25 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy,
  *                if qfalpha=0.0 then quantum friction is NOT active
  * @param useqpe array of size [n]
  *               if NULL then quasiparticle energies will be computed from wf_in,
- *               otherwise given array will be used, 
+ *               otherwise given array will be used,
  * @param cccoeff the current corrections coefficient
  * @param nthreads number of threads per block
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
+extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out,
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
+                            double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff,
                             int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
     int ierr;
-    
+
     wslda_density densall=convert_into_wslda_density(d_densities, NXYZ);
     wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXYZ, NULL);
-    
+
     // Set pointers for to simplify notation
-    // densities 
+    // densities
 //     Complex *nu   =(Complex *)(d_densities +  0*NXYZ);
     double *rho_a = (double *)(d_densities +  2*NXYZ);
 //     double *tau_a = (double *)(d_densities +  3*NXYZ);
@@ -1001,16 +1001,16 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     // pontentials
     double *V_a = (double *)(d_potentials +  0*NXYZ);
     double *V_b = (double *)(d_potentials +  1*NXYZ);
-    Complex *delta = (Complex *)(d_potentials +  2*NXYZ);  
-    
-    
+    Complex *delta = (Complex *)(d_potentials +  2*NXYZ);
+
+
     double * grad_alpha_a  = (double *)pca_cufft_work_area; // Use here work area of cuFFT
     double * grad_alpha_b  = grad_alpha_a + NXYZ*3;
     double * grad_j_corr_a = grad_alpha_a + NXYZ*6; // (j+/n+ - alpha_a*ja/na), see GW notes
     double * grad_j_corr_b = grad_alpha_a + NXYZ*9; // (j+/n+ - alpha_b*jb/nb), see GW notes
     double * laplace_alpha_a  = grad_alpha_a + NXYZ*12;
     double * laplace_alpha_b  = grad_alpha_b + NXYZ*13;
-    
+
     // Step 1: if quantum friction is active, update mean-field potentials
     if(qfalpha>0.0)
     {
@@ -1019,43 +1019,43 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, j_a_z, grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, nthreads);
         if(ierr!=0) return ierr;
         ierr=compute_derivative_real_vector_f(j_b_x, j_b_y, j_b_z, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, nthreads);
-        if(ierr!=0) return ierr;  
-        
+        if(ierr!=0) return ierr;
+
         // update mean field potential by friction term
         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2,
-                                                    V_a, V_b, qfalpha);        
+                                                    V_a, V_b, qfalpha);
     }
-    
+
     double *vecvext_a    = NULL;
     double *divvext_a    = NULL;
     double *vecvext_b    = NULL;
-    double *divvext_b    = NULL;   
+    double *divvext_b    = NULL;
 #ifdef ENABLE_VELOCITY_EXT
     // set pointers
     vecvext_a    = (double *)(grad_alpha_a + 14*NXYZ); // storage for keeping vext=[vx(r),vy(r),vz(r)]
-    divvext_a    = (double *)(grad_alpha_a + 17*NXYZ); // storage for keeping div(vext) 
+    divvext_a    = (double *)(grad_alpha_a + 17*NXYZ); // storage for keeping div(vext)
     vecvext_b    = (double *)(grad_alpha_a + 18*NXYZ); // storage for keeping vext=[vx(r),vy(r),vz(r)]
     divvext_b    = (double *)(grad_alpha_a + 21*NXYZ); // storage for keeping div(vext)
-    
+
     // fill arrays with data
     kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINA, vecvext_a, vecvext_a+NXYZ, vecvext_a+2*NXYZ); // NOTE - only SPINA
     ierr=compute_divergence_real_vector_f(vecvext_a, vecvext_a+NXYZ, vecvext_a+2*NXYZ, divvext_a, nthreads);
     if(ierr!=0) return ierr+300;
-    
+
     kernel_get_vector_vext<<<nblocks, nthreads>>>(it, SPINB, vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ); // NOTE - only SPINB
     ierr=compute_divergence_real_vector_f(vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ, divvext_b, nthreads);
     if(ierr!=0) return ierr+400;
 #endif
-    
+
 #ifdef BDG_MODE
     // Step 3: apply hamiltonian
-    kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>(it,  
-                                            V_a, V_b, delta, 
-                                            n, (Complex *)wf_in, (Complex *)wf_out, 
+    kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>(it,
+                                            V_a, V_b, delta,
+                                            n, (Complex *)wf_in, (Complex *)wf_out,
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, (Complex *)wf_d_dz, (Complex *)wf_laplace,
                                             vecvext_a, vecvext_a+NXYZ, vecvext_a+2*NXYZ, divvext_a, vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ, divvext_b
-                                                   ); 
+                                                   );
 #else
 
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
@@ -1065,45 +1065,45 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     ierr=compute_laplace_real_f(potsall.alpha_b, laplace_alpha_b, nthreads);
     if(ierr!=0) return ierr;
 #endif
-    
+
 #ifdef CURRENT_CORRECTIONS
     ierr=compute_derivative_real_vector_f(potsall.A_a_x, potsall.A_a_y, potsall.A_a_z, grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, nthreads);
     if(ierr!=0) return ierr;
     ierr=compute_derivative_real_vector_f(potsall.A_b_x, potsall.A_b_y, potsall.A_b_z, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, nthreads);
-    if(ierr!=0) return ierr;  
+    if(ierr!=0) return ierr;
 #endif
-    
+
     // Step 3: apply hamiltonian
     kernel_apply_hamiltonian<<<nblocks, nthreads>>>(it, potsall,
                                             laplace_alpha_a, laplace_alpha_b,
                                             grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2,
-                                            n, (Complex *)wf_in, (Complex *)wf_out, 
+                                            n, (Complex *)wf_in, (Complex *)wf_out,
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, (Complex *)wf_d_dz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
                                             cccoeff,
                                             vecvext_a, vecvext_a+NXYZ, vecvext_a+2*NXYZ, divvext_a, vecvext_b, vecvext_b+NXYZ, vecvext_b+2*NXYZ, divvext_b
-                                                   );    
-#endif    
+                                                   );
+#endif
     // Step 4: to increas stability - subtruct <H>*wf, where <H> is quasi particle energy
     // and normalize
     // use grad_alpha_a as working buffer
     double *gpe;
-    
+
     if(useqpe==NULL) // compute quasiparticle energies
     {
         gpe=grad_alpha_a; // for easier notation
         size_t shift=0;
         int iwf;
-        
+
         // compute quasi-particle energy for each wave-function
         for(iwf=0; iwf<n; iwf++) // for each wave-function
         {
-            kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift, 
-                                                    (Complex *)wf_in+shift+n*NXYZ, (Complex *)wf_out+shift+n*NXYZ, 
+            kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift,
+                                                    (Complex *)wf_in+shift+n*NXYZ, (Complex *)wf_out+shift+n*NXYZ,
                                                     gpe+iwf);
-            
+
             ierr = local_reductionR(gpe+iwf, NXYZ, gpe+iwf, nthreads, 0);
-            if(ierr!=0) return ierr;    
-            
+            if(ierr!=0) return ierr;
+
             shift+=NXYZ; // move pointer to next wf
         }
 
@@ -1112,10 +1112,10 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     {
         gpe=useqpe;
     }
-    
+
     // subtruct <H>*wf
-    kernel_subtruct_qpe<<<nblocks, nthreads>>>(n, (Complex *)wf_in, (Complex *)wf_out, gpe);  
- 
+    kernel_subtruct_qpe<<<nblocks, nthreads>>>(n, (Complex *)wf_in, (Complex *)wf_out, gpe);
+
     return 0;
 }
 
@@ -1140,42 +1140,42 @@ __global__ void kernel_compute_ovelap(Complex *wf1_u, Complex *wf2_u, Complex *w
  * @param wf2 array with wave-functions (INPUT)
  * @param overlap_re computed values of overlaps, real parts, array of size n (INPUT/OUTPUT)
  *                   If pointer is set as NULL on input then computation of real part is skipped.
- * @param overlap_im computed values of overlaps, real parts, array of size n (INPUT/OUTPUT) 
+ * @param overlap_im computed values of overlaps, real parts, array of size n (INPUT/OUTPUT)
  *                   If pointer is set as NULL on input then computation of imaginary part is skipped.
  * @param workarea work space of size 2*NXYZ, it can be the same workspace as used by cuFFT
  * @param nthreads number of threads per block
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
+extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im,
                               double *workarea, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
+
     double *re = workarea;
     double *im = workarea + NXYZ;
     int iwf;
     size_t shift=0;
     int ierr;
-    
+
     for(iwf=0; iwf<n; iwf++) // for each wave-function
     {
         kernel_compute_ovelap<<<nblocks, nthreads>>>((Complex *)wf1+shift, (Complex *)wf2+shift, (Complex *)wf1+shift+n*NXYZ, (Complex *)wf2+shift+n*NXYZ, re, im);
         shift+=NXYZ; // move pointer to next wf
-        
+
         if(overlap_re!=NULL)
         {
             ierr = local_reductionR(re, NXYZ, re, nthreads, 0);
             if(ierr!=0) return ierr;
             if( cudaMemcpy( overlap_re+iwf , re , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
         }
-        
+
         if(overlap_im!=NULL)
         {
             ierr = local_reductionR(im, NXYZ, im, nthreads, 0);
             if(ierr!=0) return ierr;
-            if( cudaMemcpy( overlap_im+iwf , im , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;            
-        }        
+            if( cudaMemcpy( overlap_im+iwf , im , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
+        }
     }
     return 0;
 }
@@ -1183,27 +1183,27 @@ extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex
 // =======================================================================================
 // ====================================== amb_step1 ======================================
 // =======================================================================================
-__global__ void kernel_amb_step1(size_t n, Complex *ykm1, 
+__global__ void kernel_amb_step1(size_t n, Complex *ykm1,
                          Complex *fkm1, Complex *fkm2, Complex *fkm3)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm1, _fkm2, _fkm3;
     Complex dti;
-    
+
     if(ixyz<n*2*NXYZ)
-    {    
+    {
         // read data
         _ykm1=ykm1[ixyz];
         _fkm1=fkm1[ixyz];
         _fkm2=fkm2[ixyz];
         _fkm3=fkm3[ixyz];
-        
+
         dti = Complex(0.0, -1.0*dc_dt);
-        
+
         // save data
         ykm1[ixyz] = _ykm1 + dti*(_fkm1*(23./12.) - _fkm2*(16./12.) + _fkm3*(5./12.));
         fkm3[ixyz] = _ykm1 + dti*(_fkm1*(19./24.) - _fkm2*( 5./24.) + _fkm3*(1./24.));
-        
+
     }
 }
 
@@ -1214,40 +1214,40 @@ __global__ void kernel_amb_step1(size_t n, Complex *ykm1,
  * @param fkm1 array f_{k-1} of size 2*n*NXYZ
  * @param fkm2 array f_{k-2} of size 2*n*NXYZ
  * @param fkm3 array f_{k-3} of size 2*n*NXYZ
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb_step1(int n, cufftDoubleComplex *ykm1, 
-                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, 
+extern "C" int amb_step1(int n, cufftDoubleComplex *ykm1,
+                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
     kernel_amb_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3);
-    
+
     return 0;
 }
 
 // =======================================================================================
 // ====================================== amb45_step1 ======================================
 // =======================================================================================
-__global__ void kernel_amb45_step1(size_t n, Complex *ykm1, 
+__global__ void kernel_amb45_step1(size_t n, Complex *ykm1,
                          Complex *fkm1, Complex *fkm2, Complex *fkm3, Complex *fkm4)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm1, _fkm2, _fkm3, _fkm4;
     Complex dti;
-    
+
     if(ixyz<n*2*NXYZ)
-    {    
+    {
         // read data
         _ykm1=ykm1[ixyz];
         _fkm1=fkm1[ixyz];
         _fkm2=fkm2[ixyz];
         _fkm3=fkm3[ixyz];
         _fkm4=fkm4[ixyz];
-        
+
         dti = Complex(0.0, -1.0*dc_dt);
-        
+
         // save data
         ykm1[ixyz] = _ykm1 + dti*(_fkm1*(55./24.  ) - _fkm2*(59./24.  ) + _fkm3*(37./24.  ) - _fkm4*(9./24.  ));
         fkm4[ixyz] = _ykm1 + dti*(_fkm1*(646./720.) - _fkm2*(264./720.) + _fkm3*(106./720.) - _fkm4*(19./720.));
@@ -1262,16 +1262,16 @@ __global__ void kernel_amb45_step1(size_t n, Complex *ykm1,
  * @param fkm2 array f_{k-2} of size 2*n*NXYZ
  * @param fkm3 array f_{k-3} of size 2*n*NXYZ
  * @param fkm4 array f_{k-4} of size 2*n*NXYZ
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb45_step1(int n, cufftDoubleComplex *ykm1, 
-                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, cufftDoubleComplex *fkm4, 
+extern "C" int amb45_step1(int n, cufftDoubleComplex *ykm1,
+                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, cufftDoubleComplex *fkm4,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
     kernel_amb45_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4);
-    
+
     return 0;
 }
 
@@ -1283,15 +1283,15 @@ __global__ void kernel_amb_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, 
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm3;
     Complex dti;
-    
+
     if(ixyz<n*2*NXYZ)
-    {    
+    {
         // read data
         _ykm1=ykm1_in[ixyz];
         _fkm3=fkm3[ixyz];
-        
+
         dti = Complex(0.0, -1.0*dc_dt);
-        
+
         // save data
         ykm1_out[ixyz] = dti*_ykm1*(9./24.) + _fkm3;
     }
@@ -1303,16 +1303,16 @@ __global__ void kernel_amb_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, 
  * @param ykm1_in array y_{k-1} of size 2*n*NXYZ (INPUT)
  * @param ykm1_out array y_{k-1} of size 2*n*NXYZ (OUTPUT)
  * @param fkm3 array f_{k-3} of size 2*n*NXYZ
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
-                         cufftDoubleComplex *fkm3, 
+extern "C" int amb_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
+                         cufftDoubleComplex *fkm3,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
     kernel_amb_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm3);
-    
+
     return 0;
 }
 
@@ -1324,15 +1324,15 @@ __global__ void kernel_amb45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm4;
     Complex dti;
-    
+
     if(ixyz<n*2*NXYZ)
-    {    
+    {
         // read data
         _ykm1=ykm1_in[ixyz];
         _fkm4=fkm4[ixyz];
-        
+
         dti = Complex(0.0, -1.0*dc_dt);
-        
+
         // save data
         ykm1_out[ixyz] = dti*_ykm1*(251./720.) + _fkm4;
     }
@@ -1344,16 +1344,16 @@ __global__ void kernel_amb45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out
  * @param ykm1_in array y_{k-1} of size 2*n*NXYZ (INPUT)
  * @param ykm1_out array y_{k-1} of size 2*n*NXYZ (OUTPUT)
  * @param fkm4 array f_{k-3} of size 2*n*NXYZ
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
-                         cufftDoubleComplex *fkm4, 
+extern "C" int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
+                         cufftDoubleComplex *fkm4,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
     kernel_amb45_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm4);
-    
+
     return 0;
 }
 
@@ -1377,9 +1377,9 @@ __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
     if(ixyz<NXYZ)
     {
         for(iwf=0; iwf<n; iwf++)
-        {       
+        {
             c=1.0/sqrt(norm[iwf]);
-            
+
             // normalize wf
             wf[ixyz+iwf*NXYZ       ]*=c;
             wf[ixyz+iwf*NXYZ+n*NXYZ]*=c;
@@ -1392,35 +1392,35 @@ __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
  * Function normalizes wave-functions
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf pointer to wave-functions
- * @return 0 - OK, otherwise ERROR 
+ * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
     int ierr;
-    
+
     double * norm  = (double *)pca_cufft_work_area; // Use here work area of cuFFT as working buffer
 
     size_t shift=0;
     int iwf;
-    
+
     // compute norm for each wave-function
     for(iwf=0; iwf<n; iwf++) // for each wave-function
     {
         kernel_compute_norm<<<nblocks, nthreads>>>((Complex *)wf+shift, (Complex *)wf+shift+n*NXYZ, norm+iwf);
-        
+
         ierr = local_reductionR(norm+iwf, NXYZ, norm+iwf, nthreads, 0);
-        if(ierr!=0) return ierr;    
-                
+        if(ierr!=0) return ierr;
+
         shift+=NXYZ; // move pointer to next wf
     }
-    
+
     // normalize wf
-    kernel_normalize_wf<<<nblocks, nthreads>>>(n, (Complex *)wf, norm); 
+    kernel_normalize_wf<<<nblocks, nthreads>>>(n, (Complex *)wf, norm);
 
     return 0;
-    
+
 }
 
 // =======================================================================================
@@ -1429,13 +1429,13 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_b, Complex *wf_in, Complex *wf_out)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    
+
     // registers
     int iwf;
     double kF_, as_, x_;
     double na, nb, p;
     Complex u, v;
-        
+
     if(ixyz<NXYZ)
     {
         na=rho_a[ixyz];
@@ -1443,21 +1443,21 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
         p = polarization(na, nb);
 #if FUNCTIONAL==SLDAE
         kF_ = pow(3. * M_PI_SQ * (na+nb), 1. / 3.);
-        as_ = dc_sclgth ; 
+        as_ = dc_sclgth ;
         x_ = fabs(as_ * kF_);
-        na = alpha_parameter_d0(x_);
-        nb = alpha_parameter_d0(x_);
+        na = a_functional_d0(x_);
+        nb = a_functional_d0(x_);
 #else
         na=alpha_a(p); // na as working buffer
         nb=alpha_b(p); // nb as working buffer
 #endif
-        
+
         for(iwf=0; iwf<n; iwf++)
-        {    
+        {
             // read u and v
             u=wf_in[       iwf*NXYZ+ixyz];
             v=wf_in[n*NXYZ+iwf*NXYZ+ixyz];
-            
+
             wf_out[       iwf*NXYZ+ixyz]=u*na; // multiply by effective mass and save
             wf_out[n*NXYZ+iwf*NXYZ+ixyz]=v*nb; // multiply by effective mass and save
         }
@@ -1470,21 +1470,21 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
  * @param wf_in array with wave-functions (INPUT)
  * @param wf_out array with wave-functions (OUTPUT),
  * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]  
+ *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
  *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXYZ,
  *                          nu - double complex array of size NXYZ,
  *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXYZ
  *                   In total size of d_densites is 12*NXYZ
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
- **/ 
+ **/
 extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, double *d_densities, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
+
     // Set pointers for to simplify notation
-    // densities 
+    // densities
 //     Complex *nu   =(Complex *)(d_densities +  0*NXYZ);
     double *rho_a = (double *)(d_densities +  2*NXYZ);
 //     double *tau_a = (double *)(d_densities +  3*NXYZ);
@@ -1496,10 +1496,10 @@ extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubl
 //     double *j_b_x = (double *)(d_densities +  9*NXYZ);
 //     double *j_b_y = (double *)(d_densities + 10*NXYZ);
 //     double *j_b_z = (double *)(d_densities + 11*NXYZ);
-   
-    
+
+
     kernel_multiply_wf_by_alpha<<<nblocks, nthreads>>>(n, rho_a, rho_b, (Complex *)wf_in, (Complex *)wf_out);
-    
+
     return 0;
 }
 
@@ -1510,31 +1510,31 @@ extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubl
 __global__ void kernel_taylor_expansion_contribution(int n, Complex *wf_hpsi, Complex *wf_update, Complex *wf_contr, double t_coeff)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    
+
     // registers
     int iwf;
 
     Complex u, v;
-        
+
     if(ixyz<NXYZ)
     {
 
         for(iwf=0; iwf<n; iwf++)
-        {    
+        {
             // read u and v
             u=wf_hpsi[       iwf*NXYZ+ixyz];
             v=wf_hpsi[n*NXYZ+iwf*NXYZ+ixyz];
-            
+
             // add Taylor coefficients
             u*=Complex(0.0, t_coeff);
             v*=Complex(0.0, t_coeff);
-            
-            
+
+
             wf_contr[       iwf*NXYZ+ixyz]=u; // save taylor contribution
             wf_contr[n*NXYZ+iwf*NXYZ+ixyz]=v; // save taylor contribution
-            
+
             wf_update[       iwf*NXYZ+ixyz]+=u; // add to rest of Taylor expansion
-            wf_update[n*NXYZ+iwf*NXYZ+ixyz]+=v; // add to rest of Taylor expansion            
+            wf_update[n*NXYZ+iwf*NXYZ+ixyz]+=v; // add to rest of Taylor expansion
         }
     }
 }
@@ -1549,16 +1549,16 @@ __global__ void kernel_taylor_expansion_contribution(int n, Complex *wf_hpsi, Co
  * @param wf_contr array with wave-functions contructed by Taylor expansion (OUTPUT),
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
- **/ 
-extern "C" int taylor_expansion_contribution(int it, double dt, int n, cufftDoubleComplex *wf_hpsi, 
+ **/
+extern "C" int taylor_expansion_contribution(int it, double dt, int n, cufftDoubleComplex *wf_hpsi,
                                              cufftDoubleComplex *wf_update, cufftDoubleComplex *wf_contr, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
-    kernel_taylor_expansion_contribution<<<nblocks, nthreads>>>(n, (Complex *)wf_hpsi, (Complex *)wf_update, (Complex *)wf_contr, 
+
+    kernel_taylor_expansion_contribution<<<nblocks, nthreads>>>(n, (Complex *)wf_hpsi, (Complex *)wf_update, (Complex *)wf_contr,
                                                                 -1.0*dt/(double)(it));
-    
+
     return 0;
 }
 
@@ -1570,7 +1570,7 @@ __global__ void kernel_get_v_ext(int it, int spin, double *data)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-        
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
@@ -1585,13 +1585,13 @@ extern "C" int get_v_ext(int datadim, int spin, int it, double *data)
 {
     int nthreads = 256;
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
+
     // allocate cuda memory
     double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
     kernel_get_v_ext<<<nblocks, nthreads>>>(it, spin, wrkspace);
-    
+
     if( cudaMemcpy( data , wrkspace, sizeof(double)*NXYZ, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
-    
+
     return 0;
 }
 
@@ -1599,7 +1599,7 @@ __global__ void kernel_get_delta_ext(int it, Complex *deltain, Complex *data)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-        
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
@@ -1614,13 +1614,13 @@ extern "C" int get_delta_ext(int datadim, int it, void *deltain, void *data)
 {
     int nthreads = 256;
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
+
     // allocate cuda memory
     Complex *wrkspace = (Complex *)pca_cufft_work_area; // reuse workspace
     kernel_get_delta_ext<<<nblocks, nthreads>>>(it, (Complex *)deltain, (Complex *)wrkspace);
-    
+
     if( cudaMemcpy( data , wrkspace, sizeof(Complex)*NXYZ, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
-    
+
     return 0;
 }
 
@@ -1628,7 +1628,7 @@ __global__ void kernel_get_velocity_ext(int it, int spin, double *datax, double 
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-        
+
     if(ixyz<NXYZ)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
@@ -1645,16 +1645,15 @@ extern "C" int get_velocity_ext(int datadim, int spin, int it, double *data)
 {
     int nthreads = 256;
     int nblocks = (int)ceil((float)NXYZ/nthreads);
-    
+
     double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
     double *vx = wrkspace + 0*NXYZ;
     double *vy = wrkspace + 1*NXYZ;
     double *vz = wrkspace + 2*NXYZ;
-    
+
     kernel_get_velocity_ext<<<nblocks, nthreads>>>(it, spin, vx, vy, vz);
-    
-    if( cudaMemcpy( data , wrkspace, sizeof(double)*NXYZ*3, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;    
-    
+
+    if( cudaMemcpy( data , wrkspace, sizeof(double)*NXYZ*3, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
+
     return 0;
 }
-

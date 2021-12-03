@@ -4,12 +4,12 @@
  * Creation date: 2021.09.21
  *
  * td update (AB): 2021.11.25
- * Main change for td udate:
+ * Main changes for td udate:
  * - simplification of functions (SLDA and functional parameters)
-     by Padé[4/4] approximations
+ *   by Padé[4/4] approximations
  * - avoid issue due to the use of recursive function in cuda
- * - the "old" functions are defined in sldae_dev.h
- * */
+ * - the "old" (recusive) functions are defined in sldae_dev.h
+ **/
 
 #ifndef _SLDAE_FUNCTIONAL_
 #define _SLDAE_FUNCTIONAL_
@@ -39,10 +39,29 @@
 #define LN2_5 pow(LN2, 5)
 #define M_PI_SQ pow(M_PI, 2)
 // ---------------------------------------------------------------------------
+#define GSE_UFG 0.3582341
+#define PGF_UFG 0.4600000
+#define IEM_UFG 0.8403361
+// --------------------------------------------------------------------------
+#define U_APS (5. / 24.)
+#define V_APS (U_APS / tan(3. * M_PI / 16. * (1. - GSE_UFG)))
+#define V_OVER_U_APS (V_APS / ((6. / (35. * M_PI)) * (11. - 2. * LN2)))
+#define W_APS (V_OVER_U_APS * (24. / (35. * M_PI)) * (1. - 7. * LN2))
+#define Y_APS (4. / 5.)
+#define Z_APS (8. / exp(2.) / PGF_UFG)
+#define X_APS ((9. * M_PI * pow(U_APS, 2)) / (7. * U_APS * V_APS) * ((5. * U_APS * W_APS) / (9. * M_PI * pow(U_APS, 2)) - (pow(U_APS, 2) + pow(V_APS, 2)) / U_APS * (IEM_UFG - 1.)))
+#define A_APS ((5. * U_APS * W_APS - 7. * X_APS * U_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
+#define B_APS ((2. * W_APS + 7. * X_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
+// ---------------------------------------------------------------------------
 #define AF_APS_UFG (0.8403540)
 #define BF_APS_UFG (-0.281887)
 #define CF_APS_UFG (-14.95850)
 // ---------------------------------------------------------------------------
+// physical quantites
+FDECORATOR double ground_state_energy_d0 (double _x);
+FDECORATOR double chemical_potential_d0 (double _x);
+FDECORATOR double inverse_effective_mass_d0 (double _x);
+FDECORATOR double pairing_gap_d0 (double _x);
 // Padé[4/4] functions (used by default in st and td code)
 FDECORATOR double alpha_parameter_d0 (double _x);
 FDECORATOR double beta_parameter_d0 (double _x);
@@ -88,20 +107,6 @@ FDECORATOR double c_expansion (int dp, double y_x, int * idx);
 /**
    =============================== FUNCTIONAL ================================
 **/
-// ---------------------------------------------------------------------------
-#define GSE_UFG 0.3582341
-#define PGF_UFG 0.4600000
-#define IEM_UFG 0.8403361
-// --------------------------------------------------------------------------
-#define U_APS (5. / 24.)
-#define V_APS (U_APS / tan(3. * M_PI / 16. * (1. - GSE_UFG)))
-#define V_OVER_U_APS (V_APS / ((6. / (35. * M_PI)) * (11. - 2. * LN2)))
-#define W_APS (V_OVER_U_APS * (24. / (35. * M_PI)) * (1. - 7. * LN2))
-#define Y_APS (4. / 5.)
-#define Z_APS (8. / exp(2.) / PGF_UFG)
-#define X_APS ((9. * M_PI * pow(U_APS, 2)) / (7. * U_APS * V_APS) * ((5. * U_APS * W_APS) / (9. * M_PI * pow(U_APS, 2)) - (pow(U_APS, 2) + pow(V_APS, 2)) / U_APS * (IEM_UFG - 1.)))
-#define A_APS ((5. * U_APS * W_APS - 7. * X_APS * U_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
-#define B_APS ((2. * W_APS + 7. * X_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
 // ---------------------------------------------------------------------------
 FDECORATOR double s_aps (int dn, double _x, int * id);
 FDECORATOR double s_aps_2d1 (int dn, double _x, int * id);

@@ -1407,10 +1407,10 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
 
 #if FUNCTIONAL==SLDAE
         kF_ = pow(3. * M_PI_SQ * (na+nb), 1. / 3.);
-        as_ = dc_sclgth ; 
+        as_ = dc_sclgth ;
         x_ = fabs(as_ * kF_);
-        na = alpha_parameter_d0(x_);
-        nb = alpha_parameter_d0(x_);
+        na = a_functional_d0(x_);
+        nb = a_functional_d0(x_);
 #else
         na=alpha_a(p); // na as working buffer
         nb=alpha_b(p); // nb as working buffer

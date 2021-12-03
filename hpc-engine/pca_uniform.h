@@ -1427,7 +1427,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
 // -----------------------------------------------------------------
 // ----------------------- SLDAE version ---------------------------
 // -----------------------------------------------------------------
-// ------------------------------------------------------------------------------------
+// -----------------------------------------------------------------
 //
 //     ######  ##       ########     ###    ########
 //    ##    ## ##       ##     ##   ## ##   ##
@@ -1437,7 +1437,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
 //    ##    ## ##       ##     ## ##     ## ##
 //     ######  ######## ########  ##     ## ########
 //
-// ------------------------------------------------------------------------------------
+// -----------------------------------------------------------------
 /**
  * SLDAe variant
  * Author: Antoine Boulet
@@ -1445,7 +1445,6 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
  * */
 
 #include "sldae_functional.h"
-//#include "sldae_functional.c"
 
 /**
  * @param n0_a requested density for population "a" (INPUT)
@@ -1522,20 +1521,11 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         i++;
     }
 
-
-
-    //##
-    //  select functional
-    // [useful to add more functional in sldae_functional.c]
-    int FUNCTIONAL_ID = 0; // SLDAe id
-    int PAIRING_ID = -2;    // SLDAe id
-    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
     /** select pairing renormalization scheme [0:1]
         #    0: in-meduim regularization (default for SLDAe)
         #    1: in-vacuum regularization (Bulgac et al.)
     **/
     int RENORMALIZATION_SCHEME = md.pccrSLDAe;
-    int CUTOFF_CORRECTION = 0; // if = 1, improve chemical potential
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters
@@ -1552,6 +1542,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double lambda_, lambda_p, lmu_sc; // spherical cutoff integral
     double a_ln_a, a_ln_a_p; // log alpha correction register to ctilde_
     //##
+
     // register for total density
     nt_ = n0_a + n0_b;
     nt_1o3 = pow(nt_, 1. / 3.);
@@ -1566,13 +1557,13 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     deF_dnt_ = pow(kF_, 2) / (3. * nt_);
 
     //##
-    // select functional and HFB paramters
+
     /*
       - functional derivative of quantity Z_
         according to the total density is noted Z_p
       - the renormalized coupling consants due to pairing
         are ended by _eff, e.g. g_eff
-      (Note that renormalization procedure does not require cf_ and cf_p)
+      (Note that in-medium renormalization procedure does not require cf_ and cf_p)
     */
     alpha_ = alpha_parameter_d0(x_);
     beta_ = beta_parameter_d0(x_);
@@ -1581,23 +1572,20 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     beta_p = dx_dnt_ * beta_parameter_d1(x_);
     inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
     af_ = a_functional_d0(x_);
-    //bf_ = b_functional(x_, id);
-    bf_ = b_functional_d0(x_); // fit of b_functional(x_, id)
-    cf_ = c_functional_d0(x_); // unrequired for in-medium renormalization
+    bf_ = b_functional_d0(x_);
+    cf_ = c_functional_d0(x_);
     // definition independent of the functional and pairing form used
     af_p = (alpha_ - af_) / nt_;
     bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-    cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired for in-medium renormalization
+    cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
 
     // initial values
     ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
-    inverse_gamma_eff = inverse_gamma_ *
-      (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-    ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) +
-      af_p * nt_1o3 * inverse_gamma_;
+    inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+    ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 * inverse_gamma_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
-    //if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
+    if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy_d0(x_), chemical_potential_d0(x_), pairing_gap_d0(x_));
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: A = %f, B = %f, C = %f\n", af_, bf_, cf_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: alpha = %f, beta = %f, gamma = %f\n", alpha_, beta_, 1./inverse_gamma_);
 
@@ -1631,8 +1619,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
     double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
     double kc=md.kc;
-    double mu_a=0.5*eF_a; //chemical_potential(0, x_, id)*eF_a; //0.37*eF_a;
-    double mu_b=0.5*eF_b; //chemical_potential(0, x_, id)*eF_b; //0.37*eF_b;
+    double mu_a=chemical_potential_d0(x_)*eF_a;
+    double mu_b=chemical_potential_d0(x_)*eF_b;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG: solve_uniform_problem_sldae\n");
     if(printout && md.init0debug>0) wprintf("# DEBUG: n_a=%f, n_b=%f\n", n0_a, n0_b);
