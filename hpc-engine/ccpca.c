@@ -439,10 +439,10 @@ int main( int argc , char ** argv )
         {
             sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
-            file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, h_potentials) );           
+            file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, h_potentials) );
         }
         
-        MPI_Bcast(h_potentials, 4*NX, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NX, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -708,9 +708,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
-#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
-#endif
     
     // report result
     if(ip==0)

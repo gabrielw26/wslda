@@ -1,0 +1,18 @@
+# W-SLDA Toolkit settings
+# 
+# Computation precision: real
+# Computer: Piz Daint
+# 
+# #define ELPA_USE_GPU
+# #define ELPS_USE_SOLVER ELPA_SOLVER_2STAGE
+# #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_COMPLEX_GPU
+# #define ELPA_NEV_FRACTION 1.0
+#
+# Columns:
+# 1: matrix size
+# 2: cost [node-hrs]
+65536    1.99
+147456   20.166
+
+
+
