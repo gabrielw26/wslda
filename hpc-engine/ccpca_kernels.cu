@@ -97,7 +97,7 @@ extern "C" int memcopy_const_params(double *params)
  * */
 extern "C" int memcopy_const_BdG(double aBdG)
 {
-    double gBdG = 4.0*M_PI*aBdG;
+    double gBdG = aBdG;
     if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
 
     return 0;
@@ -598,7 +598,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
 #endif
 
         // read gradient corrections
-#if FUNCTIONAL==ASLDA
+#if FUNCTIONAL==ASLDA || FUNCTIONAL==SLDAE
         cja+=-0.5*(j_corr_a_x[ixyz]);
         cjb+=-0.5*(j_corr_b_x[ixyz]);
 

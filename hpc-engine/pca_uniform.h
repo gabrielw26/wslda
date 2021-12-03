@@ -392,8 +392,10 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             tau_b = (1.-scmix)*tau_b_old + scmix*tau_b;
             delta = (1.-scmix)*delta_old + scmix*delta;
             nu = (1.-scmix)*nu_old + scmix*nu;
-            mu_a += md.init0muchange*(md.init0Tstart/T)*(n0_a-n_a);
-            mu_b += md.init0muchange*(md.init0Tstart/T)*(n0_b-n_b);
+//             mu_a += md.init0muchange*(md.init0Tstart/T)*(n0_a-n_a);
+//             mu_b += md.init0muchange*(md.init0Tstart/T)*(n0_b-n_b);
+            mu_a += md.init0muchange*(n0_a-n_a)/n0_a*eF_a;
+            mu_b += md.init0muchange*(n0_b-n_b)/n0_b*eF_b;
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
