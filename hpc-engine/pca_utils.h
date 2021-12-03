@@ -33,6 +33,7 @@ typedef struct
     int batch;                          // batch size for cuFFT
     int overwrite;                      // eneable overwrite mode?
     int checkpoint;                     // do checkpoint
+    int checkperiod;                    // do checkpoint after this number of measurements, 0-do only at the end (if checkpoint=1) [default]
     int selfstart;                      // 0 - assume that algorithm starts from eigenstate state (default)
                                         // 1 - for first steps use Taylor expansion of the evolution operator
 

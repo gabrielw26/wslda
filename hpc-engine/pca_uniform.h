@@ -1526,6 +1526,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         #    1: in-vacuum regularization (Bulgac et al.)
     **/
     int RENORMALIZATION_SCHEME = md.pccrSLDAe;
+    int CUTOFF_CORRECTION = 0; // if = 1, improve chemical potential
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters

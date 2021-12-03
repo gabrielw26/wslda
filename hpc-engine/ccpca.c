@@ -439,10 +439,10 @@ int main( int argc , char ** argv )
         {
             sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
-            file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, h_potentials) );           
+            file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, h_potentials) );
         }
         
-        MPI_Bcast(h_potentials, 4*NX, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NX, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -522,7 +522,7 @@ int main( int argc , char ** argv )
 #if INTEGRATION_SCHEME==AB3AM4
         cpu_exec( load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                   d_wf, d_fkm1, d_fkm2, d_fkm3, 
-		  d_potentials, &t0, // FIXME
+                  d_potentials, &t0, 
                   &nwf, &nwfip,
                   h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, &beta,
 		  HowMany) );
@@ -530,7 +530,7 @@ int main( int argc , char ** argv )
 #elif INTEGRATION_SCHEME==AB4AM5
         cpu_exec( load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
                      d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                     d_potentials, &t0, // FIXME
+                     d_potentials, &t0, 
                      &nwf, &nwfip,
                      h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, &beta,
                      HowMany) );
@@ -708,9 +708,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NX*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
-#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
-#endif
     
     // report result
     if(ip==0)
@@ -1271,6 +1269,7 @@ int main( int argc , char ** argv )
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-1d") );
         
+        forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
         if(ip==0) 
         {
             sprintf(file_name, "%s_checkpoint.make", md.outprefix);
@@ -1288,6 +1287,59 @@ int main( int argc , char ** argv )
         MPI_Bcast(&forceCP, 1, MPI_INT , 0 , MPI_COMM_WORLD );
         if(forceCP==1) md.checkpoint = 1;
         if(forceCP==1 && ip==0) wprintf("# CONDUCTING EMERGENCY CHECKPOINT!\n");
+        
+        if(forceCP==0) // check if periodic checkpoint should be executed
+        {
+            if(md.checkpoint>0 && md.checkperiod>0) if((i_meas+1) % md.checkperiod==0) forceCP=2; // do periodic checkpoint
+            if(forceCP==2 && ip==0) wprintf("# CONDUCTING PERIODIC CHECKPOINT [i_meas=%d]...\n", i_meas);
+        }
+        
+        if(forceCP==0) // check if it is last iteration
+        {
+            if(i_meas==md.measurements-1) forceCP=3;
+        }
+        
+        if (md.checkpoint && forceCP>0)
+        {
+            b_t(); // start measurment of time of writing
+            time=t0+it*dt;
+            size_t memsize;
+#if INTEGRATION_SCHEME==AB3AM4
+            save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                        d_wf, d_fkm1, d_fkm2, d_fkm3,
+                        d_potentials, &time, 
+                        nwf, nwfip,
+                        h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
+                        HowMany);
+            memsize = (size_t)(nwf)*(NX)*2*4*16;
+#elif INTEGRATION_SCHEME==AB4AM5            
+            save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                        d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
+                        d_potentials, &time, 
+                        nwf, nwfip,
+                        h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
+                        HowMany);
+            memsize = (size_t)(nwf)*(NX)*2*5*16;
+#else
+                CHECK PCA_SETTINGS.H
+#endif
+            MPI_Barrier( MPI_COMM_WORLD ) ;
+            rt = e_t(0);
+            if(ip==0)
+            {
+                double memsize_gb = (double)(memsize) / pow(2,30);
+                wprintf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
+                wprintf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
+                wprintf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
+                wprintf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
+                sprintf(file_name, "%s_check.stamp", md.outprefix);
+                wprintf("# CREATING CHECK STAMP: `%s`\n",file_name);
+                // Take densities from device
+                gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
+                file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );
+            }
+        }
+    
         if(forceCP==1) break;
         
         // Check if siulation is stable
@@ -1299,48 +1351,7 @@ int main( int argc , char ** argv )
 
         fflush(stdout); // clear output
     }
-    time=t0+it*dt;
-    //check point
-    if (md.checkpoint)
-    {
-        b_t(); // start measureing time of writing
-        size_t memsize;
-#if INTEGRATION_SCHEME==AB3AM4
-        save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                    d_wf, d_fkm1, d_fkm2, d_fkm3,
-                    d_potentials, &time, // FIXME
-            nwf, nwfip,
-            h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
-            HowMany);
-        memsize = (size_t)(nwf)*(NX)*2*4*16;
-#elif INTEGRATION_SCHEME==AB4AM5            
-        save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                    d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                    d_potentials, &time, // FIXME
-                    nwf, nwfip,
-                    h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
-                    HowMany);
-        memsize = (size_t)(nwf)*(NX)*2*5*16;
-#else
-            CHECK PCA_SETTINGS.H
-#endif
-        MPI_Barrier( MPI_COMM_WORLD ) ;
-        rt = e_t(0);
-        if(ip==0)
-        {
-            double memsize_gb = (double)(memsize) / pow(2,30);
-            wprintf("# CHECKPOINT INFO: MODE=WRITE: DATA SIZE=%12.2f GB\n",  memsize_gb);
-            wprintf("# CHECKPOINT INFO: MPI_NP_PER_IO_GROUP=%d.\n", HowMany);
-            wprintf("# CHECKPOINT INFO: WRITE TIME=%12.2f sec\n", rt);
-            wprintf("# CHECKPOINT INFO: WRITE SPEED=%12.3f GB/sec\n", memsize_gb/rt);
-            sprintf(file_name, "%s_check.stamp", md.outprefix);
-            wprintf("# CREATING CHECK STAMP: `%s`\n",file_name);
-            // Take densities from device
-            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NX*sizeof(double)) );
-            file_operation( check_stamp_entry_coeff(file_name, 12, NX, h_densities, TDWSLDAITEMS, h_energy, LY*LZ) );   
-        }
-    }
-    
+
 #ifdef TESTSUITE
     if(ip==0) testsuite_ok();
 #endif
