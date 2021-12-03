@@ -1432,6 +1432,7 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
     
     // registers
     int iwf;
+    double kF_, as_, x_;
     double na, nb, p;
     Complex u, v;
         
@@ -1440,8 +1441,16 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
         na=rho_a[ixyz];
         nb=rho_b[ixyz];
         p = polarization(na, nb);
+#if FUNCTIONAL==SLDAE
+        kF_ = pow(3. * M_PI_SQ * (na+nb), 1. / 3.);
+        as_ = dc_sclgth ; 
+        x_ = fabs(as_ * kF_);
+        na = alpha_parameter_d0(x_);
+        nb = alpha_parameter_d0(x_);
+#else
         na=alpha_a(p); // na as working buffer
         nb=alpha_b(p); // nb as working buffer
+#endif
         
         for(iwf=0; iwf<n; iwf++)
         {    

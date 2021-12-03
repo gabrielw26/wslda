@@ -1395,8 +1395,8 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
 
     // registers
     int iwf;
-    double na, nb, p;
     double kF_, as_, x_;
+    double na, nb, p;
     Complex u, v;
 
     if(ixyz<NX)
@@ -1407,7 +1407,7 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
 
 #if FUNCTIONAL==SLDAE
         kF_ = pow(3. * M_PI_SQ * (na+nb), 1. / 3.);
-        as_ = dc_sclgth / 4. / M_PI; // ISSUE HERE
+        as_ = dc_sclgth ; 
         x_ = fabs(as_ * kF_);
         na = alpha_parameter_d0(x_);
         nb = alpha_parameter_d0(x_);
