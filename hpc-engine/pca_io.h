@@ -451,6 +451,22 @@ int read_binary_file(const char * file_name, unsigned long int size, unsigned lo
     return 0;
 }
 
+int write_binary_file(const char * file_name, size_t size, void * data)
+{     
+    
+    FILE *pFile;
+    
+    pFile= fopen (file_name, "wb");
+    if (pFile==NULL)  return -1; // cannot open    
+        
+    size_t test_ele = fwrite (data , size, 1, pFile);
+    if(test_ele!=1) return -3; // data not written 
+    
+    fclose(pFile);
+    
+    return 0;
+}
+
 int append_to_binary_file(const char * file_name, size_t size, void * data)
 {     
     

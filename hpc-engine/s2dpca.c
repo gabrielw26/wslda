@@ -1708,7 +1708,7 @@ int main( int argc , char ** argv )
 
                 // write potentials
                 sprintf(file_name, "%s/%s.pud", md.outprefix, suffix);
-                file_operation( checkpoint_save_u_and_delta_kzpca(file_name, BLOCKLENGTH, potsall.V_a, potsall.delta) );
+                file_operation( write_binary_file(file_name, sizeof(double)*BLOCKLENGTH*POTCNT, h_potentials) );
             }
 
             // Create check.stamp

@@ -439,8 +439,8 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
             double *_buf;
-            cppmallocl(_buf, NX*4, double);
-            file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, _buf) ); 
+            cppmallocl(_buf, NX*12, double);
+            file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, _buf) ); 
             double complex *_bufC = (double complex*)(_buf+NX*2);
             double complex *_h_potentialsC = (double complex*)(h_potentials+NXY*2);
             ixyz=0;
@@ -449,13 +449,14 @@ int main( int argc , char ** argv )
                  h_potentials [ixyz+0*NXY]=_buf [ix+0*NX]; 
                  h_potentials [ixyz+1*NXY]=_buf [ix+1*NX]; 
                 _h_potentialsC[ixyz      ]=_bufC[ix     ];
+                 for(i=4; i<12; i++) h_potentials [ixyz+i*NXY]=_buf [ix+i*NX]; // other potentials
                 ixyz++;
             }
             
             free(_buf);
         }
         
-        MPI_Bcast(h_potentials, 4*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -564,10 +565,10 @@ int main( int argc , char ** argv )
         {
             sprintf(file_name, "%s/s2dpca.pud", md.inprefix);
             wprintf("# INIT2: LOADING POTENTIALS `%s`...\n", file_name);
-            file_operation( read_binary_file(file_name, NXY*4*sizeof(double), 0, h_potentials) );           
+            file_operation( read_binary_file(file_name, NXY*12*sizeof(double), 0, h_potentials) );           
         }
         
-        MPI_Bcast(h_potentials, 4*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -832,9 +833,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
-#ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
-#endif 
 
     // report result
     if(ip==0)
