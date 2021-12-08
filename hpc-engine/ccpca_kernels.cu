@@ -1369,6 +1369,7 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
     // TODO: ST
     // kernel_compute_norm_many
     // reduce_many(norm)
+    // test if I can commit in web IDE
 
     // compute norm for each wave-function
     for(iwf=0; iwf<n; iwf++) // for each wave-function
