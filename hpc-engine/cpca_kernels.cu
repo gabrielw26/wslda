@@ -1112,20 +1112,8 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                                     gpe, noAllElements);
 
         ierr = local_reductions_many(n, NXY, gpe, gpe);
-        if(ierr!=0) return ierr;\
-
-        //for(iwf=0; iwf<n; iwf++) // for each wave-function
-        //{
-        //    kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift, 
-        //                                            (Complex *)wf_in+shift+n*NXY, (Complex *)wf_out+shift+n*NXY, 
-        //                                            gpe+iwf);
-        //    
-        //    ierr = local_reductionR(gpe+iwf, NXY, gpe+iwf, nthreads, 0);
-        //    if(ierr!=0) return ierr;    
-        //    
-        //    shift+=NXY; // move pointer to next wf
-        //}
-
+        if(ierr!=0) return ierr; 
+        
     }
     else // use given values
     {
