@@ -246,8 +246,12 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
             p0 = csqrt( 2.0*mu_p/ alph_plus) ;
             if ( cimag(p0) < 0. ) p0 *= -1. ;
-            // kc is fixed, and it will be translated into ec
-            ec = alph_plus*kc*kc/2.0 - mu_p;
+
+            //## kc is fixed, and it will be translated into ec
+            //## ec = alph_plus*kc*kc/2.0 - mu_p;
+
+            // ec is fixed, and it will be translated into kc
+            kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
@@ -1519,6 +1523,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         #    1: in-vacuum regularization (Bulgac et al.)
     **/
     int RENORMALIZATION_SCHEME = md.pccrSLDAe;
+    int CUTOFF_CORRECTION = 0; // if = 1, improve chemical potential
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters
@@ -1528,10 +1533,12 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double nt_, nt_1o3, nt_2o3; // power of total local density
     double dx_dnt_;  // derivative of x_ according to nt_ = x_ / (3.*nt_)
     double deF_dnt_; // derivative of eF_ according to nt_ = kF_ * kF_ / (3.*nt_)
-    double ctilde_, ctilde_p; // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
+    double ctilde_, ctilde_p;
+        // ctilde_ ~ alpha_ * nt_1o3 * inverse_gamma_
+        // but depends on regularization scheme
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
-    double lambda_, lmu_sc; // spherical cutoff integral
-    double analytic_mu;
+    double lambda_, lambda_p, lmu_sc; // spherical cutoff integral
+    double a_ln_a, a_ln_a_p; // log alpha correction register to ctilde_
     //##
     // register for total density
     nt_ = n0_a + n0_b;
@@ -1562,24 +1569,20 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     beta_p = dx_dnt_ * beta_parameter(1, x_, id);
     inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
     af_ = a_functional(x_, id);
-    // bf_ = b_functional(x_, id);
-    bf_ = b_functional_aps(x_, id);
-    cf_ = c_functional(x_, id); // unrequired
+    //bf_ = b_functional(x_, id);
+    bf_ = b_functional_aps(x_, id); // fit of b_functional(x_, id)
+    cf_ = c_functional(x_, id); // unrequired for in-medium renormalization
     // definition independent of the functional and pairing form used
     af_p = (alpha_ - af_) / nt_;
     bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-    //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
-    //##
+    cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired for in-medium renormalization
+
     // initial values
     ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
-
     inverse_gamma_eff = inverse_gamma_ *
       (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-
-    ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
-      alpha_p * nt_1o3 * inverse_gamma_;
-
-    //&& analytic_mu = chemical_potential(0, x_, id) * eF_;
+    ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) +
+      af_p * nt_1o3 * inverse_gamma_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy(0, x_, id), chemical_potential(0, x_, id), pairing_gap(0, x_, id));
@@ -1650,6 +1653,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double tau_m, tau_p;
     double V_a, V_b, eta_a, eta_b;
     double complex p0, wz_0;
+    double p0_;
     double complex Zzero = 0.0 + I*0.0;
     double complex Zone  = 1.0 + I*0.0;
     double uk, vk, ek;
@@ -1660,6 +1664,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double beta, T, S;
     double energy_kin, energy_pot, energy_pair, energy_tot;
     double ec=md.ec;
+
 
     // iterate over temperatures range
     for(T=md.init0Tstart; T>=md.init0Tstop; T-=md.init0DeltaT)
@@ -1676,57 +1681,55 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             delta_old=delta;
             nu_old=nu;
 
-            // potential
-            tau_p=tau_a + tau_b;
-            tau_m=tau_a - tau_b;
-
-            V_a = af_p * (tau_a + tau_b) / 2.; // kinetic contribution
-            V_b = af_p * (tau_a + tau_b) / 2.; // kinetic contribution
-
-            V_a += beta_ * eF_; // mean-field contribution
-            V_b += beta_ * eF_; // mean-field contribution
-
-            V_a += -ctilde_p*delta*delta/alpha_ - alpha_p*delta*nu/alpha_;
-            V_b += -ctilde_p*delta*delta/alpha_ - alpha_p*delta*nu/alpha_;
+            // potential (kinetic contribution)
+            V_a = af_p * (tau_a + tau_b) / 2.;
+            V_b = af_p * (tau_a + tau_b) / 2.;
+            // potential (mean-field contribution)
+            V_a += beta_ * eF_;
+            V_b += beta_ * eF_;
+            // potential (pairing contribution)
+            V_a += -ctilde_p*delta*delta/af_ - af_p*delta*nu/af_;
+            V_b += -ctilde_p*delta*delta/af_ - af_p*delta*nu/af_;
 
             // effective pairing coupling constants and pairing field
             if (RENORMALIZATION_SCHEME == 0) {
-              lmu_sc = 2. * (mu_a + mu_b) / 2. - (V_a + V_b) / 2.
-                     + af_p * (tau_a + tau_b) / 2.;
+              lmu_sc = (mu_a + mu_b) - (V_a + V_b) / 2.;
+              ec = af_ * kc * kc / 2. - lmu_sc - (mu_a + mu_b) / 2.;
+              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+              //
+              // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
+              a_ln_a = af_ * log (alpha_);
+              a_ln_a_p = af_p * log (alpha_) + af_ * (alpha_p/alpha_);
+              ctilde_ = alpha_ * (af_ * nt_1o3 * inverse_gamma_) +
+                        kF_ / (2. * M_PI_SQ) * a_ln_a;
+              //
+              inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+              //
+              ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 * inverse_gamma_;
+              ctilde_p *= alpha_;
+              ctilde_p += alpha_p * (af_ * nt_1o3 * inverse_gamma_);
+              ctilde_p += kF_ / (2. * M_PI_SQ) * (a_ln_a_p + a_ln_a / (3. * nt_));
             } else if (RENORMALIZATION_SCHEME == 1) {
               lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
-            } else {
-              lmu_sc = 0.;
-            }
-            // we must remove kinetic part of the potential
-            // due to the fact that af_ != alpha_ (warning for ASLDA...)
-            // actually, regularization must be performed
-            // from analytic point of view
+              ec = af_ * kc * kc / 2. - lmu_sc;
+              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+              //
+              ctilde_ = af_ * nt_1o3 / cf_;
+              inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+              ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
+            } else { }
 
-            // lambda_ = pcc_renormalization (x_, lmu_sc, id);
-            p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
-            // ec = alpha_*kc*kc/2.0 - lmu_sc; // kc is fixed, and it will be translated into ec (do not work very well: probably wrong...?)
-            kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
             if (lmu_sc >= 0) {
-              lambda_ = (kc + p0) / (kc - p0);
-              lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
+              lambda_ = (kc + p0_) / (kc - p0_);
+              lambda_ = 1. - p0_ / (2. * kc) * log(lambda_);
               lambda_ *= kc / (2. * M_PI_SQ);
             } else {
-              lambda_ = p0 / kc;
-              lambda_ = 1. + p0 / kc * atan(lambda_);
+              lambda_ = p0_ / kc;
+              lambda_ = 1. + p0_ / kc * atan(lambda_);
               lambda_ *= kc / (2. * M_PI_SQ);
             }
-
-            ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
-
-            inverse_gamma_eff = inverse_gamma_ *
-              (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-
-            ctilde_p = inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
-              alpha_p * nt_1o3 * inverse_gamma_;
-
-            g_eff = alpha_ / (ctilde_ - lambda_);
-            delta = -nu * g_eff; //##
+            g_eff = af_ / (ctilde_ - lambda_);
+            delta = -nu * g_eff;
 
             // contribution from states to densities
             S=0.0;
@@ -1750,9 +1753,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
                 {
                     eta_a = alph_a*kk2[ixyz]/2.0 + V_a - mu_a;
                     eta_b = alph_b*kk2[ixyz]/2.0 + V_b - mu_b;
-                    // due to renormalization, we must consider
-                    // af_ * k*k / 2 + V - mu
-                    // and not "alpha_ * k*k"
 
                     // solution 1:
                     ek = -0.5*(eta_b-eta_a) + 0.5*sqrt( (eta_b-eta_a)*(eta_b-eta_a) + 4.0*(eta_a*eta_b + delta*delta));

@@ -681,11 +681,15 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double nt_, nt_1o3, nt_2o3; // power of total local density
     double dx_dnt_;  // derivative of x_ according to nt_ = x_ / (3.*nt_)
     double deF_dnt_; // derivative of eF_ according to nt_ = kF_ * kF_ / (3.*nt_)
-    double ctilde_, ctilde_p; // ctilde_ = alpha_ * nt_1o3 * inverse_gamma_
+    double ctilde_, ctilde_p;
+        // ctilde_ ~ alpha_ * nt_1o3 * inverse_gamma_
+        // but depends on regularization scheme
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
     double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
+    double ec_, kc_, p0_;
     double ec = md.ec;
     double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
+    double a_ln_a, a_ln_a_p; // log correction to ctilde_
     //##
 
     // densities - decode
@@ -712,6 +716,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int ix, iy, iz, ixyz; // lattice coordinates
     int i, is_converged;   // self-consistent loop
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
+    double nt_reg;
 
     // get range of points for computation
     int myuidx=0, mylidx=0;
@@ -750,16 +755,16 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             eF_ = pow(kF_, 2) / 2.;
             as_ = md.sclgth; // s-wave scattering length
             x_ = fabs(as_ * kF_); // density-dependent coupling constant
-            t1 = p_regularization(nt_); // see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
-                                        // t1 is f_reg function
-            if (t1>0.0) {
-              dx_dnt_ = t1 * x_ / (3. * nt_);
-              deF_dnt_ = t1 * pow(kF_, 2) / (3. * nt_);
+
+            nt_reg = p_regularization(nt_);
+            // see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
+            if (nt_reg > 0.0) {
+              dx_dnt_ = nt_reg * x_ / (3. * nt_);
+              deF_dnt_ = nt_reg * pow(kF_, 2) / (3. * nt_);
             } else {
               dx_dnt_ = 0.00;
               deF_dnt_ = 0.00;
             }
-
 
             //##
             // select functional and HFB paramters
@@ -774,20 +779,19 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             beta_ = beta_parameter(0, x_, id);
             inverse_gamma_ = inverse_gamma_parameter(0, x_, id);
             alpha_p = dx_dnt_ * alpha_parameter(1, x_, id);
-            //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id);
+            //&& beta_p = dx_dnt_ * beta_parameter(1, x_, id); // unrequired
             inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter(1, x_, id);
             af_ = a_functional(x_, id);
-            //&& bf_ = b_functional(x_, id);
-            //&& cf_ = c_functional(x_, id); // unrequired
+            //&& bf_ = b_functional(x_, id); // unrequired
+            //&& cf_ = c_functional(x_, id); // unrequired for in-medium regularization
             // definition independent of the functional and pairing form used
-            // t1 is f_reg function computed above
-            if (t1>0.0) {
-              af_p = t1*(alpha_ - af_) / nt_;
+            if (nt_reg > 0.0) {
+              af_p = nt_reg * (alpha_ - af_) / nt_;
             } else {
               af_p = 0.00;
             }
             //&& bf_p = 5. / 3. * (beta_ - bf_) / nt_;
-            //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired
+            //&& cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_); // unrequired for in-medium regularization
             //##
 
             // start computation of delta and mean-field
@@ -855,7 +859,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     #endif
 
             // prepare other variables for self-consistent process
-            // used in case of RENORMALIZATION_SCHEME == 1
             Va = V_a[ixyz] + v_ext_a; // initial values
             Vb = V_b[ixyz] + v_ext_b; // initial values
 
@@ -863,79 +866,96 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
             delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
 
-
             // self-consistent computation of Va and Vb and delta
             for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
             {
 
-                // effective pairing coupling constants and pairing field
-                if (RENORMALIZATION_SCHEME == 0) { // factor 2 for (local) mu
-                lmu_sc = 2. * (dc_mu_a - v_ext_a + dc_mu_b - v_ext_b) / 2.
-                        - (Va - v_ext_a - Vkin_a + Vb - v_ext_b - Vkin_b) / 2.;
-                } else if (RENORMALIZATION_SCHEME == 1) {
+              // effective pairing coupling constants and pairing field
+              if (RENORMALIZATION_SCHEME == 0) {
+                lmu_sc = (dc_mu_a + dc_mu_b) - (Va + Vb) / 2.;
+                ec_ = af_ * md.kc * md.kc / 2. - lmu_sc - (dc_mu_a + dc_mu_b) / 2.;
+                kc_ = sqrt (fabs (2. * (ec_ + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
+                p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+                //
+                // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
+                a_ln_a = af_ * log (alpha_);
+                a_ln_a_p = af_p * log (alpha_) + af_ * (alpha_p/alpha_);
+                ctilde_ = alpha_ * (af_ * nt_1o3 * inverse_gamma_) +
+                          kF_ / (2. * M_PI_SQ) * a_ln_a;
+                //
+                inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+                //
+                if (nt_reg > 0.) {
+                  ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
+                } else {
+                  ctilde_p = 0.;
+                }
+                ctilde_p += af_p * nt_1o3 * inverse_gamma_;
+                ctilde_p *= alpha_;
+                ctilde_p += alpha_p * (af_ * nt_1o3 * inverse_gamma_);
+                ctilde_p += kF_ / (2. * M_PI_SQ) * a_ln_a_p;
+                if (nt_reg > 0.) {
+                  ctilde_p += nt_reg * kF_ / (2. * M_PI_SQ) * a_ln_a / (3. * nt_);
+                } else {
+                  ctilde_p += 0.;
+                }
+              } else if (RENORMALIZATION_SCHEME == 1) {
                 lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
+                ec_ = af_ * md.kc * md.kc / 2. - lmu_sc;
+                kc_ = sqrt (fabs (2. * (ec_ + lmu_sc) / af_));
+                p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+                //
+                cf_ = c_functional(x_, id); // time consuming calculation: require fit as done for b_functional(x_, id)
+                if (nt_reg > 0.) {
+                  cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
                 } else {
-                lmu_sc = 0.;
+                  cf_p = 0.;
                 }
-                // in case of RENORMALIZATION_SCHEME == 0
-                // We must remove kinetic part of the potential
-                // due to the fact that af_ != alpha_ (warning for ASLDA...)
-                // Then we remove v_ext contribution only to the local
-                // chemical potential
-                // Also, do not remove currents contribution because
-                // Vkin remove properly galilean covariant terms, ie.
-                // V_kin = af_p * (tau - j^2/n) / 2.
-
-                //lambda_ = pcc_renormalization (x_, lmu_sc, id);
-                p0 = sqrt (fabs (2. * (0. + lmu_sc) / alpha_));
-                kc = sqrt (fabs (2. * (ec + lmu_sc) / alpha_));
-                if (lmu_sc >= 0) {
-                lambda_ = (kc + p0) / (kc - p0);
-                lambda_ = 1. - p0 / (2. * kc) * log(lambda_);
-                lambda_ *= kc / (2. * M_PI_SQ);
+                //
+                ctilde_ = af_ * nt_1o3 / cf_;
+                inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+                if (nt_reg > 0.) {
+                  ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
                 } else {
-                lambda_ = p0 / kc;
-                lambda_ = 1. + p0 / kc * atan(lambda_);
-                lambda_ *= kc / (2. * M_PI_SQ);
+                  ctilde_p = 0.;
                 }
+                ctilde_p += af_p * nt_1o3 / cf_;
+              } else { }
 
-                ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
+              if (lmu_sc >= 0) {
+                lambda_ = (kc_ + p0_) / (kc_ - p0_);
+                lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
+                lambda_ *= kc_ / (2. * M_PI_SQ);
+              } else {
+                lambda_ = p0_ / kc_;
+                lambda_ = 1. + p0_ / kc_ * atan(lambda_);
+                lambda_ *= kc_ / (2. * M_PI_SQ);
+              }
 
-                inverse_gamma_eff = inverse_gamma_ *
-                (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
+              g_eff = af_ / (ctilde_ - lambda_);
+              ldelta = -lnu * g_eff; //##
 
-                if (p_regularization(nt_) > 0.0) {
-                  ctilde_p = pow(p_regularization(nt_), 2./3.)*inverse_gamma_eff * alpha_ / (3. * nt_2o3) +
-                  alpha_p * nt_1o3 * inverse_gamma_;
-                } else {
-                  ctilde_p = alpha_p * nt_1o3 * inverse_gamma_;
-                }
+              // potential
+              delta_dag_nu = creal(conj(ldelta) * lnu);
+                          // delta^+ * nu
+              delta_abs_sq = creal(ldelta) * creal(ldelta) +
+                          cimag(ldelta) * cimag(ldelta);
+                          // delta^+ * delta
 
+              Vanew = Va_const - (af_p / af_) * delta_dag_nu -
+                      ctilde_p / af_ * delta_abs_sq;
+              Vbnew = Vb_const - (af_p / af_) * delta_dag_nu -
+                      ctilde_p / af_ * delta_abs_sq;
 
-                g_eff = alpha_ / (ctilde_ - lambda_);
-                ldelta = -lnu * g_eff; //##
+              // check convergence for original renormalization scheme
+              is_converged = 1;
+              if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
+              if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
+              if (is_converged) break;
 
-                // potential
-                delta_dag_nu = creal(conj(ldelta) * lnu);
-                            // delta^+ * nu
-                delta_abs_sq = creal(ldelta) * creal(ldelta) +
-                            cimag(ldelta) * cimag(ldelta);
-                            // delta^+ * delta
-
-                Vanew = Va_const - (alpha_p / alpha_) * delta_dag_nu -
-                        ctilde_p / alpha_ * delta_abs_sq;
-                Vbnew = Vb_const - (alpha_p / alpha_) * delta_dag_nu -
-                        ctilde_p / alpha_ * delta_abs_sq;
-
-                // check convergence for original renormalization scheme
-                is_converged = 1;
-                if (fabs(Vanew - Va) > UD_EPSILON) is_converged = 0; // Va not converged
-                if (fabs(Vbnew - Vb) > UD_EPSILON) is_converged = 0; // Vb not converged
-                if (is_converged) break;
-
-                // mixing of potentials
-                Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
-                Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
+              // mixing of potentials
+              Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;
+              Vb = UD_MIX_COEFF * Vbnew + (1. - UD_MIX_COEFF) * Vb;
             }
 
             //if(i==UD_SCITERS) return -1; // error
@@ -1081,7 +1101,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
 
         af_ = a_functional(x_, id);
         //bf_ = b_functional(x_, id);
-        bf_ = b_functional_aps(x_, id);
+        bf_ = b_functional_aps(x_, id); // fit of b_functional(x_, id)
 
 
         // current corrections

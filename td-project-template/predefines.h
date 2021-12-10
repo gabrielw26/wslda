@@ -19,14 +19,23 @@
  *      for simulating unitary Fermi gas,
  *      at qualitative level it produces results compatible with SLDA, however it is more accurate,
  *      due to presence of current terms in the functional it has worse convergence properties.
+ *  - SLDAE:
+ *      for simulating Fermi gas for an arbitrary value of akF,
+ *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
- *      you MUST set aBdG value in input file when using this functional.
+ *      you MUST set aBdG value in input file when using this functional 
+ *  - CUSTOMEDF:
+ *      use this option to define your custom functional,
+ *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
+ *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
 #define FUNCTIONAL ASLDA
+// #define FUNCTIONAL SLDAE
 // #define FUNCTIONAL BDG
+// #define FUNCTIONAL CUSTOMEDF
 
 /**
  * Select which external potentials you want to use in simulations.
@@ -36,11 +45,14 @@
  *       function delta_ext(...) from problem definition will be called in each iteration.
  *   - ENABLE_VELOCITY_EXT:
  *       function velocity_ext(...) from problem definition will be called in each iteration.
+ *   - ENABLE_MODIFY_POTENTIALS:
+ *       function modify_potentials(...) from problem definition will be called in each iteration.
  * In order to achieve best performance disable call of empty functions.
  * */
 #define ENABLE_V_EXT
 // #define ENABLE_DELTA_EXT
 // #define ENABLE_VELOCITY_EXT
+// #define ENABLE_MODIFY_POTENTIALS
 
 /**
  * Maximal number of parameters in params array

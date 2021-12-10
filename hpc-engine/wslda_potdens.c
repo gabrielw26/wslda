@@ -68,3 +68,27 @@ wslda_potential convert_into_wslda_potential(double *h_potentials, int blockleng
     
     return d;
 }
+
+int reset_potentials(wslda_potential d)
+{
+    int ixyz;
+    for(ixyz=0; ixyz<d.blocklength; ixyz++)
+    {
+        d.V_a[ixyz]=0.0;
+        d.V_b[ixyz]=0.0;
+        d.delta[ixyz]=0.0+I*0.0;
+        
+        d.alpha_a[ixyz]=1.0;
+        d.alpha_b[ixyz]=1.0;
+        
+        d.A_a_x[ixyz]=0.0;
+        d.A_a_y[ixyz]=0.0;
+        d.A_a_z[ixyz]=0.0;
+        d.A_b_x[ixyz]=0.0;
+        d.A_b_y[ixyz]=0.0;
+        d.A_b_z[ixyz]=0.0;
+    }
+    
+    return 0;
+}
+

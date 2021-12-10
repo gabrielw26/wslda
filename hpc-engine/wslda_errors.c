@@ -100,8 +100,8 @@ void report_error(int errcode, FILE *stream)
             break;
             
         case WSLDA_ERR_ABDG_NOT_SET:
-            wfprintf(stream, "\tFor calculations with FUNCTIONAL==BDG\n");
-            wfprintf(stream, "\tit is required to set aBdG in input file!\n");
+            wfprintf(stream, "\tFor calculations with FUNCTIONAL in [BDG, SLDAE] \n");
+            wfprintf(stream, "\tit is required to set sclgth in the input file!\n");
             break;
             
         case WSLDA_ERR_TD_CANNOT_LOAD_CHECKPOINT_DATA:

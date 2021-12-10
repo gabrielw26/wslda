@@ -1,38 +1,41 @@
-# ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
-inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
+# ------------------- INITIALIZATION ------------------
+inittype                0       #  0 - create uniform solution and evolve it
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
                                 #  
                                 #  1 - start from st-wslda-1d solution, inprefix points to folder with s1dpca binary files 
                                 #  2 - start from st-wslda-2d solution, inprefix points to folder with s2dpca binary files 
                                 #  3 - start from st-wslda-3d solution, inprefix points to folder with s3dpca binary files 
                                 #  
-                                #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                  
+                                #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files
        
 # ------------------- INPUT/OUTPUT ------------------
 outprefix               test
 inprefix                none
 overwrite               1
-iogroups                8      # number of IO groups
+iogroups                8       # number of IO groups
 checkpoint              0       # do checkpoint at the end of calculation?
+checkperiod             0       # periodicity of the checkpoint, meaningful only if checkpoint=1
+                                # if checkperiod>0 then after each checkperiod measurements the checkpoint will be conducted
+                                # if checkperiod=0 the option is deactivated (default) 
 walltime                11.9    # after this time force checkpoint [hr]
 
 # list of variables for writing
-# all = rho delta j nu tau V V_ext delta_ext velocity_ext
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
 # default = rho delta j
-writevar           default
+writevar           all
 
-# aBdG                -0.9 # scattering length for BDG mode 
+# ----------------- SCATTERING LENGTH ---------------
+sclgth    -1.0 # scattering length in units of lattice spacing
+               # meaningful only for FUNCTIONAL=BDG,SLDAE
+               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity 
 
-# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
+# ------------------- TIME EVOLUTION ----------------
 dt                      0.0035   # integration time step, in units of eF^-1
 measurements            10        # number of requested mesurments
 timesteps               100      # number of time steps between each measurement
                                  # measurements are written with time resolution: timesteps*dt
                                  # the total trajectory length is: measurements*timesteps*dt
 selfstart               0        # use Taylor expansion for first 5 steps? 
-
-
-
 
 # ------------------ GPUS THREADING SET --------------
 # nthreads                512      # number of parallel threads executing by each GPU, default=512

@@ -106,6 +106,38 @@ extern "C" void process_params(double *params, double *kF, double *mu, size_t ex
 }
 
 /**
+ * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
+ * IT IS CALLED ONLY IF ENABLE_MODIFY_POTENTIALS IS DEFINED (in predefines.h)
+ * Before each diagonalization process, user can modify arbitrarily potentials
+ * @param it iteration number
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
+ * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ * Global variabls deliver by tdwslda_functionals_framework_enable.h are:
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * */
+#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
+__global__ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials)
+{    
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        // decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i);
+        // // Now ix, iy, iz keeps lattice coordinate. 
+        
+        // h_potentials.V_a[ixyz] stores value of spin-up particles mean-field potential for coordinate (x,y,z)
+        // and similarly for other potentials
+        // ... below you can modify them your wish ...
+        // 
+    }
+}
+#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
+
+/**
  * This function provides size of extra_data array, in bytes.
  * The extra_data of specified size will be allocated by the main process.
  * This function is thread-safe.
@@ -133,4 +165,99 @@ extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
 }
 
 
+/**
+ * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
+ * @see hpc-engine/tdwslda_functionals.h for more details
+ * */
+
+#if FUNCTIONAL==CUSTOMEDF
+#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
+__global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double cccoeff)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+    
+//     double na,nb;
+//     double Va_ext,Vb_ext;
+    
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i); // decode cartesian coordinates
+        
+//         // external potential
+//         Va_ext=u_ext(ix,iy,iz,it,SPINA);
+//         Vb_ext=u_ext(ix,iy,iz,it,SPINB);
+//         
+//         // read densities
+//         na=h_densities.rho_a[ixyz];
+//         nb=h_densities.rho_b[ixyz];
+        
+//         // save potential to global memory
+//         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
+//         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential 
+//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
+//         ...
+    }
+}
+
+
+__global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, // <-- INPUT
+                                       double *E_kin, double *E_pot, double *E_pair, double *E_curr)    // <- OUTPUT
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    
+    double na, nb;
+    double taua, taub;
+    double jxa, jya, jza, jxb, jyb, jzb;
+    
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        // densities
+        na=h_densities.rho_a[ixyz];
+        nb=h_densities.rho_b[ixyz];
+        
+        // kinetic energy
+        taua=h_densities.tau_a[ixyz]; 
+        taub=h_densities.tau_b[ixyz];  
+        
+        // currents
+#if CODEDIM>=1
+        jxa=h_densities.j_a_x[ixyz];
+        jxb=h_densities.j_b_x[ixyz];
+#endif
+#if CODEDIM>=2
+        jya=h_densities.j_a_y[ixyz];
+        jyb=h_densities.j_b_y[ixyz];
+#else        
+        jya=0.0;
+        jyb=0.0;
+#endif
+#if CODEDIM>=3
+        jza=h_densities.j_a_z[ixyz];
+        jzb=h_densities.j_b_z[ixyz];
+#else
+        jza=0.0;
+        jzb=0.0;
+#endif
+        
+//         taua-=p_regularization(na)*(jxa*jxa+jya*jya+jza*jza)/na; // -ja^2/na: correction for tilde{tau}_a
+//         taub-=p_regularization(nb)*(jxb*jxb+jyb*jyb+jzb*jzb)/nb; // -jb^2/nb: correction for tilde{tau}_b
+// 
+//         // galilean invariant contribution
+//         E_kin[ixyz]=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub)*VOLUME_ELEMENT;
+//         
+//         // potential energy
+//         E_pot[ixyz]=0.0;
+//         
+//         // pairing energy
+//         E_pair[ixyz]=(h_potentials.delta[ixyz]*thrust::conj(h_densities.nu[ixyz])).real()*(-1.0)*VOLUME_ELEMENT;
+//         
+//         // flow energy
+//         E_curr[ixyz]= p_regularization(na)*(jxa*jxa + jya*jya + jza*jza)/(2.*na)*VOLUME_ELEMENT  
+//                     + p_regularization(nb)*(jxb*jxb + jyb*jyb + jzb*jzb)/(2.*nb)*VOLUME_ELEMENT;
+
+    }
+}
+#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
+#endif
 
