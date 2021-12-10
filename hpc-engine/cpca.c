@@ -978,14 +978,13 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
-            
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             // executing exp[-i*H(t)*dt]*psi
             // H*psi - first execution, d_fkm3 as working buffer
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NXY*sizeof(cufftDoubleComplex)) );
@@ -1016,7 +1015,7 @@ int main( int argc , char ** argv )
                 }
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
                 // effective mass correction
-                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_densities, md.nthreads) );
+                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_potentials, md.nthreads) );
                 gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
             
@@ -1061,14 +1060,14 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
             // NOTE - densities and potentials are computed for midpoint 
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             
             // recompute derivatives for d_wf
             if(gradients_computed)
@@ -1081,7 +1080,7 @@ int main( int argc , char ** argv )
             }            
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
            
@@ -1111,7 +1110,7 @@ int main( int argc , char ** argv )
                 }
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
                 // effective mass correction
-                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_densities, md.nthreads) );
+                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_potentials, md.nthreads) );
                 gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif                
            
@@ -1244,13 +1243,13 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             // H*psi
             gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
@@ -1307,14 +1306,13 @@ int main( int argc , char ** argv )
                 wslda_density densall_subset = convert_into_wslda_density(h_densities_subset, NXY);
                 file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
             }
-            
+            // potentials
+            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
-            // potentials
-            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );  
+#endif  
             
             // Preparation of buffers for next step
 #if INTEGRATION_SCHEME==AB3AM4

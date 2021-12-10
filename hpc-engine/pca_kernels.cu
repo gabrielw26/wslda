@@ -1426,31 +1426,19 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 // =======================================================================================
 // ============================== multiply_wf_by_alpha ===================================
 // =======================================================================================
-__global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_b, Complex *wf_in, Complex *wf_out)
+__global__ void kernel_multiply_wf_by_alpha(int n, double * alpha_a, double * alpha_b, Complex *wf_in, Complex *wf_out)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
 
     // registers
     int iwf;
-    double kF_, as_, x_;
-    double na, nb, p;
+    double na, nb;
     Complex u, v;
 
     if(ixyz<NXYZ)
     {
-        na=rho_a[ixyz];
-        nb=rho_b[ixyz];
-        p = polarization(na, nb);
-#if FUNCTIONAL==SLDAE
-        kF_ = pow(3. * M_PI_SQ * (na+nb), 1. / 3.);
-        as_ = dc_sclgth ;
-        x_ = fabs(as_ * kF_);
-        na = a_functional_d0(x_);
-        nb = a_functional_d0(x_);
-#else
-        na=alpha_a(p); // na as working buffer
-        nb=alpha_b(p); // nb as working buffer
-#endif
+        na=alpha_a[ixyz];
+        nb=alpha_b[ixyz];
 
         for(iwf=0; iwf<n; iwf++)
         {
@@ -1469,36 +1457,18 @@ __global__ void kernel_multiply_wf_by_alpha(int n, double * rho_a, double * rho_
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf_in array with wave-functions (INPUT)
  * @param wf_out array with wave-functions (OUTPUT),
- * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
- *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXYZ,
- *                          nu - double complex array of size NXYZ,
- *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXYZ
- *                   In total size of d_densites is 12*NXYZ
+ * @param d_potentials collective array with potentials (INPUT)
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  **/
-extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, double *d_densities, int nthreads)
+extern "C" int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, double *d_potentials, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
 
-    // Set pointers for to simplify notation
-    // densities
-//     Complex *nu   =(Complex *)(d_densities +  0*NXYZ);
-    double *rho_a = (double *)(d_densities +  2*NXYZ);
-//     double *tau_a = (double *)(d_densities +  3*NXYZ);
-//     double *j_a_x = (double *)(d_densities +  4*NXYZ);
-//     double *j_a_y = (double *)(d_densities +  5*NXYZ);
-//     double *j_a_z = (double *)(d_densities +  6*NXYZ);
-    double *rho_b = (double *)(d_densities +  7*NXYZ);
-//     double *tau_b = (double *)(d_densities +  8*NXYZ);
-//     double *j_b_x = (double *)(d_densities +  9*NXYZ);
-//     double *j_b_y = (double *)(d_densities + 10*NXYZ);
-//     double *j_b_z = (double *)(d_densities + 11*NXYZ);
+    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXYZ, NULL);
 
-
-    kernel_multiply_wf_by_alpha<<<nblocks, nthreads>>>(n, rho_a, rho_b, (Complex *)wf_in, (Complex *)wf_out);
+    kernel_multiply_wf_by_alpha<<<nblocks, nthreads>>>(n, potsall.alpha_a, potsall.alpha_b, (Complex *)wf_in, (Complex *)wf_out);
 
     return 0;
 }
