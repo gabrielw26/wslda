@@ -363,7 +363,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         Va=u_ext(ix,iy,iz,it,SPINA);
         Vb=u_ext(ix,iy,iz,it,SPINB);
 
-        t5 = 1.0/ (4.0*M_PI*scattering_lenght(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data));
+        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data));
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
@@ -521,7 +521,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = scattering_lenght(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth ; 
+        as_ = scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth ; 
         x_ = fabs(as_ * kF_);
         nt_reg = p_regularization(nt_);
         if (nt_reg > 0.0) {
@@ -789,7 +789,7 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
         nt_ = na + nb;
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = scattering_lenght(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth;
+        as_ = scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth;
         x_ = fabs(as_ * kF_);
 
         // sldae functional paramters
