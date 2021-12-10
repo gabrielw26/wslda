@@ -247,10 +247,10 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             if ( cimag(p0) < 0. ) p0 *= -1. ;
 
             //## kc is fixed, and it will be translated into ec
-            //## ec = alph_plus*kc*kc/2.0 - mu_p;
+            ec = alph_plus*kc*kc/2.0 - mu_p;
 
-            // ec is fixed, and it will be translated into kc
-            kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
+//             // ec is fixed, and it will be translated into kc
+//             kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
