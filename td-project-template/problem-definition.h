@@ -165,7 +165,7 @@ extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
 }
 
 /**
- * Scattering length, in units of lattice constants.
+ * Scattering length, in code units.
  * This function is meaningful only in the case of BDG or SLDAE functionals.
  * For SLDA and ASLDA the scattering length is assumed to be infinite, and the function is ignored.
  * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)

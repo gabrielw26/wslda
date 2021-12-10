@@ -1,3 +1,12 @@
+params0     0.5 # amplitude
+params1     2.0 # simgma_x
+params2     0.0 # simgma_y
+params3     0.0 # simgma_z
+params4     5.0 # start
+params5    55.0 # stop
+params6    15.0 # switch
+params7       0 # sign flip
+
 # ------------------- INITIALIZATION ------------------                                                                                                                                                                                                  
 inittype                0       #  0 - create uniform solution and evolve it                                                                                                                                                
                                 # 10 - read uniform solution from file `inprefix`/uniform.solution
@@ -9,11 +18,11 @@ inittype                0       #  0 - create uniform solution and evolve it
                                 #  5 - start from td-wslda checkpoint, inprefix points to folder with checkpoint binary files                                                                                                                                                  
        
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test.cp.wrt
+outprefix               test
 inprefix                none
 overwrite               1
-iogroups                8       # number of IO groups
-checkpoint              1       # do checkpoint at the end of calculation?
+iogroups                8      # number of IO groups
+checkpoint              0       # do checkpoint at the end of calculation?
 walltime                11.9    # after this time force checkpoint [hr]
 
 # list of variables for writing
@@ -26,8 +35,8 @@ sclgth              -1.1 # scattering length in units of lattice spacing
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.0035   # integration time step, in units of eF^-1
-measurements            10        # number of requested mesurments
-timesteps               100      # number of time steps between each measurement
+measurements            100        # number of requested mesurments
+timesteps               286      # number of time steps between each measurement
                                  # measurements are written with time resolution: timesteps*dt
                                  # the total trajectory length is: measurements*timesteps*dt
 selfstart               0        # use Taylor expansion for first 5 steps? 
@@ -40,7 +49,6 @@ nthreads                512
 batch                   100000
 
 # --------------------- OTHER -----------------
-spinsymmetry            0       # spin symmetric system
 # current corrections
 # ccstart                 0.
 # ccswitch                10.
@@ -53,12 +61,12 @@ spinsymmetry            0       # spin symmetric system
 # qfswitch                0.0     # time for switch function
 
 # ----------- IN CASE OF: inittype=0 ----------------
-temperature             0.1      # requested temperature in units of eF, default T=0
+temperature             0.05      # requested temperature in units of eF, default T=0
 # For more info see wiki pages: Initialization of the st wslda solvers
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
-# init0muchange           0.1    # change rate of chemical potentials, default muchange
-init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
+init0muchange           0.5    # change rate of chemical potentials, default muchange
+init0Tstart             0.05    # # start temperature, in units of eF, default value is equal to init0Tstop
 # init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
 # init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9

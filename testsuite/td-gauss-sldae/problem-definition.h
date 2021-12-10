@@ -1,3 +1,18 @@
+/**
+ * Switch function - performs switch in time interval [0-T]
+ * */
+__device__ __host__ inline double switch_function(double t, double T, double alpha)
+{
+    return 0.5*( 1.0+tanh( alpha*tan( M_PI_2*( 2.0*t/T-1.0 ) ) ) );
+}
+
+__device__ __host__ inline double smooth_step(double t, double step_start, double step_stop, double T, double alpha)
+{
+    if(t<=step_start || t>=step_stop) return 0.0; 
+    if(t>=step_start+T && t<=step_stop-T) return 1.0;
+    if(t>step_start && t<step_start+T) return switch_function(t-step_start, T, alpha);
+    else return 1.0-switch_function(t-step_stop+T, T, alpha);
+}
 
 /** 
  * EXTERNAL POTENTIAL V_ext
@@ -6,7 +21,7 @@
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -15,14 +30,25 @@
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
-//     double x = DX*(ix-NX/2);
-//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
-//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
-//     double t = dc_t0 + dc_dt*it; // time
+    double x = DX*(ix-NX/2);
+    double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+    double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+    double t = dc_t0 + dc_dt*it; // time
 
     // ADD HERE FORMULA FOR V_ext(r)
-    double V_ext = 0.0;
-
+    double _a  = params[0]; // amplitude, in eF unit
+    double _wx = params[1]; // width, in lattice unit
+    double _wy = params[2]; // width, in lattice unit
+    double _wz = params[3]; // width, in lattice unit
+    
+    double s = smooth_step(t, params[4], params[5], params[6], 1.0);
+    
+    double V_ext;
+    V_ext = -1.0*_a*s*exp(_wx*pow(x,2)+_wy*pow(y,2)+_wz*pow(z,2)); // attractive
+    
+    if(spin==SPINB && params[7]>0.5) // change sign
+        V_ext*=-1.0;
+        
     return V_ext; 
 }
  
@@ -33,7 +59,7 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param delta - value of delta computed self-consistently for given iteration it. 
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -62,7 +88,7 @@ __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, doub
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param coordinate - Cartesian coordinate of the external velocity vector that should be computed, value from set {XAXIS, YAXIS, ZAXIS}
  *                     NOTE: for 1d code only XAXIS is requested, for 2d code XAXIS and YAXIS are requested.
@@ -102,40 +128,21 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
 extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
     // PROCESS INPUT FILE PARAMETERS 
-
-}
-
-/**
- * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
- * IT IS CALLED ONLY IF ENABLE_MODIFY_POTENTIALS IS DEFINED (in predefines.h)
- * Before each diagonalization process, user can modify arbitrarily potentials
- * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
- *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
- * Global variabls deliver by tdwslda_functionals_framework_enable.h are:
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
-__global__ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials)
-{    
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy, iz, i;
+    double eF = 0.5*kF[0]*kF[0];
+    params[0] *= eF; // amplitude
     
-    if(ixyz<NUMBER_ELEMENT)
+    int i;
+    for(i=1; i<=3; i++) params[i] /= kF[0]; // sigma
+    for(i=1; i<=3; i++) 
     {
-        // decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i);
-        // // Now ix, iy, iz keeps lattice coordinate. 
-        
-        // h_potentials.V_a[ixyz] stores value of spin-up particles mean-field potential for coordinate (x,y,z)
-        // and similarly for other potentials
-        // ... below you can modify them your wish ...
-        // 
+        if(params[i]>0.1) params[i] = -0.5/pow(params[i],2);
+        else              params[i] =  0.0;
     }
+    
+    params[4]/=eF; 
+    params[5]/=eF;
+    params[6]/=eF;
 }
-#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
 
 /**
  * This function provides size of extra_data array, in bytes.
@@ -187,100 +194,4 @@ __device__ double scattering_length(int ix, int iy, int iz, int it, double *para
     // it can be time and position dependent
     // ...
 }
-
-/**
- * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
- * @see hpc-engine/tdwslda_functionals.h for more details
- * */
-
-#if FUNCTIONAL==CUSTOMEDF
-#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
-__global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double cccoeff)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix, iy, iz, i;
-    
-//     double na,nb;
-//     double Va_ext,Vb_ext;
-    
-    if(ixyz<NUMBER_ELEMENT)
-    {
-        decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i); // decode cartesian coordinates
-        
-//         // external potential
-//         Va_ext=u_ext(ix,iy,iz,it,SPINA);
-//         Vb_ext=u_ext(ix,iy,iz,it,SPINB);
-//         
-//         // read densities
-//         na=h_densities.rho_a[ixyz];
-//         nb=h_densities.rho_b[ixyz];
-        
-//         // save potential to global memory
-//         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
-//         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential 
-//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
-//         ...
-    }
-}
-
-
-__global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_potential h_potentials, // <-- INPUT
-                                       double *E_kin, double *E_pot, double *E_pair, double *E_curr)    // <- OUTPUT
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    
-    double na, nb;
-    double taua, taub;
-    double jxa, jya, jza, jxb, jyb, jzb;
-    
-    if(ixyz<NUMBER_ELEMENT)
-    {
-        // densities
-        na=h_densities.rho_a[ixyz];
-        nb=h_densities.rho_b[ixyz];
-        
-        // kinetic energy
-        taua=h_densities.tau_a[ixyz]; 
-        taub=h_densities.tau_b[ixyz];  
-        
-        // currents
-#if CODEDIM>=1
-        jxa=h_densities.j_a_x[ixyz];
-        jxb=h_densities.j_b_x[ixyz];
-#endif
-#if CODEDIM>=2
-        jya=h_densities.j_a_y[ixyz];
-        jyb=h_densities.j_b_y[ixyz];
-#else        
-        jya=0.0;
-        jyb=0.0;
-#endif
-#if CODEDIM>=3
-        jza=h_densities.j_a_z[ixyz];
-        jzb=h_densities.j_b_z[ixyz];
-#else
-        jza=0.0;
-        jzb=0.0;
-#endif
-        
-//         taua-=p_regularization(na)*(jxa*jxa+jya*jya+jza*jza)/na; // -ja^2/na: correction for tilde{tau}_a
-//         taub-=p_regularization(nb)*(jxb*jxb+jyb*jyb+jzb*jzb)/nb; // -jb^2/nb: correction for tilde{tau}_b
-// 
-//         // galilean invariant contribution
-//         E_kin[ixyz]=0.5*(h_potentials.alpha_a[ixyz]*taua + h_potentials.alpha_b[ixyz]*taub)*VOLUME_ELEMENT;
-//         
-//         // potential energy
-//         E_pot[ixyz]=0.0;
-//         
-//         // pairing energy
-//         E_pair[ixyz]=(h_potentials.delta[ixyz]*thrust::conj(h_densities.nu[ixyz])).real()*(-1.0)*VOLUME_ELEMENT;
-//         
-//         // flow energy
-//         E_curr[ixyz]= p_regularization(na)*(jxa*jxa + jya*jya + jza*jza)/(2.*na)*VOLUME_ELEMENT  
-//                     + p_regularization(nb)*(jxb*jxb + jyb*jyb + jzb*jzb)/(2.*nb)*VOLUME_ELEMENT;
-
-    }
-}
-#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
-#endif
 
