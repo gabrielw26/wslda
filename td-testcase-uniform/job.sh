@@ -26,7 +26,7 @@
 ##      cd /home2/archive
 ##      
 ## NOTE: dwarf is not heterogeneous (different nodes have different number of GPUs of a different type),
-## method of distributing tasks across nodes is provided in predefines.h. 
+## method of distributing tasks across nodes is provided in machine.h. 
 
 ## execute code
 cd $PBS_O_WORKDIR

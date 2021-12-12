@@ -82,6 +82,12 @@ ifeq ($(strip $(PYTHON)),)
 PYTHON=python
 endif
 
+# Default values for variables
+ifneq ($(strip $(WSLDA_MACHINE)),)
+CFLAGS := $(CFLAGS) -I$(WSLDA_MACHINE)
+NVCCFLAGS := $(NVCCFLAGS) -I$(WSLDA_MACHINE)
+endif
+
 all: 1d 2d 3d
 
 1d: dirs d1d

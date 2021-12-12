@@ -5,3 +5,4 @@ module load cuda/9.0
 module load openmpi-gcc721-Cuda90/3.1.1
 module list
 
+cat $WSLDA/VERSION.h
