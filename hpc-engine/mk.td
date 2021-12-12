@@ -96,11 +96,11 @@ ext: dirs \
 
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS) 
+	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS)
 
 d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $^ $(LIBS) 
+	$(CXX) -o $(BINDIR)td-wslda-2d $(CFLAGS) $^ $(LIBS)
 
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
@@ -108,16 +108,16 @@ d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WI
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
-	
+
 (BINDIR)interpolate-dataset: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WINTERPOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 
 $(OBJDIR)ccpca.o: $(SRCDIR)ccpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
-	
+
 $(OBJDIR)cpca.o: $(SRCDIR)cpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
-	
+
 $(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
 
@@ -127,21 +127,21 @@ $(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(W
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
 	python $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -I$(OBJDIR) -c -o $@ $<
-	
+
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
-	$(CXX) $(CFLAGS) -c -o $@ $< 
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
-	$(CXX) $(CFLAGS) -c -o $@ $< 
-	
+	$(CXX) $(CFLAGS) -c -o $@ $<
+
 $(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
-	
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
 $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
-	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
-	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $< 
+	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $<
 
 .PHONY: clean all ver dirs
 
@@ -156,6 +156,6 @@ clean:
 	rm -f $(BINDIR)td-wslda-2d
 	rm -f $(BINDIR)td-wslda-3d
 	rm -f $(BINDIR)solve-uniform
-	
+
 ver:
-	$(CXX) --version 
+	$(CXX) --version
