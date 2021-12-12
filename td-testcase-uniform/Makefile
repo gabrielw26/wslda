@@ -8,7 +8,7 @@ NVCC=nvcc
 PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=/home2/archive/wslda/
+WSLDADIR=$(WSLDA)/
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./

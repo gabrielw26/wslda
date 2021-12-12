@@ -7,7 +7,7 @@ CXX=mpiicc
 PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=/gs/hs1/hp190063/share/wslda/
+WSLDADIR=$(WSLDA)/
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./

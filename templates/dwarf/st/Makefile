@@ -12,7 +12,7 @@ CXX=mpicc
 PYTHON=python
 
 # DIRECTORY SETTINGS (must end with /)
-WSLDADIR=$(WSLDA)
+WSLDADIR=$(WSLDA)/
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
