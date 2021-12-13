@@ -22,6 +22,7 @@ walltime                11.9    # after this time force checkpoint [hr]
 writevar           default
 
 aBdG                -1.1 # scattering length for BDG mode 
+sclgth              -1.1 # scattering length in units of lattice spacing
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.00175   # integration time step, in units of eF^-1

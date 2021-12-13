@@ -12,7 +12,7 @@ The toolkit allows for simulating fermionic superfluids like ultracold atomic ga
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
 * Mass imbalanced systems
-* User-defined external potential, external pairing potential, external velocity field
+* User-defined external potential, external pairing potential, external velocity field, time and position dependent scattering length
 * Integration with visualization tool (VisIt)
 * Extensions: templates for codes supporting data analysis, python lib for working with and manipulating data
 * Speeding up of convergence: Broyden mixing, automatic interpolations, quantum friction

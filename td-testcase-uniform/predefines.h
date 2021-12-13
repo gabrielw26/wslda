@@ -28,7 +28,7 @@
  *      you MUST set aBdG value in input file when using this functional 
  *  - CUSTOMEDF:
  *      use this option to define your custom functional,
- *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
+ *      then you need to provide body of functions: tdwslda_compute_energy( ) and tdwslda_compute_potentials( )
  *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
@@ -96,55 +96,23 @@
 #define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
 
 /**
- * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
- * Performance of read/write checkpoint depends on the number of writes involved in IO process,
- * and optimal value depends on the computer. 
- * Use the default value (24) unless you are not satisfied with IO performance. 
- * */
-#define MPI_NP_PER_IO_GROUP 24
-
-/**
  * Active this flag in order to store quasi-particle energies for each measurement.
  * Note that in case of 1d or 2d codes it can require much more space than measurements itself.
  * */
 // #define STORE_QPE
 
 /**
- * Activate this flag in order to print to stdout
- * applied mapping mpi-process <==> device-id.
- * */
-// #define PRINT_GPU_DISTRIBUTION
+ * Machine file. 
+ * This file contains info about machine that will be used in the computation process.
+ * You can specify the file in the following ways: 
+ * - copy `machine.h` file to the current directory, see templates folder for various examples,
+ * - specify the folder with `machine.h` file via -I option in Makefile  
+ * - use system variable WSLDA_MACHINE to specify the folder with `machine.h` file, for example:
+ *   export WSLDA_MACHINE=...
+ **/ 
+#include "machine.h"
 
 /**
- * Activate this flag if target machine has non-standard distribution of GPUs. 
- * In such case you need to provide body of function `assign_deviceid_to_mpi_process`.
- * If this flag is commented-out it is assumed that code is running on a machine 
- * with uniformly distributed GPU cards across the nodes, 
- * and each node has `gpuspernode` (input file parameter) cards.
+ * activate this flag for setting code in testing mode with uniform system
  * */
-// #define CUSTOM_GPU_DISTRIBUTION
-
-/**
- * This function is used to assign unique device-id to mpi process.
- * @param comm MPI communicator
- * @return device-id assign to the process extracted by function MPI_Comm_rank(...)
- * DO NOT REMOVE STATEMENT `#if ... BELOW !!!
- * */
-#if defined(CUSTOM_GPU_DISTRIBUTION) && defined(TDWSLDA_MAIN)
-int assign_deviceid_to_mpi_process(MPI_Comm comm)
-{
-    int np, ip;
-    MPI_Comm_size(comm, &np);
-    MPI_Comm_rank(comm, &ip);
-    
-    // assign here deviceid to process with ip=iam
-    int deviceid=0;
-    
-    return deviceid;
-}
-#endif
-
-// setting code in testing mode with uniform system
 #define UNIFORM_TEST_MODE
-
-
