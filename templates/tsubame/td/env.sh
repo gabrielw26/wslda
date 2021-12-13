@@ -7,4 +7,5 @@ module load fftw/3.3.6
 module list
 
 export WSLDADIR=/gs/hs1/hp190063/share/wslda/
+export WSLDA_MACHINE=$WSLDA/templates/tsubame
 cat $WSLDA/VERSION.h
