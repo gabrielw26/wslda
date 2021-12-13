@@ -21,7 +21,7 @@ if __name__ == '__main__':
         print("where system is:")
         dirs = os.listdir("%s/templates" % WSLDA)
         for d in dirs:
-            if d=="legacy": continue
+            if d in ["legacy", "README.md"]: continue
             print("\t%s" % d)
         print("\tclean <-- use this to clear templates")
         sys.exit(1)
