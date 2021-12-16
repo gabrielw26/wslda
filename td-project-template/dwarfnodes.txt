@@ -1,9 +1,0 @@
-# for advanced users
-node2061.grid4cern.if.pw.edu.pl slots=8
-node2062.grid4cern.if.pw.edu.pl slots=8
-node2063.grid4cern.if.pw.edu.pl slots=4
-node2064.grid4cern.if.pw.edu.pl slots=4
-node2065.grid4cern.if.pw.edu.pl slots=4
-node2066.grid4cern.if.pw.edu.pl slots=4
-node2067.grid4cern.if.pw.edu.pl slots=8
-node2068.grid4cern.if.pw.edu.pl slots=2

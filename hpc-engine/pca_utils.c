@@ -263,7 +263,10 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"writeecut") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.writeecut);
         else if (strcmp (tag,"aBdG") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
+            md.sclgth=md.aBdG;
+        }
         else if (strcmp (tag,"nocurrents") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nocurrents);
         else if (strcmp (tag,"killcurrents") == 0)
@@ -314,11 +317,18 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.subsetShiftDmu);
         // SLDAE
         else if (strcmp (tag,"aSLDAe") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.aSLDAe);
+            md.sclgth=md.aSLDAe;
+        }
         else if (strcmp (tag,"pccrSLDAe") == 0)
             sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
         else if (strcmp (tag,"sclgth") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.sclgth);
+            md.aSLDAe=md.sclgth;
+            md.aBdG=md.sclgth;
+        }
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -733,14 +743,14 @@ void create_reprowf_tar(size_t extra_data_size)
     if(extra_data_size>0)
     {
         sprintf(cmd,
-            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_extra_data.dat",
-            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp %s_extra_data.dat",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
     else
     {
         sprintf(cmd,
-            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout",
-            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
         wprintf("# SYSTEM: %s\n", cmd);
     system(cmd);

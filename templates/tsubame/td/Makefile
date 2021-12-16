@@ -1,6 +1,6 @@
 # LOAD BEFORE COMPILATION
 # 
-# module load cuda/9.0
+# source env.sh
 
 # COMPILERS
 CXX=mpicc
@@ -14,11 +14,11 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
-NVCCFLAGS = -arch sm_35 -O3 -std=c++03
+CFLAGS= -O3
+NVCCFLAGS = -arch sm_60 -O3 
 
 # LIBRARIES
-LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
+LIBS=-lcudart -lcufft -lm -lfftw3
 
 
 # ----- DO NOT MODIFY -----
