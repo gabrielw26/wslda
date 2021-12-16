@@ -10,9 +10,9 @@
  * In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
  * For more info see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Setting%20up%20diagonalization%20engine
  * */
-// #define DIAGONALIZATION_ROUTINE PZHEEVR
+#define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
-#define DIAGONALIZATION_ROUTINE ELPA
+// #define DIAGONALIZATION_ROUTINE ELPA
 
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
@@ -25,7 +25,7 @@
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-#define ELPA_USE_GPU
+// #define ELPA_USE_GPU
 
 /**
  * Select ELPA kernels,
@@ -63,7 +63,7 @@
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-#define PRINT_GPU_DISTRIBUTION
+// #define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 
@@ -72,7 +72,7 @@
  * with uniformly distributed GPU cards across the nodes, 
  * and each node has `gpuspernode` (input file parameter) cards.
  * */
-#define CUSTOM_GPU_DISTRIBUTION
+// #define CUSTOM_GPU_DISTRIBUTION
 
 /**
  * This function is used to assign unique device-id to mpi process.
@@ -90,21 +90,7 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     // assign here deviceid to process with ip=iam
     int deviceid=0;
     
-    if(ip==0) printf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-
-    int ompi_ppn=4;
-    if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2068.grid4cern.if.pw.edu.pl")==0) ompi_ppn=2;
-
-
-    deviceid=ip % 8;
-    
-    return deviceid % ompi_ppn;
+    return deviceid;
 }
 #endif
 

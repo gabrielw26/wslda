@@ -9,6 +9,5 @@
 # module load ...
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path
 #
-
-export WSLDA_MACHINE=$WSLDA/templates/dwarf
-cat $WSLDA/VERSION.h
+# Path to WSLDA Toolkit
+# export WSLDA=...
