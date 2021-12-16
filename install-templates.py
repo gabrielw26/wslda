@@ -21,8 +21,23 @@ if __name__ == '__main__':
         print("where system is:")
         dirs = os.listdir("%s/templates" % WSLDA)
         for d in dirs:
-            if d=="legacy": continue
+            if d in ["legacy", "README.md"]: continue
             print("\t%s" % d)
+        print("\tclean <-- use this to clear templates")
+        sys.exit(1)
+        
+    
+    if sys.argv[1]=="clean":
+        print("Cleaning...")
+        ftorm=['env.sh', 'Makefile', 'job.sh', 'machine.h', 'README.md']
+        folders=['st-project-template','st-testcase-uniform','td-project-template','td-testcase-uniform']
+        for d in folders:
+            for f in ftorm:
+                cmd = "rm %s/%s/%s" % (WSLDA,d,f)
+                print cmd
+                os.system(cmd)
+        
+        print("Done.")
         sys.exit(1)
         
     

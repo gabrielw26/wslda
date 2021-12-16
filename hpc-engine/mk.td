@@ -88,6 +88,10 @@ CFLAGS := $(CFLAGS) -I$(WSLDA_MACHINE)
 NVCCFLAGS := $(NVCCFLAGS) -I$(WSLDA_MACHINE)
 endif
 
+ifneq (,$(wildcard machine.h))
+DEPSLOCAL := $(DEPSLOCAL) machine.h
+endif
+
 all: 1d 2d 3d
 
 1d: dirs d1d
@@ -130,7 +134,7 @@ $(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WD
 $(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
 
-$(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
+$(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h $(DEPSLOCAL)
 	python $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -I$(OBJDIR) -c -o $@ $<
 
