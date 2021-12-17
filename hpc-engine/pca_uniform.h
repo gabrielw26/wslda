@@ -1581,9 +1581,9 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
 
     // initial values
-    ctilde_ = alpha_ * nt_1o3 * inverse_gamma_;
-    inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-    ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 * inverse_gamma_;
+    ctilde_ = af_ * nt_1o3 / cf_;
+    inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+    ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
 
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: as = %f, kF = %f, |askF| = %f\n", as_, kF_, x_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy_d0(x_), chemical_potential_d0(x_), pairing_gap_d0(x_));
@@ -1698,27 +1698,16 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
               ec = af_ * kc * kc / 2. - lmu_sc - (mu_a + mu_b) / 2.;
               p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
               //
-              // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
-              a_ln_a = af_ * log (alpha_);
-              a_ln_a_p = af_p * log (alpha_) + af_ * (alpha_p/alpha_);
-              ctilde_ = alpha_ * (af_ * nt_1o3 * inverse_gamma_) +
-                        kF_ / (2. * M_PI_SQ) * a_ln_a;
-              //
-              inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-              //
-              ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 * inverse_gamma_;
-              ctilde_p *= alpha_;
-              ctilde_p += alpha_p * (af_ * nt_1o3 * inverse_gamma_);
-              ctilde_p += kF_ / (2. * M_PI_SQ) * (a_ln_a_p + a_ln_a / (3. * nt_));
             } else if (RENORMALIZATION_SCHEME == 1) {
               lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
               ec = af_ * kc * kc / 2. - lmu_sc;
               p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
               //
-              ctilde_ = af_ * nt_1o3 / cf_;
-              inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
-              ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
             } else { }
+            
+            ctilde_ = af_ * nt_1o3 / cf_;
+            inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+            ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
 
             if (lmu_sc >= 0.) {
               lambda_ = (kc + p0_) / (kc - p0_);
