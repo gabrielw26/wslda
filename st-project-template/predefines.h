@@ -32,9 +32,9 @@
  *      in problem-definition.h file
  * */
 // #define FUNCTIONAL SLDA
-// #define FUNCTIONAL ASLDA
+#define FUNCTIONAL ASLDA
+// #define FUNCTIONAL SLDAE
 // #define FUNCTIONAL BDG
-#define FUNCTIONAL SLDAE
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
@@ -52,17 +52,6 @@
  * */
 #define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
 // #define REGULARIZATION_SCHEME CUBIC_CUTOFF
-
-/**
- * Select diagonalization routine
- * ELPA demonstrates the best performance, use it if target system supports this lib.
- * Otherwise use standard ScaLapack lib (PZHEEV?) .
- * In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
- * For more info see: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/Parallelization-settings
- * */
-// #define DIAGONALIZATION_ROUTINE PZHEEVR
-// #define DIAGONALIZATION_ROUTINE PZHEEVD
-#define DIAGONALIZATION_ROUTINE ELPA
 
 /**
  * Maximal number of parameters in params array
@@ -90,30 +79,12 @@
 
 
 /**
- * ---------------------- ELPA SETTINGS ---------------------------
- * Fill this part only if ELPA library is used for diagonalization
- * 
- * Default settings are: ELPA_SOLVER_1STAGE
- * but you can overwrite using options below
- * */
-
-/**
- * uncomment it if you want to activate GPUs for diagonalizations 
- * */
-#define ELPA_USE_GPU
-
-/**
- * Select ELPA kernels,
- * for more info see documentation of ELPA lib
- * */
-// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
-// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
-// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
-
-/**
- * Fraction of eigenvectors to be extracted in each cycle.
- * 1.0 corresponds to extraction of all eigenvectors (default)
- * NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
- * NOTE: For 3D case this value typically can be set to 0.78, for 1D and 2D casese 1.0 is recommended.
- * */
-// #define ELPA_NEV_FRACTION 1.0
+ * Machine file. 
+ * This file contains info about machine that will be used in the computation process.
+ * You can specify the file in the following ways: 
+ * - copy `machine.h` file to the current directory, see templates folder for various examples,
+ * - specify the folder with `machine.h` file via -I option in Makefile  
+ * - use system variable WSLDA_MACHINE to specify the folder with `machine.h` file, for example:
+ *   export WSLDA_MACHINE=...
+ **/ 
+#include "machine.h"

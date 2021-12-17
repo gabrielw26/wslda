@@ -964,7 +964,9 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXYZ*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
-    if(md.inittype!=5) Effg = 0.6 * (N_tot_init) * eF; // set correct value of Effg
+#ifndef UNIFORM_TEST_MODE
+    if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+#endif
     
     // report result
     if(ip==0)

@@ -8,7 +8,7 @@ The toolkit allows for simulating fermionic superfluids like ultracold atomic ga
 ## Implemented functionalities
 * Solvers: static equations and time-dependent equations
 * Dimensionality: 3D and 2D and 1D
-* Functionals: BdG, (A)SLDA, custom functional (static codes only)
+* Functionals: BdG, (A)SLDA, SLDAE, custom functionals
 * Zero temperature and finite temperature
 * Spin balanced and spin imbalanced systems
 * Mass imbalanced systems
@@ -17,6 +17,7 @@ The toolkit allows for simulating fermionic superfluids like ultracold atomic ga
 * Extensions: templates for codes supporting data analysis, python lib for working with and manipulating data
 * Speeding up of convergence: Broyden mixing, automatic interpolations, quantum friction
 * Results reporoducibility
+* [W-data format](https://gitlab.fizyka.pw.edu.pl/wtools/wdata) for storing the results
 
 ## Codes
 * **td-wslda-3d** - code for solving time-dependent density functional equations in 3D Cartesian mesh.

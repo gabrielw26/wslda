@@ -247,10 +247,10 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             if ( cimag(p0) < 0. ) p0 *= -1. ;
 
             //## kc is fixed, and it will be translated into ec
-            //## ec = alph_plus*kc*kc/2.0 - mu_p;
+            ec = alph_plus*kc*kc/2.0 - mu_p;
 
             // ec is fixed, and it will be translated into kc
-            kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
+            // kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
@@ -398,6 +398,9 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             mu_b += md.init0muchange*(n0_b-n_b)/n0_b*eF_b;
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
+        eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
+        eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
+        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 
@@ -406,6 +409,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
         energy_pot=(D)*LXYZ;
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
+        
         if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
         fflush(stdout);
     }
@@ -1360,6 +1364,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             mu_b += md.init0muchange*(n0_b-n_b);
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
+        eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
+        eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
+        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 
@@ -1859,6 +1866,9 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             // by factor 4 in terms of iterations
             if(md.spinsymmetry>0) mu_b=mu_a;
         }
+        eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
+        eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
+        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 

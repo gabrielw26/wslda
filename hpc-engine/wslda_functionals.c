@@ -440,7 +440,6 @@ int compute_energy_aslda(int it, wslda_density h_densities, wslda_potential h_po
 // --------------------------------------------------------------------------------------------------
 // -------------------------------------- BdG variant -----------------------------------------------
 // --------------------------------------------------------------------------------------------------
-extern double aBdG; // scattering length
 /**
  * Function computes potentials for BDG functional
  * @param it iteration number
@@ -495,7 +494,7 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
 
         // start computation of delta
         alph_plus = 0.5*(alpha_a[ixyz]+alpha_b[ixyz]);
-        t5 = 1.0/ (4.0*M_PI*aBdG*alph_plus);
+        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,params,extra_data_size,extra_data)*alph_plus);
         Va = V_a[ixyz]+v_ext_a; // initial values
         Vb = V_b[ixyz]+v_ext_b; // initial values
         lnu = nu[ixyz];
@@ -767,7 +766,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             // register for local Fermi momentum and Fermi energy
             kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
             eF_ = pow(kF_, 2) / 2.;
-            as_ = md.sclgth;
+            as_ = scattering_length(ix,iy,iz,it,params,extra_data_size,extra_data);
             x_ = fabs(as_ * kF_);
 
             nt_reg = p_regularization(nt_);
@@ -1068,7 +1067,7 @@ int compute_energy_sldae(int it, wslda_density h_densities, wslda_potential h_po
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = md.sclgth; // s-wave scattering length
+        as_ = scattering_length(ix,iy,iz,it,params,extra_data_size,extra_data); // s-wave scattering length
         x_ = fabs(as_ * kF_); // density-dependent coupling constant
 
         // sldae functional paramters
