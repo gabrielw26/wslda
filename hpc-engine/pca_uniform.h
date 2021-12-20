@@ -409,7 +409,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
         energy_pot=(D)*LXYZ;
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
-        
+
         if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
         fflush(stdout);
     }
@@ -1527,13 +1527,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         kk2tau[i]=_kkx*_kkx + _kky*_kky + _kkz*_kkz;
         i++;
     }
-
-    /** select pairing renormalization scheme [0:1]
-        #    0: in-meduim regularization (default for SLDAe)
-        #    1: in-vacuum regularization (Bulgac et al.)
-    **/
-    int RENORMALIZATION_SCHEME = md.pccrSLDAe;
-    int CUTOFF_CORRECTION = 0; // if = 1, improve chemical potential
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters
@@ -1565,7 +1558,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     deF_dnt_ = pow(kF_, 2) / (3. * nt_);
 
     //##
-
     /*
       - functional derivative of quantity Z_
         according to the total density is noted Z_p
@@ -1596,12 +1588,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: xi = %f, zeta = %f, eta = %f\n", ground_state_energy_d0(x_), chemical_potential_d0(x_), pairing_gap_d0(x_));
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: A = %f, B = %f, C = %f\n", af_, bf_, cf_);
     if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: alpha = %f, beta = %f, gamma = %f\n", alpha_, beta_, 1./inverse_gamma_);
-
-    if (md.pccrSLDAe == 0) {
-      if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: pccrSLDAe = %d (in-medium regularization)\n", md.pccrSLDAe);
-    } else if (md.pccrSLDAe == 1) {
-      if(printout && md.init0debug>0) wprintf("# DEBUG SLDAE: pccrSLDAe = %d (in-vacuum regularization)\n", md.pccrSLDAe);
-    }
 
     // Set quantities that depend only on desities (spin-symmetry)
     double p = polarization_h(n0_a, n0_b); // = 0.0
@@ -1700,18 +1686,10 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             V_b += -ctilde_p*delta*delta/af_ - af_p*delta*nu/af_;
 
             // effective pairing coupling constants and pairing field
-            if (RENORMALIZATION_SCHEME == 0) {
-              lmu_sc = (mu_a + mu_b) - (V_a + V_b) / 2.;
-              ec = af_ * kc * kc / 2. - lmu_sc - (mu_a + mu_b) / 2.;
-              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-              //
-            } else if (RENORMALIZATION_SCHEME == 1) {
-              lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
-              ec = af_ * kc * kc / 2. - lmu_sc;
-              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-              //
-            } else { }
-            
+            lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
+            ec = af_ * kc * kc / 2. - lmu_sc;
+            p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+            //
             ctilde_ = af_ * nt_1o3 / cf_;
             inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
             ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
