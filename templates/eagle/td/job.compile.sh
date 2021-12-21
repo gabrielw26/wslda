@@ -1,4 +1,3 @@
- 
 #!/bin/bash -l
 #SBATCH -J compile # name that will be displayed in queue system
 #SBATCH --output="compile.out" # stdout will be saved here
