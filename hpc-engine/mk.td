@@ -1,7 +1,10 @@
-
 # =====================================================================
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
+WSLDADIR:=$(WSLDADIR)/
+OBJDIR:=$(OBJDIR)/
+BINDIR:=$(BINDIR)/
+
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
 
