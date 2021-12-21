@@ -671,9 +671,10 @@ int main( int argc , char ** argv )
     
     
     // Allocate memory for plans
-    if(ip==0) wprintf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
     if(workarea_size<cufft_workSize) workarea_size=cufft_workSize;
     gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
+    if(workarea_size<sizeof(double)*nwfip*NX) workarea_size=sizeof(double)*nwfip*NX; // workspace needed by reduce_many(...)
+    if(ip==0) wprintf("# WORKSIZE[ip=%d]: workarea_size=%.2f times space of wf (%.2fMB)\n", ip, (double)workarea_size/(double)wf_size, (double)wf_size/pow(2.,20));
     
     // Assign work space with plans
     gpu_exec( set_workspace_for_cufftPlan(d_workarea) );
