@@ -1,4 +1,4 @@
-# 2021.12.12
+# 2021.12.21
 * A new functional SLDAE has been implemented.
 * Reorganization of templates.
 * New user-defined file has been added: machine.h.
@@ -6,6 +6,7 @@
 * New functionality: Periodic checkpoints in td codes.
 * New functionality: [Tracking of selected states](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Tracking%20of%20selected%20states)
 * Framework for defining CUSTOMEDF in td codes has been added. 
+* Improved performance of td codes. 
 * Various minor updates and bug fixes. 
 
 # 2021.09.05 
