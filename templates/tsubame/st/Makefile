@@ -6,8 +6,8 @@
 CXX=mpiicc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-WSLDADIR=$(WSLDA)/
+# DIRECTORY SETTINGS 
+WSLDADIR=$(WSLDA)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -17,5 +17,5 @@ CFLAGS= -std=c11 -O3  -DMKL_ILP64 -mkl=cluster -I/gs/hs1/hp190063/share/elpa/inc
 LIBS=-lfftw3  -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -ldl  -DMKL_ILP64 -mkl=cluster -L/gs/hs1/hp190063/share/elpa/lib -lelpa
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.st
+include $(WSLDADIR)/hpc-engine/mk.st
  

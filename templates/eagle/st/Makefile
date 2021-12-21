@@ -8,7 +8,7 @@
 CXX=mpiicc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
+# DIRECTORY SETTINGS 
 WSLDADIR=/mnt/storage_2/project_data/grant_518/wslda/
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
@@ -19,5 +19,5 @@ CFLAGS= -O3 -I/mnt/storage_2/project_data/grant_518/share/elpa/include/elpa-2021
 LIBS=-lfftw3 -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -liomp5 -lpthread -lstdc++ -ldl -L/mnt/storage_2/project_data/grant_518/share/elpa/lib/ -lelpa 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.st
+include $(WSLDADIR)/hpc-engine/mk.st
  

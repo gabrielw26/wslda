@@ -9,10 +9,10 @@ CXX=mpicc
 NVCC=nvcc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-# W-SLDA instalation folder (for read only)
+# DIRECTORY SETTINGS 
+# W-SLDA installation folder (for read-only)
 WSLDADIR=/mnt/storage_2/project_data/grant_518/wslda/
-# folder where temporarry files will be stored (will be created automatically)
+# folder where temporary files will be stored (will be created automatically)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -27,5 +27,5 @@ LIBS=-lcudart -lcufft -lfftw3 -lstdc++ -lm
 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.td
+include $(WSLDADIR)/hpc-engine/mk.td
 

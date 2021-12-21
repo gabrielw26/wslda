@@ -4,10 +4,10 @@ CXX=mpicc
 NVCC=nvcc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-# W-SLDA instalation folder (for read only)
+# DIRECTORY SETTINGS 
+# W-SLDA installation folder (for read-only)
 WSLDADIR=../
-# folder where temporarry files will be stored (will be created automatically)
+# folder where temporary files will be stored (will be created automatically)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -22,5 +22,5 @@ LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lfftw3
 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.td
+include $(WSLDADIR)/hpc-engine/mk.td
 
