@@ -24,15 +24,15 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # default = rho delta j
 writevar           default all
 
-# ----------------- PARTICLE NUMBERS -----------------
-Na                      28.  # Requested number of particles a-type
-Nb                      28.  # Requested number of particles b-type
-
 # ----------------- SCATTERING LENGTH -----------------
 sclgth    -1.0 # scattering length in units of lattice spacing
                # meaningful only for FUNCTIONAL=BDG,SLDAE
                # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
 #referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
+
+# ----------------- PARTICLE NUMBERS -----------------
+Na                      28.  # Requested number of particles a-type
+Nb                      28.  # Requested number of particles b-type
 
 # -------------------- SLDAE PARAMS -------------------
 # Note: SLDAE works only for spinsymmetry = 1

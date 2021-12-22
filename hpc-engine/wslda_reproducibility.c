@@ -43,5 +43,15 @@ int assure_reproducibility(const char *prefix)
     predefines_h(f);
     fclose(f); 
     
+    sprintf(file_name, "%s_machine.h", prefix);
+    f = fopen(file_name, "w");
+    if(f==NULL) return 3;
+    fprintf(f, "/**\n");
+    fprintf(f, " * W-SLDA Toolkit\n");
+    fprintf(f, " * Engine version: %s\n", VERSION);
+    fprintf(f, " * */\n\n");
+    machine_h(f);
+    fclose(f);
+    
     return 0;
 }

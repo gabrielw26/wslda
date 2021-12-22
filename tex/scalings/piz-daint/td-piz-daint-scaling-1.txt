@@ -1,0 +1,9 @@
+# W-SLDA Toolkit
+
+# td-wslda-2d
+# Columns:
+# 1: NX
+# 2: NY
+# 3: NZ
+# 4: cost per trajecotry of lenght 1 [node-hrs]
+768     96      24      13.53

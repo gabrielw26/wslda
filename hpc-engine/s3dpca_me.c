@@ -23,7 +23,6 @@ extern int wsldapid; // process id - global variable
 #define BLOCKSIZE (NX*NY*NZ)
 
 // List of functions from "problem-definition.h"
-// #include "problem-definition.h"
 double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data);
 double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, double *params, size_t extra_data_size, void *extra_data);
 double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, double *params, size_t extra_data_size, void *extra_data);

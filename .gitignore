@@ -155,3 +155,6 @@ td-project-template/td-wslda-3d
 td-project-template/td-wslda-1d
 
 extensions/post-processing-qpe/read-qpe
+
+.DS_Store
+

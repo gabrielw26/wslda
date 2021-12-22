@@ -3,15 +3,14 @@ SETTING UP CALCULATIONS AND COMPILATION
 
 STEP 1: Creating your project folder
     
-    cp -r /home2/archive/wslda/st-project-template/ name-of-your-project
+    cp -r /gs/hs1/hp190063/share/wslda/st-project-template/ name-of-your-project
     cd name-of-your-project
     
+    For compilation & computation it is recomended to use workspace
+        /gs/hs1/hp190063/
+        
 STEP 2: Set up compilation environment
 
-    It is recomended to use one of computation nodes for compilation,
-    for example node2066:
-
-    ssh66
     cd name-of-your-project
     source env.sh
     make 1d or make 2d or make 3d
@@ -33,7 +32,4 @@ STEP 4: Prepare job submission script & submit
 
     Submit script
         qsub job.sh
-        
-    NOTE: qsub can be executed only from login node (2072) 
-          or from node2066 (ssh66) 
-          
+                  
