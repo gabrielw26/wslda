@@ -30,7 +30,7 @@
 #define UD_MIX_COEFF 0.75
 
 // if particle number changed by this percentage then break the simulation
-#define N_STABILITY_CRITERIA 0.25 
+#define N_STABILITY_CRITERIA 0.25
 
 // Integration scheme AB - predictor, AM - correctior, number specify order
 // #define ITEGRATION_SCHEME AB3AM4
@@ -122,7 +122,7 @@
 #define LXYZ (LX*LY*LZ)
 
 #define NXYZ (NX*NY*NZ)
- 
+
 // Settings for 2D calculations
 #define NXY (NX*NY)
 #define LXY (LX*LY)
@@ -153,7 +153,7 @@
 #define LZA         9
 #define LZB         10
 
-// total number of items in WSLDA codes 
+// total number of items in WSLDA codes
 #define WSLDAITEMS (ENERGYITEMS+1)
 #define ENTROPY     7
 
@@ -219,7 +219,7 @@
     #undef EXCHANGE_SIZE
     #define EXCHANGE_SIZE 7
     #endif
-    
+
 #else
 
     #if FUNCTIONAL==ASLDA
@@ -236,7 +236,7 @@
     #undef EXCHANGE_SIZE
     #define EXCHANGE_SIZE 12
     #endif
-    
+
 #endif
 
 #define PZHEEVR 1
@@ -293,8 +293,8 @@
 
 // ------------ math -------------
 #ifndef M_PI
-#define M_PI 3.14159265358979323846 
-#endif 
+#define M_PI 3.14159265358979323846
+#endif
 #ifndef M_PI_2
 #define M_PI_2 1.570796326794896558
 #endif

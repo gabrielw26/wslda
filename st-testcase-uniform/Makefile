@@ -11,8 +11,8 @@
 CXX=mpicc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-WSLDADIR=/home2/archive/wslda/
+# DIRECTORY SETTINGS 
+WSLDADIR=$(WSLDA)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -22,5 +22,5 @@ CFLAGS= -std=gnu99 -O3 -I/usr/local/elpa202005-openmpi311-gcc721-cuda90-lapack39
 LIBS=-lfftw3 -lm -llapack -lscalapack -lelpa
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.st
+include $(WSLDADIR)/hpc-engine/mk.st
  

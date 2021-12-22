@@ -1,6 +1,10 @@
 # =====================================================================
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
+WSLDADIR:=$(WSLDADIR)/
+OBJDIR:=$(OBJDIR)/
+BINDIR:=$(BINDIR)/
+
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
 
@@ -19,7 +23,7 @@ WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
-DEPSLOCAL = predefines.h  problem-definition.h logger.h
+DEPSLOCAL = predefines.h
 SRCS = wslda_functionals.o wslda_potdens.o sldae_functional.o sxdpca_broyden.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o wslda_st_checkpoint.o
 SRCS1D = s1dpca.o s1dpca_fft.o s1dpca_me.o s1dpca_densities.o
 SRCS2D = s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o
@@ -56,6 +60,15 @@ WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 # Default values for variables
 ifeq ($(strip $(PYTHON)),)
 PYTHON=python
+endif
+
+# Default values for variables
+ifneq ($(strip $(WSLDA_MACHINE)),)
+CFLAGS := $(CFLAGS) -I$(WSLDA_MACHINE)
+endif
+
+ifneq (,$(wildcard machine.h))
+DEPSLOCAL := $(DEPSLOCAL) machine.h
 endif
 
 all: 1d 2d 3d
@@ -100,15 +113,21 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 (BINDIR)interpolate-dataset: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)interpolate-dataset $(CFLAGS) $(WDATAOBJS) $(WINTERPOBJS) $(WSLDADIR)extensions/interpolate-dataset.c -lm -lfftw3
 
-$(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h predefines.h problem-definition.h logger.h
+$(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h $(DEPSLOCAL)
 	$(PYTHON) $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
 
-$(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
+$(OBJDIR)wslda_functionals.o: $(SRCDIR)wslda_functionals.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) problem-definition.h
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
+$(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=1 -c -o $@ $<
 
-$(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
+$(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=2 -c -o $@ $<
+
+$(OBJDIR)s3dpca.o: $(SRCDIR)s3dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
+	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=3 -c -o $@ $<
 
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<

@@ -439,8 +439,8 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
             double *_buf;
-            cppmallocl(_buf, NX*4, double);
-            file_operation( read_binary_file(file_name, NX*4*sizeof(double), 0, _buf) ); 
+            cppmallocl(_buf, NX*12, double);
+            file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, _buf) ); 
             double complex *_bufC = (double complex*)(_buf+NX*2);
             double complex *_h_potentialsC = (double complex*)(h_potentials+NXY*2);
             ixyz=0;
@@ -449,13 +449,14 @@ int main( int argc , char ** argv )
                  h_potentials [ixyz+0*NXY]=_buf [ix+0*NX]; 
                  h_potentials [ixyz+1*NXY]=_buf [ix+1*NX]; 
                 _h_potentialsC[ixyz      ]=_bufC[ix     ];
+                 for(i=4; i<12; i++) h_potentials [ixyz+i*NXY]=_buf [ix+i*NX]; // other potentials
                 ixyz++;
             }
             
             free(_buf);
         }
         
-        MPI_Bcast(h_potentials, 4*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -564,10 +565,10 @@ int main( int argc , char ** argv )
         {
             sprintf(file_name, "%s/s2dpca.pud", md.inprefix);
             wprintf("# INIT2: LOADING POTENTIALS `%s`...\n", file_name);
-            file_operation( read_binary_file(file_name, NXY*4*sizeof(double), 0, h_potentials) );           
+            file_operation( read_binary_file(file_name, NXY*12*sizeof(double), 0, h_potentials) );           
         }
         
-        MPI_Bcast(h_potentials, 4*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
+        MPI_Bcast(h_potentials, 12*NXY, MPI_DOUBLE , 0 , MPI_COMM_WORLD ) ;  
         
         // compute particle number and set Effg;
         double Ntota=0.0, Nmya=0.0;
@@ -795,9 +796,10 @@ int main( int argc , char ** argv )
     
     
     // Allocate memory for plans
-    if(ip==0) wprintf("# CUFFT[ip=%d]: cufft_workSize=%.2f times space of wf (%.2fMB)\n", ip, (double)cufft_workSize/(double)wf_size, (double)wf_size/pow(2.,20));
     if(workarea_size<cufft_workSize) workarea_size=cufft_workSize;
+    if(workarea_size<sizeof(double)*nwfip*NXY) workarea_size=sizeof(double)*nwfip*NXY; // workspace needed by reduce_many(...)
     gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
+    if(ip==0) wprintf("# WORKSIZE[ip=%d]: workarea_size=%.2f times space of wf (%.2fMB)\n", ip, (double)workarea_size/(double)wf_size, (double)wf_size/pow(2.,20));
     
     // Assign work space with plans
     gpu_exec( set_workspace_for_cufftPlan(d_workarea) );
@@ -834,7 +836,7 @@ int main( int argc , char ** argv )
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
 #ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
-#endif 
+#endif
 
     // report result
     if(ip==0)
@@ -979,14 +981,13 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
-            
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             // executing exp[-i*H(t)*dt]*psi
             // H*psi - first execution, d_fkm3 as working buffer
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NXY*sizeof(cufftDoubleComplex)) );
@@ -1017,7 +1018,7 @@ int main( int argc , char ** argv )
                 }
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
                 // effective mass correction
-                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_densities, md.nthreads) );
+                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_potentials, md.nthreads) );
                 gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
             
@@ -1062,14 +1063,14 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
             // NOTE - densities and potentials are computed for midpoint 
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             
             // recompute derivatives for d_wf
             if(gradients_computed)
@@ -1082,7 +1083,7 @@ int main( int argc , char ** argv )
             }            
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
            
@@ -1112,7 +1113,7 @@ int main( int argc , char ** argv )
                 }
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
                 // effective mass correction
-                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_densities, md.nthreads) );
+                gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm2, d_alphawf_laplace, d_potentials, md.nthreads) );
                 gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif                
            
@@ -1245,13 +1246,13 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
-#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-            // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // effective mass correction
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
+            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+#endif
             // H*psi
             gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
@@ -1308,14 +1309,13 @@ int main( int argc , char ** argv )
                 wslda_density densall_subset = convert_into_wslda_density(h_densities_subset, NXY);
                 file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
             }
-            
+            // potentials
+            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // effective mass correction
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_densities, md.nthreads) );
+            gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
-#endif
-            // potentials
-            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );  
+#endif  
             
             // Preparation of buffers for next step
 #if INTEGRATION_SCHEME==AB3AM4

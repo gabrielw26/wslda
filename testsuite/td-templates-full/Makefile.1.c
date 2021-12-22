@@ -6,7 +6,7 @@
 CXX=mpicc
 NVCC=nvcc 
 
-# DIRECTORY SETTINGS (must end with /)
+# DIRECTORY SETTINGS 
 WSLDADIR=$(WSLDA)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
@@ -18,8 +18,8 @@ CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ \
 NVCCFLAGS = -arch sm_35 -O3 -std=c++03 -DSPINSYMMETRY_MODE -DREGULARIZATION_SCHEME=CUBIC_CUTOFF
 
 # LIBRARIES
-LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lm
+LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.td
+include $(WSLDADIR)/hpc-engine/mk.td
