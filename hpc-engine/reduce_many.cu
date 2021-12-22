@@ -1,9 +1,8 @@
 // Author: Stanisław Tabisz
-// Date: 20-12-2021
-// Version: 1.9
+// Date: 22-12-2021
+// Version: 1.9.2
 
 #include <iostream>
-#include <cstdio>
 
 template <unsigned int blockSize>
 __device__ void warpReduce(volatile double *shm, int tid) {
@@ -112,6 +111,14 @@ __global__ void write_at_begining(double *g_odata, int nVectors, int nElementsIn
     }
 }
 
+int passRestrictions(long nVectors, long nElementsInVector) {
+    const long two25 = (1 << 25);
+    const long two30 = (1 << 30);
+    return (nVectors <= two25 && nElementsInVector <= two25 && (nVectors*nElementsInVector) <= two30) 
+        ? 1
+        : 0;
+}
+
 int getNumberOfBlockDim(int nElementsToSum, int optNumOperationPerThread) {
     int nThreads = (int)ceil((float)nElementsToSum/optNumOperationPerThread);
     
@@ -140,12 +147,18 @@ int getNumberOfBlockDim(int nElementsToSum, int optNumOperationPerThread) {
  *          where reductions will be stored, namely 
  *           r[k] = sum_i^m  A_i^{k}
  *          NOTE: it is allowed to provide as pointer r address of input array A.  
- * @return 0 – ok, -1 - error before first calling kernel, >0 - otherwise error code.
+ * @return   0 – ok, 
+            -2 - too big input data,
+            -1 - error before first calling kernel, 
+            >0 - otherwise error code.
  **/
 int local_reductions_many(int n, int m, double *d_in, double *d_out) {
     const int optNumOperationPerThread = 1024;
     const int nElementsInVector = m;
     const int nVectors = n;
+
+    if(!passRestrictions(nVectors, nElementsInVector))
+        return -2;
 
     cudaError_t error = cudaPeekAtLastError();
     if(error != cudaSuccess) 
@@ -165,8 +178,7 @@ int local_reductions_many(int n, int m, double *d_in, double *d_out) {
         return error;
     
     // Do iteratively reduction of partial sums
-    while(nBlocksPerArray>1) 
-    {
+    while(nBlocksPerArray>1) {
         nElementsToSum = nBlocksPerArray;
         distBetweenSums *= dimBlock; 
         endVal = nElementsToSum*distBetweenSums;               
