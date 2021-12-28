@@ -24,6 +24,9 @@
 
 #endif
 
+// check predefines
+#include "wslda_predefines_test.h"
+
 // Number of self-consistent iterations for U and delta computation
 #define UD_SCITERS 15
 // Mixing parameter for self-consistent algorithm - fraction of new solution used for mixing
