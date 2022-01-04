@@ -599,7 +599,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
 #endif
 
         // read gradient corrections
-#if FUNCTIONAL==ASLDA || FUNCTIONAL==SLDAE
+#ifdef CURRENT_CORRECTIONS
         cja+=-0.5*(j_corr_a_x[ixyz]);
         cjb+=-0.5*(j_corr_b_x[ixyz]);
 
