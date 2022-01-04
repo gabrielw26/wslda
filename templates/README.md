@@ -4,6 +4,8 @@
 * `simple`: templates that work with standard distributions of linux installed on desktop (like fedora)
 * `dwarf`: http://datadwarf.if.pw.edu.pl/
 * `tsubame`: https://helpdesk.t3.gsic.titech.ac.jp/manuals/handbook.en/
+* `eagle`: https://wiki.man.poznan.pl/kdm/index.php?title=Eagle
+* `daint`: https://www.cscs.ch/computers/piz-daint/
 
 ## Installing templates
 You can use tool
@@ -14,6 +16,7 @@ where system is:
         dwarf
         simple
         tsubame
+        ...
         clean <-- use this to clear templates
 ```
 to copy selected templates to project folders
