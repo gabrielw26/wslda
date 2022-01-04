@@ -11,7 +11,7 @@ void call_template_reduce_many_kernels(int dimGrid, int dimBlock, double *d_idat
     int distBetweenSums, int nElementsInVector, int nBlocksPerArray, int endVal);
 
 void write_at_begining(double *g_odata, int nElementsInVector, int nVectors, int idxFirstArrayToRewrite);
-
+int passRestrictions(int nVectors, int nElementsInVector);
 int getNumberOfBlockDim(int nElementsToSum, int optNumOperation);
 int local_reductions_many(int n, int m, double *d_in, double *d_out);
 
