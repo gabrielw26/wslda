@@ -40,7 +40,7 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # ------------------ GPUS THREADING SET --------------
 # nthreads                512      # number of parallel threads executing by each GPU, default=512
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
-# gpuspernode             1        # number of GPUs per node (resource set), default=1
+# gpuspernode             1        # number of GPUs per node (resource set), default=GPUS_PER_NODE (in machine.h)
 
 # --------------------- OTHER -----------------
 # spinsymmetry            0       # !!! IGNORE HERE, set in predefines.h !!!

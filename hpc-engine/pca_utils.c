@@ -57,7 +57,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0, // q;
 32, // mb;
 32, // nb;
-1, // gpuspernode
+GPUS_PER_NODE, // gpuspernode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 0.5, // linearmixing

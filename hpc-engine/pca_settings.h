@@ -17,7 +17,6 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
-
 #else
 
 #error "You need to select WSLDA or TDWSLDA!"
@@ -274,6 +273,10 @@
 #endif
 #ifndef ELPA_NEV_FRACTION
 #define ELPA_NEV_FRACTION 1.0
+#endif
+
+#ifndef GPUS_PER_NODE
+#define GPUS_PER_NODE 1
 #endif
 
 // ----- for TESTSUITE -----
