@@ -1,6 +1,11 @@
-
 # C compiler
-CC=gcc -std=c99
+ifeq ($(strip $(CC)),)
+    CC=gcc -std=gnu99
+endif
+
+ifeq ($(strip $(MPICPP)),)
+    MPICPP=mpic++ -std=gnu99 
+endif
 
 # fftw linking statment
 FFTW=-lfftw3
