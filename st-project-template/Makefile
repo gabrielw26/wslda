@@ -18,5 +18,5 @@ CFLAGS= -std=gnu99 -O3
 LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.st
+include $(WSLDADIR)/hpc-engine/mk.st
  

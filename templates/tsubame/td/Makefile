@@ -7,8 +7,8 @@ CXX=mpicc
 NVCC=nvcc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-WSLDADIR=$(WSLDA)/
+# DIRECTORY SETTINGS 
+WSLDADIR=$(WSLDA)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -22,4 +22,4 @@ LIBS=-lcudart -lcufft -lm -lfftw3
 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.td
+include $(WSLDADIR)/hpc-engine/mk.td

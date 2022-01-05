@@ -673,17 +673,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
 
     //##
-    //  select functional
-    // [useful to add more functional in sldae_functional.c]
-    int FUNCTIONAL_ID = 0; // SLDAe fit id
-    int PAIRING_ID = -2;    // SLDAe id
-    int id[2] = {FUNCTIONAL_ID, PAIRING_ID};
-    /** select pairing renormalization scheme [0:1]
-        #    0: in-meduim regularization (default for SLDAe)
-        #    1: in-vacuum regularization (Bulgac et al.)
-    **/
-    int RENORMALIZATION_SCHEME = md.pccrSLDAe;
-    //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
     double alpha_, beta_, inverse_gamma_;    // HFB paremeters
     double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
@@ -782,12 +771,19 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             beta_ = beta_parameter_d0(x_);
             inverse_gamma_ = inverse_gamma_parameter_d0(x_);
             alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
+            beta_p = dx_dnt_ * beta_parameter_d1(x_);
             inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
             af_ = a_functional_d0(x_);
+            bf_ = b_functional_d0(x_);
+            cf_ = c_functional_d0(x_);
             if (nt_reg > 0.0) {
               af_p = nt_reg * (alpha_ - af_) / nt_;
+              bf_p = nt_reg * 5. / 3. * (beta_ - bf_) / nt_;
+              cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
             } else {
               af_p = 0.00;
+              bf_p = 0.00;
+              cf_p = 0.00;
             }
 
             // start computation of delta and mean-field
@@ -863,55 +859,18 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             {
 
               // effective pairing coupling constants and pairing field
-              if (RENORMALIZATION_SCHEME == 0) {
-                lmu_sc = (dc_mu_a + dc_mu_b) - (Va + Vb) / 2.;
-                kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
-                p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-                //
-                // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
-                a_ln_a = af_ * log (alpha_);
-                a_ln_a_p = af_p * log (alpha_) + af_ * (alpha_p/alpha_);
-                ctilde_ = alpha_ * (af_ * nt_1o3 * inverse_gamma_) +
-                          kF_ / (2. * M_PI_SQ) * a_ln_a;
-                //
-                inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-                //
-                if (nt_reg > 0.) {
-                  ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
-                } else {
-                  ctilde_p = 0.;
-                }
-                ctilde_p += af_p * nt_1o3 * inverse_gamma_;
-                ctilde_p *= alpha_;
-                ctilde_p += alpha_p * (af_ * nt_1o3 * inverse_gamma_);
-                ctilde_p += kF_ / (2. * M_PI_SQ) * a_ln_a_p;
-                if (nt_reg > 0.) {
-                  ctilde_p += nt_reg * kF_ / (2. * M_PI_SQ) * a_ln_a / (3. * nt_);
-                } else {
-                  ctilde_p += 0.;
-                }
-              } else if (RENORMALIZATION_SCHEME == 1) {
-                lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
-                // ec_ = af_ * md.kc * md.kc / 2. - lmu_sc;
-                kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
-                p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-                //
-                cf_ = c_functional_d0(x_); // time consuming calculation: require fit as done for b_functional(x_, id)
-                if (nt_reg > 0.) {
-                  cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
-                } else {
-                  cf_p = 0.;
-                }
-                //
-                ctilde_ = af_ * nt_1o3 / cf_;
-                inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
-                if (nt_reg > 0.) {
-                  ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
-                } else {
-                  ctilde_p = 0.;
-                }
-                ctilde_p += af_p * nt_1o3 / cf_;
-              } else { }
+              lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
+              kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
+              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+              //
+              ctilde_ = af_ * nt_1o3 / cf_;
+              inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+              if (nt_reg > 0.) {
+                ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
+              } else {
+                ctilde_p = 0.;
+              }
+              ctilde_p += af_p * nt_1o3 / cf_;
 
               if (lmu_sc >= 0.) {
                 lambda_ = (kc_ + p0_) / (kc_ - p0_);

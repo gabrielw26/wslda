@@ -475,8 +475,9 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 
     double as_, x_, kF_, eF_;
     double alpha_, beta_, inverse_gamma_;
-    double alpha_p, inverse_gamma_p;
-    double af_, af_p;
+    double alpha_p, beta_p, inverse_gamma_p;
+    double af_, bf_, cf_;    // functional parameters
+    double af_p, bf_p, cf_p; // functional parameters (fderiv)
     double nt_, nt_reg, nt_1o3, nt_2o3;
     double dx_dnt_;
     double deF_dnt_;
@@ -521,7 +522,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         // register for local Fermi momentum and Fermi energy
         kF_ = pow(3. * M_PI_SQ * nt_, 1. / 3.);
         eF_ = pow(kF_, 2) / 2.;
-        as_ = scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth ; 
+        as_ = scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data); // dc_sclgth ;
         x_ = fabs(as_ * kF_);
         nt_reg = p_regularization(nt_);
         if (nt_reg > 0.0) {
@@ -531,16 +532,24 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
           dx_dnt_ = 0.00;
           deF_dnt_ = 0.00;
         }
+
         alpha_ = alpha_parameter_d0(x_);
         beta_ = beta_parameter_d0(x_);
         inverse_gamma_ = inverse_gamma_parameter_d0(x_);
         alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
+        beta_p = dx_dnt_ * beta_parameter_d1(x_);
         inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
         af_ = a_functional_d0(x_);
+        bf_ = b_functional_d0(x_);
+        cf_ = c_functional_d0(x_);
         if (nt_reg > 0.0) {
           af_p = nt_reg * (alpha_ - af_) / nt_;
+          bf_p = nt_reg * 5. / 3. * (beta_ - bf_) / nt_;
+          cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
         } else {
           af_p = 0.00;
+          bf_p = 0.00;
+          cf_p = 0.00;
         }
 
         // CURRENT CORRECTION SAVE
@@ -672,43 +681,29 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         // computation of Va and Vb and delta
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
-        // effective pairing coupling constants and pairing field
-          lmu_sc = (dc_mu_a + dc_mu_b) - (Va + Vb) / 2.;
-          kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc + (dc_mu_a + dc_mu_b) / 2.) / af_));
+          // effective pairing coupling constants and pairing field
+          lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
+          kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
           p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
           //
-          // log correction to: ctilde_ = af_ * nt_1o3 * inverse_gamma_;
-          a_ln_a = af_ * log (alpha_);
-          a_ln_a_p = af_p * log (alpha_) + af_ * (alpha_p/alpha_);
-          ctilde_ = alpha_ * (af_ * nt_1o3 * inverse_gamma_) +
-                    kF_ / (2. * M_PI_SQ) * a_ln_a;
-          //
-          inverse_gamma_eff = inverse_gamma_ * (1. + 3. * nt_ / inverse_gamma_ * inverse_gamma_p);
-          //
+          ctilde_ = af_ * nt_1o3 / cf_;
+          inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
           if (nt_reg > 0.) {
             ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
           } else {
             ctilde_p = 0.;
           }
-          ctilde_p += af_p * nt_1o3 * inverse_gamma_;
-          ctilde_p *= alpha_;
-          ctilde_p += alpha_p * (af_ * nt_1o3 * inverse_gamma_);
-          ctilde_p += kF_ / (2. * M_PI_SQ) * a_ln_a_p;
-          if (nt_reg > 0.) {
-            ctilde_p += nt_reg * kF_ / (2. * M_PI_SQ) * a_ln_a / (3. * nt_);
-          } else {
-            ctilde_p += 0.;
-          }
+          ctilde_p += af_p * nt_1o3 / cf_;
 
-        if (lmu_sc >= 0.) {
-          lambda_ = (kc_ + p0_) / (kc_ - p0_);
-          lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
-          lambda_ *= kc_ / (2. * M_PI_SQ);
-        } else {
-          lambda_ = p0_ / kc_;
-          lambda_ = 1. + p0_ / kc_ * atan(lambda_);
-          lambda_ *= kc_ / (2. * M_PI_SQ);
-        }
+          if (lmu_sc >= 0.) {
+            lambda_ = (kc_ + p0_) / (kc_ - p0_);
+            lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
+            lambda_ *= kc_ / (2. * M_PI_SQ);
+          } else {
+            lambda_ = p0_ / kc_;
+            lambda_ = 1. + p0_ / kc_ * atan(lambda_);
+            lambda_ *= kc_ / (2. * M_PI_SQ);
+          }
 
         g_eff = af_ / (ctilde_ - lambda_);
         ldelta = -lnu * g_eff;
@@ -742,7 +737,7 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix, iy, iz, i;
-    
+
     double as_, x_, kF_, eF_;
     double af_, bf_;
     double nt_;
@@ -754,7 +749,7 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
     if(ixyz<NUMBER_ELEMENT)
     {
         decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i); // decode cartesian coordinates
-        
+
         // densities
         na=h_densities.rho_a[ixyz];
         nb=h_densities.rho_b[ixyz];

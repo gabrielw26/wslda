@@ -3,10 +3,10 @@
 CXX=mpicc
 PYTHON=python
 
-# DIRECTORY SETTINGS (must end with /)
-# W-SLDA instalation folder (for read only)
+# DIRECTORY SETTINGS 
+# W-SLDA installation folder (for read-only)
 WSLDADIR=../
-# folder where temporarry files will be stored (will be created automatically)
+# folder where temporary files will be stored (will be created automatically)
 OBJDIR=./obj/
 # folder where executable binary will be placed (will be created automatically)
 BINDIR=./
@@ -18,5 +18,5 @@ CFLAGS= -std=gnu99 -O3
 LIBS=-lfftw3 -lm -llapack -L/usr/lib64/openmpi/lib -lscalapack 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.st
+include $(WSLDADIR)/hpc-engine/mk.st
  

@@ -17,12 +17,14 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
-
 #else
 
 #error "You need to select WSLDA or TDWSLDA!"
 
 #endif
+
+// check predefines
+#include "wslda_predefines_test.h"
 
 // Number of self-consistent iterations for U and delta computation
 #define UD_SCITERS 15
@@ -271,6 +273,10 @@
 #endif
 #ifndef ELPA_NEV_FRACTION
 #define ELPA_NEV_FRACTION 1.0
+#endif
+
+#ifndef GPUS_PER_NODE
+#define GPUS_PER_NODE 1
 #endif
 
 // ----- for TESTSUITE -----

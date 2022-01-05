@@ -1,98 +1,126 @@
 // Author: Stanisław Tabisz
-// Date: 25-11-2021
-// Version: 1.6
+// Date: 22-12-2021
+// Version: 1.9.2
 
 #include <iostream>
 
-__device__ int getEndValue(int currArrayIdx, int nElementsInVector, int nMemoryBlocksPerArray, int currMemoryBlockIdx) {
-    int idxLastMemoryBlockInCurrArray = (currArrayIdx+1)*nMemoryBlocksPerArray - 1;
-    int nthreadsUsedInLastMemoryBlock = nElementsInVector - (nMemoryBlocksPerArray-1)*blockDim.x;
-    return currMemoryBlockIdx < idxLastMemoryBlockInCurrArray ? blockDim.x : nthreadsUsedInLastMemoryBlock;
+template <unsigned int blockSize>
+__device__ void warpReduce(volatile double *shm, int tid) {
+    if (blockSize >= 64) shm[tid] += shm[tid + 32];
+    if (blockSize >= 32) shm[tid] += shm[tid + 16];
+    if (blockSize >= 16) shm[tid] += shm[tid +  8];
+    if (blockSize >=  8) shm[tid] += shm[tid +  4];
+    if (blockSize >=  4) shm[tid] += shm[tid +  2];
+    if (blockSize >=  2) shm[tid] += shm[tid +  1]; 
 }
 
 template <unsigned int blockSize>
-__device__ void warpReduce(volatile double *shm, int tid, int nEndValue) {
-    if (blockSize >= 64 && tid + 32 < nEndValue) shm[tid] += shm[tid + 32];
-    if (blockSize >= 32 && tid + 16 < nEndValue) shm[tid] += shm[tid + 16];
-    if (blockSize >= 16 && tid + 8  < nEndValue) shm[tid] += shm[tid +  8];
-    if (blockSize >=  8 && tid + 4  < nEndValue) shm[tid] += shm[tid +  4];
-    if (blockSize >=  4 && tid + 2  < nEndValue) shm[tid] += shm[tid +  2];
-    if (blockSize >=  2 && tid + 1  < nEndValue) shm[tid] += shm[tid +  1]; 
-}
-
-template <unsigned int blockSize>
-__global__ void reduce_many(double *g_idata, double *g_odata, 
-    int nElementsInVector, int nblocksPerArray, int nMemoryBlocksPerArray) {
+__global__ void reduce_many(double *g_idata, double *g_odata, int distBetweenSums, int nElementsInVector, int nBlocksPerArray, int endVal) {
     extern __shared__ double sdata[];
 
     int tid = threadIdx.x;
-    int currArrayIdx = blockIdx.x / nblocksPerArray;
-    int currBlockIdx = blockIdx.x - currArrayIdx*nblocksPerArray;
-    int currMemoryBlockIdx = currArrayIdx*nMemoryBlocksPerArray + currBlockIdx;
-    int currMemoryThreadIdx = currMemoryBlockIdx*blockDim.x + threadIdx.x;
-    int shift = nMemoryBlocksPerArray*blockDim.x - nElementsInVector;
-	int idxInGlobalMemory = currMemoryThreadIdx - (shift*currArrayIdx);
-    int nEndValue = getEndValue(currArrayIdx, nElementsInVector, nMemoryBlocksPerArray, currMemoryBlockIdx);
-    int numThreadsPerGrid = blockSize*nblocksPerArray;
-    int i = currBlockIdx*blockDim.x + tid;
+    int currArrayIdx = blockIdx.x / nBlocksPerArray;
+    int currBlockIdx = blockIdx.x - currArrayIdx*nBlocksPerArray;
+    int idxInArray = currBlockIdx*blockDim.x*distBetweenSums + tid*distBetweenSums;
+    int idxInGlobalMemory = currArrayIdx*nElementsInVector + idxInArray;
+    int gridStride = blockDim.x*nBlocksPerArray*distBetweenSums;    
     sdata[tid] = 0;
 
     // multiple adds per thread
-    for(int processedNum=0; processedNum < nElementsInVector; processedNum+=numThreadsPerGrid) {
-        if(i + processedNum < nElementsInVector) {
-            sdata[tid] += g_idata[idxInGlobalMemory + processedNum];
+    for(int positionInArray=0; positionInArray < endVal; positionInArray+=gridStride) {
+        if(idxInArray + positionInArray < endVal) {
+            sdata[tid] += g_idata[idxInGlobalMemory + positionInArray];
         }
     }
     __syncthreads();
 
     // reduce
-    if (blockSize >= 512) { if (tid < 256 && tid + 256 < nEndValue) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128 && tid + 128 < nEndValue) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-    if (blockSize >= 128) { if (tid < 64  && tid + 64  < nEndValue) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }  
-    if (tid < 32)
-        warpReduce<blockSize>(sdata, tid, nEndValue);
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }  
+    if (tid < 32) 
+        warpReduce<blockSize>(sdata, tid);
 
     // write result for this block to global mem
     if (tid == 0) 
-        g_odata[currArrayIdx*nblocksPerArray + currBlockIdx] = sdata[0];
+       g_odata[idxInGlobalMemory] = sdata[0]; 
 }
 
-void call_template_kernels(int dimGrid, int dimBlock, double *d_idata, double *d_odata, 
-    int nElementsInVector, int nblocksPerArray, int nMemoryBlocksPerArray) {
+__global__ void reduce_many_32(double *g_idata, double *g_odata, int distBetweenSums, int nElementsInVector, int nBlocksPerArray, int endVal) {
+    extern __shared__ double sdata[];
+
+    int tid = threadIdx.x;
+    int currArrayIdx = blockIdx.x / nBlocksPerArray;
+    int currBlockIdx = blockIdx.x - currArrayIdx*nBlocksPerArray;
+    int idxInArray = currBlockIdx*blockDim.x*distBetweenSums + tid*distBetweenSums;
+    int idxInGlobalMemory = currArrayIdx*nElementsInVector + idxInArray;
+    int gridStride = blockDim.x*nBlocksPerArray*distBetweenSums;    
+    sdata[tid] = 0;
+
+    // multiple adds per thread
+    for(int positionInArray=0; positionInArray < endVal; positionInArray+=gridStride) {
+        if(idxInArray + positionInArray < endVal) {
+            sdata[tid] += g_idata[idxInGlobalMemory + positionInArray];
+        }
+    }
+    __syncthreads();
+
+    // reduce for block == warp
+    if (tid < 16) 
+        warpReduce<32>(sdata, tid);
+
+    // write result for this block to global mem
+    if (tid == 0) 
+       g_odata[idxInGlobalMemory] = sdata[0]; 
+}
+
+void call_template_reduce_many_kernels(int dimGrid, int dimBlock, double *d_idata, double *d_odata, 
+    int distBetweenSums, int nElementsInVector, int nBlocksPerArray, int endVal) {
     int smemSize=dimBlock*sizeof(double);
     switch (dimBlock)
     {
         case 1024:
-            reduce_many<1024><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
+            reduce_many<1024><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
         case 512:
-            reduce_many< 512><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
+            reduce_many< 512><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
         case 256:
-            reduce_many< 256><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
+            reduce_many< 256><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
         case 128:
-            reduce_many< 128><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
+            reduce_many< 128><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
         case 64:
-            reduce_many<  64><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
+            reduce_many<  64><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
         case 32:
-            reduce_many<  32><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
-        case 16:
-            reduce_many<  16><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
-        case 8:
-            reduce_many<   8><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
-        case 4:
-            reduce_many<   4><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
-        case 2:
-            reduce_many<   2><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;
-        case 1:
-            reduce_many<   1><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, nElementsInVector, nblocksPerArray, nMemoryBlocksPerArray); break;  
+            reduce_many_32<<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal); break;
     }   
 }
 
-int getNumberOfGridDim(int m, int optNumOperation, int blockDim) {
-    return (int)ceil((float)m/(2*blockDim*optNumOperation));
+__global__ void write_at_begining(double *g_odata, int nVectors, int nElementsInVector, int idxFirstArrayToRewrite) {
+    extern __shared__ double sdata[];
+
+    int tid = threadIdx.x;
+    int currArrayIdx = idxFirstArrayToRewrite + tid;
+    
+    if(currArrayIdx < nVectors) {
+        sdata[tid] = g_odata[currArrayIdx*nElementsInVector];
+    }
+
+    __syncthreads();
+
+    if(currArrayIdx < nVectors) {
+        g_odata[currArrayIdx] = sdata[tid];
+    }
 }
 
-int getNumberOfBlockDim(int m, int optNumOperationPerThread) {
-    int nThreads = (int)ceil((float)m/optNumOperationPerThread);
+int passRestrictions(long nVectors, long nElementsInVector) {
+    const long two25 = (1 << 25);
+    const long two30 = (1 << 30);
+    return (nVectors <= two25 && nElementsInVector <= two25 && (nVectors*nElementsInVector) <= two30) 
+        ? 1
+        : 0;
+}
+
+int getNumberOfBlockDim(int nElementsToSum, int optNumOperationPerThread) {
+    int nThreads = (int)ceil((float)nElementsToSum/optNumOperationPerThread);
     
     if(nThreads <= 32) 
         return 32;
@@ -109,8 +137,8 @@ int getNumberOfBlockDim(int m, int optNumOperationPerThread) {
 /**
  * Function reduces many arrays.
  * Mathematical operation: sum (+)
- * @param n number of vectors to be reduced -> vectorNo
- * @param m length of the vector            -> indexNo
+ * @param n number of vectors to be reduced
+ * @param m length of the vector
  * @param d_in = A pointer to memory (device) of size n*m*sizeof(double), (INPUT)
  *          i-th element of k-th vector is located A_i^k=A[k*m + I],
  *          NOTE: the array can be overwritten by the computation process, 
@@ -119,37 +147,57 @@ int getNumberOfBlockDim(int m, int optNumOperationPerThread) {
  *          where reductions will be stored, namely 
  *           r[k] = sum_i^m  A_i^{k}
  *          NOTE: it is allowed to provide as pointer r address of input array A.  
- * @return 0 – ok, -1 - error before first calling kernel, >0 - otherwise error code.
+ * @return   0 – ok, 
+            -2 - too big input data,
+            -1 - error before first calling kernel, 
+            >0 - otherwise error code.
  **/
 int local_reductions_many(int n, int m, double *d_in, double *d_out) {
     const int optNumOperationPerThread = 1024;
+    const int nElementsInVector = m;
+    const int nVectors = n;
+
+    if(!passRestrictions(nVectors, nElementsInVector))
+        return -2;
 
     cudaError_t error = cudaPeekAtLastError();
     if(error != cudaSuccess) 
         return -1;
 
-    int dimBlock=getNumberOfBlockDim(m, optNumOperationPerThread);
-    int nMemoryBlocksPerArray = (int)ceil((float)m/(dimBlock));
-    int nblocksPerArray = (int)ceil((float)nMemoryBlocksPerArray/optNumOperationPerThread);
-    int nblocksTotal = nblocksPerArray * n;
-
     // Do first reduction
-    call_template_kernels(nblocksTotal, dimBlock, d_in, d_out, m, nblocksPerArray, nMemoryBlocksPerArray);
+    int nElementsToSum = m;
+    int dimBlock= getNumberOfBlockDim(nElementsToSum, optNumOperationPerThread);
+    int nMemoryBlocksPerArray = (int)ceil((float)nElementsToSum/(dimBlock));
+    int nBlocksPerArray = (int)ceil((float)nMemoryBlocksPerArray/optNumOperationPerThread);
+    int nBlocksTotal = nBlocksPerArray * nVectors;
+    int endVal = nElementsInVector;
+    int distBetweenSums = 1;    
+    call_template_reduce_many_kernels(nBlocksTotal, dimBlock, d_in, d_out, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal);
     error = cudaGetLastError();
     if(error != cudaSuccess) 
         return error;
-
-    // Do iteratively reduction of partial_sums
-    while(nblocksPerArray>1) {
-        m = nblocksPerArray;
-        dimBlock = getNumberOfBlockDim(m, optNumOperationPerThread);
-        nMemoryBlocksPerArray = (int)ceil((float)m/(dimBlock));
-        nblocksPerArray = (int)ceil((float)nMemoryBlocksPerArray/optNumOperationPerThread);
-        nblocksTotal = nblocksPerArray * n;
-        call_template_kernels(nblocksTotal, dimBlock, d_out, d_out, m, nblocksPerArray, nMemoryBlocksPerArray);
+    
+    // Do iteratively reduction of partial sums
+    while(nBlocksPerArray>1) {
+        nElementsToSum = nBlocksPerArray;
+        distBetweenSums *= dimBlock; 
+        endVal = nElementsToSum*distBetweenSums;               
+        dimBlock = getNumberOfBlockDim(nElementsToSum, optNumOperationPerThread);
+        nMemoryBlocksPerArray = (int)ceil((float)nElementsToSum/(dimBlock));
+        nBlocksPerArray = (int)ceil((float)nMemoryBlocksPerArray/optNumOperationPerThread);
+        nBlocksTotal = nBlocksPerArray * nVectors;        
+        call_template_reduce_many_kernels(nBlocksTotal, dimBlock, d_out, d_out, distBetweenSums, nElementsInVector, nBlocksPerArray, endVal);
         error = cudaGetLastError();
         if(error != cudaSuccess) 
             return error;
-    }     
+    }
+    
+    // Write at the begining of output
+    int maxThreadsPerBlock = 512;
+    for(int idxFirstArrayToRewrite=0; idxFirstArrayToRewrite<nVectors; idxFirstArrayToRewrite+=maxThreadsPerBlock) {
+        int smemSize=maxThreadsPerBlock*sizeof(double);
+        write_at_begining<<< 1, maxThreadsPerBlock, smemSize>>>(d_out, nVectors, nElementsInVector, idxFirstArrayToRewrite);
+    }
+    
     return 0;
 }

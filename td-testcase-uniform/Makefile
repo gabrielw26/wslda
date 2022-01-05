@@ -22,4 +22,4 @@ LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
 
 
 # ----- DO NOT MODIFY -----
-include $(WSLDADIR)hpc-engine/mk.td
+include $(WSLDADIR)/hpc-engine/mk.td

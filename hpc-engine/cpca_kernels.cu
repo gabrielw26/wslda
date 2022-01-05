@@ -16,6 +16,7 @@ typedef thrust::complex<double> Complex;
 #define double_complex Complex
 #define __externc
 #include "wslda_potdens.h"
+#include "reduce_many.h"
 
 // ===========================================================================
 // ============================ CONSTANTS ====================================
@@ -626,7 +627,7 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
 #endif
 
         // read gradient corrections
-#if FUNCTIONAL==ASLDA || FUNCTIONAL==SLDAE
+#ifdef CURRENT_CORRECTIONS
         cja+=-0.5*(j_corr_a_x[ixyz]+j_corr_a_y[ixyz]);
         cjb+=-0.5*(j_corr_b_x[ixyz]+j_corr_b_y[ixyz]);
 
@@ -854,6 +855,16 @@ __global__ void kernel_compute_qpe(Complex *wf1_u, Complex *wf2_u, Complex *wf1_
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex p;
     if(ixyz<NXY)
+    {
+        p=thrust::conj(wf1_u[ixyz])*wf2_u[ixyz] + thrust::conj(wf1_v[ixyz])*wf2_v[ixyz];
+        re[ixyz]=p.real()*DX*DY;
+    }
+}
+__global__ void kernel_compute_qpe(Complex *wf1_u, Complex *wf2_u, Complex *wf1_v, Complex *wf2_v, double *re, int noAllElements)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    Complex p;
+    if(ixyz<noAllElements)
     {
         p=thrust::conj(wf1_u[ixyz])*wf2_u[ixyz] + thrust::conj(wf1_v[ixyz])*wf2_v[ixyz];
         re[ixyz]=p.real()*DX*DY;
@@ -1092,22 +1103,17 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     if(useqpe==NULL) // compute quasiparticle energies
     {
         gpe=grad_alpha_a; // for easier notation
-        size_t shift=0;
-        int iwf;
-
+        
         // compute quasi-particle energy for each wave-function
-        for(iwf=0; iwf<n; iwf++) // for each wave-function
-        {
-            kernel_compute_qpe<<<nblocks, nthreads>>>((Complex *)wf_in+shift,        (Complex *)wf_out+shift,
-                                                    (Complex *)wf_in+shift+n*NXY, (Complex *)wf_out+shift+n*NXY,
-                                                    gpe+iwf);
+        int noAllElements = n*NXY;
+        nblocks = (int)ceil((float)noAllElements/nthreads);
+        kernel_compute_qpe<<<nblocks, nthreads>>>(  (Complex *)wf_in,               (Complex *)wf_out, 
+                                                    (Complex *)wf_in+noAllElements, (Complex *)wf_out+noAllElements, 
+                                                    gpe, noAllElements);
 
-            ierr = local_reductionR(gpe+iwf, NXY, gpe+iwf, nthreads, 0);
-            if(ierr!=0) return ierr;
-
-            shift+=NXY; // move pointer to next wf
-        }
-
+        ierr = local_reductions_many(n, NXY, gpe, gpe);
+        if(ierr!=0) return ierr; 
+        
     }
     else // use given values
     {
@@ -1115,8 +1121,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     }
 
     // subtruct <H>*wf
-    kernel_subtruct_qpe<<<nblocks, nthreads>>>(n, (Complex *)wf_in, (Complex *)wf_out, gpe);
-
+    nblocks = (int)ceil((float)NXY/nthreads);
+    kernel_subtruct_qpe<<<nblocks, nthreads>>>(n, (Complex *)wf_in, (Complex *)wf_out, gpe);  
+ 
     return 0;
 }
 
@@ -1369,6 +1376,15 @@ __global__ void kernel_compute_norm(Complex *wf_u, Complex *wf_v, double *norm)
         norm[ixyz]=(thrust::norm(wf_u[ixyz])+thrust::norm(wf_v[ixyz]))*DX*DY;
     }
 }
+__global__ void kernel_compute_norm(Complex *wf_u, Complex *wf_v, double *norm, int noAllElements)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    if(ixyz<noAllElements)
+    {
+        norm[ixyz]=(thrust::norm(wf_u[ixyz])+thrust::norm(wf_v[ixyz]))*DX*DY;
+    }
+}
+
 
 __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
 {
@@ -1397,34 +1413,21 @@ __global__ void kernel_normalize_wf(int n, Complex *wf, double *norm)
  * */
 extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 {
-    // number of blocks
-    int nblocks = (int)ceil((float)NXY/nthreads);
     int ierr;
-
+    int noAllElements = NXY*n;
     double * norm  = (double *)pca_cufft_work_area; // Use here work area of cuFFT as working buffer
 
-    size_t shift=0;
-    int iwf;
-
     // compute norm for each wave-function
-    for(iwf=0; iwf<n; iwf++) // for each wave-function
-    {
-        kernel_compute_norm<<<nblocks, nthreads>>>((Complex *)wf+shift, (Complex *)wf+shift+n*NXY, norm+iwf);
+    int nblocks = (int)ceil((float)noAllElements/nthreads);
+    kernel_compute_norm<<<nblocks, nthreads>>>((Complex *)wf, (Complex *)wf+noAllElements, norm, noAllElements);
 
-        ierr = local_reductionR(norm+iwf, NXY, norm+iwf, nthreads, 0);
-        if(ierr!=0) return ierr;
-
-        shift+=NXY; // move pointer to next wf
-
-//         // TEST
-//         double tt;
-//         if( cudaMemcpy( &tt , norm+iwf , sizeof(double), cudaMemcpyDeviceToHost )!= cudaSuccess ) return -99;
-//         printf("iwf=%d norm=%f\n", iwf, tt);
-
-    }
+    // reduce wave-functions pararell
+    ierr = local_reductions_many(n, NXY, norm, norm);
+    if(ierr != 0) return ierr;
 
     // normalize wf
-    kernel_normalize_wf<<<nblocks, nthreads>>>(n, (Complex *)wf, norm);
+    nblocks = (int)ceil((float)NXY/nthreads);
+    kernel_normalize_wf<<<nblocks, nthreads>>>(n, (Complex *)wf, norm); 
 
     return 0;
 

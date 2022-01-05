@@ -1,6 +1,10 @@
 # =====================================================================
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
+WSLDADIR:=$(WSLDADIR)/
+OBJDIR:=$(OBJDIR)/
+BINDIR:=$(BINDIR)/
+
 SRCDIR=$(WSLDADIR)hpc-engine/
 INCLUDEDIR=$(WSLDADIR)hpc-engine/
 
@@ -13,13 +17,13 @@ WDERIVSRC=$(WSLDADIR)lib/wderiv/c/
 WINTERPINC=$(WSLDADIR)lib/winterp/c/
 WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
-DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h sldae_functional.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_resize.h jdb.h ../VERSION.h
+DEPS = pca_io.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_edf.h pca_logger.h s2dpca_edf.h s3dpca_grid.h s2dpca_densities.h  s2dpca_me.h s2dpca_fft.h s2dpca_uext.h sxdpca_broyden.h s3dpca_me.h s3dpca_fft.h s3dpca_testfun.h s3dpca_densities.h s3dpca_uext.h wslda_writevars.h netlib-lapack.h wslda_potdens.h wslda_functionals.h aslda_edf.h sldae_functional.h wslda_reproducibility.h wslda_wavevectors.h wslda_errors.h s1dpca_me.h s1dpca_fft.h s1dpca_densities.h wslda_st_checkpoint.h wslda_resize.h jdb.h wslda_predefines_test.h ../VERSION.h
 
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
-DEPSLOCAL = predefines.h  problem-definition.h logger.h
+DEPSLOCAL = predefines.h
 SRCS = wslda_functionals.o wslda_potdens.o sldae_functional.o sxdpca_broyden.o pca_utils.o wslda_writevars.o wslda_reproducibility.o wslda_errors.o wslda_st_checkpoint.o
 SRCS1D = s1dpca.o s1dpca_fft.o s1dpca_me.o s1dpca_densities.o
 SRCS2D = s2dpca.o s2dpca_fft.o s2dpca_me.o s2dpca_densities.o
@@ -113,11 +117,17 @@ $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wsld
 	$(PYTHON) $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
 
-$(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
+$(OBJDIR)wslda_functionals.o: $(SRCDIR)wslda_functionals.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) problem-definition.h
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
+$(OBJDIR)s1dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=1 -c -o $@ $<
 
-$(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
+$(OBJDIR)s2dpca.o: $(SRCDIR)s2dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
 	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=2 -c -o $@ $<
+
+$(OBJDIR)s3dpca.o: $(SRCDIR)s3dpca.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) logger.h
+	$(CXX) $(CFLAGS) -DWSLDA -DCODEDIM=3 -c -o $@ $<
 
 $(OBJDIR)%.o: $(SRCDIR)%.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<

@@ -53,9 +53,10 @@
 #define A_APS ((5. * U_APS * W_APS - 7. * X_APS * U_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
 #define B_APS ((2. * W_APS + 7. * X_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
 // ---------------------------------------------------------------------------
-#define AF_APS_UFG (0.8403540)
-#define BF_APS_UFG (-0.281887)
-#define CF_APS_UFG (-14.95850)
+// fixed at x = 1e9
+#define AF_APS_UFG (0.8403360)
+#define BF_APS_UFG (-0.281863)
+#define CF_APS_UFG (-14.95950)
 // ---------------------------------------------------------------------------
 // physical quantites
 FDECORATOR double ground_state_energy_d0 (double _x);
