@@ -1,54 +1,22 @@
 /*****************************************************************************
-*
-* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
-* Produced at the Lawrence Livermore National Laboratory
-* LLNL-CODE-442911
-* All rights reserved.
-*
-* This file is  part of VisIt. For  details, see https://visit.llnl.gov/.  The
-* full copyright notice is contained in the file COPYRIGHT located at the root
-* of the VisIt distribution or at http://www.llnl.gov/visit/copyright.html.
-*
-* Redistribution  and  use  in  source  and  binary  forms,  with  or  without
-* modification, are permitted provided that the following conditions are met:
-*
-*  - Redistributions of  source code must  retain the above  copyright notice,
-*    this list of conditions and the disclaimer below.
-*  - Redistributions in binary form must reproduce the above copyright notice,
-*    this  list of  conditions  and  the  disclaimer (as noted below)  in  the
-*    documentation and/or other materials provided with the distribution.
-*  - Neither the name of  the LLNS/LLNL nor the names of  its contributors may
-*    be used to endorse or promote products derived from this software without
-*    specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT  HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR  IMPLIED WARRANTIES, INCLUDING,  BUT NOT  LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND  FITNESS FOR A PARTICULAR  PURPOSE
-* ARE  DISCLAIMED. IN  NO EVENT  SHALL LAWRENCE  LIVERMORE NATIONAL  SECURITY,
-* LLC, THE  U.S.  DEPARTMENT OF  ENERGY  OR  CONTRIBUTORS BE  LIABLE  FOR  ANY
-* DIRECT,  INDIRECT,   INCIDENTAL,   SPECIAL,   EXEMPLARY,  OR   CONSEQUENTIAL
-* DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT OF  SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF  USE, DATA, OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER
-* CAUSED  AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT
-* LIABILITY, OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY  WAY
-* OUT OF THE  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-* DAMAGE.
-*
+// Copyright (c) Lawrence Livermore National Security, LLC and other VisIt
+// Project developers.  See the top-level LICENSE file for dates and other
+// details.  No copyright assignment is required to contribute to VisIt.
 *****************************************************************************/
 
 // ************************************************************************* //
-//  File: wdataPluginInfo.C
+//  File: WDataPluginInfo.C
 // ************************************************************************* //
 
-#include <wdataPluginInfo.h>
+#include <WDataPluginInfo.h>
 
 #include <visit-config.h>
-VISIT_PLUGIN_VERSION(wdata,DBP_EXPORT)
+VISIT_PLUGIN_VERSION(WData, DBP_EXPORT)
 
-VISIT_DATABASE_PLUGIN_ENTRY(wdata,General)
+VISIT_DATABASE_PLUGIN_ENTRY(WData, General)
 
 // ****************************************************************************
-//  Method: wdataGeneralPluginInfo::GetName
+//  Method: WDataGeneralPluginInfo::GetName
 //
 //  Purpose:
 //    Return the name of the database plugin.
@@ -61,13 +29,13 @@ VISIT_DATABASE_PLUGIN_ENTRY(wdata,General)
 // ****************************************************************************
 
 const char *
-wdataGeneralPluginInfo::GetName() const
+WDataGeneralPluginInfo::GetName() const
 {
-    return "wdata";
+    return "WData";
 }
 
 // ****************************************************************************
-//  Method: wdataGeneralPluginInfo::GetVersion
+//  Method: WDataGeneralPluginInfo::GetVersion
 //
 //  Purpose:
 //    Return the version of the database plugin.
@@ -80,13 +48,13 @@ wdataGeneralPluginInfo::GetName() const
 // ****************************************************************************
 
 const char *
-wdataGeneralPluginInfo::GetVersion() const
+WDataGeneralPluginInfo::GetVersion() const
 {
     return "1.0";
 }
 
 // ****************************************************************************
-//  Method: wdataGeneralPluginInfo::GetID
+//  Method: WDataGeneralPluginInfo::GetID
 //
 //  Purpose:
 //    Return the id of the database plugin.
@@ -99,12 +67,12 @@ wdataGeneralPluginInfo::GetVersion() const
 // ****************************************************************************
 
 const char *
-wdataGeneralPluginInfo::GetID() const
+WDataGeneralPluginInfo::GetID() const
 {
-    return "wdata_1.0";
+    return "WData_1.0";
 }
 // ****************************************************************************
-//  Method: wdataGeneralPluginInfo::EnabledByDefault
+//  Method: WDataGeneralPluginInfo::EnabledByDefault
 //
 //  Purpose:
 //    Return true if this plugin should be enabled by default; false otherwise.
@@ -116,13 +84,12 @@ wdataGeneralPluginInfo::GetID() const
 //
 // ****************************************************************************
 
-bool
-wdataGeneralPluginInfo::EnabledByDefault() const
+bool WDataGeneralPluginInfo::EnabledByDefault() const
 {
     return true;
 }
 // ****************************************************************************
-//  Method: wdataGeneralPluginInfo::HasWriter
+//  Method: WDataGeneralPluginInfo::HasWriter
 //
 //  Purpose:
 //    Return true if this plugin has a database writer.
@@ -134,23 +101,22 @@ wdataGeneralPluginInfo::EnabledByDefault() const
 //
 // ****************************************************************************
 
-bool
-wdataGeneralPluginInfo::HasWriter() const
+bool WDataGeneralPluginInfo::HasWriter() const
 {
     return false;
 }
 // ****************************************************************************
-//  Method:  wdataGeneralPluginInfo::GetDefaultFilePatterns
+//  Method:  WDataGeneralPluginInfo::GetDefaultFilePatterns
 //
 //  Purpose:
-//    Returns the default patterns for a wdata database.
+//    Returns the default patterns for a WData database.
 //
 //  Programmer:  generated by xml2info
 //  Creation:    omitted
 //
 // ****************************************************************************
 std::vector<std::string>
-wdataGeneralPluginInfo::GetDefaultFilePatterns() const
+WDataGeneralPluginInfo::GetDefaultFilePatterns() const
 {
     std::vector<std::string> defaultPatterns;
     defaultPatterns.push_back("*.wtxt");
@@ -159,35 +125,33 @@ wdataGeneralPluginInfo::GetDefaultFilePatterns() const
 }
 
 // ****************************************************************************
-//  Method:  wdataGeneralPluginInfo::AreDefaultFilePatternsStrict
+//  Method:  WDataGeneralPluginInfo::AreDefaultFilePatternsStrict
 //
 //  Purpose:
-//    Returns if the file patterns for a wdata database are
+//    Returns if the file patterns for a WData database are
 //    intended to be interpreted strictly by default.
 //
 //  Programmer:  generated by xml2info
 //  Creation:    omitted
 //
 // ****************************************************************************
-bool
-wdataGeneralPluginInfo::AreDefaultFilePatternsStrict() const
+bool WDataGeneralPluginInfo::AreDefaultFilePatternsStrict() const
 {
     return false;
 }
 
 // ****************************************************************************
-//  Method:  wdataGeneralPluginInfo::OpensWholeDirectory
+//  Method:  WDataGeneralPluginInfo::OpensWholeDirectory
 //
 //  Purpose:
-//    Returns if the wdata plugin opens a whole directory name
+//    Returns if the WData plugin opens a whole directory name
 //    instead of a single file.
 //
 //  Programmer:  generated by xml2info
 //  Creation:    omitted
 //
 // ****************************************************************************
-bool
-wdataGeneralPluginInfo::OpensWholeDirectory() const
+bool WDataGeneralPluginInfo::OpensWholeDirectory() const
 {
     return false;
 }
