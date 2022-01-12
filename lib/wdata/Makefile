@@ -1,6 +1,11 @@
-
 # C compiler (with C99 dialect)
-CC=gcc -std=gnu99
+ifeq ($(strip $(CC)),)
+    CC=gcc -std=gnu99
+endif
+
+ifeq ($(strip $(MPICPP)),)
+    MPICPP=mpic++ -std=gnu99 
+endif
 
 # To compile tools you need to install first winterp library
 # https://gitlab.fizyka.pw.edu.pl/wtools/winterp
