@@ -1,15 +1,6 @@
 /**
  * W-SLDA Toolkit
- * This file is taken from repository
- * https://gitlab.fizyka.pw.edu.pl/wtools/wdata
- * which provides C implementation of WData format under GNU GPLv3 license. 
  * */
-
-/*****************************************************************************
-// Copyright (c) Lawrence Livermore National Security, LLC and other VisIt
-// Project developers.  See the top-level LICENSE file for dates and other
-// details.  No copyright assignment is required to contribute to VisIt.
-*****************************************************************************/
 
 #ifndef __W_DATA_LIB__
 #define __W_DATA_LIB__
@@ -253,7 +244,7 @@ extern "C"
  * Functions sets value of constant. If constant was not added before it adds it and sets its value.
  * */
   void wdata_setconst(wdata_metadata *md, const char *constname, double constvalue);
-
+  
   /**
  * Functions sets value of constant and corresponding unit. If constant was not added before it adds it and sets its value.
  * */

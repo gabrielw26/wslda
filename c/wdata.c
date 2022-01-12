@@ -1,26 +1,12 @@
 /**
  * W-SLDA Toolkit
- * This file is taken from repository
- * https://gitlab.fizyka.pw.edu.pl/wtools/wdata
- * which provides C implementation of WData format under GNU GPLv3 license. 
  * */
 
-/*****************************************************************************
-// Copyright (c) Lawrence Livermore National Security, LLC and other VisIt
-// Project developers.  See the top-level LICENSE file for dates and other
-// details.  No copyright assignment is required to contribute to VisIt.
-*****************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifndef _WIN32
 #include <unistd.h>
 #include <libgen.h>
-#else
-#include <direct.h> /* for _getcwd, _chdir */
-#define getcwd _getcwd
-#define chdir _chdir
-#endif
 // #include <complex.h>
 #include <ctype.h>
 
@@ -81,7 +67,7 @@ void wdata_goback_wrkdir(wdata_metadata *md)
 
 static char *str_tolower(char *str)
 {
-    int str_len = int(strlen(str)) + 1;
+    int str_len = strlen(str) + 1;
     int j;
 
     for (j = 0; j < str_len; j++)
@@ -373,7 +359,7 @@ int wdata_parse_metadata_file(const char *file_name, wdata_metadata *md)
                     }
                 }
                 replace_str(s, ptag, " ");
-                //                 printf("itag: %d", itag);
+//                 printf("itag: %d", itag);
                 itag++;
             }
             if (itag < 2)
@@ -431,14 +417,7 @@ int wdata_parse_metadata_file(const char *file_name, wdata_metadata *md)
     // set working dir to be consistent with wtxt file location
     char ctmp[MD_CHAR_LGTH];
     strcpy(ctmp, file_name);
-#ifdef _WIN32
-    /* KSB 9-22-2021, Windows doesn't have 'dirname', so use _splitpath_s.*/
-    char dtmp[MD_CHAR_LGTH];
-    if (_splitpath_s(ctmp, NULL, 0, dtmp, MD_CHAR_LGTH, NULL, 0, NULL, 0) == 0)
-        strcpy(md->wrkdir, dtmp);
-#else
     strcpy(md->wrkdir, dirname(ctmp));
-#endif
     md->issetwrkdir = WRKDIR_SET;
 
     // check corretness
