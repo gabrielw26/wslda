@@ -1,5 +1,0 @@
-Target: xml2cmake
-Condition: NOT WIN32
-MLinkLibraries: m
-ELinkLibraries: m
-

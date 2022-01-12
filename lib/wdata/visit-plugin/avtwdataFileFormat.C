@@ -1,14 +1,46 @@
 /*****************************************************************************
-// Copyright (c) Lawrence Livermore National Security, LLC and other VisIt
-// Project developers.  See the top-level LICENSE file for dates and other
-// details.  No copyright assignment is required to contribute to VisIt.
+*
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+* Produced at the Lawrence Livermore National Laboratory
+* LLNL-CODE-442911
+* All rights reserved.
+*
+* This file is  part of VisIt. For  details, see https://visit.llnl.gov/.  The
+* full copyright notice is contained in the file COPYRIGHT located at the root
+* of the VisIt distribution or at http://www.llnl.gov/visit/copyright.html.
+*
+* Redistribution  and  use  in  source  and  binary  forms,  with  or  without
+* modification, are permitted provided that the following conditions are met:
+*
+*  - Redistributions of  source code must  retain the above  copyright notice,
+*    this list of conditions and the disclaimer below.
+*  - Redistributions in binary form must reproduce the above copyright notice,
+*    this  list of  conditions  and  the  disclaimer (as noted below)  in  the
+*    documentation and/or other materials provided with the distribution.
+*  - Neither the name of  the LLNS/LLNL nor the names of  its contributors may
+*    be used to endorse or promote products derived from this software without
+*    specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT  HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR  IMPLIED WARRANTIES, INCLUDING,  BUT NOT  LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND  FITNESS FOR A PARTICULAR  PURPOSE
+* ARE  DISCLAIMED. IN  NO EVENT  SHALL LAWRENCE  LIVERMORE NATIONAL  SECURITY,
+* LLC, THE  U.S.  DEPARTMENT OF  ENERGY  OR  CONTRIBUTORS BE  LIABLE  FOR  ANY
+* DIRECT,  INDIRECT,   INCIDENTAL,   SPECIAL,   EXEMPLARY,  OR   CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT OF  SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF  USE, DATA, OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER
+* CAUSED  AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT
+* LIABILITY, OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY  WAY
+* OUT OF THE  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+* DAMAGE.
+*
 *****************************************************************************/
 
 // ************************************************************************* //
-//                            avtWDataFileFormat.C                           //
+//                            avtwdataFileFormat.C                           //
 // ************************************************************************* //
 
-#include <avtWDataFileFormat.h>
+#include <avtwdataFileFormat.h>
 
 #include <string>
 
@@ -46,7 +78,7 @@ using std::string;
         }                                                                          \
     }
 
-WDataVariable::WDataVariable(wdata_metadata *wdmd, int varid, int precdowngrade)
+wdataVariable::wdataVariable(wdata_metadata *wdmd, int varid, int precdowngrade)
 {
     md = wdmd;
     vid = varid;
@@ -55,21 +87,20 @@ WDataVariable::WDataVariable(wdata_metadata *wdmd, int varid, int precdowngrade)
     d2f = precdowngrade;
 }
 
-int WDataVariable::loadCycle(int cycleid)
+int wdataVariable::loadCycle(int cycleid)
 {
     int ierr = 0;
 
     if (loadedcycle != cycleid)
     {
         wdata_operation(wdata_read_cycle(md, md->var[vid].name, cycleid, data));
-
-        if (ierr == 0 && d2f == 1) // downgrade precision
+        
+        if (ierr == 0 && d2f==1) // downgrade precision
         {
             int bs = (int)(wdata_get_blocksize(md, &md->var[vid]) / sizeof(double));
-            double *dd = (double *)data;
-            float *df = (float *)data;
-            for (int i = 0; i < bs; i++)
-                df[i] = (float)dd[i];
+            double * dd = (double*)data;
+            float * df = (float*)data;
+            for(int i=0; i<bs; i++) df[i]=(float)dd[i];
         }
     }
 
@@ -83,9 +114,9 @@ int WDataVariable::loadCycle(int cycleid)
 }
 
 // =======================================================================================
-// ============================= WDataRealVariable =======================================
+// ============================= wdataRealVariable =======================================
 // =======================================================================================
-WDataRealVariable::WDataRealVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : WDataVariable(wdmd, varid, precdowngrade)
+wdataRealVariable::wdataRealVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : wdataVariable(wdmd, varid, precdowngrade)
 {
     // allocate memory for data
     int bs = wdata_get_blocklength(md);
@@ -106,7 +137,7 @@ WDataRealVariable::WDataRealVariable(wdata_metadata *wdmd, int varid, int precdo
         }
 }
 
-bool WDataRealVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
+bool wdataRealVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
 {
     // check it this varaible can generate data for varname
     int varid = -1;
@@ -137,9 +168,9 @@ bool WDataRealVariable::getVariable(const char *_varname, int cycleid, float *da
 }
 
 // =======================================================================================
-// ============================= WDataComplexVariable ====================================
+// ============================= wdataComplexVariable =======================================
 // =======================================================================================
-WDataComplexVariable::WDataComplexVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : WDataVariable(wdmd, varid, precdowngrade)
+wdataComplexVariable::wdataComplexVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : wdataVariable(wdmd, varid, precdowngrade)
 {
     // allocate memory for data
     int bs = wdata_get_blocklength(md);
@@ -204,7 +235,7 @@ WDataComplexVariable::WDataComplexVariable(wdata_metadata *wdmd, int varid, int 
         }
 }
 
-bool WDataComplexVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
+bool wdataComplexVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
 {
     // check it this varaible can generate data for varname
     int varid = -1;
@@ -274,9 +305,9 @@ bool WDataComplexVariable::getVariable(const char *_varname, int cycleid, float 
 }
 
 // =======================================================================================
-// ============================= WDataVectorVariable =====================================
+// ============================= wdataVectorVariable =======================================
 // =======================================================================================
-WDataVectorVariable::WDataVectorVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : WDataVariable(wdmd, varid, precdowngrade)
+wdataVectorVariable::wdataVectorVariable(wdata_metadata *wdmd, int varid, int precdowngrade) : wdataVariable(wdmd, varid, precdowngrade)
 {
     // allocate memory for data
     int bs = wdata_get_blocklength(md);
@@ -299,7 +330,7 @@ WDataVectorVariable::WDataVectorVariable(wdata_metadata *wdmd, int varid, int pr
         }
 }
 
-bool WDataVectorVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
+bool wdataVectorVariable::getVariable(const char *_varname, int cycleid, float *data_for_visit)
 {
     // check it this varaible can generate data for varname
     int varid = -1;
@@ -332,14 +363,14 @@ bool WDataVectorVariable::getVariable(const char *_varname, int cycleid, float *
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat constructor
+//  Method: avtwdataFileFormat constructor
 //
 //  Programmer: gabrielw -- generated by xml2avt
 //  Creation:   Wed Jul 29 19:18:00 PST 2020
 //
 // ****************************************************************************
 
-avtWDataFileFormat::avtWDataFileFormat(const char *filename)
+avtwdataFileFormat::avtwdataFileFormat(const char *filename)
     : avtMTSDFileFormat(&filename, 1)
 {
     // INITIALIZE DATA MEMBERS
@@ -375,45 +406,43 @@ avtWDataFileFormat::avtWDataFileFormat(const char *filename)
     //     std::string str = filename;
     //     unsigned found = str.find_last_of("/\\");
     //     std::string path = str.substr(0,found);
-    //     debug4<<"[WDATA] avtWDataFileFormat::avtWDataFileFormat: path="<<path<<endl;
+    //     debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: path="<<path<<endl;
     //     if(path!="")
     //     {
     //         str = path + "/" + wdmd.prefix;
-    //         // debug4<<"[WDATA] avtWDataFileFormat::avtWDataFileFormat: str="<<str<<endl;
+    //         // debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: str="<<str<<endl;
     //         strcpy(wdmd.prefix, str.c_str());
     //     }
-    //     debug4<<"[WDATA] avtWDataFileFormat::avtWDataFileFormat: wdmd.prefix="<<wdmd.prefix<<endl;
+    //     debug4<<"[WDATA] avtwdataFileFormat::avtwdataFileFormat: wdmd.prefix="<<wdmd.prefix<<endl;
 
     // create list of variables
-    WDataVariable *_var;
+    wdataVariable *_var;
     int _correct_type;
     for (int i = 0; i < wdmd.nvar; i++)
     {
-        _correct_type = 1;
+        _correct_type=1;
 
         if (strcmp(wdmd.var[i].type, "real") == 0)
-            _var = new WDataRealVariable(&wdmd, i, 1);
+            _var = new wdataRealVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "real8") == 0)
-            _var = new WDataRealVariable(&wdmd, i, 1);
+            _var = new wdataRealVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "real4") == 0)
-            _var = new WDataRealVariable(&wdmd, i, 0);
+            _var = new wdataRealVariable(&wdmd, i, 0);
         else if (strcmp(wdmd.var[i].type, "complex") == 0)
-            _var = new WDataComplexVariable(&wdmd, i, 1);
+            _var = new wdataComplexVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "complex16") == 0)
-            _var = new WDataComplexVariable(&wdmd, i, 1);
+            _var = new wdataComplexVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "complex8") == 0)
-            _var = new WDataComplexVariable(&wdmd, i, 0);
+            _var = new wdataComplexVariable(&wdmd, i, 0);
         else if (strcmp(wdmd.var[i].type, "vector") == 0)
-            _var = new WDataVectorVariable(&wdmd, i, 1);
+            _var = new wdataVectorVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "vector8") == 0)
-            _var = new WDataVectorVariable(&wdmd, i, 1);
+            _var = new wdataVectorVariable(&wdmd, i, 1);
         else if (strcmp(wdmd.var[i].type, "vector4") == 0)
-            _var = new WDataVectorVariable(&wdmd, i, 0);
-        else
-            _correct_type = 0;
+            _var = new wdataVectorVariable(&wdmd, i, 0);
+        else _correct_type=0;
 
-        if (_correct_type == 1)
-            variable.push_back(_var);
+        if(_correct_type==1) variable.push_back(_var);
     }
 
 // fill comment section
@@ -529,14 +558,14 @@ avtWDataFileFormat::avtWDataFileFormat(const char *filename)
 #undef MAX_REC_LEN
 }
 
-avtWDataFileFormat::~avtWDataFileFormat()
+avtwdataFileFormat::~avtwdataFileFormat()
 {
     for (int i = 0; i < wdmd.nvar; i++)
         delete variable[i];
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::GetNTimesteps
+//  Method: avtwdataFileFormat::GetNTimesteps
 //
 //  Purpose:
 //      Tells the rest of the code how many timesteps there are in this file.
@@ -546,13 +575,13 @@ avtWDataFileFormat::~avtWDataFileFormat()
 //
 // ****************************************************************************
 
-void avtWDataFileFormat::GetCycles(std::vector<int> &cycles)
+void avtwdataFileFormat::GetCycles(std::vector<int> &cycles)
 {
     for (int i = 0; i < wdmd.cycles; ++i)
         cycles.push_back(i);
 }
 
-void avtWDataFileFormat::GetTimes(std::vector<double> &times)
+void avtwdataFileFormat::GetTimes(std::vector<double> &times)
 {
     for (int i = 0; i < wdmd.cycles; ++i)
     {
@@ -562,13 +591,13 @@ void avtWDataFileFormat::GetTimes(std::vector<double> &times)
     }
 }
 
-int avtWDataFileFormat::GetNTimesteps(void)
+int avtwdataFileFormat::GetNTimesteps(void)
 {
     return wdmd.cycles;
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::FreeUpResources
+//  Method: avtwdataFileFormat::FreeUpResources
 //
 //  Purpose:
 //      When VisIt is done focusing on a particular timestep, it asks that
@@ -581,12 +610,12 @@ int avtWDataFileFormat::GetNTimesteps(void)
 //
 // ****************************************************************************
 
-void avtWDataFileFormat::FreeUpResources(void)
+void avtwdataFileFormat::FreeUpResources(void)
 {
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::PopulateDatabaseMetaData
+//  Method: avtwdataFileFormat::PopulateDatabaseMetaData
 //
 //  Purpose:
 //      This database meta-data object is like a table of contents for the
@@ -598,7 +627,7 @@ void avtWDataFileFormat::FreeUpResources(void)
 //
 // ****************************************************************************
 
-void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
+void avtwdataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
 {
     std::string meshname = "mesh";
     //
@@ -614,7 +643,7 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
     //
     // Here's the call that tells the meta-data object that we have a mesh:
     //
-    debug4 << "[WDATA] avtWDataFileFormat::PopulateDatabaseMetaData->AddMeshToMetaData" << endl;
+    debug4 << "[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->AddMeshToMetaData" << endl;
 
     AddMeshToMetaData(md, meshname, mt, extents, nblocks, block_origin,
                       spatial_dimension, topological_dimension);
@@ -622,7 +651,7 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
     // CODE TO ADD A SCALAR VARIABLE
     for (int ii = 0; ii < variable.size(); ii++)
     {
-        WDataVariable *_var = variable[ii];
+        wdataVariable *_var = variable[ii];
         if (_var->isScalar())
             for (int ivar = 0; ivar < _var->numberOfVariables(); ivar++)
             {
@@ -639,7 +668,7 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
                 smd->units = _var->getIthVariableUnit(ivar);
                 md->Add(smd);
 
-                debug4 << "[WDATA] avtWDataFileFormat::PopulateDatabaseMetaData->Added scalar variable: " << smd->name << endl;
+                debug4 << "[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->Added scalar variable: " << smd->name << endl;
             }
 
         // CODE TO ADD A VECTOR VARIABLE
@@ -660,7 +689,7 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
                 smv->varDim = 3;
                 md->Add(smv);
 
-                debug4 << "[WDATA] avtWDataFileFormat::PopulateDatabaseMetaData->Added vector variable: " << smv->name << endl;
+                debug4 << "[WDATA] avtwdataFileFormat::PopulateDatabaseMetaData->Added vector variable: " << smv->name << endl;
             }
     }
 
@@ -684,7 +713,7 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::GetMesh
+//  Method: avtwdataFileFormat::GetMesh
 //
 //  Purpose:
 //      Gets the mesh associated with this file.  The mesh is returned as a
@@ -703,9 +732,9 @@ void avtWDataFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int t
 // ****************************************************************************
 
 vtkDataSet *
-avtWDataFileFormat::GetMesh(int timestate, const char *meshname)
+avtwdataFileFormat::GetMesh(int timestate, const char *meshname)
 {
-    debug4 << "[WDATA] avtWDataFileFormat::GetMesh" << endl;
+    debug4 << "[WDATA] avtwdataFileFormat::GetMesh" << endl;
 
     int ndims = 3;
     int dims[3];
@@ -754,7 +783,7 @@ avtWDataFileFormat::GetMesh(int timestate, const char *meshname)
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::GetVar
+//  Method: avtwdataFileFormat::GetVar
 //
 //  Purpose:
 //      Gets a scalar variable associated with this file.  Although VTK has
@@ -772,7 +801,7 @@ avtWDataFileFormat::GetMesh(int timestate, const char *meshname)
 // ****************************************************************************
 
 vtkDataArray *
-avtWDataFileFormat::GetVar(int timestate, const char *varname)
+avtwdataFileFormat::GetVar(int timestate, const char *varname)
 {
 
     int ntuples = wdata_get_blocklength(&wdmd); // this is the number of entries in the variable.
@@ -795,7 +824,7 @@ avtWDataFileFormat::GetVar(int timestate, const char *varname)
 }
 
 // ****************************************************************************
-//  Method: avtWDataFileFormat::GetVectorVar
+//  Method: avtwdataFileFormat::GetVectorVar
 //
 //  Purpose:
 //      Gets a vector variable associated with this file.  Although VTK has
@@ -813,7 +842,7 @@ avtWDataFileFormat::GetVar(int timestate, const char *varname)
 // ****************************************************************************
 
 vtkDataArray *
-avtWDataFileFormat::GetVectorVar(int timestate, const char *varname)
+avtwdataFileFormat::GetVectorVar(int timestate, const char *varname)
 {
     int ntuples = wdata_get_blocklength(&wdmd); // this is the number of entries in the variable.
     vtkFloatArray *rv = vtkFloatArray::New();
