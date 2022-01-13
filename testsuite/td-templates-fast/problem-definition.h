@@ -132,5 +132,27 @@ extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
     return 0;
 }
 
-
+/**
+ * Scattering length, in code units.
+ * This function is meaningful only in the case of BDG or SLDAE functionals.
+ * For SLDA and ASLDA the scattering length is assumed to be infinite, and the function is ignored.
+ * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
+ * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2),
+ *           NOTE: in case of 1d code iy=0
+ * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
+ *           NOTE: in case of 1d and 2d codes iz=0
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return value of the scattering length a(x,y,z,t).
+ * */
+__device__ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
+{
+    return dc_sclgth; // by default return value from input file.
+    
+    // however, here you can define your own prescription
+    // it can be time and position dependent
+    // ...
+}
 

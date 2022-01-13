@@ -1,0 +1,79 @@
+
+# --------------------------------------------------------------------------
+# Spin imbalanced system
+# --------------------------------------------------------------------------
+tag: ss0-1d
+exec: pwd
+exec: cp ../td-templates-full/Makefile.0.s .
+exec: make -f ../td-templates-full/Makefile.0.s clean
+exec: make -f ../td-templates-full/Makefile.0.s 1d
+test: td-wslda-1d
+exec: cp input.txt.1 input.ss0.txt
+exec: rm -rf test.ss0-1d*
+exec: echo "outprefix  test.ss0-1d" >> input.ss0.txt
+exec: echo "params7       1" >> input.ss0.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.ss0.txt
+test: test.ss0-1d_testsuite.ok
+diff: test.ss0-1d.cmp ref/test.ss0-1d.cmp.ref
+
+tag: ss0-2d
+exec: make -f ../td-templates-full/Makefile.0.s clean
+exec: make -f ../td-templates-full/Makefile.0.s 2d
+test: td-wslda-2d
+exec: cp input.txt.2 input.ss0.txt
+exec: rm -rf test.ss0-2d*
+exec: echo "outprefix  test.ss0-2d" >> input.ss0.txt
+exec: echo "params7       1" >> input.ss0.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.ss0.txt
+test: test.ss0-2d_testsuite.ok
+diff: test.ss0-2d.cmp ref/test.ss0-2d.cmp.ref
+
+tag: ss0-3d
+exec: make -f ../td-templates-full/Makefile.0.s clean
+exec: make -f ../td-templates-full/Makefile.0.s 3d
+test: td-wslda-3d
+exec: cp input.txt.3 input.ss0.txt
+exec: rm -rf test.ss0-3d*
+exec: echo "outprefix  test.ss0-3d" >> input.ss0.txt
+exec: echo "params7       1" >> input.ss0.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-3d input.ss0.txt
+test: test.ss0-3d_testsuite.ok
+diff: test.ss0-3d.cmp ref/test.ss0-3d.cmp.ref
+
+# --------------------------------------------------------------------------
+# Spin symmetric system
+# --------------------------------------------------------------------------
+tag: ss1-1d
+exec: pwd
+exec: cp ../td-templates-full/Makefile.1.s .
+exec: make -f ../td-templates-full/Makefile.1.s clean
+exec: make -f ../td-templates-full/Makefile.1.s 1d
+test: td-wslda-1d
+exec: cp input.txt.1 input.ss1.txt
+exec: rm -rf test.ss1-1d*
+exec: echo "outprefix  test.ss1-1d" >> input.ss1.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.ss1.txt
+test: test.ss1-1d_testsuite.ok
+diff: test.ss1-1d.cmp ref/test.ss1-1d.cmp.ref
+
+tag: ss1-2d
+exec: make -f ../td-templates-full/Makefile.1.s clean
+exec: make -f ../td-templates-full/Makefile.1.s 2d
+test: td-wslda-2d
+exec: cp input.txt.2 input.ss1.txt
+exec: rm -rf test.ss1-2d*
+exec: echo "outprefix  test.ss1-2d" >> input.ss1.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-2d input.ss1.txt
+test: test.ss1-2d_testsuite.ok
+diff: test.ss1-2d.cmp ref/test.ss1-2d.cmp.ref
+
+tag: ss1-3d
+exec: make -f ../td-templates-full/Makefile.1.s clean
+exec: make -f ../td-templates-full/Makefile.1.s 3d
+test: td-wslda-3d
+exec: cp input.txt.3 input.ss1.txt
+exec: rm -rf test.ss1-3d*
+exec: echo "outprefix  test.ss1-3d" >> input.ss1.txt
+exec: timeout 3600 mpirun -np 8 ./td-wslda-3d input.ss1.txt
+test: test.ss1-3d_testsuite.ok
+diff: test.ss1-3d.cmp ref/test.ss1-3d.cmp.ref

@@ -34,10 +34,7 @@ int memcopy_extra_data(size_t extra_data_size, void *extra_data);
 void process_params(double *params, double kF, double *mu);
 #endif
 int memcopy_const_params(double *params);
-
-#ifdef BDG_MODE
 int memcopy_const_BdG(double aBdG);
-#endif
 
 // Utility functions
 int set_gpu(int device); 

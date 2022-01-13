@@ -75,7 +75,7 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
     		cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
 		double* d_potentials, double* t0,
 		int* nwf, int* nwfip_out,
-		double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+		double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
 		int HowMany)
 {
  char file_name[256];
@@ -121,6 +121,8 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
  MPI_File_read_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
  MPI_File_read_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+ MPI_File_read_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 //compute nwfip
@@ -173,17 +175,16 @@ int load_all (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
  shift_0 += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * nr;
 //V_a, V_b, DELTA
  shift = shift_0;
- shift += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * ip;
- if (nwfip >=2) {
-    MPI_File_read_at(in, shift, h_wavefun, (size_t)4*CHUNKN, MPI_DOUBLE, &status);
-    gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials,  (size_t)4*CHUNKN*sizeof(double)) );
- } else {
-    	MPI_File_read_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-    	gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials,  (size_t)2*CHUNKN*sizeof(double)) );
-   	shift += (size_t)2*CHUNKN*sizeof(double);
-        MPI_File_read_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials+2*CHUNKN,  (size_t)2*CHUNKN*sizeof(double)) );
-   }
+ // everyone reads
+ {
+     size_t _i;
+     for(_i=0; _i<12; _i++) // because h_wavefun may not have enough space to store all elements
+     {
+        MPI_File_read_at(in, shift+_i*CHUNKN*sizeof(double), h_wavefun, (size_t)1*CHUNKN, MPI_DOUBLE, &status);
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials+_i*CHUNKN, (size_t)1*CHUNKN*sizeof(double)) );
+        
+     }
+ }
 
  MPI_File_close (&in);
  return 0;
@@ -194,7 +195,7 @@ int save_all(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
                 cufftDoubleComplex *d_fkm1, cufftDoubleComplex *d_fkm2, cufftDoubleComplex *d_fkm3,
                 double* d_potentials, double *t0,
 		int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
  char file_name[256];
@@ -242,6 +243,8 @@ if (ip==0) MPI_File_write_at(in, shift_0, &nwf, 1, MPI_INT, &status);
 if(ip==0) MPI_File_write_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+if(ip==0) MPI_File_write_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 
@@ -291,17 +294,16 @@ if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
  shift_0 += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * nr;
 //V_a, V_b, DELTA
  shift = shift_0;
- shift += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * ip;
- if (nwfip >=2) {
-    gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)4*CHUNKN*sizeof(double)) );
-    MPI_File_write_at(in, shift, h_wavefun, (size_t)4*CHUNKN, MPI_DOUBLE, &status);
- } else {
-        gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)2*CHUNKN*sizeof(double)) );
-	MPI_File_write_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-	shift += (size_t)2*CHUNKN*sizeof(double);
-	gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)2*nwfip*CHUNKN*sizeof(double)) );
-       	MPI_File_write_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-  }
+ if(ip==0) // writes only the ip==0
+ {
+     size_t _i;
+     for(_i=0; _i<12; _i++) // because h_wavefun may not have enough space to store all elements
+     {
+        gpu_exec( memcopy_gpu2host(d_potentials+_i*CHUNKN, h_wavefun, (size_t)1*CHUNKN*sizeof(double)) );
+        MPI_File_write_at(in, shift+_i*CHUNKN*sizeof(double), h_wavefun, (size_t)1*CHUNKN, MPI_DOUBLE, &status);
+     }
+ }
+ 
  MPI_File_close (&in);
  return 0;
 }
@@ -313,7 +315,7 @@ int load_all_45 (double complex * h_wavefun, MPI_Comm comm, char* inprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,		
                 double* d_potentials, double* t0,
                 int* nwf, int* nwfip_out,
-                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu,double* ec, double* kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
 char file_name[256];
@@ -359,6 +361,8 @@ char file_name[256];
  MPI_File_read_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
  MPI_File_read_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+ MPI_File_read_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 //compute nwfip
@@ -417,17 +421,16 @@ char file_name[256];
  shift_0 += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * nr;
 //V_a, V_b, DELTA
  shift = shift_0;
- shift += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * ip;
- if (nwfip >=2) {
-    MPI_File_read_at(in, shift, h_wavefun, (size_t)4*CHUNKN, MPI_DOUBLE, &status);
-    gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials,  (size_t)4*CHUNKN*sizeof(double)) );
- } else {
-        MPI_File_read_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials,  (size_t)2*CHUNKN*sizeof(double)) );
-        shift += (size_t)2*CHUNKN*sizeof(double);
-        MPI_File_read_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials+2*CHUNKN,  (size_t)2*CHUNKN*sizeof(double)) );
-   }
+ // everyone reads
+ {
+     size_t _i;
+     for(_i=0; _i<12; _i++) // because h_wavefun may not have enough space to store all elements
+     {
+        MPI_File_read_at(in, shift+_i*CHUNKN*sizeof(double), h_wavefun, (size_t)1*CHUNKN, MPI_DOUBLE, &status);
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_potentials+_i*CHUNKN, (size_t)1*CHUNKN*sizeof(double)) );
+        
+     }
+ }
 
  MPI_File_close (&in);
  return 0;
@@ -440,7 +443,7 @@ int save_all_45(double complex * h_wavefun, MPI_Comm comm, char* outprefix,
 		cufftDoubleComplex *d_fkm3, cufftDoubleComplex *d_fkm4,
                 double* d_potentials, double *t0,
                 int nwf, int nwfip,
-                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg,
+                double* h_fbetaEn, double* h_kkz, double* mu, double *ec, double *kF, double* eF, double* Effg, double *beta,
                 int HowMany)
 {
  char file_name[256];
@@ -488,6 +491,8 @@ if (ip==0) MPI_File_write_at(in, shift_0, &nwf, 1, MPI_INT, &status);
 if(ip==0) MPI_File_write_at(in, shift_0, eF, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
+ shift_0 += sizeof(double);
+if(ip==0) MPI_File_write_at(in, shift_0, beta, 1, MPI_DOUBLE, &status);
  shift_0 += sizeof(double);
 
 
@@ -543,17 +548,16 @@ if(ip==0) MPI_File_write_at(in, shift_0, Effg, 1, MPI_DOUBLE, &status);
  shift_0 += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * nr;   
 //V_a, V_b, DELTA
  shift = shift_0;
- shift += (size_t)2*(nwfip+nwfp)*CHUNKN*sizeof(cufftDoubleComplex) * ip;
- if (nwfip >=2) {
-    gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)4*CHUNKN*sizeof(double)) );
-    MPI_File_write_at(in, shift, h_wavefun, (size_t)4*CHUNKN, MPI_DOUBLE, &status);
- } else {
-	gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)2*CHUNKN*sizeof(double)) );
-        MPI_File_write_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-        shift += (size_t)2*CHUNKN*sizeof(double);
-        gpu_exec( memcopy_gpu2host(d_potentials, h_wavefun, (size_t)2*nwfip*CHUNKN*sizeof(double)) );
-        MPI_File_write_at(in, shift, h_wavefun, (size_t)2*CHUNKN, MPI_DOUBLE, &status);
-  }
+ if(ip==0) // writes only the ip==0
+ {
+     size_t _i;
+     for(_i=0; _i<12; _i++) // because h_wavefun may not have enough space to store all elements
+     {
+        gpu_exec( memcopy_gpu2host(d_potentials+_i*CHUNKN, h_wavefun, (size_t)1*CHUNKN*sizeof(double)) );
+        MPI_File_write_at(in, shift+_i*CHUNKN*sizeof(double), h_wavefun, (size_t)1*CHUNKN, MPI_DOUBLE, &status);
+     }
+ }
+ 
  MPI_File_close (&in);
  return 0;
 }

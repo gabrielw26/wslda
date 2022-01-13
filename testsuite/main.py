@@ -168,7 +168,7 @@ def commands(dir_name):
     return tab_makes, tab_runs, tab_checks
 
 # Generating final report
-def runReport(__Folder, __Tag, __Make, __Run, __Check):
+def runReport(__Folder, __Tag, __Make, __Run, __Check, header=""):
     #Settings of the report output file
     filepath = S + '/' + getpass.getuser() + '_report_' + date_time
     if os.path.exists(filepath): os.remove(filepath)
@@ -203,6 +203,7 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
 
     #Generating output file
     ff = open(filepath, 'a')
+    if header!="": ff.write("%s\n" % header)
     np.savetxt(ff, summs, '%-7s', '\t')
     ff.write('\n')
     if __fails != 0: ff.write('Some test FAILED. For further information check your .log file.\n\n')
@@ -212,6 +213,13 @@ def runReport(__Folder, __Tag, __Make, __Run, __Check):
     
     print("\n\nmore %s\n" % filepath)
     sys.stdout.flush()
+    
+    # Clear header
+    __Folder.pop(0)
+    __Tag.pop(0)
+    __Make.pop(0)
+    __Run.pop(0)
+    __Check.pop(0)
     
     return __tests, __oks, __fails
 
@@ -256,6 +264,7 @@ for folder in F:
             for m in makes: listOfMakes.append(m)
             for r in runs: listOfRuns.append(r)
             for c in checks: listOfChecks.append(c)
+            xx, yy, zz = runReport(listOfFolders, listOfTags, listOfMakes, listOfRuns, listOfChecks, header="--- Testsuite is still working! ---\n---    It is PARTIAL report!    ---\n")
         else:
             logging.warning("\"" + description_file + "\" not found in \"" + f + "\" directory. Skipping \"" + f + "\" directory.")
     else:

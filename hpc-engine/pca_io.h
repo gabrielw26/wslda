@@ -451,6 +451,22 @@ int read_binary_file(const char * file_name, unsigned long int size, unsigned lo
     return 0;
 }
 
+int write_binary_file(const char * file_name, size_t size, void * data)
+{     
+    
+    FILE *pFile;
+    
+    pFile= fopen (file_name, "wb");
+    if (pFile==NULL)  return -1; // cannot open    
+        
+    size_t test_ele = fwrite (data , size, 1, pFile);
+    if(test_ele!=1) return -3; // data not written 
+    
+    fclose(pFile);
+    
+    return 0;
+}
+
 int append_to_binary_file(const char * file_name, size_t size, void * data)
 {     
     
@@ -761,10 +777,6 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
         {
             i=wslda_kmodes_1d_getcnt2d(kvecs[ikz].ky,kvecs[ikz].kz, kytmp, kztmp);
             tnwf+=nwf_per_kyz[ikz]*i;
-            
-//             int ii;
-//             for(ii=0; ii<i; ii++)
-//                 wprintf("TTT: %6d %12.8f %12.8f %6d %6d %12.8f %12.8f\n", ikz, kvecs[ikz].ky,kvecs[ikz].kz, i, ii, kytmp[ii], kztmp[ii]); // TODO
         }
     }
     else if(codedim==3)
@@ -1488,7 +1500,6 @@ int check_if_can_overwrite_files()
     sprintf(fname, "%s_input.txt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
     sprintf(fname, "%s.wlog", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
     sprintf(fname, "%s.wtxt", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
-    sprintf(fname, "%s.stdout", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
     sprintf(fname, "%s_predefines.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
     sprintf(fname, "%s_problem-definition.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;
     sprintf(fname, "%s_logger.h", md.outprefix); if(exists(fname)) return WSLDA_ERR_CANNOT_OVERWRITE;

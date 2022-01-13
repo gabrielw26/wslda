@@ -17,12 +17,14 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
-
 #else
 
 #error "You need to select WSLDA or TDWSLDA!"
 
 #endif
+
+// check predefines
+#include "wslda_predefines_test.h"
 
 // Number of self-consistent iterations for U and delta computation
 #define UD_SCITERS 15
@@ -30,7 +32,7 @@
 #define UD_MIX_COEFF 0.75
 
 // if particle number changed by this percentage then break the simulation
-#define N_STABILITY_CRITERIA 0.25 
+#define N_STABILITY_CRITERIA 0.25
 
 // Integration scheme AB - predictor, AM - correctior, number specify order
 // #define ITEGRATION_SCHEME AB3AM4
@@ -44,6 +46,7 @@
 #define ASLDA 112
 #define BDG 113
 #define CUSTOMEDF 114
+#define SLDAE 115
 
 // if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
 #if FUNCTIONAL==BDG
@@ -60,6 +63,11 @@
 #define A0 1.094
 #define A1 0.156
 #define A2 -0.532
+#endif
+
+#if FUNCTIONAL==SLDAE
+// effective mass - not 1.0 then current corrections are needed!
+#define CURRENT_CORRECTIONS
 #endif
 
 #if FUNCTIONAL==SLDA
@@ -116,7 +124,7 @@
 #define LXYZ (LX*LY*LZ)
 
 #define NXYZ (NX*NY*NZ)
- 
+
 // Settings for 2D calculations
 #define NXY (NX*NY)
 #define LXY (LX*LY)
@@ -147,7 +155,7 @@
 #define LZA         9
 #define LZB         10
 
-// total number of items in WSLDA codes 
+// total number of items in WSLDA codes
 #define WSLDAITEMS (ENERGYITEMS+1)
 #define ENTROPY     7
 
@@ -178,6 +186,10 @@
 #define AB3AM4 34
 #define AB4AM5 45
 
+#ifdef ENABLE_MODIFY_POTENTIALS
+#undef BDG_MODE
+#endif
+
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
 #undef CURRENT_CORRECTIONS
 #endif
@@ -197,26 +209,36 @@
 
     #if FUNCTIONAL==ASLDA
     #define EXCHANGE_SIZE   7
-    #endif
-    #if FUNCTIONAL==SLDA
+    #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   3
-    #endif
-    #if FUNCTIONAL==BDG
+    #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
+    #else
+    #define EXCHANGE_SIZE   7
     #endif
     
+    #ifdef CURRENT_CORRECTIONS
+    #undef EXCHANGE_SIZE
+    #define EXCHANGE_SIZE 7
+    #endif
+
 #else
 
     #if FUNCTIONAL==ASLDA
     #define EXCHANGE_SIZE   12
-    #endif
-    #if FUNCTIONAL==SLDA
+    #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   8
-    #endif
-    #if FUNCTIONAL==BDG
+    #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
+    #else
+    #define EXCHANGE_SIZE   12
     #endif
     
+    #ifdef CURRENT_CORRECTIONS
+    #undef EXCHANGE_SIZE
+    #define EXCHANGE_SIZE 12
+    #endif
+
 #endif
 
 #define PZHEEVR 1
@@ -253,6 +275,10 @@
 #define ELPA_NEV_FRACTION 1.0
 #endif
 
+#ifndef GPUS_PER_NODE
+#define GPUS_PER_NODE 1
+#endif
+
 // ----- for TESTSUITE -----
 // default energy error
 #ifndef TS_EERR
@@ -273,8 +299,8 @@
 
 // ------------ math -------------
 #ifndef M_PI
-#define M_PI 3.14159265358979323846 
-#endif 
+#define M_PI 3.14159265358979323846
+#endif
 #ifndef M_PI_2
 #define M_PI_2 1.570796326794896558
 #endif

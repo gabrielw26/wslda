@@ -121,7 +121,7 @@ int logger(FILE *log,
     else
     {
         double errN = 1.0e-4;
-        double errE = 1.0e-2;
+        double errE = 0.005;
         if(params[10]>0.0) errN=params[10];
         if(params[11]>0.0) errE=params[11];
         
@@ -129,7 +129,7 @@ int logger(FILE *log,
         FILE *fcmp = fopen(fname, "w");
         fprintf(fcmp,"npart[SPINA]     %20.10g %20.10g\n", npart[SPINA], errN);
         fprintf(fcmp,"npart[SPINB]     %20.10g %20.10g\n", npart[SPINB], errN);
-        fprintf(fcmp,"energy[ETOT]     %20.10g %20.10g\n", E_tot, errE);
+        fprintf(fcmp,"energy[ETOT]     %20.10g %20.10g\n", E_tot, errE*Effg);
         fclose(fcmp);
     }
     

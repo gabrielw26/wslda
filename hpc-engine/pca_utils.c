@@ -11,38 +11,40 @@
 #include <assert.h>
 #include <math.h>
 #include <complex.h>
+#include <unistd.h>
 
 #define ALLOCATE_MD_STRUCTURE
 #include "pca_utils.h"
 #include "wslda_errors.h"
 
 // allocate global metadata structure
-metadata_t md = 
+metadata_t md =
 { // create with default values
--1, //inittype;             
-1, //measurements;         
-1, // timesteps;            
-0.01, //dt;                
-0.999999*M_PI/DX, // kc;                
-M_PI*M_PI/(2.*DX*DX), //ec;                
+-1, //inittype;
+1, //measurements;
+1, // timesteps;
+0.01, //dt;
+0.999999*M_PI/DX, // kc;
+M_PI*M_PI/(2.*DX*DX), //ec;
 "none", // inprefix
 "wslda", // outprefix
-512, // nthreads;             
-1000000, // batch;                
-0, // overwrite;            
-0, // checkpoint;           
+512, // nthreads;
+1000000, // batch;
+0, // overwrite;
+0, // checkpoint;
+0, // checkperiod
 0, // selfstart;
-0.0, //qfalpha;           
-0.0, // qfbeta;            
-0.0, //qfgamma;           
-0.0, // qfstart;           
-0.0, // qfstop;            
-0.0, // qfswitch;          
-100.0, // Na;                
-100.0, // Nb;         
--1.0, // init0Na;                
--1.0, // init0Nb; 
--1.0, // init0muchange;   
+0.0, //qfalpha;
+0.0, // qfbeta;
+0.0, //qfgamma;
+0.0, // qfstart;
+0.0, // qfstop;
+0.0, // qfswitch;
+100.0, // Na;
+100.0, // Nb;
+-1.0, // init0Na;
+-1.0, // init0Nb;
+-1.0, // init0muchange;
 -1.0, // init0Tstart;
 -1.0, // init0Tstop;
 0.01, // init0DeltaT;
@@ -51,11 +53,11 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 -1, // init0maxiter;
 0, // init0debug
 0, // init0save
-0, // p;                    
-0, // q;                    
-32, // mb;                   
-32, // nb;    
-1, // gpuspernode
+0, // p;
+0, // q;
+32, // mb;
+32, // nb;
+GPUS_PER_NODE, // gpuspernode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 0.5, // linearmixing
@@ -85,9 +87,15 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.1, // broydenEmaxchg
 5, // broydenEdelay
 10000.0, // walltime
--10.0, // ccstart; 
-99999.0, // ccstop;
-10.0, // ccswitch;
+-10.0, // ccstart
+99999.0, // ccstop
+10.0, // ccswitch
+0.0, // subsetMinEn
+0.0, // subsetMaxEn
+0, // subsetShiftDmu
+0.0, // aSLDAe
+0, // pccrSLDAe
+0.0, // sclgth
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -110,8 +118,14 @@ void replace_str(char *str,char *org,char *rep)
     free(Rest);
 }
 
-/** 
- * Function reads input file 
+// Checks if file exists
+static int _exists(const char *filename) 
+{  
+    return !access(filename, F_OK);  
+}
+
+/**
+ * Function reads input file
  * and puts values into global struct `input`
  * @return 1 - success, 0 - fail
  * */
@@ -121,14 +135,14 @@ int parse_input_file(char * file_name)
     fp=fopen(file_name, "r");
     if(fp==NULL)
         return 0;
-    
+
     int i;
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
     for(i=0; i<MAX_USER_PARAMS; i++) sprintf(md.strings[i], ""); // reset strings
-    
+
     // reset list of variables
     md.nwritevar=0;
-        
+
     char s[MAX_REC_LEN];
     char tag[MAX_REC_LEN];
     char ptag[MAX_REC_LEN];
@@ -139,7 +153,7 @@ int parse_input_file(char * file_name)
         // Read first element of line
         tag[0]='#'; tag[1]='\0';
         sscanf (s,"%s %*s",tag);
-        
+
         // Loop over known tags;
         if(strcmp (tag,"#") == 0)
             continue;
@@ -162,13 +176,15 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"nthreads") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nthreads);
         else if (strcmp (tag,"batch") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.batch); 
+            sscanf (s,"%s %d %*s",tag,&md.batch);
         else if (strcmp (tag,"overwrite") == 0)
             sscanf (s,"%s %d %*s",tag,&md.overwrite);
         else if (strcmp (tag,"checkpoint") == 0)
             sscanf (s,"%s %d %*s",tag,&md.checkpoint);
+        else if (strcmp (tag,"checkperiod") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.checkperiod);
         else if (strcmp (tag,"selfstart") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.selfstart);        
+            sscanf (s,"%s %d %*s",tag,&md.selfstart);
         // QUANTUM FRICTION
         else if (strcmp (tag,"qfalpha") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfalpha);
@@ -237,7 +253,7 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"referencekF") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.referencekF);
         else if (strcmp (tag,"spinsymmetry") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.spinsymmetry);   
+            sscanf (s,"%s %d %*s",tag,&md.spinsymmetry);
         else if (strcmp (tag,"mumaxchange") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.mumaxchange);
         else if (strcmp (tag,"resetit") == 0)
@@ -247,7 +263,10 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"writeecut") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.writeecut);
         else if (strcmp (tag,"aBdG") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.aBdG);
+            md.sclgth=md.aBdG;
+        }
         else if (strcmp (tag,"nocurrents") == 0)
             sscanf (s,"%s %d %*s",tag,&md.nocurrents);
         else if (strcmp (tag,"killcurrents") == 0)
@@ -258,19 +277,19 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %c %*s",tag,&md.mixingtype);
         // broyden
         else if (strcmp (tag,"broyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.broyden);      
+            sscanf (s,"%s %d %*s",tag,&md.broyden);
         else if (strcmp (tag,"Mbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.Mbroyden); 
+            sscanf (s,"%s %d %*s",tag,&md.Mbroyden);
         else if (strcmp (tag,"startbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.startbroyden); 
+            sscanf (s,"%s %d %*s",tag,&md.startbroyden);
         else if (strcmp (tag,"stopbroyden") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.stopbroyden); 
+            sscanf (s,"%s %d %*s",tag,&md.stopbroyden);
         else if (strcmp (tag,"broydenmixing") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.broydenmixing);  
+            sscanf (s,"%s %lf %*s",tag,&md.broydenmixing);
         else if (strcmp (tag,"omega0broyden") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.omega0broyden);     
+            sscanf (s,"%s %lf %*s",tag,&md.omega0broyden);
         else if (strcmp (tag,"omegakbroyden") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);   
+            sscanf (s,"%s %lf %*s",tag,&md.omegakbroyden);
         else if (strcmp (tag,"omeganbroyden") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.omeganbroyden);
         else if (strcmp (tag,"broydenautores") == 0)
@@ -288,7 +307,28 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"ccstop") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ccstop);
         else if (strcmp (tag,"ccswitch") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.ccswitch);       
+            sscanf (s,"%s %lf %*s",tag,&md.ccswitch);
+        // subset tracking
+        else if (strcmp (tag,"subsetMinEn") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.subsetMinEn);
+        else if (strcmp (tag,"subsetMaxEn") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.subsetMaxEn);
+        else if (strcmp (tag,"subsetShiftDmu") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.subsetShiftDmu);
+        // SLDAE
+        else if (strcmp (tag,"aSLDAe") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.aSLDAe);
+            md.sclgth=md.aSLDAe;
+        }
+        else if (strcmp (tag,"pccrSLDAe") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
+        else if (strcmp (tag,"sclgth") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.sclgth);
+            md.aSLDAe=md.sclgth;
+            md.aBdG=md.sclgth;
+        }
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -307,7 +347,7 @@ int parse_input_file(char * file_name)
                     break;
                 }
             }
-            
+
             for(i=0; i<MAX_USER_PARAMS; i++)
             {
                 sprintf(ptag,"strings%d",i);
@@ -318,8 +358,8 @@ int parse_input_file(char * file_name)
                     break;
                 }
             }
-            
-            // VARIABLES TO WITE 
+
+            // VARIABLES TO WITE
             if (strcmp (tag,"writevar") == 0)
             {
                 int ivars, ierr;
@@ -328,35 +368,35 @@ int parse_input_file(char * file_name)
 //                     wprintf("[PARSER-i]: `%s`, `%s` `%s`\n", s, tag, ptag);
                     ierr = sscanf (s,"%s %s %*s",tag,ptag);
                     if(ierr<2) break;
-                    
+
 //                     if(ptag[0]=='#') wprintf("[PARSER-#]:\n");
                     if(ptag[0]=='#') break;
-                    
-                    if (strcmp (ptag,"all") == 0) 
+
+                    if (strcmp (ptag,"all") == 0)
                     {
 #ifdef WSLDA
                         replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #else
-                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext");
+                        replace_str(s,ptag,"rho delta j nu tau V V_ext delta_ext velocity_ext alpha A");
 #endif
 //                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
-                    
-                    if (strcmp (ptag,"default") == 0) 
+
+                    if (strcmp (ptag,"default") == 0)
                     {
                         replace_str(s,ptag,"rho delta j");
 //                         wprintf("[PARSER-R]: `%s`, `%s` `%s`\n", s, tag, ptag);
                         continue;
                     }
-                        
+
                     replace_str(s,ptag," ");
-                    
+
                     // check if variable already added
                     ierr=0;
                     for(i=0; i<md.nwritevar; i++) if (strcmp (ptag,md.writevar[i]) == 0) {ierr=1; break;}
                     if(ierr==1) continue; // variable already added;
-                    
+
                     // add variable
                     strcpy(md.writevar[md.nwritevar],ptag); md.nwritevar++;
 //                     wprintf("[ADDING]: %d->%s\n", md.nwritevar-1, md.writevar[md.nwritevar-1]);
@@ -364,35 +404,45 @@ int parse_input_file(char * file_name)
                 }
             }
         }
-        
+
     }
-    
+
     // prepare for wprintf()
     sprintf(md.stdoutfile, "%s.stdout", md.outprefix);
-    FILE * f = fopen(md.stdoutfile, "w"); // clear file
-    fclose(f);    
-    md.initialized=1;
+    if(md.overwrite==0 && _exists(md.stdoutfile))
+    {
+        printf("==========================================================================\n");
+        printf("WSLDA ERROR DESCRIPTION:\n");
+        printf("\tAttempt of overwriting existing file `%s`.\n", md.stdoutfile);
+        printf("\tInput file tag overwrite=0 does not allow for this.\n");
+        printf("\tChange overwrite tag or outprefix tag in the input file.\n");
+        return 0;
+    }
     
-    // add default variables - if not added 
+    FILE * f = fopen(md.stdoutfile, "w"); // clear file
+    fclose(f);
+    md.initialized=1;
+
+    // add default variables - if not added
     if(md.nwritevar==0)
     {
         sprintf(md.writevar[md.nwritevar],"rho"); md.nwritevar++;
         sprintf(md.writevar[md.nwritevar],"delta"); md.nwritevar++;
         sprintf(md.writevar[md.nwritevar],"j"); md.nwritevar++;
     }
-    
+
     // defult values
     if(md.temperature<1.0e-9) md.temperature=1.0e-9; // to avoid division by zero when computing beta=1/T
     if(md.init0Na<0.0) md.init0Na=md.Na;
     if(md.init0Nb<0.0) md.init0Nb=md.Nb;
     if(md.init0muchange<0.0) md.init0muchange=md.muchange;
-    if(md.init0Tstop<0.0) md.init0Tstop = md.temperature; 
+    if(md.init0Tstop<0.0) md.init0Tstop = md.temperature;
     if(md.init0Tstart<0.0) md.init0Tstart=md.init0Tstop;
     if(md.init0scmix<0.0) md.init0scmix=md.linearmixing;
     if(md.init0maxiter<0) md.init0maxiter=md.maxiters;
-    
+
 #ifdef WSLDA
-    if(md.muchange>0 && md.Na!=md.Nb && md.spinsymmetry==1) 
+    if(md.muchange>0 && md.Na!=md.Nb && md.spinsymmetry==1)
     {
         warn_head(stdout);
         wfprintf(stdout, "#\tForcing spinsymmetry=0 since Na!=Nb and muchange>0 (fixed particle number mode). \n");
@@ -407,22 +457,41 @@ int parse_input_file(char * file_name)
     md.kc=1.0e16;
 #endif
     if(md.nocurrents==-1) md.nocurrents=md.killcurrents; // nocurrents is replace by killcurrents
+
+    if(md.subsetMinEn>md.subsetMaxEn)
+    {
+        md.subsetMinEn=0.0;
+        md.subsetMaxEn=0.0;
+        wfprintf(stdout, "#\tsubsetMinEn>subsetMaxEn is not allowed! Forcing subsetMinEn=subsetMaxEn=0!\n");
+    }
     
+    // scttaering length
+#if FUNCTIONAL==SLDA || FUNCTIONAL==ASLDA
+    md.sclgth=-1.0e16; // infinity
+#elif FUNCTIONAL==SLDAE || FUNCTIONAL==BDG
+    if(md.sclgth!=0.0) // provided in the input file, 
+    {
+        md.aSLDAe= md.sclgth;
+        md.aBdG  = md.sclgth;
+    }
+#endif
+
+
     fclose(fp);
     return 1;
 }
- 
 
-void b_t( void ) 
+
+void b_t( void )
 { /* hack together a clock w/ microsecond resolution */
   gettimeofday( &s , NULL ) ;
   t_clock = clock() ;
   t_gettimeofday = s.tv_sec + 1e-6 * s.tv_usec ;
 }
 
-double e_t( int type ) 
+double e_t( int type )
 {
-  switch ( type ) 
+  switch ( type )
     {
     case 0 :
       t_clock1 = clock() ;
@@ -439,19 +508,19 @@ double e_t( int type )
 }
 
 
-void wt_b_t( void ) 
+void wt_b_t( void )
 { /* hack together a clock w/ microsecond resolution */
   gettimeofday( &s , NULL ) ;
   wt_t_gettimeofday = s.tv_sec + 1e-6 * s.tv_usec ;
 }
 
-double wt_e_t( void ) 
+double wt_e_t( void )
 {
     gettimeofday( &s , NULL ) ;
     return s.tv_sec + 1e-6 * s.tv_usec - wt_t_gettimeofday ;
 }
 
-void getnwfip( int ip , int np , int nwf , int * nwfip ) 
+void getnwfip( int ip , int np , int nwf , int * nwfip )
 {
   *nwfip  = nwf / np ;
   if ( ip < (nwf % np) ) (*nwfip)++ ;
@@ -464,7 +533,7 @@ void print_help(char *progname)
   wprintf("OR\n");
   wprintf("\t%s -v\n",progname);
   wprintf("\tfor printing information about the version.\n\n");
-  
+
 }
 
 void print_version()
@@ -488,20 +557,20 @@ void print_version()
   wprintf("\tTIMING\n");
 #endif
 #ifdef EPSILON
-  wprintf("\tEPSILON=%g\n",EPSILON);  
+  wprintf("\tEPSILON=%g\n",EPSILON);
 #endif
 #ifdef MAX_USER_PARAMS
     wprintf("\tMAX_USER_PARAMS=%d\n", MAX_USER_PARAMS);
 #endif
-    
+
     wprintf("\tUD_SCITERS=%d\n", UD_SCITERS);
     wprintf("\tUD_MIX_COEFF=%f\n", UD_MIX_COEFF);
     wprintf("\tDENSEPSILON=%g\n", DENSEPSILON);
-    
+
 #ifdef CURRENT_CORRECTIONS
     wprintf("\tCURRENT_CORRECTIONS\n");
 #endif
-    
+
 }
 
 /**
@@ -521,17 +590,17 @@ int readcmd(int argc, char *argv[])
             case 'v':
             print_version();
             break;
-                        
+
             case 'h':
             print_help(argv[0]);
             break;
-                        
+
             default:
             break;
         }
     }
     while(opt != -1);
-        
+
     if (optind < argc)
         return optind;
     else
@@ -548,7 +617,7 @@ double h_switch_function(double t, double T, double alpha)
 
 double h_smooth_step(double t, double step_start, double step_stop, double T, double alpha)
 {
-    if(t<=step_start || t>=step_stop) return 0.0; 
+    if(t<=step_start || t>=step_stop) return 0.0;
     if(t>=step_start+T && t<=step_stop-T) return 1.0;
     if(t>step_start && t<step_start+T) return h_switch_function(t-step_start, T, alpha);
     else return 1.0-h_switch_function(t-step_stop+T, T, alpha);
@@ -561,13 +630,13 @@ void symmetrize_densities(double *h_densities)
     double *tau_a = (double *)(h_densities +  3*NXYZ);
     double *j_a_x = (double *)(h_densities +  4*NXYZ);
     double *j_a_y = (double *)(h_densities +  5*NXYZ);
-    double *j_a_z = (double *)(h_densities +  6*NXYZ);    
+    double *j_a_z = (double *)(h_densities +  6*NXYZ);
     double *rho_b = (double *)(h_densities +  7*NXYZ);
     double *tau_b = (double *)(h_densities +  8*NXYZ);
     double *j_b_x = (double *)(h_densities +  9*NXYZ);
     double *j_b_y = (double *)(h_densities + 10*NXYZ);
     double *j_b_z = (double *)(h_densities + 11*NXYZ);
-    
+
     int ixyz;
     for(ixyz=0; ixyz<  NXYZ; ixyz++) rho_a[ixyz]=rho_b[ixyz];
     for(ixyz=0; ixyz<  NXYZ; ixyz++) tau_a[ixyz]=tau_b[ixyz];
@@ -578,12 +647,12 @@ void symmetrize_densities(double *h_densities)
 int copy_input_file(char * input_file, char * file_name)
 {
     FILE * log;
-    
+
     // open file
     log = fopen (file_name,"w");
     if(log==NULL) // error - cannot create the file
-        return 1; 
-    
+        return 1;
+
     FILE * inp;
     char s[MAX_REC_LEN];
     inp = fopen (input_file,"r");
@@ -591,7 +660,7 @@ int copy_input_file(char * input_file, char * file_name)
     while(fgets(s, MAX_REC_LEN, inp) != NULL) fprintf(log,"%s",s);
     fclose(inp);
     fclose(log);
-    
+
     return 0;
 }
 
@@ -599,6 +668,11 @@ int wslda_check_settings()
 {
 #if FUNCTIONAL==BDG
     if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aBdG;
+#endif
+#if FUNCTIONAL==SLDAE
+    if(md.aSLDAe==0.0) return WSLDA_ERR_ABDG_NOT_SET;
+    md.sclgth=md.aSLDAe;
 #endif
     return 0;
 }
@@ -610,7 +684,7 @@ int wslda_check_settings()
 int wslda_check_array_against_naninf(int n, double *array)
 {
     int i;
-    for(i=0; i<n; i++) 
+    for(i=0; i<n; i++)
     {
         if(isnan(array[i])) return WSLDA_ERR_NAN_DETECTED;
         if(isinf(array[i])) return WSLDA_ERR_INF_DETECTED;
@@ -622,7 +696,7 @@ void wprintf( const char * format, ... )
 {
   va_list args;
   va_start (args, format);
-  vprintf (format, args); 
+  vprintf (format, args);
   va_end (args);
   if(md.initialized)
   {
@@ -650,7 +724,7 @@ void wfprintf(FILE *stream,  const char * format, ... )
       va_end (args);
       fclose(f);
   }
-  fflush(stream); 
+  fflush(stream);
 }
 
 
@@ -668,15 +742,15 @@ void create_reprowf_tar(size_t extra_data_size)
     char cmd[2048];
     if(extra_data_size>0)
     {
-        sprintf(cmd, 
-            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_extra_data.dat",
-            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+        sprintf(cmd,
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp %s_extra_data.dat",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
     else
     {
-        sprintf(cmd, 
-            "tar -cf %s/reprowf.tar %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout",
-            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
+        sprintf(cmd,
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp",
+            md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
         wprintf("# SYSTEM: %s\n", cmd);
     system(cmd);
@@ -715,4 +789,3 @@ void save_extradata_to_file(size_t size, void *extra_data)
     fwrite(extra_data, size, 1, f);
     fclose(f);
 }
-    

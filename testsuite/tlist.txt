@@ -14,11 +14,13 @@ st-uniform-aslda-heevr
 # aslda already tested!
 st-uniform-slda-elpa1-cpu
 st-uniform-bdg-elpa1-cpu
+st-uniform-sldae-elpa1-cpu
 
 # -> test convergenge of sc loop
 st-uniform-aslda-sc
 st-uniform-slda-sc
 st-uniform-bdg-sc
+st-uniform-sldae-sc
 
 # -> checkpoint/restart
 st-checkpoint
@@ -28,6 +30,14 @@ st-checkpoint
 td-uniform-aslda
 td-uniform-slda
 td-uniform-bdg
+td-uniform-sldae
+
+# -> test nonuniform case
+td-gauss-bdg
+td-gauss-slda
+td-gauss-aslda
+td-gauss-sldae
+
 # -> test quantum friction algorithm
 td-quantum-friction
 

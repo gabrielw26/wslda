@@ -1,8 +1,8 @@
 /**
  * W-SLDA Toolkit
- * 
+ *
  * This file includes all header files, needed for auxliary tools.
- * */  
+ * */
 
 #ifndef __WSLDA_TOOLKIT__
 #define __WSLDA_TOOLKIT__
@@ -28,12 +28,17 @@ static int wsldapid;
 #include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "s2dpca_edf.h"
+
+#include "sldae_functional.h"
+
 #include "pca_uniform.h"
 #include "wslda_resize.h"
 
 #ifndef WSLDA_NO_MAIN_FUNCTION
 #include "wslda_errors.c"
 #include "pca_utils.c"
+double dc_ec;
+#include "sldae_functional.c"
 #endif
 
 #endif
