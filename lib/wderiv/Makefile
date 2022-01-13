@@ -1,6 +1,11 @@
-
 # C compiler
-CC=gcc -std=c99
+ifeq ($(strip $(CC)),)
+    CC=gcc -std=gnu99
+endif
+
+ifeq ($(strip $(MPICPP)),)
+    MPICPP=mpic++ -std=gnu99 
+endif
 
 # fftw linking statment
 FFTW=-lfftw3
@@ -24,13 +29,13 @@ examples: lib
 	$(CC) -O3 ./c-examples/simple-1d.c -o ./c-examples/simple-1d -I./c/ -L. -lwderiv $(FFTW) -lm 
 
 test: lib
-	$(CC) -std=c99 ./c/test-wderiv.c -o ./c/test-wderiv -I./c/ -L. -lwderiv $(FFTW) -lm 
+	$(CC) ./c/test-wderiv.c -o ./c/test-wderiv -I./c/ -L. -lwderiv $(FFTW) -lm 
 
 test2d: lib
-	$(CC) -std=c99 ./c/test-wderiv2D.c -o ./c/test-wderiv2D -I./c/ -L. -lwderiv $(FFTW) -lm
+	$(CC) ./c/test-wderiv2D.c -o ./c/test-wderiv2D -I./c/ -L. -lwderiv $(FFTW) -lm
 
 test1d: lib
-	$(CC) -std=c99 ./c/test-wderiv1D.c -o ./c/test-wderiv1D -I./c/ -L. -lwderiv $(FFTW) -lm 
+	$(CC) ./c/test-wderiv1D.c -o ./c/test-wderiv1D -I./c/ -L. -lwderiv $(FFTW) -lm 
 	
 clean:
 	rm -f *.o
