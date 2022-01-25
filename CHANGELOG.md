@@ -1,4 +1,7 @@
-# 2021.01.05
+# 2022.xx.xx
+* Update of SLDAE functional (redefinition of the effective mass, now A=alpha)
+
+# 2022.01.05
 * A new functional SLDAE has been implemented.
 * Reorganization of templates.
 * New user-defined file has been added: machine.h.
