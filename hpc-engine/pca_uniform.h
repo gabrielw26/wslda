@@ -1575,7 +1575,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     bf_ = b_functional_d0(x_);
     cf_ = c_functional_d0(x_);
     // definition independent of the functional and pairing form used
-    af_p = (alpha_ - af_) / nt_;
+    af_p = alpha_p;
     bf_p = 5. / 3. * (beta_ - bf_) / nt_;
     cf_p = cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
 

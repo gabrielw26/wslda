@@ -777,7 +777,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             bf_ = b_functional_d0(x_);
             cf_ = c_functional_d0(x_);
             if (nt_reg > 0.0) {
-              af_p = nt_reg * (alpha_ - af_) / nt_;
+              af_p = alpha_p;
               bf_p = nt_reg * 5. / 3. * (beta_ - bf_) / nt_;
               cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
             } else {
