@@ -4,7 +4,7 @@
 //  sldae-dev-tool.c - version 1 (2022/01/27)
 //
 //  requirment - gsl library
-//  usage > gcc/clang sldae-dev-tool.c -lm -lgsl -lgslcblas
+//  usage > gcc/clang sldae-dev-tool.c -lm -lgsl -lgslcblas -o sldae-dev-tool
 //
 //  Antoine Boulet (antoine.boulet@protonmail.com)
 //
@@ -1357,7 +1357,7 @@ void print_sldae_parameters (double _x, int id [])
 
 }
 
-void print_interpolation_parameters (gsl_multiroot_fsolver *s)
+void print_interpolation_parameters (gsl_multiroot_fsolver *s, char *prefix, FILE *f)
 {
     int iter;
     for (iter = 0; iter < 100; iter++) {
@@ -1380,6 +1380,16 @@ void print_interpolation_parameters (gsl_multiroot_fsolver *s)
     printf("\t b3 = %+lf;\n", (gsl_vector_get (s->x, 5)));
     printf("\t c  = %+lf;\n", (gsl_vector_get (s->x, 6)));
     printf("\n");
+    
+    // write to file
+    fprintf(f,"#define SLDAE_%s_a1 %+lf\n", prefix, (gsl_vector_get (s->x, 0)));
+    fprintf(f,"#define SLDAE_%s_a2 %+lf\n", prefix, (gsl_vector_get (s->x, 1)));
+    fprintf(f,"#define SLDAE_%s_a3 %+lf\n", prefix, (gsl_vector_get (s->x, 2)));
+    fprintf(f,"#define SLDAE_%s_b1 %+lf\n", prefix, (gsl_vector_get (s->x, 3)));
+    fprintf(f,"#define SLDAE_%s_b2 %+lf\n", prefix, (gsl_vector_get (s->x, 4)));
+    fprintf(f,"#define SLDAE_%s_b3 %+lf\n", prefix, (gsl_vector_get (s->x, 5)));
+    fprintf(f,"#define SLDAE_%s_c  %+lf\n", prefix, (gsl_vector_get (s->x, 6)));
+    
 }
 // ---------------------------------------------------------------------------
 // ###########################################################################
@@ -1395,8 +1405,8 @@ void print_interpolation_parameters (gsl_multiroot_fsolver *s)
 int main() {
 
     int id[2] = {0,0}; // choose sldae functional
-    // double _x = 1.000;
-    // print_sldae_parameters (_x, id); // print sldae parameters at _x
+//     double _x = 1.000;
+//     print_sldae_parameters (_x, id); // print sldae parameters at _x
 
 
     printf(" SLDAE DEV TOOLS\n");
@@ -1407,6 +1417,10 @@ int main() {
     printf("\n");
 
 
+    // Create empty file
+    char fname[128]="sldae_parameters.h";
+    FILE * out_h = fopen(fname, "w");
+    
     // initialization of interpolation routine
     const gsl_multiroot_fsolver_type *T = gsl_multiroot_fsolver_hybrids;
     gsl_multiroot_fsolver *s = gsl_multiroot_fsolver_alloc (T, 7);
@@ -1468,30 +1482,69 @@ int main() {
     gsl_multiroot_function beta = {&beta_fit, 7, &p_beta};
     gsl_multiroot_fsolver_set (s, &beta, x);
     printf ("\n beta interpolation (beta_ufg = %+lf)\n", beta_parameter(0, 1e9, id));
-    print_interpolation_parameters (s);
+    print_interpolation_parameters (s, "beta", out_h);
 
     // interpolation of b_functional
     gsl_multiroot_function bf = {&b_functional_fit, 7, &p_bf};
     gsl_multiroot_fsolver_set (s, &bf, x);
     printf ("\n b_functional interpolation (b_functional_ufg = %+lf)\n", b_functional(1e9, id));
-    print_interpolation_parameters (s);
+    print_interpolation_parameters (s, "b_functional", out_h);
 
     // interpolation of inverse_gamma_parameters
     gsl_multiroot_function inverse_gamma = {&inverse_gamma_fit, 7, &p_inverse_gamma};
     gsl_multiroot_fsolver_set (s, &inverse_gamma, x);
     printf ("\n inverse_gamma interpolation (inverse_gamma_ufg = %+lf)\n", inverse_gamma_parameter(0, 1e9, id));
-    print_interpolation_parameters (s);
+    print_interpolation_parameters (s, "inverse_gamma", out_h);
 
     // interpolation of c_functional
     gsl_multiroot_function cf = {&c_functional_fit, 7, &p_cf};
     gsl_multiroot_fsolver_set (s, &cf, x);
     printf ("\n c_functional interpolation (c_functional_ufg = %+lf)\n", c_functional(1e9, id));
-    print_interpolation_parameters (s);
+    print_interpolation_parameters (s, "c_functional", out_h);
 
     // reset memory of solver
     gsl_multiroot_fsolver_free (s);
     gsl_vector_free (x);
-
+    
+    printf("Parameters written to: %s\n", fname);
+    fclose(out_h);
+    
+    // text file for checking
+    double *lamarr = (double *)malloc(sizeof(double)*1000);
+    double lam;
+    int lamidx=0, idx;
+    for(lam=0.01; lam<0.10; lam+=0.01) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam=0.10; lam<1.0 ; lam+=0.1) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam= 1.0; lam<10.0; lam+=1.0) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam=10.0; lam<100; lam+=10) {lamarr[lamidx]=lam; lamidx++;}
+    
+    printf("Creating file: sldae_parameters.txt\n");
+    FILE * txt = fopen("sldae_parameters.txt", "w");
+    fprintf(txt, "# 1: lambda\n");
+    fprintf(txt, "# 2: ground_state_energy\n");
+    fprintf(txt, "# 3: inverse_effective_mass\n");
+    fprintf(txt, "# 4: chemical_potential\n");
+    fprintf(txt, "# 5: pairing_gap\n");
+    fprintf(txt, "# 6: beta_parameter\n");
+    fprintf(txt, "# 7: b_functional\n");
+    fprintf(txt, "# 8: inverse_gamma_parameter\n");
+    fprintf(txt, "# 9: c_functional\n");
+    for(idx=0; idx<lamidx; idx++)
+    {
+        fprintf(txt, "%16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f\n",
+            lamarr[idx],            
+            ground_state_energy(0, lamarr[idx], id),
+            inverse_effective_mass(0, lamarr[idx], id),
+            chemical_potential(0, lamarr[idx], id),
+            pairing_gap(0, lamarr[idx], id),
+            beta_parameter(0, lamarr[idx], id),
+            b_functional(lamarr[idx], id),
+            inverse_gamma_parameter(0, lamarr[idx], id),
+            c_functional(lamarr[idx], id)
+        );
+        fflush(txt);
+    }
+    fclose(txt);
   return 0;
 }
 // ---------------------------------------------------------------------------
