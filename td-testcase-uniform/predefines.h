@@ -22,20 +22,28 @@
  *  - SLDAE:
  *      for simulating Fermi gas for an arbitrary value of akF,
  *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
+ *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
+ *      It sets effective mass=1, which renders the current dependence of the functional. 
+ *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
- *      you MUST set aBdG value in input file when using this functional 
  *  - CUSTOMEDF:
  *      use this option to define your custom functional,
  *      then you need to provide body of functions: tdwslda_compute_energy( ) and tdwslda_compute_potentials( )
  *      in problem-definition.h file
  * */
-// #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
+#define FUNCTIONAL SLDA
+// #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL SLDAE
 // #define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
+
+/**
+ * Meaningful only in case SLDAE.
+ * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
+ * */
+// #define SLDAE_FORCE_A1
 
 /**
  * Select which external potentials you want to use in simulations.
@@ -83,7 +91,7 @@
 // #define REGULARIZATION_SCHEME CUBIC_CUTOFF
 
 /**
- * Meaningful only in case of ASLDA.
+ * Meaningful only in case of ASLDA and SLDAE.
  * Parameters defining stabilization procedure of ASLDA functional. 
  * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
  * contribution from current term j^2/2n is assumed to be zero. 

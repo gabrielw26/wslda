@@ -1357,7 +1357,7 @@ void print_sldae_parameters (double _x, int id [])
 
 }
 
-void print_interpolation_parameters (gsl_multiroot_fsolver *s, char *prefix, FILE *f)
+void print_interpolation_parameters (gsl_multiroot_fsolver *s, char *prefix, FILE *f, double ufg_value)
 {
     int iter;
     for (iter = 0; iter < 100; iter++) {
@@ -1382,6 +1382,7 @@ void print_interpolation_parameters (gsl_multiroot_fsolver *s, char *prefix, FIL
     printf("\n");
     
     // write to file
+    fprintf(f,"#define SLDAE_%s_UFG %+lf\n", prefix, ufg_value);
     fprintf(f,"#define SLDAE_%s_a1 %+lf\n", prefix, (gsl_vector_get (s->x, 0)));
     fprintf(f,"#define SLDAE_%s_a2 %+lf\n", prefix, (gsl_vector_get (s->x, 1)));
     fprintf(f,"#define SLDAE_%s_a3 %+lf\n", prefix, (gsl_vector_get (s->x, 2)));
@@ -1510,7 +1511,7 @@ int main() {
     gsl_multiroot_fsolver_set (s, &beta, x);
     ufg_val=beta_parameter(0, 1e9, id);
     printf ("\n beta interpolation (beta_ufg = %+lf)\n", ufg_val);
-    print_interpolation_parameters (s, "beta", out_h);
+    print_interpolation_parameters (s, "beta", out_h, ufg_val);
     double *beta_fit_arr=(double *)malloc(sizeof(double)*lamidx);
     for(idx=0; idx<lamidx; idx++) beta_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
@@ -1519,7 +1520,7 @@ int main() {
     gsl_multiroot_fsolver_set (s, &bf, x);
     ufg_val=b_functional(1e9, id);
     printf ("\n b_functional interpolation (b_functional_ufg = %+lf)\n", ufg_val);
-    print_interpolation_parameters (s, "b_functional", out_h);
+    print_interpolation_parameters (s, "b_functional", out_h, ufg_val);
     double *b_functional_fit_arr=(double *)malloc(sizeof(double)*lamidx);
     for(idx=0; idx<lamidx; idx++) b_functional_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
@@ -1528,7 +1529,7 @@ int main() {
     gsl_multiroot_fsolver_set (s, &inverse_gamma, x);
     ufg_val=inverse_gamma_parameter(0, 1e9, id);
     printf ("\n inverse_gamma interpolation (inverse_gamma_ufg = %+lf)\n", ufg_val);
-    print_interpolation_parameters (s, "inverse_gamma", out_h);
+    print_interpolation_parameters (s, "inverse_gamma", out_h, ufg_val);
     double *inverse_gamma_fit_arr=(double *)malloc(sizeof(double)*lamidx);
     for(idx=0; idx<lamidx; idx++) inverse_gamma_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
@@ -1537,7 +1538,7 @@ int main() {
     gsl_multiroot_fsolver_set (s, &cf, x);
     ufg_val=c_functional(1e9, id);
     printf ("\n c_functional interpolation (c_functional_ufg = %+lf)\n", ufg_val);
-    print_interpolation_parameters (s, "c_functional", out_h);
+    print_interpolation_parameters (s, "c_functional", out_h, ufg_val);
     double *c_functional_fit_arr=(double *)malloc(sizeof(double)*lamidx);
     for(idx=0; idx<lamidx; idx++) c_functional_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
@@ -1545,6 +1546,10 @@ int main() {
     gsl_multiroot_fsolver_free (s);
     gsl_vector_free (x);
     
+    fprintf(out_h,"#define AF_APS_UFG %+lf\n", inverse_effective_mass(0, 1e9, id));
+    fprintf(out_h,"#define BF_APS_UFG %+lf\n", b_functional(1e9, id));
+    fprintf(out_h,"#define CF_APS_UFG %+lf\n", c_functional(1e9, id));
+    fprintf(out_h,"\n");
     printf("Parameters written to: %s\n", fname);
     fclose(out_h);
         

@@ -70,6 +70,7 @@
 #define CURRENT_CORRECTIONS
 #endif
 
+
 #if FUNCTIONAL==SLDA
 // effective mass - equal 1.0 then no current corrections
 // activate this flag to skip computation of gradients of wf - significant spped up
@@ -189,6 +190,10 @@
 #ifdef ENABLE_MODIFY_POTENTIALS
 #undef BDG_MODE
 #endif
+
+#ifdef SLDAE_FORCE_A1
+#define FAST_CONST_EFFECTIVE_MASS_MODE
+#endif 
 
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
 #undef CURRENT_CORRECTIONS

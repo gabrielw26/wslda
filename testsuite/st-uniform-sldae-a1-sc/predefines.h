@@ -1,13 +1,18 @@
+#define TS_EERR 1.0e-2
+#define TS_NERR 1.0e-2
+#define TS_MUERR 1.0e-2
+#define TS_SERR 1.0e-2
+
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 8
-#define NY 10
-#define NZ 12
+#define NX 12
+#define NY 14
+#define NZ 16
 
-#define DX 1.0
-#define DY 1.0
-#define DZ 1.0
+#define DX 0.9
+#define DY 0.9
+#define DZ 0.9
 
 /**
  * Select functional:
@@ -19,23 +24,17 @@
  *      for simulating unitary Fermi gas,
  *      at qualitative level it produces results compatible with SLDA, however it is more accurate,
  *      due to presence of current terms in the functional it has worse convergence properties.
- *  - SLDAE:
- *      for simulating Fermi gas for an arbitrary value of akF,
- *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
- *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
- *      It sets effective mass=1, which renders the current dependence of the functional. 
- *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
+ *      you MUST set aBdG value in input file when using this functional 
  *  - CUSTOMEDF:
  *      use this option to define your custom functional,
  *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
  *      in problem-definition.h file
  * */
-#define FUNCTIONAL SLDA
+#define FUNCTIONAL SLDAE
 // #define FUNCTIONAL ASLDA
-// #define FUNCTIONAL SLDAE
 // #define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
 
@@ -43,7 +42,7 @@
  * Meaningful only in case SLDAE.
  * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
  * */
-// #define SLDAE_FORCE_A1
+#define SLDAE_FORCE_A1
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 
@@ -58,8 +57,19 @@
  * SPHERICAL_CUTOFF: use spherical momentum space cutoff, in this case you need to set `ec` variable in input file (default).
  * CUBIC_CUTOFF: use cubic momentum space cutoff, in this case `ec` will be set to infinity automatically.
  * */
-#define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
+// #define REGULARIZATION_SCHEME SPHERICAL_CUTOFF
 // #define REGULARIZATION_SCHEME CUBIC_CUTOFF
+
+/**
+ * Select diagonalization routine
+ * ELPA demonstrates the best performance, use it if target system supports this lib.
+ * Otherwise use standard ScaLapack lib (PZHEEV?) .
+ * In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
+ * For more info see: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/Parallelization-settings
+ * */
+// #define DIAGONALIZATION_ROUTINE PZHEEVR
+// #define DIAGONALIZATION_ROUTINE PZHEEVD
+#define DIAGONALIZATION_ROUTINE ELPA
 
 /**
  * Maximal number of parameters in params array
@@ -73,7 +83,7 @@
 #define DENSEPSILON 1.0e-8
 
 /**
- * Meaningful only in case of ASLDA and SLDAE.
+ * Meaningful only in case of ASLDA.
  * Parameters defining stabilization procedure of ASLDA functional. 
  * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
  * contribution from current term j^2/2n is assumed to be zero. 
@@ -85,14 +95,36 @@
 #define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
 #define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
 
+/**
+ * activate this flag for setting code in testing mode with uniform system
+ * */
+#define UNIFORM_TEST_MODE
 
 /**
- * Machine file. 
- * This file contains info about machine that will be used in the computation process.
- * You can specify the file in the following ways: 
- * - copy `machine.h` file to the current directory, see templates folder for various examples,
- * - specify the folder with `machine.h` file via -I option in Makefile  
- * - use system variable WSLDA_MACHINE to specify the folder with `machine.h` file, for example:
- *   export WSLDA_MACHINE=...
- **/ 
-#include "machine.h"
+ * ---------------------- ELPA SETTINGS ---------------------------
+ * Fill this part only if ELPA library is used for diagonalization
+ * 
+ * Default settings are: ELPA_SOLVER_1STAGE
+ * but you can overwrite using options below
+ * */
+
+/**
+ * uncomment it if you want to activate GPUs for diagonalizations 
+ * */
+#define ELPA_USE_GPU
+
+/**
+ * Select ELPA kernels,
+ * for more info see documentation of ELPA lib
+ * */
+// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
+// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
+// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
+
+/**
+ * Fraction of eigenvectors to be extracted in each cycle.
+ * 1.0 corresponds to extraction of all eigenvectors (default)
+ * NOTE: value of this parameter should assure that all eigenstates below requested Ec are extracted.  
+ * NOTE: For 3D case this value typically can be set to 0.78, for 1D and 2D casese 1.0 is recommended.
+ * */
+// #define ELPA_NEV_FRACTION 1.0
