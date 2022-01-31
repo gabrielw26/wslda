@@ -1391,6 +1391,24 @@ void print_interpolation_parameters (gsl_multiroot_fsolver *s, char *prefix, FIL
     fprintf(f,"#define SLDAE_%s_c  %+lf\n", prefix, (gsl_vector_get (s->x, 6)));
     
 }
+
+double
+pade_function (gsl_multiroot_fsolver *s, double lambda, double ufg_val)
+{
+    const double a1 = (gsl_vector_get (s->x, 0));
+    const double a2 = (gsl_vector_get (s->x, 1));
+    const double a3 = (gsl_vector_get (s->x, 2));
+    const double b1 = (gsl_vector_get (s->x, 3));
+    const double b2 = (gsl_vector_get (s->x, 4));
+    const double b3 = (gsl_vector_get (s->x, 5));
+    const double c0 = (gsl_vector_get (s->x, 6));
+
+    double _x=lambda; 
+    return ufg_val * 
+        (0.0 + (a1) * _x + (a2) * pow(_x, 2) + (a3) * pow(_x, 3) + (c0) * pow(_x, 4))
+            /
+        (1.0 + (b1) * _x + (b2) * pow(_x, 2) + (b3) * pow(_x, 3) + (c0) * pow(_x, 4));
+}
 // ---------------------------------------------------------------------------
 // ###########################################################################
 
@@ -1408,7 +1426,16 @@ int main() {
 //     double _x = 1.000;
 //     print_sldae_parameters (_x, id); // print sldae parameters at _x
 
-
+    // text file for checking
+    double *lamarr = (double *)malloc(sizeof(double)*1000);
+    double lam, ufg_val;
+    int lamidx=0, idx;
+    for(lam=0.01; lam<0.10; lam+=0.01) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam=0.10; lam<1.0 ; lam+=0.1) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam= 1.0; lam<10.0; lam+=1.0) {lamarr[lamidx]=lam; lamidx++;}
+    for(lam=10.0; lam<100; lam+=10) {lamarr[lamidx]=lam; lamidx++;}
+    
+    
     printf(" SLDAE DEV TOOLS\n");
     printf(" [padé[4/4] interpolation of sldae parameters p = {beta, gamma, B, C}]\n");
     printf("    p       a1 x + a2 x^2 + a3 x^3 + c x^4  \n");
@@ -1481,26 +1508,38 @@ int main() {
     // interpolation of beta_parameters
     gsl_multiroot_function beta = {&beta_fit, 7, &p_beta};
     gsl_multiroot_fsolver_set (s, &beta, x);
-    printf ("\n beta interpolation (beta_ufg = %+lf)\n", beta_parameter(0, 1e9, id));
+    ufg_val=beta_parameter(0, 1e9, id);
+    printf ("\n beta interpolation (beta_ufg = %+lf)\n", ufg_val);
     print_interpolation_parameters (s, "beta", out_h);
+    double *beta_fit_arr=(double *)malloc(sizeof(double)*lamidx);
+    for(idx=0; idx<lamidx; idx++) beta_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
     // interpolation of b_functional
     gsl_multiroot_function bf = {&b_functional_fit, 7, &p_bf};
     gsl_multiroot_fsolver_set (s, &bf, x);
-    printf ("\n b_functional interpolation (b_functional_ufg = %+lf)\n", b_functional(1e9, id));
+    ufg_val=b_functional(1e9, id);
+    printf ("\n b_functional interpolation (b_functional_ufg = %+lf)\n", ufg_val);
     print_interpolation_parameters (s, "b_functional", out_h);
+    double *b_functional_fit_arr=(double *)malloc(sizeof(double)*lamidx);
+    for(idx=0; idx<lamidx; idx++) b_functional_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
     // interpolation of inverse_gamma_parameters
     gsl_multiroot_function inverse_gamma = {&inverse_gamma_fit, 7, &p_inverse_gamma};
     gsl_multiroot_fsolver_set (s, &inverse_gamma, x);
-    printf ("\n inverse_gamma interpolation (inverse_gamma_ufg = %+lf)\n", inverse_gamma_parameter(0, 1e9, id));
+    ufg_val=inverse_gamma_parameter(0, 1e9, id);
+    printf ("\n inverse_gamma interpolation (inverse_gamma_ufg = %+lf)\n", ufg_val);
     print_interpolation_parameters (s, "inverse_gamma", out_h);
+    double *inverse_gamma_fit_arr=(double *)malloc(sizeof(double)*lamidx);
+    for(idx=0; idx<lamidx; idx++) inverse_gamma_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
     // interpolation of c_functional
     gsl_multiroot_function cf = {&c_functional_fit, 7, &p_cf};
     gsl_multiroot_fsolver_set (s, &cf, x);
-    printf ("\n c_functional interpolation (c_functional_ufg = %+lf)\n", c_functional(1e9, id));
+    ufg_val=c_functional(1e9, id);
+    printf ("\n c_functional interpolation (c_functional_ufg = %+lf)\n", ufg_val);
     print_interpolation_parameters (s, "c_functional", out_h);
+    double *c_functional_fit_arr=(double *)malloc(sizeof(double)*lamidx);
+    for(idx=0; idx<lamidx; idx++) c_functional_fit_arr[idx]=pade_function (s,  lamarr[idx], ufg_val);
 
     // reset memory of solver
     gsl_multiroot_fsolver_free (s);
@@ -1508,16 +1547,7 @@ int main() {
     
     printf("Parameters written to: %s\n", fname);
     fclose(out_h);
-    
-    // text file for checking
-    double *lamarr = (double *)malloc(sizeof(double)*1000);
-    double lam;
-    int lamidx=0, idx;
-    for(lam=0.01; lam<0.10; lam+=0.01) {lamarr[lamidx]=lam; lamidx++;}
-    for(lam=0.10; lam<1.0 ; lam+=0.1) {lamarr[lamidx]=lam; lamidx++;}
-    for(lam= 1.0; lam<10.0; lam+=1.0) {lamarr[lamidx]=lam; lamidx++;}
-    for(lam=10.0; lam<100; lam+=10) {lamarr[lamidx]=lam; lamidx++;}
-    
+        
     printf("Creating file: sldae_parameters.txt\n");
     FILE * txt = fopen("sldae_parameters.txt", "w");
     fprintf(txt, "# 1: lambda\n");
@@ -1526,21 +1556,29 @@ int main() {
     fprintf(txt, "# 4: chemical_potential\n");
     fprintf(txt, "# 5: pairing_gap\n");
     fprintf(txt, "# 6: beta_parameter\n");
-    fprintf(txt, "# 7: b_functional\n");
-    fprintf(txt, "# 8: inverse_gamma_parameter\n");
-    fprintf(txt, "# 9: c_functional\n");
+    fprintf(txt, "# 7: beta_parameter - PADE\n");
+    fprintf(txt, "# 8: b_functional\n");
+    fprintf(txt, "# 9: b_functional - PADE\n");
+    fprintf(txt, "#10: inverse_gamma_parameter\n");
+    fprintf(txt, "#11: inverse_gamma_parameter - PADE\n");
+    fprintf(txt, "#12: c_functional\n");
+    fprintf(txt, "#13: c_functional - PADE\n");
     for(idx=0; idx<lamidx; idx++)
     {
-        fprintf(txt, "%16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f\n",
+        fprintf(txt, "%16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f %16.8f\n",
             lamarr[idx],            
             ground_state_energy(0, lamarr[idx], id),
             inverse_effective_mass(0, lamarr[idx], id),
             chemical_potential(0, lamarr[idx], id),
             pairing_gap(0, lamarr[idx], id),
             beta_parameter(0, lamarr[idx], id),
+            beta_fit_arr[idx],
             b_functional(lamarr[idx], id),
+            b_functional_fit_arr[idx],
             inverse_gamma_parameter(0, lamarr[idx], id),
-            c_functional(lamarr[idx], id)
+            inverse_gamma_fit_arr[idx],
+            c_functional(lamarr[idx], id),
+            c_functional_fit_arr[idx]
         );
         fflush(txt);
     }
