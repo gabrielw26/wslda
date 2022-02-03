@@ -76,6 +76,7 @@ init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
 init0DeltaT             0.01  # change of temperature in units of eF, default 0.01
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
 init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
+# init0kc                 3.1415 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
 init0maxiter            20000 # maximum number of iterations, default 100000
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution

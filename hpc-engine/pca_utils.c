@@ -24,7 +24,7 @@ metadata_t md =
 1, //measurements;
 1, // timesteps;
 0.01, //dt;
-0.999999*M_PI/DX, // kc;
+0.999999*M_PI/DX, // kc - DEPRECATED, replaced by init0kc
 M_PI*M_PI/(2.*DX*DX), //ec;
 "none", // inprefix
 "wslda", // outprefix
@@ -50,6 +50,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, // init0DeltaT;
 1.0e-9, // init0eps;
 -1.0, // init0scmix
+0.999999*M_PI/DX, // init0kc;
 -1, // init0maxiter;
 0, // init0debug
 0, // init0save
@@ -136,6 +137,12 @@ int parse_input_file(char * file_name)
     if(fp==NULL)
         return 0;
 
+    // set initial default value for selected variables
+    // here I set default values that are lattice dependent
+    md.kc=0.999999*M_PI/max_dxdydz();
+    md.init0kc=md.kc;
+    md.ec=M_PI*M_PI/(2.*max_dxdydz()*max_dxdydz());
+    
     int i;
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
     for(i=0; i<MAX_USER_PARAMS; i++) sprintf(md.strings[i], ""); // reset strings
@@ -166,7 +173,11 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"dt") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.dt);
         else if (strcmp (tag,"kc") == 0)
+        {
+            // I keep it here due to legacy mode
             sscanf (s,"%s %lf %*s",tag,&md.kc);
+            md.init0kc=md.kc;
+        }
         else if (strcmp (tag,"ec") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ec);
         else if (strcmp (tag,"inprefix") == 0)
@@ -220,6 +231,11 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.init0eps);
         else if (strcmp (tag,"init0scmix") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0scmix);
+        else if (strcmp (tag,"init0kc") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.init0kc);
+            md.kc=md.init0kc;
+        }
         else if (strcmp (tag,"init0maxiter") == 0)
             sscanf (s,"%s %d %*s",tag,&md.init0maxiter);
         else if (strcmp (tag,"init0debug") == 0)
@@ -455,6 +471,7 @@ int parse_input_file(char * file_name)
     wfprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
     md.ec=1.0e16;
     md.kc=1.0e16;
+    md.init0kc=1.0e16;
 #endif
     if(md.nocurrents==-1) md.nocurrents=md.killcurrents; // nocurrents is replace by killcurrents
 
@@ -788,4 +805,12 @@ void save_extradata_to_file(size_t size, void *extra_data)
     FILE * f = fopen(fname, "wb");
     fwrite(extra_data, size, 1, f);
     fclose(f);
+}
+
+double max_dxdydz()
+{
+    double d=DX;
+    if(d<DY) d=DY;
+    if(d<DZ) d=DZ;
+    return d; // return max value of lattice constant
 }

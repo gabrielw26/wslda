@@ -838,8 +838,7 @@ int main( int argc , char ** argv )
     eF = 0.5*kF*kF;
     Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.temperature * eF);
-    if(md.ec>0.0) dc_ec = md.ec;
-    else          dc_ec = M_PI*M_PI/(2.*DX*DX);
+    dc_ec = md.ec;
 #endif
 
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;

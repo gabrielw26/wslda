@@ -1158,6 +1158,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     if(printout && md.init0debug>0) wprintf("# DEBUG: eF_a=%f, eF_b=%f, eF_avg=%f\n", eF_a, eF_b, eF_avg);
     if(printout && md.init0debug>0) wprintf("# DEBUG: N_a=%f, N_b=%f\n", n0_a*LXYZ, n0_b*LXYZ);
     if(printout && md.init0debug>0) wprintf("# DEBUG: p=%f\n", p);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: akF=%f\n", md.aBdG*sqrt(2.*eF_avg));
 
     // Set quantities updated in s-c loop
     double tau_a=pow(6.0*M_PI*M_PI*n0_a, 5.0/3.0) / (10.0*M_PI*M_PI); // initial value

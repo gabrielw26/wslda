@@ -58,6 +58,7 @@ typedef struct
     double init0DeltaT;             // change of temperature in units of eF, default 0.01
     double init0eps;           // epsilon for convergence, default 1.0e-6
     double init0scmix;         // mixing parameter in self-consitent process, default 0.25
+    double init0kc;            // momentum cutoff for uniform solver
     int init0maxiter;          // maximum number of iterations, default 100000
     int init0debug;            // debug level, default=0 (no debug info),
     int init0save;             // save solution to file?, default=0, if 1 then solution is in file 'outprefix'_uniform.solution
@@ -217,5 +218,7 @@ void copy_initcheckpoint();
 void copy_reprowftar();
 
 void save_extradata_to_file(size_t size, void *extra_data);
+
+double max_dxdydz();
 
 #endif
