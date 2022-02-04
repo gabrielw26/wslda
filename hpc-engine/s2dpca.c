@@ -1478,9 +1478,7 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( compute_potentials(it, densall, potsall) );
-#if FUNCTIONAL==SLDAE
-        MPI_Allreduce( MPI_IN_PLACE, h_potentials, POTDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];

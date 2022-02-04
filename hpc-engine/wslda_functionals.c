@@ -719,14 +719,14 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double nt_reg;
 
 
-    // get range of points for computation
-    int myuidx=0, mylidx=0;
-    for(i=0; i<=wsldapid; i++)
-    {
-        mylidx=myuidx;
-        getnwfip( i , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
-        myuidx+=ix;
-    }
+//     // get range of points for computation
+    int myuidx=lNX*lNY*lNZ, mylidx=0; // compute for all points
+//     for(i=0; i<=wsldapid; i++)
+//     {
+//         mylidx=myuidx;
+//         getnwfip( i , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
+//         myuidx+=ix;
+//     }
 //     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
 
 
