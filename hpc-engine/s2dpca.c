@@ -273,30 +273,8 @@ int main( int argc , char ** argv )
         assure_reproducibility(md.outprefix);
     }
 
-#if CODEDIM==1
-    if(iam==0) wprintf("# CODE: ST-WSLDA-1D\n");
-#else
-    if(iam==0) wprintf("# CODE: ST-WSLDA-2D\n");
-#endif
-    if(iam==0) wprintf("# VERSION: %s\n", VERSION);
-
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-    if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
-
-#ifdef USE_SCALAPACK_PZHEEVR
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
-#endif
-#ifdef USE_SCALAPACK_PZHEEVD
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
-#endif
-#ifdef USE_SCALAPACK_PZHEEV
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEV.\n");
-#endif
-#ifdef USE_ELPA
-    if(iam==0) wprintf("# USING ELPA.\n");
-#endif
 
 #if FUNCTIONAL==BDG
     aBdG = md.aBdG; // copy to global momeory
@@ -325,18 +303,12 @@ int main( int argc , char ** argv )
     }
 #endif
 
-#if FUNCTIONAL==BDG
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
-#elif FUNCTIONAL==SLDA
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
-#elif FUNCTIONAL==ASLDA
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
-#elif FUNCTIONAL==SLDAE
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
-#elif FUNCTIONAL==CUSTOMEDF
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n");
+#if CODEDIM==1
+    if(iam==0) print_version("-1D");
+#else
+    if(iam==0) print_version("-2D");
 #endif
-
+    
 #ifdef SPINSYMMETRY_MODE
     md.spinsymmetry=1; // force spin symmetry mode
 #endif

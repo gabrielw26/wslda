@@ -177,8 +177,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     
-    if(ip==0) wprintf("# CODE: TD-WSLDA-1D\n");
-    if(ip==0) wprintf("# VERSION: %s\n", VERSION); fflush(stdout);
+    if(ip==0) print_version("-1D");
     
     // variables
     dt= md.dt ;
@@ -228,20 +227,8 @@ int main( int argc , char ** argv )
     wprintf("# PROCESS ip=%d RUNNING ON NODE %s USES device-id=%d\n", ip, processor_name, deviceId);
 #endif
     gpu_exec( set_gpu(deviceId) );
-        
-    if(ip==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    if(ip==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
-#if FUNCTIONAL==BDG
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
-#elif FUNCTIONAL==SLDA    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
-#elif FUNCTIONAL==ASLDA    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
-#elif FUNCTIONAL==SLDAE
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
-#elif FUNCTIONAL==CUSTOMEDF    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
-#endif
+    fflush(stdout);
+
 
     // ====================================================================================
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================

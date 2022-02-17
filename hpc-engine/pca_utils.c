@@ -553,41 +553,41 @@ void print_help(char *progname)
 
 }
 
-void print_version()
+void print_version(char *suffix)
 {
-  wprintf("Code       : %s\n",STRINGIZE(CODE));
-  wprintf("Version    : %s\n",VERSION);
-  wprintf("Build time : %s, %s\n",__DATE__,__TIME__);
-  wprintf("Lattice    : %d x %d x %d\n", NX, NY, NZ);
-  wprintf("Defined macro-variables:\n");
-  wprintf("\tNXYZ=%d\n", NXYZ);
-#ifdef TARGET_MACHINE
-  wprintf("\tTARGET_MACHINE=%s\n",STRINGIZE(TARGET_MACHINE));
+    wprintf("# CODE: ST-WSLDA%s\n",suffix);
+    wprintf("# VERSION: %s\n", VERSION);
+    wprintf("# BUILD TIME: %s, %s\n",__DATE__,__TIME__);
+    
+    wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+   
+#if FUNCTIONAL==BDG
+    wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA
+    wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA
+    wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
+#elif FUNCTIONAL==SLDAE
+    wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
+#elif FUNCTIONAL==CUSTOMEDF
+    wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n");
 #endif
-#ifdef VERBOSE
-  wprintf("\tVERBOSE\n");
+    
+#ifdef WSLDA
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
+    wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
 #endif
-#ifdef DEBUG
-  wprintf("\tDEBUG\n");
+#if DIAGONALIZATION_ROUTINE==PZHEEVD
+    wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
 #endif
-#ifdef TIMING
-  wprintf("\tTIMING\n");
+#if DIAGONALIZATION_ROUTINE==PZHEEVD
+    wprintf("# USING SCALAPACK WITH PZHEEV.\n");
 #endif
-#ifdef EPSILON
-  wprintf("\tEPSILON=%g\n",EPSILON);
+#if DIAGONALIZATION_ROUTINE==PZHEEVD
+    wprintf("# USING ELPA.\n");
 #endif
-#ifdef MAX_USER_PARAMS
-    wprintf("\tMAX_USER_PARAMS=%d\n", MAX_USER_PARAMS);
 #endif
-
-    wprintf("\tUD_SCITERS=%d\n", UD_SCITERS);
-    wprintf("\tUD_MIX_COEFF=%f\n", UD_MIX_COEFF);
-    wprintf("\tDENSEPSILON=%g\n", DENSEPSILON);
-
-#ifdef CURRENT_CORRECTIONS
-    wprintf("\tCURRENT_CORRECTIONS\n");
-#endif
-
 }
 
 /**
@@ -605,7 +605,7 @@ int readcmd(int argc, char *argv[])
         switch( opt )
         {
             case 'v':
-            print_version();
+            print_version("");
             break;
 
             case 'h':
