@@ -1469,8 +1469,8 @@ int main( int argc , char ** argv )
         i=0; // as flag for broyden
         if(it>0 && saving_iteration==0) // skip updating the potential if it is saving iteration
         {
-            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
-            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
+            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/MAX(md.Na,1.0);
+            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/MAX(md.Nb,1.0);
 
             if(fabs(muchange_a)>md.mumaxchange*eF)
             {

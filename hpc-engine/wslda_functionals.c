@@ -575,6 +575,8 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
         // densities
         na=h_densities.rho_a[ixyz];
         nb=h_densities.rho_b[ixyz];
+        if(na==0.0) na=1.0e-16; // add noise - note divisions by na latter
+        if(nb==0.0) nb=1.0e-16; // add noise - note divisions by nb latter
 
         // particle number
         npart[SPINA]+=na;

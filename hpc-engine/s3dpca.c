@@ -1349,8 +1349,8 @@ int main( int argc , char ** argv )
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
             npart[SPINA]*=DXYZ; npart[SPINB]*=DXYZ;
-            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
-            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
+            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/MAX(md.Na,1.0);
+            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/MAX(md.Nb,1.0);
             if(fabs(muchange_a)>md.mumaxchange*eF)
             {
                 if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
