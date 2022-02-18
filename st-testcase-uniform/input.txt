@@ -34,12 +34,6 @@ sclgth    -1.0 # scattering length in units of lattice spacing
 Na                      28.  # Requested number of particles a-type
 Nb                      28.  # Requested number of particles b-type
 
-# -------------------- SLDAE PARAMS -------------------
-# Note: SLDAE works only for spinsymmetry = 1
-# pccrSLDAe               0       # pairing coupling constant renormalization scheme
-                                # 0: in-medium (default)
-                                # 1: in-vacuum (Bulgac et al.)
-
 # ----------------- SELF-CONSISTENT LOOP -----------------
 # ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
 energyconveps           1.0e-6   # energy convergence epsilon
