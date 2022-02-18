@@ -27,6 +27,9 @@ st-uniform-sldae-a1-sc
 # -> checkpoint/restart
 st-checkpoint
 
+# -> HF mode
+st-ffg-ho
+
 # ----- td-wslda ------
 # -> test functionals (spherical/cubic cutoff)
 td-uniform-aslda

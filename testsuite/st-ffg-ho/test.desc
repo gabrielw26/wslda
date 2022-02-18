@@ -2,11 +2,12 @@
 # --------> strict 1D, ffg in harmonic trap
 # --------------------------------------------------------------------------
 tag: ffgho-1d-a40b20
+exec: rm -rf test*
 exec: gcc -std=gnu99 st-processwf-1d-template.c -I. -I$WSLDA/hpc-engine -o st-processwf-1d-template -lm -lfftw3
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: timeout 60 mpirun -np 16 ./st-wslda-1d input.txt.a40b20
+exec: timeout 120 mpirun -np 4 ./st-wslda-1d input.txt.a40b20
 exec: ./st-processwf-1d-template testa40b20
 test: testa40b20_testsuite.ok
 diff: testa40b20.qpe a40b20.test.qpe
@@ -14,7 +15,7 @@ diff: testa40b20.qpe a40b20.test.qpe
 tag: ffgho-1d-a40b00
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: timeout 60 mpirun -np 16 ./st-wslda-1d input.txt.a40b00
+exec: timeout 120 mpirun -np 4 ./st-wslda-1d input.txt.a40b00
 exec: ./st-processwf-1d-template testa40b00
 test: testa40b00_testsuite.ok
 diff: testa40b00.qpe a40b00.test.qpe
