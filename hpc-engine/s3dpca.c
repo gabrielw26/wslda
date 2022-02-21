@@ -1349,18 +1349,18 @@ int main( int argc , char ** argv )
             npart[SPINA]=0.0; npart[SPINB]=0.0;
             for(ixyz=0; ixyz<NXYZ; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
             npart[SPINA]*=DXYZ; npart[SPINB]*=DXYZ;
-            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/MAX(md.Na,1.0);
-            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/MAX(md.Nb,1.0);
-            if(fabs(muchange_a)>md.mumaxchange*eF)
+            double muchange_a = md.muchange_a*(npart[SPINA] - md.Na)/MAX(md.Na,1.0);
+            double muchange_b = md.muchange_b*(npart[SPINB] - md.Nb)/MAX(md.Nb,1.0);
+            if(fabs(muchange_a)>md.mumaxchange_a*eF)
             {
-                if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
-                else               muchange_a=-1.0*md.mumaxchange*eF;
+                if(muchange_a>0.0) muchange_a=     md.mumaxchange_a*eF;
+                else               muchange_a=-1.0*md.mumaxchange_a*eF;
                 i=1; // deactivate broyden
             }
-            if(fabs(muchange_b)>md.mumaxchange*eF)
+            if(fabs(muchange_b)>md.mumaxchange_b*eF)
             {
-                if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
-                else               muchange_b=-1.0*md.mumaxchange*eF;
+                if(muchange_b>0.0) muchange_b=     md.mumaxchange_b*eF;
+                else               muchange_b=-1.0*md.mumaxchange_b*eF;
                 i=1; // deactivate broyden
             }
             dc_mu_a -= muchange_a;
@@ -1410,11 +1410,11 @@ int main( int argc , char ** argv )
         	update_mu(dens_in, dens_out, h_solution_old, h_solution, md.Mbroyden, SOLDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
         	Broyden_mu(h_solution, dens_in, dens_out, md.Mbroyden, SOLDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
 
-            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
-            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
+            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange_a*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange_a*eF;
+            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange_a*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange_a*eF;
 
-            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange*eF;
-            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange*eF;
+            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange_b*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange_b*eF;
+            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange_b*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange_b*eF;
 
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
 
@@ -1464,11 +1464,11 @@ int main( int argc , char ** argv )
         is_converged=1;
         if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
-        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(nparttest>md.npartconveps_a) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]), convstatus[is_converged_local], nparttest);
         nparttest=fabs(npart[SPINB]-md.Nb)/(md.Na+md.Nb);
-        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(nparttest>md.npartconveps_b) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
 

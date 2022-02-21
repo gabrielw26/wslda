@@ -61,13 +61,19 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 GPUS_PER_NODE, // gpuspernode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
+1.0e-6, // npartconveps_a
+1.0e-6, // npartconveps_b
 0.5, // linearmixing
 0.5, // muchange
+0.5, // muchange_a
+0.5, // muchange_b
 10000, // maxiters
 1.0e-9, // temperature
 0.0, // referencekF
 0, // spinsymmetry
 0.1, // mumaxchange
+0.1, // mumaxchange_a
+0.1, // mumaxchange_b
 1, // resetit
 0, // writewf
 1.0e12, // writeecut
@@ -257,11 +263,27 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
         else if (strcmp (tag,"npartconveps") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.npartconveps);
+            md.npartconveps_a=md.npartconveps;
+            md.npartconveps_b=md.npartconveps;
+        }
+        else if (strcmp (tag,"npartconveps_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.npartconveps_a);
+        else if (strcmp (tag,"npartconveps_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.npartconveps_b);
         else if (strcmp (tag,"linearmixing") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.linearmixing);
         else if (strcmp (tag,"muchange") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.muchange);
+            md.muchange_a=md.muchange;
+            md.muchange_b=md.muchange;
+        }
+        else if (strcmp (tag,"muchange_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.muchange_a);
+        else if (strcmp (tag,"muchange_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.muchange_b);
         else if (strcmp (tag,"maxiters") == 0)
             sscanf (s,"%s %d %*s",tag,&md.maxiters);
         else if (strcmp (tag,"temperature") == 0)
@@ -271,7 +293,15 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"spinsymmetry") == 0)
             sscanf (s,"%s %d %*s",tag,&md.spinsymmetry);
         else if (strcmp (tag,"mumaxchange") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.mumaxchange);
+            md.mumaxchange_a=md.mumaxchange;
+            md.mumaxchange_b=md.mumaxchange;
+        }
+        else if (strcmp (tag,"mumaxchange_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.mumaxchange_a);
+        else if (strcmp (tag,"mumaxchange_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.mumaxchange_b);
         else if (strcmp (tag,"resetit") == 0)
             sscanf (s,"%s %d %*s",tag,&md.resetit);
         else if (strcmp (tag,"writewf") == 0)
@@ -555,9 +585,22 @@ void print_help(char *progname)
 
 void print_version(char *suffix)
 {
+#ifdef WSLDA
     wprintf("# CODE: ST-WSLDA%s\n",suffix);
+#else
+    wprintf("# CODE: TD-WSLDA%s\n",suffix);
+#endif
     wprintf("# VERSION: %s\n", VERSION);
+    
+    // Time stamp
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [24];
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    strftime (buffer,24,"%b %d %Y, %H:%M:%S",timeinfo);
     wprintf("# BUILD TIME: %s, %s\n",__DATE__,__TIME__);
+    wprintf("# RUN TIME  : %s\n", buffer);
     
     wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
     wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);

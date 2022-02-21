@@ -37,11 +37,17 @@ sclgth    -1.0 # scattering length in units of lattice spacing
 
 # ----------------- SELF-CONSISTENT LOOP -----------------
 # ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
-energyconveps           1.0e-6   # energy convergence epsilon
-npartconveps            1.0e-6   # number of particles convergence epsilon
+energyconveps           1.0e-6   # energy convergence epsilon, default=1.0e-6
+npartconveps            1.0e-6   # number of particles convergence epsilon, default=1.0e-6, for both components
+# npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
+# npartconveps_b          1.0e-6   # ... and `b` suffixes. 
 linearmixing            0.5      # mixing parameter (alpha) for linear mixing, default=0.5
-muchange                0.5      # coefficient for changing chemical potential, default=0.5
+muchange                0.5      # coefficient for changing chemical potential, default=0.5, for both components
+# muchange_a              0.5      # or you can control muchange for each component separately using tags with `a` ...
+# muchange_b              0.5      # ... and `b` suffixes. 
 mumaxchange             0.05     # maximal amount that chemical potential can change between iterations, in units of Fermi energy
+# mumaxchange_a           0.05     # or you can control mumaxchange for each component separately using tags with `a` ...
+# mumaxchange_b           0.05     # ... and `b` suffixes. 
 maxiters                1000     # maximum number of iterations, default=10000
 # temperature             0.1      # requested temperature in units of eF, default T=0
 spinsymmetry            0        # set to 1 if you want to impose Na=Nb, default=0

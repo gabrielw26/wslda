@@ -75,13 +75,19 @@ typedef struct
     // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
     double npartconveps; // convergence epsilon for particle number- fraction of N_tot=(Na+Nb) needed to get convergence, default=1.0e-6
+    double npartconveps_a; // convergence epsilon for particle a
+    double npartconveps_b; // convergence epsilon for particle b
     double linearmixing; // mixing parameter for linear algorithm, default=0.5
     double muchange; // coefficient for changing chemical potential, default=0.5
+    double muchange_a; // coefficient for changing chemical potential, default=0.5
+    double muchange_b; // coefficient for changing chemical potential, default=0.5
     int maxiters; // maximum number of iterations, default=10000
     double temperature; // temperature in units of eF_a, default=0.01
     double referencekF; // value of reference kF used in calculations, if 0.0 then not set (default)
     int spinsymmetry; // impose spin symmetry, default 0 - no
     double mumaxchange; // maximal change of chemical potential per iteration, in units of Fermi energy, default 0.1
+    double mumaxchange_a; // maximal change of chemical potential per iteration, in units of Fermi energy, default 0.1
+    double mumaxchange_b; // maximal change of chemical potential per iteration, in units of Fermi energy, default 0.1
     int resetit; // if 1 set it=0, otherwise continue from value read from checkpoint file, default resetit=1
     int writewf; // if 1 the code will write wave-functions on exit, default writewf=0
     double writeecut; // only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
