@@ -49,7 +49,7 @@
  * activate this if you know that Hamiltonian matrix is real, 
  * the code will utilize it in order to speed-up the calculations by factor 4x (approximately)
  * */
-// #define MATRIX_IS_REAL
+// #define HAMILTONIAN_IS_REAL
 
 /**
  * Scheme of pairing field renormalization procedure. 

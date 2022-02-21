@@ -310,4 +310,9 @@
 #define M_PI_2 1.570796326794896558
 #endif
 
+// to mantain legcy
+#ifdef HAMILTONIAN_IS_REAL
+#define MATRIX_IS_REAL
+#endif
+
 #endif
