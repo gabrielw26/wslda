@@ -20,6 +20,9 @@ extern int wsldapid; // process id - global variable
 #undef Complex
 #define printf wprintf
 #include "problem-definition.h"
+#define API_PROBLEM_DEFINITION
+#include "wslda_api_version.h" 
+#undef API_PROBLEM_DEFINITION
 #undef printf
 
 #define Complex(a,b) (a + I*b)

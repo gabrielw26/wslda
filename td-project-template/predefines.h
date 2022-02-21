@@ -119,3 +119,9 @@
  *   export WSLDA_MACHINE=...
  **/ 
 #include "machine.h"
+
+/**
+ * Files: predefines.h, problem-definition.h, logger.h are assumed to be compatible with this API version
+ * For list of API versions see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/API-version
+ * */
+#define API_VERSION 20220221

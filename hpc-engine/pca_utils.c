@@ -591,6 +591,7 @@ void print_version(char *suffix)
     wprintf("# CODE: TD-WSLDA%s\n",suffix);
 #endif
     wprintf("# VERSION: %s\n", VERSION);
+    wprintf("# API_VERSION: %d\n", API_VERSION);
     
     // Time stamp
     time_t rawtime;

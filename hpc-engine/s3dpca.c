@@ -122,6 +122,7 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
         }
 }
 void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
+double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
@@ -1023,13 +1024,7 @@ int main( int argc , char ** argv )
         S_old=S; S=0.0; // save value of entropy and reset buffer
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
 
-        if(md.referencekF>0.0) kF = md.referencekF;
-        else
-        {
-            double _max_dens=0.0;
-            for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) if(densall.rho_a[ixyz]+densall.rho_b[ixyz]>_max_dens) _max_dens=densall.rho_a[ixyz]+densall.rho_b[ixyz];
-            kF = pow(3.*M_PI*M_PI*_max_dens,1./3.);
-        }
+        kF=referencekF(it, densall, dc_params, extra_data_size, extra_data);
 #ifndef UNIFORM_TEST_MODE
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);

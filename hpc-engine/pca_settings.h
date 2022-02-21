@@ -315,4 +315,8 @@
 #define MATRIX_IS_REAL
 #endif
 
+#ifndef API_VERSION
+#define API_VERSION 20220218
+#endif
+
 #endif
