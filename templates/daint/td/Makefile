@@ -18,7 +18,7 @@ CFLAGS= -std=gnu99 -O3 -DTARGET_MACHINE=TITAN
 # CUDA compiler flags
 NVCCFLAGS = -arch sm_60 -O3 
 # prescription how to link with: FFTW, CUDA
-LIBS=-lcudart -lcufft -lm
+LIBS=-lcudart -lcufft -lm -lstdc++
 
 
 # ----- DO NOT MODIFY -----
