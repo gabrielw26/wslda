@@ -1110,7 +1110,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                                     (Complex *)wf_in+noAllElements, (Complex *)wf_out+noAllElements, 
                                                     gpe, noAllElements);
 
-        ierr = local_reductions_many(n, NX, gpe, gpe);
+        ierr = local_reductions_many(n, NXYZ, gpe, gpe);
         if(ierr!=0) return ierr;
 
     }
