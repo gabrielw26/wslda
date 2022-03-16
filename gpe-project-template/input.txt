@@ -1,17 +1,9 @@
-params0 10.
-params1 12.
-
-
-# Documentation - Wiki: 
-# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
-
-
 # Minimal set of tags
 alpha   1.0
 beta    0.0
 dt      0.01 # intgeration step
-Na      1.0 # npart=2*Na 
-outprefix               test    # all output file with start with this prefix
++Na      1.0 # npart=2*Na 
++outprefix               test    # all output file with start with this prefix
 energyconveps   1.0e-9 # wpisana jest na sztywno w kodzie
 measurements # 
 timesteps 100 #
@@ -47,8 +39,8 @@ iogroups                8       # number of IO groups used for parallel wf writi
 writevar           all
 
 # ----------------- PARTICLE NUMBERS -----------------
-Na                      28.  # Requested number of particles a-type
-Nb                      28.  # Requested number of particles b-type
+Na                      1.  # Requested number of particles a-type
+Nb                      1.  # Requested number of particles b-type
 
 # ----------------- SCATTERING LENGTH -----------------
 sclgth    -1.0 # scattering length in units of lattice spacing
