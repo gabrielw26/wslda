@@ -18,7 +18,7 @@ exec: timeout 3600 mpirun -np 8 ./td-wslda-1d input.ss0.txt
 exec: echo "params10      1" >> input.ss0.txt
 exec: timeout 3600 mpirun -np 7 ./td-wslda-1d input.ss0.txt
 test: test.ss0-1d_testsuite.ok
-diff: test.ss0-1d.cmp rtest.ss0-1d.ref
+diff: test.ss0-1d.cmp test.ss0-1d.ref
 
 tag: ss0-2d
 exec: make -f ../td-templates-full/Makefile.0.s clean

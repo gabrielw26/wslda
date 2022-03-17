@@ -44,6 +44,7 @@ td-gauss-slda
 td-gauss-aslda
 td-gauss-sldae
 td-gauss-sldae-a1
+td-gauss-aslda-np
 
 # -> test quantum friction algorithm
 td-quantum-friction
