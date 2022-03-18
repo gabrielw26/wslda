@@ -40,7 +40,6 @@ int wsldapnp; // total number of processes - global variable
 #include "tdwslda_static_vars.h"
 #define printf wprintf
 #include "logger.h"
-#undef printf
 
 
 int main( int argc , char ** argv ) 
