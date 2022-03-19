@@ -2,6 +2,11 @@
 # 
 # module load cuda/9.0
 
+# DIMENSION
+NX=1024
+NY=128
+NZ=128
+
 # COMPILERS
 NVCC=nvcc
 
@@ -20,10 +25,8 @@ NVCCFLAGS = -arch $(SM) -O3 -std=c++03
 # LIBRARIES
 LIBS=-lcudart -lcufft -lm
 
-# DIMENSION
-NX=1024
-NY=128
-NZ=128
+# PARAMETERS
+PARAMS=-DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
 
 # VERSION
 # REAL - DEPEND ON STEP

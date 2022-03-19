@@ -1,4 +1,5 @@
 SRCDIR=$(WSLDADIR)/hpc-engine/gpe/
+BINDIR:=$(BINDIR)/
 
 MAINCODE1=$(SRCDIR)gpe_jj_exp.cu
 MAINCODE2=$(SRCDIR)gpe_jj_2d.cu
@@ -7,16 +8,16 @@ MAINCODE3=$(SRCDIR)gpe_jj_2d_dynamic_barrier.cu
 all: engine main_code_1 main_code_2 main_code_3
 
 engine:
-	nvcc -c $(SRCDIR)gpe_engine.cu -o gpe_engine.o -O3  -arch $(SM) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
+	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(BINDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 
 main_code_1:
-	nvcc -c $(MAINCODE1) -o gpe.o -O3 -arch $(SM) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
-	nvcc gpe.o gpe_engine.o -o gpe1 -lcudart -lcufft -lm
+	$(NVCC) -c $(MAINCODE1) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) gpe.o $(BINDIR)gpe_engine.o -o $(BINDIR)gpe1 $(LIBS)
 
 main_code_2:
-	nvcc -c $(MAINCODE2) -o gpe.o -O3 -arch $(SM) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
-	nvcc gpe.o gpe_engine.o -o gpe2 -lcudart -lcufft -lm
+	$(NVCC) -c $(MAINCODE2) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) gpe.o gpe_engine.o -o $(BINDIR)gpe2 $(LIBS)
 
 main_code_3:
-	nvcc -c $(MAINCODE3) -o gpe.o -O3 -arch $(SM) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
-	nvcc gpe.o gpe_engine.o -o gpe3 -lcudart -lcufft -lm
+	$(NVCC) -c $(MAINCODE3) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) gpe.o gpe_engine.o -o $(BINDIR)gpe3 $(LIBS)
