@@ -1,23 +1,46 @@
+# =====================================================================
+# =================== DO NOT MODIFY THIS PART =========================
+# =====================================================================
 SRCDIR=$(WSLDADIR)/hpc-engine/gpe/
+OBJDIR:=$(OBJDIR)/
 BINDIR:=$(BINDIR)/
 
-MAINCODE1=$(SRCDIR)gpe_jj_exp.cu
-MAINCODE2=$(SRCDIR)gpe_jj_2d.cu
-MAINCODE3=$(SRCDIR)gpe_jj_2d_dynamic_barrier.cu
+IMAGSRC=$(SRCDIR)gpe_imag.cu 
+REALSRC=$(SRCDIR)gpe_real.cu 
 
-all: engine main_code_1 main_code_2 main_code_3
+ENGINESRCS=$(SRCDIR)gpe_engine.cu
+IMAGSRCS=$(IMAGSRC) $(ENGINESRCS)
+REALSRCS=$(REALSRC) $(ENGINESRCS)
 
-engine:
-	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(BINDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+all: dirs engine dimag dreal
 
-main_code_1:
-	$(NVCC) -c $(MAINCODE1) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	$(NVCC) gpe.o $(BINDIR)gpe_engine.o -o $(BINDIR)gpe1 $(LIBS)
+imag: dirs engine dimag
 
-main_code_2:
-	$(NVCC) -c $(MAINCODE2) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	$(NVCC) gpe.o gpe_engine.o -o $(BINDIR)gpe2 $(LIBS)
+real: dirs engine dreal
 
-main_code_3:
-	$(NVCC) -c $(MAINCODE3) $(NVCCFLAGS) -o $(BINDIR)gpe.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	$(NVCC) gpe.o gpe_engine.o -o $(BINDIR)gpe3 $(LIBS)
+engine: $(ENGINESRCS)
+	cat $(WSLDADIR)VERSION.h
+	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+
+dimag: $(IMAGSRCS)
+	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) $(OBJDIR)gpe_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
+
+dreal: $(REALSRCS)
+	$(NVCC) -c $(REALSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) $(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_real $(LIBS)
+
+
+.PHONY: clean all ver dirs
+
+dirs:
+	mkdir -p $(OBJDIR)
+	mkdir -p $(BINDIR)
+
+clean:
+	rm -f $(OBJDIR)*.o
+	rm -f $(BINDIR)gpe_real
+	rm -f $(BINDIR)gpe_imag
+
+ver:
+	$(NVCC) --version
