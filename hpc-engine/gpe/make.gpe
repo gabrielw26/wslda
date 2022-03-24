@@ -19,7 +19,7 @@ imag: dirs engine dimag
 real: dirs engine dreal
 
 engine: $(ENGINESRCS)
-	cat $(WSLDADIR)VERSION.h
+	cat $(WSLDADIR)/VERSION.h
 	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 
 dimag: $(IMAGSRCS)

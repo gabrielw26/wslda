@@ -3,9 +3,9 @@
 # module load cuda/9.0
 
 # DIMENSION
-NX=1024
-NY=128
-NZ=128
+NX=256
+NY=32
+NZ=32
 
 # COMPILERS
 NVCC=nvcc
