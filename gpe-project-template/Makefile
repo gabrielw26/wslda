@@ -9,6 +9,7 @@ NZ=32
 
 # COMPILERS
 NVCC=nvcc
+CXX=mpicc
 
 # ARCHITECTURE
 SM=sm_35
@@ -20,7 +21,7 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-NVCCFLAGS = -arch $(SM) -O3 -std=c++03
+NVCCFLAGS = -arch $(SM) -O3
 
 # LIBRARIES
 LIBS=-lcudart -lcufft -lm

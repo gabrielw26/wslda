@@ -37,6 +37,7 @@
 // Only to do timing
 #include "gpe_timing.h" 
 #include "gpe_user_defined.h"
+#include "pca_utils.h"
 
 /***************************************************************************/ 
 /************************* MAIN FUNCTION  **********************************/
@@ -44,12 +45,11 @@
 int main( int argc , char ** argv ) 
 {
     // SETTINGS
-    double alpha=1.0;
-    double beta=0.0;
-    double dt=0.025;
-    double npart=1000.0;
-    int device=0;
-    
+    // double alpha=1.0;
+    // double beta=0.0;
+    // double dt=0.025;
+    // double npart=1000.0;
+    const int device=0;    
     int ierr;
     cudaError err;
     

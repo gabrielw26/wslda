@@ -42,6 +42,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // qfswitch;
 100.0, // Na;
 100.0, // Nb;
+200.0, // npart;
 -1.0, // init0Na;
 -1.0, // init0Nb;
 -1.0, // init0muchange;
@@ -59,6 +60,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 32, // mb;
 32, // nb;
 GPUS_PER_NODE, // gpuspernode
+0.0, // alpha
+1.0, // beta
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 1.0e-6, // npartconveps_a
@@ -216,8 +219,11 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"qfswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfswitch);
         // PARTICLE NUMBER
-        else if (strcmp (tag,"Na") == 0)
+        else if (strcmp (tag,"Na") == 0) {
             sscanf (s,"%s %lf %*s",tag,&md.Na);
+            md.npart = 2*md.Na;
+        }
+            
         else if (strcmp (tag,"Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Nb);
         // INIT-0 parameters
@@ -259,6 +265,11 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
+        // gpe coefficients
+        else if (strcmp (tag,"alpha") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.alpha);
+        else if (strcmp (tag,"beta") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.beta);
         // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);

@@ -2,34 +2,42 @@
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
 SRCDIR=$(WSLDADIR)/hpc-engine/gpe/
+HPCDIR=$(WSLDADIR)/hpc-engine/
 OBJDIR:=$(OBJDIR)/
 BINDIR:=$(BINDIR)/
 
 IMAGSRC=$(SRCDIR)gpe_imag.cu 
 REALSRC=$(SRCDIR)gpe_real.cu 
-
 ENGINESRCS=$(SRCDIR)gpe_engine.cu
-IMAGSRCS=$(IMAGSRC) $(ENGINESRCS)
-REALSRCS=$(REALSRC) $(ENGINESRCS)
+UTILSSRC=$(HPCDIR)pca_utils.c
 
-all: dirs engine dimag dreal
+IMAGSRCS=$(IMAGSRC) $(ENGINESRCS) $(UTILSSRC)
+REALSRCS=$(REALSRC) $(ENGINESRCS) $(UTILSSRC)
 
-imag: dirs engine dimag
+DEPSLOCAL = predefines.h machine.h
+DEPENDENCIES=pca_utils.h
+DEPENDENCIES:=$(addprefix $(HPCDIR),$(DEPENDENCIES))
 
-real: dirs engine dreal
+all: dirs engine utils dimag dreal
+
+imag: dirs engine utils dimag
+
+real: dirs engine utils dreal
 
 engine: $(ENGINESRCS)
 	cat $(WSLDADIR)/VERSION.h
 	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+
+utils: $(UTILSSRC) $(DEPSLOCAL) $(DEPENDENCIES) 
+	$(CXX) -DWSLDA -I . -c -o $(OBJDIR)pca_utils.o $(UTILSSRC)
 
 dimag: $(IMAGSRCS)
 	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 	$(NVCC) $(OBJDIR)gpe_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
 dreal: $(REALSRCS)
-	$(NVCC) -c $(REALSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	$(NVCC) $(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_real $(LIBS)
-
+	$(NVCC) -c $(REALSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I $(WSLDADIR)/hpc-engine . -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+#	$(NVCC) $(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_real $(LIBS)
 
 .PHONY: clean all ver dirs
 
