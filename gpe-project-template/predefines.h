@@ -1,9 +1,12 @@
+
+#ifndef __PREDEFINES__
+#define __PREDEFINES__
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 8
-#define NY 8
-#define NZ 1
+#define NX 256
+#define NY 32
+#define NZ 32
 
 #define DX 1.0
 #define DY 1.0
@@ -31,4 +34,4 @@
  * For list of API versions see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/API-version
  * */
 #define API_VERSION 20220221
-
+#endif

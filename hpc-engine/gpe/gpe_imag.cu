@@ -34,8 +34,8 @@
 /**************************** GPE HEADERS **********************************/
 /***************************************************************************/
 #include "gpe_engine.h"
-// Only to do timing
-#include "gpe_timing.h" 
+#include "predefines.h"
+#include "pca_utils.h" 
 #include "gpe_user_defined.h"
 
 /***************************************************************************/ 
@@ -123,7 +123,7 @@ int main( int argc , char ** argv )
         // Compute energy 
         gpe_exec( gpe_energy(&time, &ekin, &eint, &eext), ierr );
         
-        rt = e_t(); // get time
+        rt = e_t(0); // get time
         
         etot_prev=etot;
         etot = ekin + eint + eext;

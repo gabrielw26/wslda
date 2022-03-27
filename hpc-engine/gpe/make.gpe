@@ -5,11 +5,16 @@ SRCDIR=$(WSLDADIR)/hpc-engine/gpe/
 HPCDIR=$(WSLDADIR)/hpc-engine/
 OBJDIR:=$(OBJDIR)/
 BINDIR:=$(BINDIR)/
+PROJDIR=$(WSLDADIR)/gpe-project-template/
+WDATADIR=$(WSLDADIR)/lib/wdata/c/
+WDERIVDIR=$(WSLDADIR)/lib/wderiv/c/
+WINTERPDIR=$(WSLDADIR)/lib/winterp/c/
 
 IMAGSRC=$(SRCDIR)gpe_imag.cu 
 REALSRC=$(SRCDIR)gpe_real.cu 
 ENGINESRCS=$(SRCDIR)gpe_engine.cu
 UTILSSRC=$(HPCDIR)pca_utils.c
+
 
 IMAGSRCS=$(IMAGSRC) $(ENGINESRCS) $(UTILSSRC)
 REALSRCS=$(REALSRC) $(ENGINESRCS) $(UTILSSRC)
@@ -26,18 +31,18 @@ real: dirs engine utils dreal
 
 engine: $(ENGINESRCS)
 	cat $(WSLDADIR)/VERSION.h
-	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -I$(PROJDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 
 utils: $(UTILSSRC) $(DEPSLOCAL) $(DEPENDENCIES) 
-	$(CXX) -DWSLDA -I . -c -o $(OBJDIR)pca_utils.o $(UTILSSRC)
-
+	$(CXX) -DWSLDA -I$(HPCDIR) -I$(PROJDIR) -c -o $(OBJDIR)pca_utils.o $(UTILSSRC)
 dimag: $(IMAGSRCS)
-	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	$(NVCC) $(OBJDIR)gpe_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
+	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(HPCDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
+	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
 dreal: $(REALSRCS)
-	$(NVCC) -c $(REALSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I $(WSLDADIR)/hpc-engine . -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-#	$(NVCC) $(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_real $(LIBS)
+	$(NVCC) -c $(REALSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I$(PROJDIR) -I$(HPCDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) $(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o $(OBJDIR)pca_utils.o -o $(BINDIR)gpe_real $(LIBS)
 
 .PHONY: clean all ver dirs
 

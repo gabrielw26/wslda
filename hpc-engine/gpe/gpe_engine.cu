@@ -25,6 +25,7 @@
 #include <math.h>
 #include <complex>      // std::complex
 
+#include "predefines.h"
 #include "gpe_engine.h"
 
 typedef std::complex<double> cplx;

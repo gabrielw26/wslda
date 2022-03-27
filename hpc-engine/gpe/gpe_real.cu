@@ -34,10 +34,9 @@
 /**************************** GPE HEADERS **********************************/
 /***************************************************************************/
 #include "gpe_engine.h"
-// Only to do timing
-#include "gpe_timing.h" 
-#include "gpe_user_defined.h"
+#include "predefines.h"
 #include "pca_utils.h"
+#include "gpe_user_defined.h"
 
 /***************************************************************************/ 
 /************************* MAIN FUNCTION  **********************************/
@@ -45,10 +44,10 @@
 int main( int argc , char ** argv ) 
 {
     // SETTINGS
-    // double alpha=1.0;
-    // double beta=0.0;
-    // double dt=0.025;
-    // double npart=1000.0;
+    double alpha=1.0;
+    double beta=0.0;
+    double dt=0.025;
+    double npart=1000.0;
     const int device=0;    
     int ierr;
     cudaError err;
@@ -129,7 +128,7 @@ int main( int argc , char ** argv )
         // Compute energy 
         gpe_exec( gpe_energy(&time, &ekin, &eint, &eext), ierr );
         
-        rt = e_t(); // get time
+        rt = e_t(0); // get time
         
         etot = ekin + eint + eext;
 

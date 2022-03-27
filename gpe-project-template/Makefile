@@ -27,7 +27,7 @@ NVCCFLAGS = -arch $(SM) -O3
 LIBS=-lcudart -lcufft -lm
 
 # PARAMETERS
-PARAMS=-DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
+PARAMS=
 
 # VERSION
 # REAL - DEPEND ON STEP
