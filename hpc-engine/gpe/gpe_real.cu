@@ -37,6 +37,8 @@
 #include "predefines.h"
 #include "pca_utils.h"
 #include "gpe_user_defined.h"
+#include "wslda_toolkit.h"
+extern int wsldapid;
 
 /***************************************************************************/ 
 /************************* MAIN FUNCTION  **********************************/
@@ -51,6 +53,7 @@ int main( int argc , char ** argv )
     const int device=0;    
     int ierr;
     cudaError err;
+    wsldapid = 0;
     
     err=cudaSetDevice( device );
     if(err != cudaSuccess) 
