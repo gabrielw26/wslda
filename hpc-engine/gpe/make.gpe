@@ -1,60 +1,118 @@
 # =====================================================================
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
-SRCDIR=$(WSLDADIR)/hpc-engine/gpe/
-HPCDIR=$(WSLDADIR)/hpc-engine/
+
+# DIRECTORIES
+WSLDADIR:=$(WSLDADIR)/
 OBJDIR:=$(OBJDIR)/
 BINDIR:=$(BINDIR)/
-PROJDIR=$(WSLDADIR)/gpe-project-template/
-WDATADIR=$(WSLDADIR)/lib/wdata/c/
-WDERIVDIR=$(WSLDADIR)/lib/wderiv/c/
-WINTERPDIR=$(WSLDADIR)/lib/winterp/c/
 
-IMAGSRC=$(SRCDIR)gpe_imag.cu 
-REALSRC=$(SRCDIR)gpe_real.cu 
-ENGINESRCS=$(SRCDIR)gpe_engine.cu
-UTILSSRC=$(HPCDIR)pca_utils.c
-ERRSRC=$(HPCDIR)wslda_errors.c
-FUNSRC=$(HPCDIR)wslda_functionals.c
+SRCDIR=$(WSLDADIR)hpc-engine/gpe/
+INCLUDEDIR=$(WSLDADIR)hpc-engine/
 
+WDATAINC=$(WSLDADIR)lib/wdata/c/
+WDATASRC=$(WSLDADIR)lib/wdata/c/
 
-IMAGSRCS=$(IMAGSRC) $(ENGINESRCS) $(UTILSSRC) $(ERRSRC)
-REALSRCS=$(REALSRC) $(ENGINESRCS) $(UTILSSRC) $(ERRSRC)
+WDERIVINC=$(WSLDADIR)lib/wderiv/c/
+WDERIVSRC=$(WSLDADIR)lib/wderiv/c/
 
-IMAGOBJS=
-REALOBJS=$(OBJDIR)gpe_real.o $(OBJDIR)gpe_engine.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o
+WINTERPINC=$(WSLDADIR)lib/winterp/c/
+WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
+#PROJDIR=$(WSLDADIR)gpe-project-template/
+WDATADIR=$(WSLDADIR)lib/wdata/c/
+WDERIVDIR=$(WSLDADIR)lib/wderiv/c/
+WINTERPDIR=$(WSLDADIR)lib/winterp/c/
+
+# DEPENDENCIES
+DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
+       ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
+       cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h \
+       wslda_api_version.h ../VERSION.h
 DEPSLOCAL = predefines.h machine.h
-DEPENDENCIES=pca_utils.h wslda_errors.h wslda_predefines_test.h jdb.h wslda_toolkit.h wslda_functionals.h
-DEPENDENCIES:=$(addprefix $(HPCDIR),$(DEPENDENCIES))
+WDATADEPS = wdata.h
+WDERIVDEPS = wderiv.h
+WINTERPDEPS = winterp.h
 
-all: dirs engine utils dimag dreal
+# SOURCE FILES
+DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
+ENGINESRCS=gpe_engine.cu
+IMAGSRC=gpe_imag.cu 
+REALSRC=gpe_real.cu
 
-imag: dirs engine errors utils dimag
+# OBJECT FILES
+WDATALIB = wdata.o
+WDERIVLIB = wderiv.o
+WINTERPLIB = winterp.o
 
-real: dirs engine errors utils dreal
+# FLAGS
+CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
+NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
+NOWORNNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
 
-engine: $(ENGINESRCS)
-	$(NVCC) -c $(SRCDIR)gpe_engine.cu -o $(OBJDIR)gpe_engine.o $(NVCCFLAGS) -I$(PROJDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-functionals:
-	$(CXX) -c -o $(OBJDIR)wslda_functionals.o $(FUNSRC)
-errors:
-	$(CXX) -c -o $(OBJDIR)wslda_errors.o $(ERRSRC)
-utils: $(UTILSSRC) $(DEPSLOCAL) $(DEPENDENCIES) 
-	$(CXX) -DWSLDA -I$(HPCDIR) -I$(PROJDIR) -c -o $(OBJDIR)pca_utils.o $(UTILSSRC)
+# TRANSFORMATIONS
+## DEPENDENCIES
+DEPSSRCS := $(addprefix $(INCLUDEDIR),$(DEPSSRCS))
+DEPSOBJS := $(addprefix $(OBJDIR),$(DEPSSRCS:.o=.c))
+
+## SOURCE FILES
+ENGINESRCS := $(addprefix $(SRCDIR),$(ENGINESRCS))
+IMAGSRC := $(addprefix $(SRCDIR),$(IMAGSRC))
+REALSRC := $(addprefix $(SRCDIR),$(REALSRC))
+
+ENGINEOBJ := $(addprefix $(OBJDIR),$(ENGINESRCS:.o=.cu))
+IMAGOBJ := $(addprefix $(OBJDIR),$(IMAGSRC:.o=.cu))
+REALOBJ := $(addprefix $(OBJDIR),$(REALSRC:.o=.cu))
+
+## WDATA
+WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
+WDATAOBJS := $(addprefix $(OBJDIR),$(WDATALIB:.c=.o))
+WDATALIB := $(addprefix $(WDATASRC),$(WDATALIB))
+
+WDERIVDEPS := $(addprefix $(WDERIVINC),$(WDERIVDEPS))
+WDERIVOBJS := $(addprefix $(OBJDIR),$(WDERIVLIB:.c=.o))
+WDERIVLIB := $(addprefix $(WDERIVSRC),$(WDERIVLIB))
+
+WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
+WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
+WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
+
+# MAKE
+all: core imag real
+
+imag: core imag
+
+real: core real
+
+core: dirs engine $(DEPSOBJS)
+
 dimag: $(IMAGSRCS)
-	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(HPCDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
 	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
-objreal: $(SRCDIR)gpe_real.cu $(DEPSLOCAL) $(DEPENDENCIES)
-	$(NVCC) -c $(SRCDIR)gpe_real.cu $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I$(PROJDIR) -I$(HPCDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+objreal: $(SRCDIR)gpe_real.cu $(DEPSLOCAL) $(DEPS)
+	$(NVCC) -c $(SRCDIR)gpe_real.cu $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 
 dreal: $(REALOBJS)
-	cat $(WSLDADIR)/VERSION.h
+	cat $(WSLDADIR)VERSION.h
 	$(NVCC) $^ -o $(BINDIR)gpe_real $(LIBS)	
 
-.PHONY: clean all ver dirs
+$(OBJDIR)%.o: $(INCLUDEDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+	$(CXX) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)%.o: $(WDATASRC)%.c $(DEPS) $(WDATADEPS)
+	$(CXX) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
+$(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
+
+engine: $(ENGINESRCS)
+	$(NVCC) -c $(ENGINESRCS) -o $(ENGINEOBJ) $(NVCCFLAGS) $(NOWORNNING) $(PARAMS)
 
 dirs:
 	mkdir -p $(OBJDIR)
@@ -67,3 +125,5 @@ clean:
 
 ver:
 	$(NVCC) --version
+
+.PHONY: clean all ver dirs

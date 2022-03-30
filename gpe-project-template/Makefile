@@ -16,9 +16,9 @@ SM=sm_35
 
 # DIRECTORY SETTINGS 
 WSLDADIR=$(WSLDA)
-OBJDIR=./obj/
+OBJDIR=./obj
 # folder where executable binary will be placed (will be created automatically)
-BINDIR=./
+BINDIR=.
 
 # COMPILER FLAGS
 NVCCFLAGS = -arch $(SM) -O3
