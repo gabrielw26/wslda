@@ -36,10 +36,10 @@ WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
 # SOURCE FILES
-DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
-ENGINESRCS=gpe_engine.cu
-IMAGSRC=gpe_imag.cu 
-REALSRC=gpe_real.cu
+DEPS_SRCS_FILES = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
+ENGINE_SRCS_FILES=gpe_engine.cu
+IMAG_SRC_FILES=gpe_imag.cu 
+REAL_SRC_FILES=gpe_real.cu
 
 # OBJECT FILES
 WDATALIB = wdata.o
@@ -49,21 +49,22 @@ WINTERPLIB = winterp.o
 # FLAGS
 CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
 NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
-NOWORNNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
+NOWORNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
 
 # TRANSFORMATIONS
 ## DEPENDENCIES
-DEPSSRCS := $(addprefix $(INCLUDEDIR),$(DEPSSRCS))
-DEPSOBJS := $(addprefix $(OBJDIR),$(DEPSSRCS:.o=.c))
+DEPSSRCS := $(addprefix $(INCLUDEDIR),$(DEPS_SRCS_FILES))
+DEPSOBJS := $(addprefix $(OBJDIR),$(DEPS_SRCS_FILES:.c=.o))
 
 ## SOURCE FILES
-ENGINESRCS := $(addprefix $(SRCDIR),$(ENGINESRCS))
-IMAGSRC := $(addprefix $(SRCDIR),$(IMAGSRC))
-REALSRC := $(addprefix $(SRCDIR),$(REALSRC))
+ENGINESRCS := $(addprefix $(SRCDIR),$(ENGINE_SRCS_FILES))
+ENGINEOBJ := $(addprefix $(OBJDIR),$(ENGINE_SRCS_FILES:.cu=.o))
 
-ENGINEOBJ := $(addprefix $(OBJDIR),$(ENGINESRCS:.o=.cu))
-IMAGOBJ := $(addprefix $(OBJDIR),$(IMAGSRC:.o=.cu))
-REALOBJ := $(addprefix $(OBJDIR),$(REALSRC:.o=.cu))
+IMAGSRC := $(addprefix $(SRCDIR),$(IMAG_SRC_FILES))
+IMAGOBJ := $(addprefix $(OBJDIR),$(IMAG_SRC_FILES:.cu=.o))
+
+REALSRC := $(addprefix $(SRCDIR),$(REAL_SRC_FILES))
+REALOBJ := $(addprefix $(OBJDIR),$(REAL_SRC_FILES:.cu=.o))
 
 ## WDATA
 WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
@@ -77,6 +78,21 @@ WDERIVLIB := $(addprefix $(WDERIVSRC),$(WDERIVLIB))
 WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
 WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
 WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
+
+# TEST
+test2:
+	echo $(OBJDIR)
+
+test:
+	ca
+	cat $(ENGINESRCS)
+	cat $(ENGINEOBJ)
+	cat $(IMAGSRC)
+	cat $(IMAGOBJ)
+	cat $(REALSRC)
+	cat $(REALOBJ)
+	cat $(DEPSSRCS)
+	cat	 $(DEPSOBJS)
 
 # MAKE
 all: core imag real
@@ -112,7 +128,7 @@ $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 
 engine: $(ENGINESRCS)
-	$(NVCC) -c $(ENGINESRCS) -o $(ENGINEOBJ) $(NVCCFLAGS) $(NOWORNNING) $(PARAMS)
+	$(NVCC) -c $(ENGINESRCS) -o $(ENGINEOBJ) $(NVCCFLAGS) $(NOWORNING) $(PARAMS)
 
 dirs:
 	mkdir -p $(OBJDIR)
