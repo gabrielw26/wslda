@@ -9,7 +9,7 @@ NZ=32
 
 # COMPILERS
 NVCC=nvcc
-CXX=mpicc
+CXX=gcc
 
 # ARCHITECTURE
 SM=sm_35
@@ -22,16 +22,17 @@ BINDIR=.
 
 # COMPILER FLAGS
 NVCCFLAGS = -arch $(SM) -O3
+CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
 
 # LIBRARIES
 LIBS=-lcudart -lcufft -lm
 
 # PARAMETERS
-PARAMS=
+PARAMS= -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
 
 # VERSION
 # REAL - DEPEND ON STEP
-# IMAGINARY - DEPEND ON TIME
+# IMAG - DEPEND ON TIME
 
 # ----- DO NOT MODIFY -----
 include $(WSLDADIR)/hpc-engine/gpe/make.gpe

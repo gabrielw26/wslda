@@ -19,7 +19,6 @@ WDERIVSRC=$(WSLDADIR)lib/wderiv/c/
 WINTERPINC=$(WSLDADIR)lib/winterp/c/
 WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
-#PROJDIR=$(WSLDADIR)gpe-project-template/
 WDATADIR=$(WSLDADIR)lib/wdata/c/
 WDERIVDIR=$(WSLDADIR)lib/wderiv/c/
 WINTERPDIR=$(WSLDADIR)lib/winterp/c/
@@ -36,10 +35,10 @@ WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
 # SOURCE FILES
-DEPS_SRCS_FILES = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
-ENGINE_SRCS_FILES=gpe_engine.cu
-IMAG_SRC_FILES=gpe_imag.cu 
-REAL_SRC_FILES=gpe_real.cu
+DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
+ENGINESRCS=gpe_engine.cu
+IMAGSRC=gpe_imag.cu
+REALSRC=gpe_real.cu
 
 # OBJECT FILES
 WDATALIB = wdata.o
@@ -47,24 +46,25 @@ WDERIVLIB = wderiv.o
 WINTERPLIB = winterp.o
 
 # FLAGS
-CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
-NVCCFLAGS := $(NVCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 NOWORNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
+CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
+NVCCFLAGS := $(NVCCFLAGS) $(NOWORNING) $(PARAMS) -I$(INCLUDEDIR) -I./ -DTDWSLDA 
 
 # TRANSFORMATIONS
 ## DEPENDENCIES
-DEPSSRCS := $(addprefix $(INCLUDEDIR),$(DEPS_SRCS_FILES))
-DEPSOBJS := $(addprefix $(OBJDIR),$(DEPS_SRCS_FILES:.c=.o))
+DEPSOBJS := $(addprefix $(OBJDIR),$(DEPSSRCS:.c=.o))
+DEPSSRCS := $(addprefix $(INCLUDEDIR),$(DEPSSRCS))
+DEPS := $(addprefix $(INCLUDEDIR),$(DEPS))
 
 ## SOURCE FILES
-ENGINESRCS := $(addprefix $(SRCDIR),$(ENGINE_SRCS_FILES))
-ENGINEOBJ := $(addprefix $(OBJDIR),$(ENGINE_SRCS_FILES:.cu=.o))
+ENGINEOBJ := $(addprefix $(OBJDIR),$(ENGINESRCS:.cu=.o))
+ENGINESRCS := $(addprefix $(SRCDIR),$(ENGINESRCS))
 
-IMAGSRC := $(addprefix $(SRCDIR),$(IMAG_SRC_FILES))
-IMAGOBJ := $(addprefix $(OBJDIR),$(IMAG_SRC_FILES:.cu=.o))
+IMAGOBJ := $(addprefix $(OBJDIR),$(IMAGSRC:.cu=.o))
+IMAGSRC := $(addprefix $(SRCDIR),$(IMAGSRC))
 
-REALSRC := $(addprefix $(SRCDIR),$(REAL_SRC_FILES))
-REALOBJ := $(addprefix $(OBJDIR),$(REAL_SRC_FILES:.cu=.o))
+REALOBJ := $(addprefix $(OBJDIR),$(REALSRC:.cu=.o))
+REALSRC := $(addprefix $(SRCDIR),$(REALSRC))
 
 ## WDATA
 WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
@@ -79,23 +79,13 @@ WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
 WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
 WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 
-# TEST
-test2:
-	echo $(OBJDIR)
-
-test:
-	ca
-	cat $(ENGINESRCS)
-	cat $(ENGINEOBJ)
-	cat $(IMAGSRC)
-	cat $(IMAGOBJ)
-	cat $(REALSRC)
-	cat $(REALOBJ)
-	cat $(DEPSSRCS)
-	cat	 $(DEPSOBJS)
+# PYTHON
+ifeq ($(strip $(PYTHON)),)
+PYTHON=python
+endif
 
 # MAKE
-all: core imag real
+all: imag real
 
 imag: core imag
 
@@ -108,12 +98,18 @@ dimag: $(IMAGSRCS)
 	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
 	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
-objreal: $(SRCDIR)gpe_real.cu $(DEPSLOCAL) $(DEPS)
-	$(NVCC) -c $(SRCDIR)gpe_real.cu $(NVCCFLAGS) -o $(OBJDIR)gpe_real.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 
-dreal: $(REALOBJS)
+
+real: $(REALOBJ) $(DEPSLOCAL) $(DEPS)
 	cat $(WSLDADIR)VERSION.h
-	$(NVCC) $^ -o $(BINDIR)gpe_real $(LIBS)	
+	$(NVCC) $^ -o $(BINDIR)gpe_real $(LIBS)
+	
+$(REALOBJ): $(REALSRC) $(DEPSLOCAL) $(SRCDIR)gpe_engine.h # $(DEPS) 
+	$(NVCC) $(NVCCFLAGS) -c -o $@ $<
+
+$(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL)
+	python $(INCLUDEDIR)reproducibility.py $(OBJDIR)
+	$(CXX) $(CFLAGS) -I$(OBJDIR) -c -o $@ $<
 
 $(OBJDIR)%.o: $(INCLUDEDIR)%.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $<
@@ -128,7 +124,7 @@ $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 
 engine: $(ENGINESRCS)
-	$(NVCC) -c $(ENGINESRCS) -o $(ENGINEOBJ) $(NVCCFLAGS) $(NOWORNING) $(PARAMS)
+	$(NVCC) $(NVCCFLAGS) -c $(ENGINESRCS) -o $(ENGINEOBJ) 
 
 dirs:
 	mkdir -p $(OBJDIR)
