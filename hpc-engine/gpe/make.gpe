@@ -29,6 +29,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h \
        wslda_api_version.h ../VERSION.h
+NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_edf.h wslda_cuda_utils.h tdwslda_functionals.h
 DEPSLOCAL = predefines.h machine.h
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
@@ -48,7 +49,7 @@ WINTERPLIB = winterp.o
 # FLAGS
 NOWORNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
 CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
-NVCCFLAGS := $(NVCCFLAGS) $(NOWORNING) $(PARAMS) -I$(INCLUDEDIR) -I./ -DTDWSLDA 
+NVCCFLAGS := $(NVCCFLAGS) $(NOWORNING) $(PARAMS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 
 # TRANSFORMATIONS
 ## DEPENDENCIES
@@ -85,26 +86,26 @@ PYTHON=python
 endif
 
 # MAKE
-all: imag real
+#all: imag real
 
-imag: core imag
+#imag: core dimag
 
-real: core real
+real: core dreal
 
-core: dirs engine $(DEPSOBJS)
+core: dirs engine 
 
-dimag: $(IMAGSRCS)
-	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
-	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
+#dimag: $(IMAGSRCS)
+#	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
+#	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
+#	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
 
 
-real: $(REALOBJ) $(DEPSLOCAL) $(DEPS)
+dreal: $(ENGINEOBJ) $(DEPSOBJS) $(REALOBJ) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(NVCC) $^ -o $(BINDIR)gpe_real $(LIBS)
+	$(CXX) -o $(BINDIR)gpe_real $(CFLAGS) $^ $(LIBS)
 	
-$(REALOBJ): $(REALSRC) $(DEPSLOCAL) $(SRCDIR)gpe_engine.h # $(DEPS) 
+$(REALOBJ): $(REALSRC) $(DEPSLOCAL) $(SRCDIR)gpe_engine.h
 	$(NVCC) $(NVCCFLAGS) -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL)

@@ -9,7 +9,8 @@ NZ=32
 
 # COMPILERS
 NVCC=nvcc
-CXX=gcc
+CXX=mpicc
+PYTHON=python
 
 # ARCHITECTURE
 SM=sm_35
@@ -25,7 +26,7 @@ NVCCFLAGS = -arch $(SM) -O3
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
 
 # LIBRARIES
-LIBS=-lcudart -lcufft -lm
+LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
 
 # PARAMETERS
 PARAMS= -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)
