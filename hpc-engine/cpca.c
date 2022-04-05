@@ -818,6 +818,10 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+    energy_tot = 0.0;
+    for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+    init_conservation_of_quantity(0, N_tot_init);
+    init_conservation_of_quantity(1, energy_tot);
 #ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
 #endif
@@ -1456,10 +1460,23 @@ int main( int argc , char ** argv )
         
         if(forceCP==1) break; // if emergency checkpoint then terminate
         
-        // Check if siulation is stable
-        if( fabs( (h_energy[NPARTA]+h_energy[NPARTB]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
+        // Check if simulation is stable
+        if( monitor_conservation_of_quantity(0, time*eF, h_energy[NPARTA]+h_energy[NPARTB], 
+                                             md.Nconservation_start, md.Nconservation_stop, md.Nconservation_tol) ==1 )
         {
-            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n"); fflush(stdout);
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR PARTICLE NUMBER!!!\n");
+            if(ip==0) print_conservation_of_quantity(0, h_energy[NPARTA]+h_energy[NPARTB], md.Nconservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
+            break;
+        }
+        energy_tot = 0.0;
+        for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+        if( monitor_conservation_of_quantity(1, time*eF, energy_tot, 
+                                             md.Econservation_start, md.Econservation_stop, md.Econservation_tol) ==1 )
+        {
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR ENERGY!!!\n");
+            if(ip==0) print_conservation_of_quantity(1, energy_tot, md.Econservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
             break;
         }
         

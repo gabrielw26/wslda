@@ -42,15 +42,16 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
 # gpuspernode             1        # number of GPUs per node (resource set), default=GPUS_PER_NODE (in machine.h)
 
-# --------------------- OTHER -----------------
-# spinsymmetry            0       # !!! IGNORE HERE, set in predefines.h !!!
-                                  # NOTE: This flag is controlled via predefines.h !
-                                  #       Select SPINSYMMETRY_MODE to run with spinsymmetry==1,
-                                  #       otherwise it is assumes spinsymmetry==0
-# current corrections
-# ccstart                 0.
-# ccswitch                10.
-# ccstop                  1000.
+# ---------------- CONSERVATION LAWS -----------------
+# See: Wiki -> Monitoring of conservation laws
+# # -> Energy conservation monitoring
+# Econservation_start       0        # Start to monitor energy conservation from time*eF, default=1e12 (infinity)
+# Econservation_stop        10000    # Stop to monitor energy conservation at time*eF, default=1e12 (infinity)
+# Econservation_tol         0.05     # if |[E(t)-E(start_t)]/E(start_t)|>tol then the code will terminate, default=0.05
+# # -> Particle number conservation monitoring
+# Nconservation_start       0        # Start to monitor total particle number conservation from time*eF, default=0
+# Nconservation_stop        10000    # Stop to monitor total particle number conservation at time*eF, default=1e12 (infinity)
+# Nconservation_tol         0.05     # if |[N(t)-N(start_t)]/N(start_t)|>tol then the code will terminate, default=0.05
 
 # --------------- QUANTUM FRICTION ------------------
 # See: Wiki -> Quantum friction

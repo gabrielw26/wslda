@@ -4,6 +4,7 @@
 * Automatic adjustment of energy cut-off has been improved.
 * Improvement: code can now compute in HF mode (delta=0) and fully polarized gas (Nb=0).
 * Added tool for generating [custom SLDAE functional](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Custom-SLDAE-functional).
+* Added [Monitoring of conservation laws](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Monitoring-of-conservation-laws).
 
 # 2022.01.05
 * A new functional SLDAE has been implemented.
