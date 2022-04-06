@@ -1415,6 +1415,27 @@ int main( int argc , char ** argv )
             if(i_meas==md.measurements-1) forceCP=3;
         }
         
+        // Check if simulation is stable
+        time=t0+it*dt;
+        if( monitor_conservation_of_quantity(0, time*eF, h_energy[NPARTA]+h_energy[NPARTB], 
+                                             md.Nconservation_start, md.Nconservation_stop, md.Nconservation_tol) ==1 )
+        {
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR PARTICLE NUMBER!!!\n");
+            if(ip==0) print_conservation_of_quantity(0, h_energy[NPARTA]+h_energy[NPARTB], md.Nconservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
+            forceCP=1;
+        }
+        energy_tot = 0.0;
+        for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+        if( monitor_conservation_of_quantity(1, time*eF, energy_tot, 
+                                             md.Econservation_start, md.Econservation_stop, md.Econservation_tol) ==1 )
+        {
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR ENERGY!!!\n");
+            if(ip==0) print_conservation_of_quantity(1, energy_tot, md.Econservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
+            forceCP=1;
+        }
+        
         // checkpoint
         if (md.checkpoint && forceCP>0)
         {
@@ -1459,26 +1480,6 @@ int main( int argc , char ** argv )
         }
         
         if(forceCP==1) break; // if emergency checkpoint then terminate
-        
-        // Check if simulation is stable
-        if( monitor_conservation_of_quantity(0, time*eF, h_energy[NPARTA]+h_energy[NPARTB], 
-                                             md.Nconservation_start, md.Nconservation_stop, md.Nconservation_tol) ==1 )
-        {
-            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR PARTICLE NUMBER!!!\n");
-            if(ip==0) print_conservation_of_quantity(0, h_energy[NPARTA]+h_energy[NPARTB], md.Nconservation_tol);
-            if(ip==0) wprintf("# !!! BREAKING !!!\n");
-            break;
-        }
-        energy_tot = 0.0;
-        for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
-        if( monitor_conservation_of_quantity(1, time*eF, energy_tot, 
-                                             md.Econservation_start, md.Econservation_stop, md.Econservation_tol) ==1 )
-        {
-            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR ENERGY!!!\n");
-            if(ip==0) print_conservation_of_quantity(1, energy_tot, md.Econservation_tol);
-            if(ip==0) wprintf("# !!! BREAKING !!!\n");
-            break;
-        }
         
         fflush(stdout); // clear output
     } 
