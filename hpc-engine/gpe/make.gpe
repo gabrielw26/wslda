@@ -41,6 +41,7 @@ ENGINESRC=gpe_engine.cu
 UTILSSRC=gpe_utils.cu
 IMAGSRC=gpe_imag.cu
 REALSRC=gpe_real.c
+POTENTIALSSRC=get_ext_potentials.cu
 
 # OBJECT FILES
 WDATALIB = wdata.o
@@ -64,6 +65,9 @@ ENGINESRC := $(addprefix $(SRCDIR),$(ENGINESRC))
 
 UTILSOBJ := $(addprefix $(OBJDIR),$(UTILSSRC:.cu=.o))
 UTILSSRC := $(addprefix $(SRCDIR),$(UTILSSRC))
+
+POTENTIALSOBJ := $(addprefix $(OBJDIR),$(POTENTIALSSRC:.cu=.o))
+POTENTIALSSRC := $(addprefix $(SRCDIR),$(POTENTIALSSRC))
 
 IMAGOBJ := $(addprefix $(OBJDIR),$(IMAGSRC:.cu=.o))
 IMAGSRC := $(addprefix $(SRCDIR),$(IMAGSRC))
@@ -90,22 +94,27 @@ PYTHON=python
 endif
 
 # MAKE
-#all: imag real
+all: imag real
 
-#imag: core dimag
+imag: core dimag
 
 real: core dreal
 
-core: dirs engine utils
+core: dirs engine utils potentials
 
 #dimag: $(IMAGSRCS)
 #	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
 #	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
 #	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
 
+dimag: $(IMAGOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(POTENTIALSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe_imag
 
+$(IMAGOBJ): $(IMAGSRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine.h
+	$(NVCC) $(NVCCFLAGS) -c -o $@ $< $(LIBS) -lcudadevrt -lcudart
 
-dreal: $(REALOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
+dreal: $(REALOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(POTENTIALSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe_real 
 	
@@ -134,6 +143,8 @@ engine: $(ENGINESRC)
 utils: $(UTILSSRC)
 	$(NVCC) $(NVCCFLAGS) -c $(UTILSSRC) -o $(UTILSOBJ)
 
+potentials: $(POTENTIALSSRC)
+	$(NVCC) $(NVCCFLAGS) -c $(POTENTIALSSRC) -o $(POTENTIALSOBJ)
 
 dirs:
 	mkdir -p $(OBJDIR)

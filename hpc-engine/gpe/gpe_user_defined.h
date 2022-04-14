@@ -69,14 +69,6 @@ inline __device__  Complex gpe_modify_psi(uint ix, uint iy, uint iz, uint it, Co
 }
 
 /**
- * Switch function - performs switch in time interval [0-T]
- * */
-__device__ __host__ inline double switch_function(double t, double T, double alpha)
-{
-    return 0.5*( 1.0+tanh( alpha*tan( M_PI_2*( 2.0*t/T-1.0 ) ) ) );
-}
-
-/**
  * Function computes value of external potential V_ext(x,y,z,t)
  * @param ix - x coordinate, ix=0,1,...,d_nx-1, where d_nx is global variable 
  * @param iy - y coordinate, iy=0,1,...,d_ny-1, where d_ny is global variable 
@@ -86,219 +78,26 @@ __device__ __host__ inline double switch_function(double t, double T, double alp
  * */
 inline __device__  double gpe_external_potential(uint ix, uint iy, uint iz, uint it)
 {
-    // potential for Josephson effect
-    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
-#define OMEGA_YX (148.0/15.0)
-#define OMEGA_ZX (187.0/15.0) 
     
-    double _ix = (double)(ix) - 1.0*(NX/2)+0.5;
-    double _iy = (double)(iy) - 1.0*(NY/2)+0.5;
-    double _iz = (double)(iz) - 1.0*(NZ/2)+0.5;
+    // harmonic trap:
+    // V(x,y,z) = 0.5*(omega_x*x)^2 + 0.5*(omega_y*y)^2 + 0.5*(omega_z*z)^2
     
-    double s;
+    // frequencies are passed through d_user_param array
+    double omega_x = d_user_param[0];
+    double omega_y = d_user_param[1];
+    double omega_z = d_user_param[2];
     
-#define LX (1.0*NX)
-#define LY (1.0*NY)
-#define xs 10.0
-#define ys 10.0
-#define HO(x, omega2p2) (omega2p2*x*x)
-    double omega_x2 = d_user_param[0];            // passed from main part - this is 0.5*omega_x*omega_x
-    double omega_y2 = omega_x2*OMEGA_YX*OMEGA_YX; // passed from main part - this is 0.5*omega_x*omega_x
-    double hox;
-    if(_ix>=(double)(-LX/2)+xs && _ix<=(double)(LX/2)-xs) 
-    {
-        hox = HO(_ix, omega_x2);
-    }
-    else if(_ix<(double)(-LX/2)+xs) 
-    {   
-        s = switch_function(_ix+(double)(LX/2), xs, 1.0);
-        hox = s*HO(_ix, omega_x2) + (1.0-s)*d_user_param[12];
-    }
-    else
-    {
-        s = switch_function(_ix-((double)(LX/2)-xs), xs, 1.0);
-        hox=(1.0-s)*HO(_ix, omega_x2) + s*d_user_param[12];
-    }
-    
-    double hoy;
-    if(_iy>=(double)(-LY/2)+ys && _iy<=(double)(LY/2)-ys) 
-    {
-        hoy = HO(_iy, omega_y2);
-    }
-    else if(_iy<(double)(-LY/2)+ys) 
-    {   
-        s = switch_function(_iy+(double)(LY/2), ys, 1.0);
-        hoy = s*HO(_iy, omega_y2) + (1.0-s)*d_user_param[13];
-    }
-    else
-    {
-        s = switch_function(_iy-((double)(LY/2)-ys), ys, 1.0);
-        hoy=(1.0-s)*HO(_iy, omega_y2) + s*d_user_param[13];
-    }
-    
-   
-    double trap = hox + hoy;
-//     double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + d_user_param[4]*OMEGA_ZX*OMEGA_ZX*_iz*_iz);
-    
-    double barrier = 0.0;
-    // 1 - target value of barrier
-    // 5 - activate barrier - dynamic calculations=1
-    // 6 - barrier heigh for static calculaions
-    // 7 - change time from value 7 to value 1
-    double swtch=0.0;
-    double swtch2=0.0;
-    if(d_user_param[5]>0.5)
-    {
-        double time = d_t0 + it*d_dt;
-        
-        // dynamical barrier
-        if(time<d_user_param[7]) swtch=switch_function(time, d_user_param[7], 1.0);
-        else                     swtch=1.0;
-    
-        double shift=0.0;
-//         barrier = (d_user_param[6] - swtch*(d_user_param[6]-d_user_param[1])) * exp(-1.0*(_ix-shift)*(_ix-shift) * (d_user_param[2]));
-        barrier = (d_user_param[6] - swtch*(d_user_param[6]-d_user_param[1])) * exp(-1.0*(_ix-shift)*(_ix-shift) * (d_user_param[2] - swtch*(d_user_param[2]-d_user_param[8])));
-        
-        if(time<d_user_param[7]) swtch2 = 1.0; // keep tilt
-        else if(time<(d_user_param[7]+d_user_param[9])) swtch2 = 1.0 -switch_function(time-d_user_param[7], d_user_param[9], 1.0); // remove tilt
-        else swtch2=0.0; // no tilt
-    
-//         swtch2 = 1.0;
-    }
-    else // static calculations
-    {
-        double shift=0.0;
-        barrier = d_user_param[6] * exp(-1.0*(_ix-shift)*(_ix-shift) * d_user_param[2]);
-        swtch2 = 1.0; // tilt is on
-    }
-    
-    return trap + barrier -_ix*d_user_param[3]*swtch2;
-           
-}
-#undef LX 
-#undef LY 
-#undef xs 
-#undef ys 
-#undef HO
+    // coordinate with respect to center of the box
+    double _ix = (double)(ix) - 1.0*(NX/2);
+    double _iy = (double)(iy) - 1.0*(NY/2);
+    double _iz = (double)(iz) - 1.0*(NZ/2);
 
 
-inline __device__  double gpe_external_potential_old3(uint ix, uint iy, uint iz, uint it)
-{
-    // potential for Josephson effect
-    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
-#define OMEGA_YX (148.0/15.0)
-#define OMEGA_ZX (187.0/15.0) 
+    double trap =   0.5*_ix*_ix*omega_x*omega_x
+                  + 0.5*_iy*_iy*omega_y*omega_y 
+                  + 0.5*_iz*_iz*omega_z*omega_z;
     
-    double _ix = (double)(ix) - 1.0*(NX/2)+0.5;
-    double _iy = (double)(iy) - 1.0*(NY/2)+0.5;
-    double _iz = (double)(iz) - 1.0*(NZ/2)+0.5;
-    double omega_x2 = d_user_param[0]; // passed from main part - this is 0.5*omega_x*omega_x
-
-    double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + d_user_param[4]*OMEGA_ZX*OMEGA_ZX*_iz*_iz);
-    
-    double barrier = 0.0;
-    // 5 - activate barrier
-    // 6 - start to rise of barrier
-    // 7 - stop to raise barrier
-    // 8 - start to rise tilt
-    // 9 - stop to rise tilt
-    // 10 - start to remove tilt
-    // 11 - stop to remove tilt
-    double swtch=0.0;
-    double swtch2=0.0;
-    if(d_user_param[5]>0.5)
-    {
-        double time = d_t0 + it*d_dt;
-        
-        // dynamical barrier
-        if(time<d_user_param[6])      swtch=0.0;
-        else if(time<d_user_param[7]) swtch=switch_function(time-d_user_param[6], d_user_param[7]-d_user_param[6], 1.0);
-        else                          swtch=1.0;
-        
-        // tilt
-        if(time<d_user_param[8])       swtch2=0.0;
-        else if(time<d_user_param[9])  swtch2=switch_function(time-d_user_param[8], d_user_param[9]-d_user_param[8], 1.0);
-        else if(time<d_user_param[10]) swtch2=1.0;
-        else if(time<d_user_param[11]) swtch2=1.0-switch_function(time-d_user_param[10], d_user_param[11]-d_user_param[10], 1.0);
-        else                           swtch2=0.0;
-            
-        double shift=0.0;
-        barrier = swtch*d_user_param[1] * exp(-1.0*(_ix-shift)*(_ix-shift) * d_user_param[2]);
-    }
-    
-    return trap + barrier -_ix*d_user_param[3]*swtch2;
-           
-}
-
-inline __device__  double gpe_external_potential_old2(uint ix, uint iy, uint iz, uint it)
-{
-    // potential for Josephson effect
-    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
-#define OMEGA_YX (148.0/15.0)
-#define OMEGA_ZX (187.0/15.0) 
-    
-    double _ix = (double)(ix) - 1.0*(NX/2)+0.5;
-    double _iy = (double)(iy) - 1.0*(NY/2)+0.5;
-    double _iz = (double)(iz) - 1.0*(NZ/2)+0.5;
-    double omega_x2 = d_user_param[0]; // passed from main part - this is 0.5*omega_x*omega_x
-
-    double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + d_user_param[4]*OMEGA_ZX*OMEGA_ZX*_iz*_iz);
-    
-    double barrier = 0.0;
-    // 5 - activate barrier
-    // 6 - rise of barrier
-    // 7 - intial shift of the barrier
-    // 8 - start to remove shift
-    // 9 - stop to remove shift
-    if(d_user_param[5]>0.5)
-    {
-        double time = d_t0 + it*d_dt;
-        
-        // dynamical barrier
-        double swtch=1.0;
-        if(time<d_user_param[6]) swtch=switch_function(time, d_user_param[6], 1.0);
-        
-        double shift = d_user_param[7];
-        if(time<d_user_param[8])
-        {
-            shift *= 1.0; // keep intial value
-        }
-        else if(time<d_user_param[9])
-        {
-            shift *= (1.0-switch_function(time-d_user_param[8], d_user_param[9]-d_user_param[8], 1.0));
-        }
-        else
-        {
-            shift *= 0.0;
-        }
-            
-        barrier = swtch*d_user_param[1] * exp(-1.0*(_ix-shift)*(_ix-shift) * d_user_param[2]);
-    }
-    
-    return trap + barrier -_ix*d_user_param[3];
-           
-}
-
-inline __device__  double gpe_external_potential_old(uint ix, uint iy, uint iz, uint it)
-{
-    // potential for Josephson effect
-    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
-#define OMEGA_YX (148.0/15.0)
-#define OMEGA_ZX (187.0/15.0) 
-    
-    double _ix = (double)(ix) - 1.0*(NX/2)+0.5;
-    double _iy = (double)(iy) - 1.0*(NY/2)+0.5;
-    double _iz = (double)(iz) - 1.0*(NZ/2)+0.5;
-    double omega_x2 = d_user_param[0]; // passed from main part - this is 0.5*omega_x*omega_x
-
-    double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + d_user_param[4]*OMEGA_ZX*OMEGA_ZX*_iz*_iz);
-    
-//     double _tilt=(_iy*TILT_COS + _iz*TILT_SIN)*TILT_ANGLE_TAN;
-//     _ix+=_tilt;
-    double barrier = d_user_param[1] * exp(-1.0*(_ix)*(_ix) * d_user_param[2]);
-   
-    return trap + barrier -_ix*d_user_param[3];
-           
+    return trap;
 }
 
 /**
@@ -311,18 +110,7 @@ inline __device__  double gpe_EDF(double rho, uint it)
 {
     // Density energy functional for unitary Fermi gas
     // see: Phys. Rev. A 90, 043638 (2014)
-    return 0.46*0.6*rho*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.; // unitary limit
-    
-//     // Density energy functional for fermionic cold atoms
-//     // see: Phys. Rev. Lett. 112, 025301 (2014)
-//     double a = d_user_param[10]; // scattering length
-//     #define XI 0.37
-//     #define CONTACT 0.901
-//     double kF=pow(3.0*M_PI*M_PI*rho , 1.0/3.0);
-//     if(kF<1.0e-12) return 0.0;
-//     double eF=0.5*kF*kF;
-//     double x=1.0/(a*kF);
-//     return 0.6*eF*rho*XI*(XI+x) / ( XI + x*(1.0+CONTACT) + 3.0*M_PI*XI*x*x ) - rho/(2.0*a*a);
+    return 0.37*0.6*rho*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.; // unitary limit
 }
 
 /**
@@ -334,17 +122,7 @@ inline __device__  double gpe_EDF(double rho, uint it)
 inline __device__  double gpe_dEDFdn(double rho, uint it)
 {
     // see: Phys. Rev. A 90, 043638 (2014)
-    return 0.46*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.0; // unitary limit
-    
-//     // Density energy functional for fermionic cold atoms
-//     // see: Phys. Rev. Lett. 112, 025301 (2014)
-//     double a = d_user_param[10]; // scattering length
-//     double kF=pow(3.0*M_PI*M_PI*rho , 1.0/3.0);
-//     if(kF<1.0e-12) return 0.0;
-//     double eF=0.5*kF*kF;
-//     double x=1.0/(a*kF);
-//     double D = ( XI + x*(1.0+CONTACT) + 3.0*M_PI*XI*x*x);
-//     return XI*eF*(XI+0.8*x)/D + 0.2*XI*eF*(XI+x)*x*( (1.0+CONTACT)+6.0*M_PI*XI*x )/(D*D) - 1.0/(2.0*a*a);
+    return 0.37*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.0; // unitary limit
 }
 
 
