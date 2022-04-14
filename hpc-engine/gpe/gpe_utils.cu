@@ -242,9 +242,9 @@ extern "C" int gpe_imag()
     
     // Prepare user defined parameters
     double params[3];
-    params[0] = 1.0;  // omega_x
-    params[1] = 10.0; // omega_y
-    params[2] = 11.0; // omega_z
+    params[0] = 0.01; // omega_x
+    params[1] = 0.10; // omega_y
+    params[2] = 0.11; // omega_z
     
     // Copy parameters to engine
     gpe_exec( gpe_set_user_params(3, params), ierr );
