@@ -23,19 +23,15 @@ void help_msg(char *prog_name)
 /***************************************************************************/
 int main( int argc , char ** argv ) 
 {
-    int err = 0;
+    int err = 0, type = -1;
     const char *imag = "imag";
     const char *real = "real";
     if(argc != 2) help_msg(argv[0]);
 
-    if(0 == strcmp(imag, argv[1])) {
-        err=gpe_imag();
-    }
-    else if(0 == strcmp(real, argv[1])) {
-        err=gpe_real();
-    }
-    else {
-        help_msg(argv[0]);
-    } 
+    if(0 == strcmp(imag, argv[1])) type = 0;
+    else if(0 == strcmp(real, argv[1])) type = 1;
+    else help_msg(argv[0]);
+
+    err=gpe_compute(type);
     return err;
 }

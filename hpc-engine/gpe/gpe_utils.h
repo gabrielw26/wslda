@@ -1,8 +1,7 @@
 #ifndef __GPE_UTILS__
 #define __GPE_UTILS__
 
-int gpe_real();
-int gpe_imag();
+int gpe_compute(int type);
 
 // TO MAKE COMPATIBILE WITH WSLDA TOOLKIT
 #ifndef TDWSLDA
