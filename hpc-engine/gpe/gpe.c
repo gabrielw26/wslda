@@ -5,18 +5,16 @@
 /***************************************************************************/ 
 /**************************** GPE HEADERS **********************************/
 /***************************************************************************/
-//#include "gpe_engine.h"
 #include "predefines.h"
 #include "gpe_utils.h"
-//#include "pca_utils.h"
-//#include "wslda_toolkit.h"
-// -> include "pca_utils.h", "gpe_user_defined.h"
-//extern int wsldapid;
 int wsldapid;
 
-void help_msg()
+/***************************************************************************/ 
+/***************************** FUNCTIONS ***********************************/
+/***************************************************************************/
+void help_msg(char *prog_name)
 {
-    printf("Not correct arguments. Try: \n./gpe real\n./gpe imag\n");
+    printf("Not correct arguments. Try: \n%s real\n%s imag\n", prog_name, prog_name);
     exit(1);
 }
 
@@ -26,10 +24,9 @@ void help_msg()
 int main( int argc , char ** argv ) 
 {
     int err = 0;
-    char *program_type;
     const char *imag = "imag";
     const char *real = "real";
-    if(argc != 2) help_msg();
+    if(argc != 2) help_msg(argv[0]);
 
     if(0 == strcmp(imag, argv[1])) {
         err=gpe_imag();
@@ -38,7 +35,7 @@ int main( int argc , char ** argv )
         err=gpe_real();
     }
     else {
-        help_msg();
+        help_msg(argv[0]);
     } 
     return err;
 }

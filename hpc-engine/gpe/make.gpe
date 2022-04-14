@@ -37,11 +37,10 @@ WINTERPDEPS = winterp.h
 
 # SOURCE FILES
 DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
+POTENTIALSSRC=get_ext_potentials.cu
 ENGINESRC=gpe_engine.cu 
 UTILSSRC=gpe_utils.cu
-IMAGSRC=gpe_imag.cu
-REALSRC=gpe_real.c
-POTENTIALSSRC=get_ext_potentials.cu
+GPESRC=gpe.c
 
 # OBJECT FILES
 WDATALIB = wdata.o
@@ -69,11 +68,8 @@ UTILSSRC := $(addprefix $(SRCDIR),$(UTILSSRC))
 POTENTIALSOBJ := $(addprefix $(OBJDIR),$(POTENTIALSSRC:.cu=.o))
 POTENTIALSSRC := $(addprefix $(SRCDIR),$(POTENTIALSSRC))
 
-IMAGOBJ := $(addprefix $(OBJDIR),$(IMAGSRC:.cu=.o))
-IMAGSRC := $(addprefix $(SRCDIR),$(IMAGSRC))
-
-REALOBJ := $(addprefix $(OBJDIR),$(REALSRC:.c=.o))
-REALSRC := $(addprefix $(SRCDIR),$(REALSRC))
+GPEOBJ := $(addprefix $(OBJDIR),$(GPESRC:.c=.o))
+GPESRC := $(addprefix $(SRCDIR),$(GPESRC))
 
 ## WDATA
 WDATADEPS := $(addprefix $(WDATAINC),$(WDATADEPS))
@@ -88,37 +84,16 @@ WINTERPDEPS := $(addprefix $(WINTERPINC),$(WINTERPDEPS))
 WINTERPOBJS := $(addprefix $(OBJDIR),$(WINTERPLIB:.c=.o))
 WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 
-# PYTHON
-ifeq ($(strip $(PYTHON)),)
-PYTHON=python
-endif
-
 # MAKE
-all: imag real
-
-imag: core dimag
-
-real: core dreal
+all: core gpe
 
 core: dirs engine utils potentials
 
-#dimag: $(IMAGSRCS)
-#	$(NVCC) -c $(IMAGSRC) $(NVCCFLAGS) -o $(OBJDIR)gpe_imag.o -I$(PROJDIR) -I$(INCLUDEDIR) -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used" $(PARAMS)
-#	ld -relocatable $(OBJDIR)gpe_imag.o $(OBJDIR)pca_utils.o -o $(OBJDIR)gpe_merged_imag.o
-#	$(NVCC) $(OBJDIR)gpe_merged_imag.o $(OBJDIR)gpe_engine.o -o $(BINDIR)gpe_imag $(LIBS)
-
-dimag: $(IMAGOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(POTENTIALSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
+gpe: $(GPEOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(POTENTIALSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
-	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe_imag
-
-$(IMAGOBJ): $(IMAGSRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine.h
-	$(NVCC) $(NVCCFLAGS) -c -o $@ $< $(LIBS) -lcudadevrt -lcudart
-
-dreal: $(REALOBJ) $(ENGINEOBJ) $(UTILSOBJ) $(POTENTIALSOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
-	cat $(WSLDADIR)VERSION.h
-	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe_real 
+	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe 
 	
-$(REALOBJ): $(REALSRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine.h
+$(GPEOBJ): $(GPESRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine.h
 	$(CXX) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL)
@@ -152,8 +127,7 @@ dirs:
 
 clean:
 	rm -f $(OBJDIR)*.o
-	rm -f $(BINDIR)gpe_real
-	rm -f $(BINDIR)gpe_imag
+	rm -f $(BINDIR)gpe
 
 ver:
 	$(NVCC) --version
