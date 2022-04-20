@@ -111,7 +111,11 @@ alpha_parameter_d0 (double _x)
   b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
+#ifdef SLDAE_FORCE_A1
+  return 1.;
+#else
   return 1. + pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
+#endif 
 }
 
 FDECORATOR double
@@ -126,7 +130,12 @@ alpha_parameter_d1 (double _x)
   b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
+  
+#ifdef SLDAE_FORCE_A1
+  return 0.;
+#else
   return pade_d1 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
+#endif 
 }
 
 FDECORATOR double
@@ -141,7 +150,12 @@ alpha_parameter_d2 (double _x)
   b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
+  
+#ifdef SLDAE_FORCE_A1
+  return 0.;
+#else
   return pade_d2 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
+#endif 
 }
 
 // \partial_n \beta_x = \partial_n [b_x + \zeta_x + \eta_x^2 / c_x]
@@ -149,16 +163,16 @@ FDECORATOR double
 beta_parameter_d0 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 1.61463;                      // +/- 0.03887      (2.407%)
-  b1 = 31.2584;                      // +/- 9.376        (29.99%)
-  a2 = 42.5454;                      // +/- 13.18        (30.97%)
-  b2 = 23.7481;                      // +/- 7.214        (30.38%)
-  a3 = 3.85825;                      // +/- 1.08         (27.99%)
-  b3 = 25.1379;                      // +/- 7.611        (30.28%)
-  c  = 6.2833 ;                      // +/- 1.934        (30.79%)
+  
+  a1 = SLDAE_beta_a1 ; 
+  b1 = SLDAE_beta_b1 ; 
+  a2 = SLDAE_beta_a2 ; 
+  b2 = SLDAE_beta_b2 ; 
+  a3 = SLDAE_beta_a3 ; 
+  b3 = SLDAE_beta_b3 ; 
+  c  = SLDAE_beta_c ; 
   a4 = c; b4 = c;
+  
   return BF_APS_UFG * pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
 
@@ -166,15 +180,14 @@ FDECORATOR double
 beta_parameter_d1 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 1.61463;                      // +/- 0.03887      (2.407%)
-  b1 = 31.2584;                      // +/- 9.376        (29.99%)
-  a2 = 42.5454;                      // +/- 13.18        (30.97%)
-  b2 = 23.7481;                      // +/- 7.214        (30.38%)
-  a3 = 3.85825;                      // +/- 1.08         (27.99%)
-  b3 = 25.1379;                      // +/- 7.611        (30.28%)
-  c  = 6.2833 ;                      // +/- 1.934        (30.79%)
+  
+  a1 = SLDAE_beta_a1 ; 
+  b1 = SLDAE_beta_b1 ; 
+  a2 = SLDAE_beta_a2 ; 
+  b2 = SLDAE_beta_b2 ; 
+  a3 = SLDAE_beta_a3 ; 
+  b3 = SLDAE_beta_b3 ; 
+  c  = SLDAE_beta_c ; 
   a4 = c; b4 = c;
   return BF_APS_UFG * pade_d1 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
@@ -183,15 +196,14 @@ FDECORATOR double
 beta_parameter_d2 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 1.61463;                      // +/- 0.03887      (2.407%)
-  b1 = 31.2584;                      // +/- 9.376        (29.99%)
-  a2 = 42.5454;                      // +/- 13.18        (30.97%)
-  b2 = 23.7481;                      // +/- 7.214        (30.38%)
-  a3 = 3.85825;                      // +/- 1.08         (27.99%)
-  b3 = 25.1379;                      // +/- 7.611        (30.28%)
-  c  = 6.2833 ;                      // +/- 1.934        (30.79%)
+
+  a1 = SLDAE_beta_a1 ; 
+  b1 = SLDAE_beta_b1 ; 
+  a2 = SLDAE_beta_a2 ; 
+  b2 = SLDAE_beta_b2 ; 
+  a3 = SLDAE_beta_a3 ; 
+  b3 = SLDAE_beta_b3 ; 
+  c  = SLDAE_beta_c ; 
   a4 = c; b4 = c;
   return BF_APS_UFG * pade_d2 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
@@ -201,16 +213,16 @@ FDECORATOR double
 inverse_gamma_parameter_d0 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 6.15853  ;                    // +/- 0.01528      (0.2482%)
-  b1 = 1.48431  ;                    // +/- 0.01418      (0.9551%)
-  a2 = 0.156722 ;                    // +/- 0.04688      (29.91%)
-  b2 = 2.07468  ;                    // +/- 0.03981      (1.919%)
-  a3 = 0.76668  ;                    // +/- 0.02634      (3.436%)
-  b3 = 0.737836 ;                    // +/- 0.02402      (3.255%)
-  c  = 0.0823379;                    // +/- 0.006872     (8.346%)
+
+  a1 = SLDAE_inverse_gamma_a1 ;
+  b1 = SLDAE_inverse_gamma_b1 ;
+  a2 = SLDAE_inverse_gamma_a2 ;
+  b2 = SLDAE_inverse_gamma_b2 ;
+  a3 = SLDAE_inverse_gamma_a3 ;
+  b3 = SLDAE_inverse_gamma_b3 ;
+  c  = SLDAE_inverse_gamma_c  ;
   a4 = c; b4 = c;
+  
   return (1. / CF_APS_UFG) * pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
 
@@ -218,15 +230,14 @@ FDECORATOR double
 inverse_gamma_parameter_d1 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 6.15853  ;                    // +/- 0.01528      (0.2482%)
-  b1 = 1.48431  ;                    // +/- 0.01418      (0.9551%)
-  a2 = 0.156722 ;                    // +/- 0.04688      (29.91%)
-  b2 = 2.07468  ;                    // +/- 0.03981      (1.919%)
-  a3 = 0.76668  ;                    // +/- 0.02634      (3.436%)
-  b3 = 0.737836 ;                    // +/- 0.02402      (3.255%)
-  c  = 0.0823379;                    // +/- 0.006872     (8.346%)
+
+  a1 = SLDAE_inverse_gamma_a1 ;
+  b1 = SLDAE_inverse_gamma_b1 ;
+  a2 = SLDAE_inverse_gamma_a2 ;
+  b2 = SLDAE_inverse_gamma_b2 ;
+  a3 = SLDAE_inverse_gamma_a3 ;
+  b3 = SLDAE_inverse_gamma_b3 ;
+  c  = SLDAE_inverse_gamma_c  ;
   a4 = c; b4 = c;
   return (1. / CF_APS_UFG) * pade_d1 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
@@ -235,15 +246,14 @@ FDECORATOR double
 inverse_gamma_parameter_d2 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 6.15853  ;                    // +/- 0.01528      (0.2482%)
-  b1 = 1.48431  ;                    // +/- 0.01418      (0.9551%)
-  a2 = 0.156722 ;                    // +/- 0.04688      (29.91%)
-  b2 = 2.07468  ;                    // +/- 0.03981      (1.919%)
-  a3 = 0.76668  ;                    // +/- 0.02634      (3.436%)
-  b3 = 0.737836 ;                    // +/- 0.02402      (3.255%)
-  c  = 0.0823379;                    // +/- 0.006872     (8.346%)
+
+  a1 = SLDAE_inverse_gamma_a1 ;
+  b1 = SLDAE_inverse_gamma_b1 ;
+  a2 = SLDAE_inverse_gamma_a2 ;
+  b2 = SLDAE_inverse_gamma_b2 ;
+  a3 = SLDAE_inverse_gamma_a3 ;
+  b3 = SLDAE_inverse_gamma_b3 ;
+  c  = SLDAE_inverse_gamma_c  ;
   a4 = c; b4 = c;
   return (1. / CF_APS_UFG) * pade_d2 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
@@ -262,16 +272,24 @@ inverse_gamma_parameter_d2 (double _x)
 // functional parameter A, B, and C                      [! DO NOT MODIFY >>>]
 // ------------------------------------------------------[! DO NOT MODIFY >>>]
 
-// A_x = \sum_n (-x)^n (3!/(3+n)!) \partial_n \alpha_x
+// A_x = alpha_x
 FDECORATOR double
 a_functional_d0 (double _x)
 {
-  double d_ = 3.;
-  double r_ = 0.;
-  r_ += alpha_parameter_d0 (_x);
-  r_ += (-_x) * alpha_parameter_d1 (_x) * tgamma (d_ + 1.) / tgamma (d_ + 1. + 1.);
-  r_ += pow(-_x, 2) * alpha_parameter_d2 (_x) * tgamma (d_ + 1.) / tgamma (d_ + 1. + 2.);
-  return r_;
+  double a1, a2, a3, a4, b1, b2, b3, b4, c;
+  a1 = 0.00000000; // = 0.;
+  a2 = -0.2081560; // = U_APS * (A_APS + B_APS * U_APS);
+  a3 = -0.1358830; // = U_APS * (2. * A_APS * V_APS + B_APS * U_APS * V_APS);
+  a4 = -0.0162071; // = A_APS * U_APS * (pow(U_APS, 2) + pow(V_APS, 2));
+  b1 = 2.09838000; // = 4. * V_APS;
+  b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
+  b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
+  b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
+#ifdef SLDAE_FORCE_A1
+  return 1.;
+#else
+  return 1. + pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
+#endif 
 }
 
 // B_x = \sum_n (-x)^n (5!/(5+n)!) \partial_n \beta_x
@@ -279,15 +297,14 @@ FDECORATOR double
 b_functional_d0 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 1.30703;                      // +/- 0.009127     (0.6983%)
-  b1 = 10.1728;                      // +/- 1.253        (12.32%)
-  a2 = 10.6772;                      // +/- 1.437        (13.46%)
-  b2 = 6.15932;                      // +/- 0.7924       (12.87%)
-  a3 = 1.02277;                      // +/- 0.1118       (10.93%)
-  b3 = 5.37162;                      // +/- 0.682        (12.7%)
-  c  = 1.07145;                      // +/- 0.1414       (13.2%)
+
+  a1 = SLDAE_b_functional_a1 ;
+  b1 = SLDAE_b_functional_b1 ;
+  a2 = SLDAE_b_functional_a2 ;
+  b2 = SLDAE_b_functional_b2 ;
+  a3 = SLDAE_b_functional_a3 ;
+  b3 = SLDAE_b_functional_b3 ; 
+  c  = SLDAE_b_functional_c  ; 
   a4 = c; b4 = c;
   return BF_APS_UFG * pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }
@@ -297,15 +314,14 @@ FDECORATOR double
 c_functional_d0 (double _x)
 {
   double a1, a2, a3, a4, b1, b2, b3, b4, c;
-  //Final set of parameters            Asymptotic Standard Error
-  //=======================            ==========================
-  a1 = 0.267952 ;                    // +/- 0.0001541    (0.05752%)
-  b1 = 2.61695  ;                    // +/- 0.02719      (1.039%)
-  a2 = 0.754923 ;                    // +/- 0.008709     (1.154%)
-  b2 = 2.71855  ;                    // +/- 0.0254       (0.9345%)
-  a3 = 0.330699 ;                    // +/- 0.002623     (0.7931%)
-  b3 = 0.550587 ;                    // +/- 0.004768     (0.866%)
-  c  = 0.0900897;                    // +/- 0.0008812    (0.9781%)
+
+  a1 = SLDAE_c_functional_a1 ; 
+  b1 = SLDAE_c_functional_b1 ; 
+  a2 = SLDAE_c_functional_a2 ;
+  b2 = SLDAE_c_functional_b2 ;
+  a3 = SLDAE_c_functional_a3 ;
+  b3 = SLDAE_c_functional_b3 ;
+  c  = SLDAE_c_functional_c  ;
   a4 = c; b4 = c;
   return CF_APS_UFG * pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
 }

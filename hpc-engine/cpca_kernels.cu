@@ -367,7 +367,7 @@ __global__ void kernel_compute_energy_delta_ext(int it,
         ixy2ixiy2d(ixyz,ix,iy); // decode cartesian coordinates
 
         // External potential energy
-        E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, 0, it, delta[ixyz])).real()*(-1.0)*DXYZ*NZ;
+        E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, 0, it, delta[ixyz])).real()*(-2.0)*DXYZ*NZ;
     }
 }
 

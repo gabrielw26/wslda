@@ -15,15 +15,20 @@ st-uniform-aslda-heevr
 st-uniform-slda-elpa1-cpu
 st-uniform-bdg-elpa1-cpu
 st-uniform-sldae-elpa1-cpu
+st-uniform-sldae-a1-elpa1-cpu
 
 # -> test convergenge of sc loop
 st-uniform-aslda-sc
 st-uniform-slda-sc
 st-uniform-bdg-sc
 st-uniform-sldae-sc
+st-uniform-sldae-a1-sc
 
 # -> checkpoint/restart
 st-checkpoint
+
+# -> HF mode
+st-ffg-ho
 
 # ----- td-wslda ------
 # -> test functionals (spherical/cubic cutoff)
@@ -31,12 +36,15 @@ td-uniform-aslda
 td-uniform-slda
 td-uniform-bdg
 td-uniform-sldae
+td-uniform-sldae-a1
 
 # -> test nonuniform case
 td-gauss-bdg
 td-gauss-slda
 td-gauss-aslda
 td-gauss-sldae
+td-gauss-sldae-a1
+td-gauss-aslda-np
 
 # -> test quantum friction algorithm
 td-quantum-friction

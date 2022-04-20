@@ -110,6 +110,7 @@ void print_rmatrix( char* desc, int m, int n, double complex* a, int lda ) {
 }
 
 void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data);
+double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
@@ -151,7 +152,6 @@ double aBdG;
 
 #define printf wprintf
 #include "logger.h"
-#undef printf
 
 typedef char * string;
 
@@ -273,30 +273,8 @@ int main( int argc , char ** argv )
         assure_reproducibility(md.outprefix);
     }
 
-#if CODEDIM==1
-    if(iam==0) wprintf("# CODE: ST-WSLDA-1D\n");
-#else
-    if(iam==0) wprintf("# CODE: ST-WSLDA-2D\n");
-#endif
-    if(iam==0) wprintf("# VERSION: %s\n", VERSION);
-
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-    if(iam==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    if(iam==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
-
-#ifdef USE_SCALAPACK_PZHEEVR
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
-#endif
-#ifdef USE_SCALAPACK_PZHEEVD
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
-#endif
-#ifdef USE_SCALAPACK_PZHEEV
-    if(iam==0) wprintf("# USING SCALAPACK WITH PZHEEV.\n");
-#endif
-#ifdef USE_ELPA
-    if(iam==0) wprintf("# USING ELPA.\n");
-#endif
 
 #if FUNCTIONAL==BDG
     aBdG = md.aBdG; // copy to global momeory
@@ -325,18 +303,12 @@ int main( int argc , char ** argv )
     }
 #endif
 
-#if FUNCTIONAL==BDG
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
-#elif FUNCTIONAL==SLDA
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
-#elif FUNCTIONAL==ASLDA
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
-#elif FUNCTIONAL==SLDAE
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
-#elif FUNCTIONAL==CUSTOMEDF
-    if(iam==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n");
+#if CODEDIM==1
+    if(iam==0) print_version("-1D");
+#else
+    if(iam==0) print_version("-2D");
 #endif
-
+    
 #ifdef SPINSYMMETRY_MODE
     md.spinsymmetry=1; // force spin symmetry mode
 #endif
@@ -897,8 +869,7 @@ int main( int argc , char ** argv )
     eF = 0.5*kF*kF;
     Effg = 0.6 * (md.Na+md.Nb) * eF;
     beta = 1.0 / (md.temperature * eF);
-    if(md.ec>0.0) dc_ec = md.ec;
-    else          dc_ec = M_PI*M_PI/(2.*DX*DX);
+    dc_ec = md.ec;
 #endif
 
     mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
@@ -1114,14 +1085,7 @@ int main( int argc , char ** argv )
         S_old=S; S=0.0; // save value of entropy and reset buffer
         dc_mu_a_old = dc_mu_a; dc_mu_b_old = dc_mu_b;
 
-        // take density in the center and use it for definition of the kF (for SPINA)
-        if(md.referencekF>0.0) kF = md.referencekF;
-        else
-        {
-            double _max_dens=0.0;
-            for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) if(densall.rho_a[ixyz]+densall.rho_b[ixyz]>_max_dens) _max_dens=densall.rho_a[ixyz]+densall.rho_b[ixyz];
-            kF = pow(3.*M_PI*M_PI*_max_dens,1./3.);
-        }
+        kF=referencekF(it, densall, dc_params, extra_data_size, extra_data);
 #ifndef UNIFORM_TEST_MODE
         eF = 0.5 * kF * kF;
         beta = 1.0 / (md.temperature * eF);
@@ -1479,9 +1443,7 @@ int main( int argc , char ** argv )
         // ------------------ compute new potentials ------------------
         b_t();
         cpu_exec( compute_potentials(it, densall, potsall) );
-#if FUNCTIONAL==SLDAE
-        MPI_Allreduce( MPI_IN_PLACE, h_potentials, POTDIM, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
@@ -1500,19 +1462,19 @@ int main( int argc , char ** argv )
         i=0; // as flag for broyden
         if(it>0 && saving_iteration==0) // skip updating the potential if it is saving iteration
         {
-            double muchange_a = md.muchange*(npart[SPINA] - md.Na)/md.Na;
-            double muchange_b = md.muchange*(npart[SPINB] - md.Nb)/md.Nb;
+            double muchange_a = md.muchange_a*(npart[SPINA] - md.Na)/MAX(md.Na,1.0);
+            double muchange_b = md.muchange_b*(npart[SPINB] - md.Nb)/MAX(md.Nb,1.0);
 
-            if(fabs(muchange_a)>md.mumaxchange*eF)
+            if(fabs(muchange_a)>md.mumaxchange_a*eF)
             {
-                if(muchange_a>0.0) muchange_a=     md.mumaxchange*eF;
-                else               muchange_a=-1.0*md.mumaxchange*eF;
+                if(muchange_a>0.0) muchange_a=     md.mumaxchange_a*eF;
+                else               muchange_a=-1.0*md.mumaxchange_a*eF;
                 i=1; // deactivate broyden
             }
-            if(fabs(muchange_b)>md.mumaxchange*eF)
+            if(fabs(muchange_b)>md.mumaxchange_b*eF)
             {
-                if(muchange_b>0.0) muchange_b=     md.mumaxchange*eF;
-                else               muchange_b=-1.0*md.mumaxchange*eF;
+                if(muchange_b>0.0) muchange_b=     md.mumaxchange_b*eF;
+                else               muchange_b=-1.0*md.mumaxchange_b*eF;
                 i=1; // deactivate broyden
             }
             dc_mu_a -= muchange_a;
@@ -1562,11 +1524,11 @@ int main( int argc , char ** argv )
         	update_mu(dens_in, dens_out, h_solution_old, h_solution, md.Mbroyden, SOLDIM, dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old);
         	Broyden_mu(h_solution, dens_in, dens_out, md.Mbroyden, SOLDIM+2, omega_0, omega_n, omega_k, md.broydenmixing, &dc_mu_a, &dc_mu_b);
 
-            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange*eF;
-            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange*eF;
+            if     (dc_mu_a-dc_mu_a_old>md.mumaxchange_a*eF) dc_mu_a = dc_mu_a_old+md.mumaxchange_a*eF;
+            else if(dc_mu_a_old-dc_mu_a>md.mumaxchange_a*eF) dc_mu_a = dc_mu_a_old-md.mumaxchange_a*eF;
 
-            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange*eF;
-            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange*eF;
+            if     (dc_mu_b-dc_mu_b_old>md.mumaxchange_b*eF) dc_mu_b = dc_mu_b_old+md.mumaxchange_b*eF;
+            else if(dc_mu_b_old-dc_mu_b>md.mumaxchange_b*eF) dc_mu_b = dc_mu_b_old-md.mumaxchange_b*eF;
 
             if(md.spinsymmetry==1) dc_mu_b=dc_mu_a; // activate constraint
 
@@ -1621,11 +1583,11 @@ int main( int argc , char ** argv )
         is_converged=1;
         if(iam==0) wprintf("# CONVERGENCE REPORT PARTICLE NUMBER: it=%d\n", it);
         nparttest=fabs(npart[SPINA]-md.Na)/(md.Na+md.Nb);
-        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(nparttest>md.npartconveps_a) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINA", npart[SPINA], npart_old[SPINA], (npart[SPINA]-npart_old[SPINA]), convstatus[is_converged_local], nparttest);
         nparttest=fabs(npart[SPINB]-md.Nb)/(md.Na+md.Nb);
-        if(nparttest>md.npartconveps) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
+        if(nparttest>md.npartconveps_b) {is_converged=0; is_converged_local=0;} else {is_converged_local=1;}
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
 

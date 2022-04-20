@@ -40,7 +40,6 @@ int wsldapnp; // total number of processes - global variable
 #include "tdwslda_static_vars.h"
 #define printf wprintf
 #include "logger.h"
-#undef printf
 
 
 int main( int argc , char ** argv ) 
@@ -177,8 +176,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
     
-    if(ip==0) wprintf("# CODE: TD-WSLDA-2D\n"); fflush(stdout);
-    if(ip==0) wprintf("# VERSION: %s\n", VERSION); fflush(stdout);
+    if(ip==0) print_version("-2D");
     
     // variables
     dt= md.dt ;
@@ -229,20 +227,6 @@ int main( int argc , char ** argv )
     wprintf("# PROCESS ip=%d RUNNING ON NODE %s USES device-id=%d\n", ip, processor_name, deviceId);
 #endif
     gpu_exec( set_gpu(deviceId) );
-        
-    if(ip==0) wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
-    if(ip==0) wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
-#if FUNCTIONAL==BDG
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
-#elif FUNCTIONAL==SLDA    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
-#elif FUNCTIONAL==ASLDA    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
-#elif FUNCTIONAL==SLDAE
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
-#elif FUNCTIONAL==CUSTOMEDF    
-    if(ip==0) wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n"); 
-#endif
     fflush(stdout);
     
     // ====================================================================================
@@ -834,6 +818,10 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)4*NXY*sizeof(double)) );     
     // densities - they are in h_densities
     double N_tot_init = h_energy[NPARTA]+h_energy[NPARTB]; // save initial value of particle number
+    energy_tot = 0.0;
+    for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+    init_conservation_of_quantity(0, N_tot_init);
+    init_conservation_of_quantity(1, energy_tot);
 #ifndef UNIFORM_TEST_MODE
     if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
 #endif
@@ -1427,6 +1415,27 @@ int main( int argc , char ** argv )
             if(i_meas==md.measurements-1) forceCP=3;
         }
         
+        // Check if simulation is stable
+        time=t0+it*dt;
+        if( monitor_conservation_of_quantity(0, time*eF, h_energy[NPARTA]+h_energy[NPARTB], 
+                                             md.Nconservation_start, md.Nconservation_stop, md.Nconservation_tol) ==1 )
+        {
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR PARTICLE NUMBER!!!\n");
+            if(ip==0) print_conservation_of_quantity(0, h_energy[NPARTA]+h_energy[NPARTB], md.Nconservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
+            forceCP=1;
+        }
+        energy_tot = 0.0;
+        for(i=0;i<=EVELEXT;i++) energy_tot+=h_energy[i];
+        if( monitor_conservation_of_quantity(1, time*eF, energy_tot, 
+                                             md.Econservation_start, md.Econservation_stop, md.Econservation_tol) ==1 )
+        {
+            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET FOR ENERGY!!!\n");
+            if(ip==0) print_conservation_of_quantity(1, energy_tot, md.Econservation_tol);
+            if(ip==0) wprintf("# !!! BREAKING !!!\n");
+            forceCP=1;
+        }
+        
         // checkpoint
         if (md.checkpoint && forceCP>0)
         {
@@ -1471,13 +1480,6 @@ int main( int argc , char ** argv )
         }
         
         if(forceCP==1) break; // if emergency checkpoint then terminate
-        
-        // Check if siulation is stable
-        if( fabs( (h_energy[NPARTA]+h_energy[NPARTB]-N_tot_init)/N_tot_init )>N_STABILITY_CRITERIA )
-        {
-            if(ip==0) wprintf("# SIMULATION INSTABILITY CRITERIA MET!!! BREAKING!!!\n"); fflush(stdout);
-            break;
-        }
         
         fflush(stdout); // clear output
     } 

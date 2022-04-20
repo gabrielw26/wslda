@@ -48,15 +48,16 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
 # gpuspernode             1        # number of GPUs per node (resource set), default=GPUS_PER_NODE (in machine.h)
 
-# --------------------- OTHER -----------------
-# spinsymmetry            0       # !!! IGNORE HERE, set in predefines.h !!!
-                                  # NOTE: This flag is controlled via predefines.h !
-                                  #       Select SPINSYMMETRY_MODE to run with spinsymmetry==1,
-                                  #       otherwise it is assumes spinsymmetry==0
-# current corrections
-# ccstart                 0.
-# ccswitch                10.
-# ccstop                  1000.
+# ---------------- CONSERVATION LAWS -----------------
+# See: Wiki -> Monitoring of conservation laws
+# # -> Energy conservation monitoring
+# Econservation_start       0        # Start to monitor energy conservation from time*eF, default=1e12 (infinity)
+# Econservation_stop        10000    # Stop to monitor energy conservation at time*eF, default=1e12 (infinity)
+# Econservation_tol         0.05     # if |[E(t)-E(start_t)]/E(start_t)|>tol then the code will terminate, default=0.05
+# # -> Particle number conservation monitoring
+# Nconservation_start       0        # Start to monitor total particle number conservation from time*eF, default=0
+# Nconservation_stop        10000    # Stop to monitor total particle number conservation at time*eF, default=1e12 (infinity)
+# Nconservation_tol         0.05     # if |[N(t)-N(start_t)]/N(start_t)|>tol then the code will terminate, default=0.05
 
 # --------------- QUANTUM FRICTION ------------------
 # See: Wiki -> Quantum friction
@@ -75,8 +76,8 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver
-init0Na                 28. # will be ignored for UNIFORM_TEST_MODE
-init0Nb                 28. # will be ignored for UNIFORM_TEST_MODE
+init0Na                 28.0   # requested number of particles of type a, default=Na
+init0Nb                 28.0   # requested number of particles of type b, default=Nb
 init0muchange           0.1   # Change rate of chemical potential
 init0Tstart             0.05  # Start temperature, in units of eF, default 0.2
 init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
@@ -84,5 +85,6 @@ init0DeltaT             0.01  # change of temperature in units of eF, default 0.
 init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
 init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
 init0maxiter            20000 # maximum number of iterations, default 100000
+# init0kc                 3.1415 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
 init0debug              1     # debug level, default=0 (no debug info),
 init0save               1     # save solution

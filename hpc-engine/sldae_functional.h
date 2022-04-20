@@ -52,12 +52,16 @@
 #define X_APS ((9. * M_PI * pow(U_APS, 2)) / (7. * U_APS * V_APS) * ((5. * U_APS * W_APS) / (9. * M_PI * pow(U_APS, 2)) - (pow(U_APS, 2) + pow(V_APS, 2)) / U_APS * (IEM_UFG - 1.)))
 #define A_APS ((5. * U_APS * W_APS - 7. * X_APS * U_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
 #define B_APS ((2. * W_APS + 7. * X_APS * V_APS) / (9. * M_PI * pow(U_APS, 2)))
-// ---------------------------------------------------------------------------
-// fixed at x = 1e9
-#define AF_APS_UFG (0.8403360)
-#define BF_APS_UFG (-0.281863)
-#define CF_APS_UFG (-14.95950)
-// ---------------------------------------------------------------------------
+
+#include "pca_settings.h"
+// Select coefficients
+#ifdef SLDAE_FORCE_A1
+#include "sldae_parameters_A1.h"
+#else
+// default one
+#include "sldae_parameters.h"
+#endif 
+
 // physical quantites
 FDECORATOR double ground_state_energy_d0 (double _x);
 FDECORATOR double chemical_potential_d0 (double _x);

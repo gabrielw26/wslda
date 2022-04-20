@@ -22,26 +22,34 @@
  *  - SLDAE:
  *      for simulating Fermi gas for an arbitrary value of akF,
  *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
+ *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
+ *      It sets effective mass=1, which renders the current dependence of the functional. 
+ *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
- *      you MUST set aBdG value in input file when using this functional 
  *  - CUSTOMEDF:
  *      use this option to define your custom functional,
  *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
  *      in problem-definition.h file
  * */
-// #define FUNCTIONAL SLDA
-#define FUNCTIONAL ASLDA
+#define FUNCTIONAL SLDA
+// #define FUNCTIONAL ASLDA
 // #define FUNCTIONAL SLDAE
 // #define FUNCTIONAL BDG
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
+ * Meaningful only in case SLDAE.
+ * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
+ * */
+// #define SLDAE_FORCE_A1
+
+/**
  * activate this if you know that Hamiltonian matrix is real, 
  * the code will utilize it in order to speed-up the calculations by factor 4x (approximately)
  * */
-// #define MATRIX_IS_REAL
+// #define HAMILTONIAN_IS_REAL
 
 /**
  * Scheme of pairing field renormalization procedure. 
@@ -65,7 +73,7 @@
 #define DENSEPSILON 1.0e-8
 
 /**
- * Meaningful only in case of ASLDA.
+ * Meaningful only in case of ASLDA and SLDAE.
  * Parameters defining stabilization procedure of ASLDA functional. 
  * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
  * contribution from current term j^2/2n is assumed to be zero. 
@@ -87,6 +95,12 @@
  *   export WSLDA_MACHINE=...
  **/ 
 #include "machine.h"
+
+/**
+ * Files: predefines.h, problem-definition.h, logger.h are assumed to be compatible with this API version
+ * For list of API versions see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/API-version
+ * */
+#define API_VERSION 20220221
 
 /**
  * activate this flag for setting code in testing mode with uniform system

@@ -35,19 +35,19 @@ sclgth    -1.0 # scattering length in units of lattice spacing
                # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
 #referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
 
-# -------------------- SLDAE PARAMS -------------------
-# Note: SLDAE works only for spinsymmetry = 1
-# pccrSLDAe               0       # pairing coupling constant renormalization scheme
-                                # 0: in-medium (default)
-                                # 1: in-vacuum (Bulgac et al.)
-
 # ----------------- SELF-CONSISTENT LOOP -----------------
-# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*(pi/DX)^2
-energyconveps           1.0e-6   # energy convergence epsilon
-npartconveps            1.0e-6   # number of particles convergence epsilon
+# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
+energyconveps           1.0e-6   # energy convergence epsilon, default=1.0e-6
+npartconveps            1.0e-6   # number of particles convergence epsilon, default=1.0e-6, for both components
+# npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
+# npartconveps_b          1.0e-6   # ... and `b` suffixes. 
 linearmixing            0.5      # mixing parameter (alpha) for linear mixing, default=0.5
-muchange                0.5      # coefficient for changing chemical potential, default=0.5
+muchange                0.5      # coefficient for changing chemical potential, default=0.5, for both components
+# muchange_a              0.5      # or you can control muchange for each component separately using tags with `a` ...
+# muchange_b              0.5      # ... and `b` suffixes. 
 mumaxchange             0.05     # maximal amount that chemical potential can change between iterations, in units of Fermi energy
+# mumaxchange_a           0.05     # or you can control mumaxchange for each component separately using tags with `a` ...
+# mumaxchange_b           0.05     # ... and `b` suffixes. 
 maxiters                1000     # maximum number of iterations, default=10000
 # temperature             0.1      # requested temperature in units of eF, default T=0
 spinsymmetry            0        # set to 1 if you want to impose Na=Nb, default=0
@@ -113,6 +113,7 @@ nb                      32
 # init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
 # init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
+# init0kc                 3.1415 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
 # init0maxiter            1000   # maximum number of iterations, default=maxiters
 # init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
 # init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 
