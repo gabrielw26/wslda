@@ -1,4 +1,4 @@
-# 2022.xx.xx
+# 2022.04.05
 * Update of SLDAE functional (redefinition of the effective mass, now A=alpha; added a new flag that forces the effective mass to be 1.0).
 * Redefinition of delta_ext, now it is consistent with https://arxiv.org/abs/2201.07626.
 * Automatic adjustment of energy cut-off has been improved.
