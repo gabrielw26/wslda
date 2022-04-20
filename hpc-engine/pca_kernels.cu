@@ -366,7 +366,7 @@ __global__ void kernel_compute_energy_delta_ext(int it,
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); // decode cartesian coordinates
 
         // External potential energy
-        E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, iz, it, delta[ixyz])).real()*(-1.0)*DXYZ;
+        E_ext[ixyz]=(thrust::conj(nu[ixyz])*macro_delta_ext(ix, iy, iz, it, delta[ixyz])).real()*(-2.0)*DXYZ;
     }
 }
 
@@ -1110,7 +1110,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                                     (Complex *)wf_in+noAllElements, (Complex *)wf_out+noAllElements, 
                                                     gpe, noAllElements);
 
-        ierr = local_reductions_many(n, NX, gpe, gpe);
+        ierr = local_reductions_many(n, NXYZ, gpe, gpe);
         if(ierr!=0) return ierr;
 
     }

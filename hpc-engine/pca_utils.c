@@ -24,7 +24,7 @@ metadata_t md =
 1, //measurements;
 1, // timesteps;
 0.01, //dt;
-0.999999*M_PI/DX, // kc;
+0.999999*M_PI/DX, // kc - DEPRECATED, replaced by init0kc
 M_PI*M_PI/(2.*DX*DX), //ec;
 "none", // inprefix
 "wslda", // outprefix
@@ -50,6 +50,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.01, // init0DeltaT;
 1.0e-9, // init0eps;
 -1.0, // init0scmix
+0.999999*M_PI/DX, // init0kc;
 -1, // init0maxiter;
 0, // init0debug
 0, // init0save
@@ -60,13 +61,19 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 GPUS_PER_NODE, // gpuspernode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
+1.0e-6, // npartconveps_a
+1.0e-6, // npartconveps_b
 0.5, // linearmixing
 0.5, // muchange
+0.5, // muchange_a
+0.5, // muchange_b
 10000, // maxiters
 1.0e-9, // temperature
 0.0, // referencekF
 0, // spinsymmetry
 0.1, // mumaxchange
+0.1, // mumaxchange_a
+0.1, // mumaxchange_b
 1, // resetit
 0, // writewf
 1.0e12, // writeecut
@@ -100,6 +107,12 @@ GPUS_PER_NODE, // gpuspernode
 "wdat", // dataformat
 0, // initialized
 "wslda.stdout", // stdoutfile
+1.0e12, // Econservation_start
+1.0e12, // Econservation_stop
+0.05,   // Econservation_tol
+0.0,    // Nconservation_start
+1.0e12, // Nconservation_stop
+0.05,   // Nconservation_tol
 };
 
 metadata_t *input = &md; // additional handler;
@@ -136,6 +149,12 @@ int parse_input_file(char * file_name)
     if(fp==NULL)
         return 0;
 
+    // set initial default value for selected variables
+    // here I set default values that are lattice dependent
+    md.kc=0.999999*M_PI/max_dxdydz();
+    md.init0kc=md.kc;
+    md.ec=M_PI*M_PI/(2.*max_dxdydz()*max_dxdydz());
+    
     int i;
     for(i=0; i<MAX_USER_PARAMS; i++) md.params[i]=0.0; // reset parameters
     for(i=0; i<MAX_USER_PARAMS; i++) sprintf(md.strings[i], ""); // reset strings
@@ -166,7 +185,11 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"dt") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.dt);
         else if (strcmp (tag,"kc") == 0)
+        {
+            // I keep it here due to legacy mode
             sscanf (s,"%s %lf %*s",tag,&md.kc);
+            md.init0kc=md.kc;
+        }
         else if (strcmp (tag,"ec") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ec);
         else if (strcmp (tag,"inprefix") == 0)
@@ -220,6 +243,11 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.init0eps);
         else if (strcmp (tag,"init0scmix") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0scmix);
+        else if (strcmp (tag,"init0kc") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.init0kc);
+            md.kc=md.init0kc;
+        }
         else if (strcmp (tag,"init0maxiter") == 0)
             sscanf (s,"%s %d %*s",tag,&md.init0maxiter);
         else if (strcmp (tag,"init0debug") == 0)
@@ -241,11 +269,27 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
         else if (strcmp (tag,"npartconveps") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.npartconveps);
+            md.npartconveps_a=md.npartconveps;
+            md.npartconveps_b=md.npartconveps;
+        }
+        else if (strcmp (tag,"npartconveps_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.npartconveps_a);
+        else if (strcmp (tag,"npartconveps_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.npartconveps_b);
         else if (strcmp (tag,"linearmixing") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.linearmixing);
         else if (strcmp (tag,"muchange") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.muchange);
+            md.muchange_a=md.muchange;
+            md.muchange_b=md.muchange;
+        }
+        else if (strcmp (tag,"muchange_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.muchange_a);
+        else if (strcmp (tag,"muchange_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.muchange_b);
         else if (strcmp (tag,"maxiters") == 0)
             sscanf (s,"%s %d %*s",tag,&md.maxiters);
         else if (strcmp (tag,"temperature") == 0)
@@ -255,7 +299,15 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"spinsymmetry") == 0)
             sscanf (s,"%s %d %*s",tag,&md.spinsymmetry);
         else if (strcmp (tag,"mumaxchange") == 0)
+        {
             sscanf (s,"%s %lf %*s",tag,&md.mumaxchange);
+            md.mumaxchange_a=md.mumaxchange;
+            md.mumaxchange_b=md.mumaxchange;
+        }
+        else if (strcmp (tag,"mumaxchange_a") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.mumaxchange_a);
+        else if (strcmp (tag,"mumaxchange_b") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.mumaxchange_b);
         else if (strcmp (tag,"resetit") == 0)
             sscanf (s,"%s %d %*s",tag,&md.resetit);
         else if (strcmp (tag,"writewf") == 0)
@@ -334,6 +386,19 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
         else if (strcmp (tag,"dataformat") == 0)
             sscanf (s,"%s %s %*s",tag,md.dataformat);
+        // CONSERVATION MONITORING
+        else if (strcmp (tag,"Econservation_start") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_start);
+        else if (strcmp (tag,"Econservation_stop") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_stop);
+        else if (strcmp (tag,"Econservation_tol") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_tol);
+        else if (strcmp (tag,"Nconservation_start") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_start);
+        else if (strcmp (tag,"Nconservation_stop") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_stop);
+        else if (strcmp (tag,"Nconservation_tol") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_tol);
         else
         {
             // POTENTIAL PARAMETERS
@@ -455,6 +520,7 @@ int parse_input_file(char * file_name)
     wfprintf(stdout, "# CUBIC CUTOFF: RASING ec TO INFINITY!\n");
     md.ec=1.0e16;
     md.kc=1.0e16;
+    md.init0kc=1.0e16;
 #endif
     if(md.nocurrents==-1) md.nocurrents=md.killcurrents; // nocurrents is replace by killcurrents
 
@@ -536,41 +602,55 @@ void print_help(char *progname)
 
 }
 
-void print_version()
+void print_version(char *suffix)
 {
-  wprintf("Code       : %s\n",STRINGIZE(CODE));
-  wprintf("Version    : %s\n",VERSION);
-  wprintf("Build time : %s, %s\n",__DATE__,__TIME__);
-  wprintf("Lattice    : %d x %d x %d\n", NX, NY, NZ);
-  wprintf("Defined macro-variables:\n");
-  wprintf("\tNXYZ=%d\n", NXYZ);
-#ifdef TARGET_MACHINE
-  wprintf("\tTARGET_MACHINE=%s\n",STRINGIZE(TARGET_MACHINE));
+#ifdef WSLDA
+    wprintf("# CODE: ST-WSLDA%s\n",suffix);
+#else
+    wprintf("# CODE: TD-WSLDA%s\n",suffix);
 #endif
-#ifdef VERBOSE
-  wprintf("\tVERBOSE\n");
+    wprintf("# VERSION: %s\n", VERSION);
+    wprintf("# API_VERSION: %d\n", API_VERSION);
+    
+    // Time stamp
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [24];
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    strftime (buffer,24,"%b %d %Y, %H:%M:%S",timeinfo);
+    wprintf("# BUILD TIME: %s, %s\n",__DATE__,__TIME__);
+    wprintf("# RUN TIME  : %s\n", buffer);
+    
+    wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
+    wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+   
+#if FUNCTIONAL==BDG
+    wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
+#elif FUNCTIONAL==SLDA
+    wprintf("# ENERGY DENSITY FUNCTIONAL: SLDA\n");
+#elif FUNCTIONAL==ASLDA
+    wprintf("# ENERGY DENSITY FUNCTIONAL: ASLDA\n");
+#elif FUNCTIONAL==SLDAE
+    wprintf("# ENERGY DENSITY FUNCTIONAL: SLDAE\n");
+#elif FUNCTIONAL==CUSTOMEDF
+    wprintf("# ENERGY DENSITY FUNCTIONAL: CUSTOMEDF\n");
 #endif
-#ifdef DEBUG
-  wprintf("\tDEBUG\n");
+    
+#ifdef WSLDA
+#if DIAGONALIZATION_ROUTINE==PZHEEVR
+    wprintf("# USING SCALAPACK WITH PZHEEVR.\n");
 #endif
-#ifdef TIMING
-  wprintf("\tTIMING\n");
+#if DIAGONALIZATION_ROUTINE==PZHEEVD
+    wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
 #endif
-#ifdef EPSILON
-  wprintf("\tEPSILON=%g\n",EPSILON);
+#if DIAGONALIZATION_ROUTINE==PZHEEV
+    wprintf("# USING SCALAPACK WITH PZHEEV.\n");
 #endif
-#ifdef MAX_USER_PARAMS
-    wprintf("\tMAX_USER_PARAMS=%d\n", MAX_USER_PARAMS);
+#if DIAGONALIZATION_ROUTINE==ELPA
+    wprintf("# USING ELPA.\n");
 #endif
-
-    wprintf("\tUD_SCITERS=%d\n", UD_SCITERS);
-    wprintf("\tUD_MIX_COEFF=%f\n", UD_MIX_COEFF);
-    wprintf("\tDENSEPSILON=%g\n", DENSEPSILON);
-
-#ifdef CURRENT_CORRECTIONS
-    wprintf("\tCURRENT_CORRECTIONS\n");
 #endif
-
 }
 
 /**
@@ -588,7 +668,7 @@ int readcmd(int argc, char *argv[])
         switch( opt )
         {
             case 'v':
-            print_version();
+            print_version("");
             break;
 
             case 'h':
@@ -788,4 +868,55 @@ void save_extradata_to_file(size_t size, void *extra_data)
     FILE * f = fopen(fname, "wb");
     fwrite(extra_data, size, 1, f);
     fclose(f);
+}
+
+double max_dxdydz()
+{
+    double d=DX;
+    if(d<DY) d=DY;
+    if(d<DZ) d=DZ;
+    return d; // return max value of lattice constant
+}
+
+// =========================================================================
+// ===================== MONITORING CONSERVATION OF PHYSICAL QUANTITIES ====
+// =========================================================================
+/**
+ * Author: Gabriel Wlazlowski
+ * Date: 05-04-2022
+ * */
+static double __conserv_quantity_ref[2]; // hiden global variable
+
+int init_conservation_of_quantity(int quantity_id, double value)
+{
+    __conserv_quantity_ref[quantity_id]=value;
+    return 0;
+}
+/**
+ * @return 0 - quantity is conserved or check is disabled, 1 - failure of conservation
+ * */
+int monitor_conservation_of_quantity(int quantity_id, double time, double value, double start_time, double stop_time, double tolerance)
+{
+//     printf("[%d] time=%f value=%f start_time=%f stop_time=%f tolerance=%f\n", quantity_id, time, value, start_time, stop_time, tolerance);
+    if(time<=start_time)
+    {
+        __conserv_quantity_ref[quantity_id]=value; // store as reference value
+        return 0; // skip check
+    }
+
+    
+    if(time>start_time && time<stop_time) // do conservation test
+    {
+        double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
+//         printf("[%d] test=%f\n", test);
+        if(test>tolerance) return 1; // failure
+    }
+        
+    return 0; // ok
+}
+
+void print_conservation_of_quantity(int quantity_id, double value, double tolerance)
+{
+    double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
+    wprintf("# INITIAL VALUE=%f, PRESENT VALUE=%f, RELATIVE CHANGE=%f [> %f]\n", __conserv_quantity_ref[quantity_id], value, test, tolerance);
 }

@@ -158,3 +158,13 @@ extensions/post-processing-qpe/read-qpe
 
 .DS_Store
 
+
+extensions/sldae/sldae-dev-tool
+
+extensions/sldae/sldae_parameters\.txt
+
+extensions/sldae/sldae_parameters\.h
+
+st-testcase-uniform/st-wbsk-3d
+
+st-project-template/obj/

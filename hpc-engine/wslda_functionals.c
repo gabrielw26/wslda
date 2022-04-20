@@ -20,6 +20,9 @@ extern int wsldapid; // process id - global variable
 #undef Complex
 #define printf wprintf
 #include "problem-definition.h"
+#define API_PROBLEM_DEFINITION
+#include "wslda_api_version.h" 
+#undef API_PROBLEM_DEFINITION
 #undef printf
 
 #define Complex(a,b) (a + I*b)
@@ -77,7 +80,7 @@ int compute_energy_ext(int it, wslda_density h_densities, wslda_potential h_pote
                          nb*v_ext(ix,iy,iz,it,SPINB,dc_params,dc_extra_data_size,dc_extra_data);
 
         // External pairing energy -(Delta x nu^* + Delta^* x nu)=-2Re[Delta x nu^*]
-        energy[EPAIREXT]-=  creal(
+        energy[EPAIREXT]-=  2.0*creal(
                             h_densities.nu[ixyz]*conj(delta_ext(ix,iy,iz,it,h_potentials.delta[ixyz],dc_params,dc_extra_data_size,dc_extra_data))
                                    );
 
@@ -575,6 +578,8 @@ int compute_energy_bdg(int it, wslda_density h_densities, wslda_potential h_pote
         // densities
         na=h_densities.rho_a[ixyz];
         nb=h_densities.rho_b[ixyz];
+        if(na==0.0) na=1.0e-16; // add noise - note divisions by na latter
+        if(nb==0.0) nb=1.0e-16; // add noise - note divisions by nb latter
 
         // particle number
         npart[SPINA]+=na;
@@ -719,14 +724,14 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double nt_reg;
 
 
-    // get range of points for computation
-    int myuidx=0, mylidx=0;
-    for(i=0; i<=wsldapid; i++)
-    {
-        mylidx=myuidx;
-        getnwfip( i , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
-        myuidx+=ix;
-    }
+//     // get range of points for computation
+    int myuidx=lNX*lNY*lNZ, mylidx=0; // compute for all points
+//     for(i=0; i<=wsldapid; i++)
+//     {
+//         mylidx=myuidx;
+//         getnwfip( i , wsldapnp , lNX*lNY*lNZ , &ix ); // ix as temporary variable
+//         myuidx+=ix;
+//     }
 //     printf("DEBUG: %d %d %d %d\n", wsldapid, lNX*lNY*lNZ, mylidx, myuidx);
 
 
@@ -777,7 +782,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             bf_ = b_functional_d0(x_);
             cf_ = c_functional_d0(x_);
             if (nt_reg > 0.0) {
-              af_p = nt_reg * (alpha_ - af_) / nt_;
+              af_p = alpha_p;
               bf_p = nt_reg * 5. / 3. * (beta_ - bf_) / nt_;
               cf_p = nt_reg * cf_ / (3. * nt_) * (1. - cf_ * inverse_gamma_);
             } else {

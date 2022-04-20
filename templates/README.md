@@ -6,6 +6,7 @@
 * `tsubame`: https://helpdesk.t3.gsic.titech.ac.jp/manuals/handbook.en/
 * `eagle`: https://wiki.man.poznan.pl/kdm/index.php?title=Eagle
 * `daint`: https://www.cscs.ch/computers/piz-daint/
+* `okeanos`: https://kdm.icm.edu.pl/Zasoby/komputery_w_icm.pl/#superkomputer-okeanos
 
 ## Installing templates
 You can use tool
