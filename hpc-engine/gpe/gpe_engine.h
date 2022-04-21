@@ -73,12 +73,11 @@ typedef cufftDoubleComplex Complex;
 void gpe_get_lattice(int *_nx, int *_ny, int *_nz);
 
 /**
- * Function creates GPE engine.
+ * Function creates GPE engine with 1024 nthreads per block.
  * @param alpha \f$\alpha\f$ parameter of GPE equation [INPUT]
  * @param beta \f$\beta\f$ of GPE equation [INPUT]
  * @param dt integration step [INPUT]
  * @param npart number of particles [INPUT]
- * @param nthreads number of GPU threads. It has to be power of 2. Recommended 512 or 1024 [INPUT]
  * @return It returns 0 if success otherwise error code is returned.
  * */
 int gpe_create_engine(double alpha, double beta, double dt, double npart , int nthreads=1024);

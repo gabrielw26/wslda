@@ -6,8 +6,10 @@ inittype                0       #  0 - create uniform solution and start from it
                                 #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
                                 #  
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
+# ------------------ DEVICE SETTINGS ------------------
+device                  0       # gpu machine number on which the program will be executed
 
-# ------------------- INPUT/OUTPUT ------------------
+# ------------------- INPUT/OUTPUT --------------------
 outprefix               test    # all output file with start with this prefix
 inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # allow for overwriting results
@@ -22,10 +24,31 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # default = rho delta j
 writevar           all
 
+# ------------- IMAGINARY TIME PROJECTION -----------
+alpha_imag              0.0     # imaginary part
+beta_imag               1.0     # real part
+
+# ---------------- REAL TIME EVOLUTION --------------
+alpha_real              1.0     # imaginary part
+beta_real               0.0     # real part
+
+# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
+dt                      0.025    # integration time step, in units of eF^-1
+measurements            100000   # number of requested mesurments
+timesteps               100      # number of time steps between each measurement
+                                 # measurements are written with time resolution: timesteps*dt
+                                 # the total trajectory length is: measurements*timesteps*dt
+
 # ----------------- PARTICLE NUMBERS -----------------
-Na                      1.  # Requested number of particles a-type
-                            # npart=2*Na 
-Nb                      1.  # Requested number of particles b-type
+Na                      500     # Requested number of particles a-type
+Nb                      500     # Requested number of particles b-type
+                                # For gpe solution Na == Nb
+                                # npart = Na + Nb
+
+# -------------------- CUSTOM PARAMS ------------------
+params0                 0.01    # omega_x
+params1                 0.10    # omega_y
+params2                 0.11    # omega_z
 
 # ----------------- SCATTERING LENGTH -----------------
 sclgth    -1.0 # scattering length in units of lattice spacing
@@ -35,7 +58,7 @@ sclgth    -1.0 # scattering length in units of lattice spacing
 
 # ----------------- SELF-CONSISTENT LOOP -----------------
 # ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
-energyconveps           1.0e-6   # energy convergence epsilon, default=1.0e-6
+energyconveps           1.0e-9   # energy convergence epsilon, default=1.0e-6
 npartconveps            1.0e-6   # number of particles convergence epsilon, default=1.0e-6, for both components
 # npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
 # npartconveps_b          1.0e-6   # ... and `b` suffixes. 
@@ -55,43 +78,6 @@ nomixstart              0        # do not execute mixing for the first iteration
                                  # are not completely filled. It typically happens if automatic interpolation is used. 
                                  # For more details see: Wiki -> Convergence control -> Disabling mixing in the first iteration
 # mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
-alpha                   1.0     # imaginary part
-beta                    0.0     # real part
-
-# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
-dt                      0.0035   # integration time step, in units of eF^-1
-measurements            100        # number of requested mesurments
-timesteps               286      # number of time steps between each measurement
-                                 # measurements are written with time resolution: timesteps*dt
-                                 # the total trajectory length is: measurements*timesteps*dt
-
-# ----------------- Broyden algorithm ----------------------
-# See: Wiki -> Broyden algorithm
-broyden                 1        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
-broydenmixing           0.75     # mixing parameter (alpha) for Broyden mixing, default=0.75
-Mbroyden                5        # number of previous iterations used by Broyden, default=5 
-
-#startbroyden            5        # iteration number (it) for which Broyden should be activated,
-                                 # for it<startbroyden algorithm proceeds with linear mixing 
-                                 # and used linearmixing value for mixing
-                                 # NOTE: for it in [startbroyden, startbroyden+Mbroyden] the algorithm
-                                 #       still continue with linear mixing, and it stores only data
-                                 # Broyden starts to operate for iteration it = startbroyden+Mbroyden+1
-                                 # and used broydenmixing value for mixing
-                                 # default=0
-#stopbroyden             100      # Broyden is deactivated for iteration it=stopbroyden
-                                 # starting from iteration it = stopbroyden+1 the algorithm again proceeds
-                                 # with linear mixing and used linearmixing value for mixing
-                                 # default=999999
-#broydenautores          1        # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
-#broydenEmaxchg          0.1      # if the total energy between iteration change by more than broydenEmaxchg 
-                                 # then Broyden is restarted, (default=0.1)
-#broydenEdelay           5        # scan energy changes only after broydenEdelay with Broyden has been executed 
-                                 # typically, just after starting the Broyden energy fluctuations are observed 
-                                 # which should decay within a few iterations (default=5)
-# Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
-#                 According to our experience, there are cases (physical problems)
-#                 where activating Broyden only for some number of iteration provides the best performance 
 
 # -------------- PARALLELIZATION SETTINGS --------------
 # NOTE: all matrices are processed collectively by p*q processes
@@ -124,8 +110,3 @@ nb                      32
 # init0maxiter            1000   # maximum number of iterations, default=maxiters
 # init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
 # init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 
-
-
-
-
-

@@ -28,164 +28,91 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <math.h>
-#include <complex>      // std::complex
+#include <complex>
 
-#include "gpe_engine.h"
 #include "predefines.h"
-#include "gpe_timing.h"
+#include "pca_utils.h"
+#include "gpe_engine.h"
 
-// type 0 => imag
-// type 1 => real
-extern "C" int gpe_compute(int type)
+/**
+ * Function set gpu device.
+ * @param device It is gpu machine number on which the program will be executed.
+ * */
+ extern "C" void set_gpu_device(int device)
 {
-    // SETTINGS
-    double alpha=1.0;
-    double beta=0.0;
-    double dt=0.025;
-    double npart=1000.0;
-    const int device=0;  
-
-    
-    if(type==0) {
-        alpha=0.0;
-        beta=1.0;
-    }
-    else {
-        alpha=1.0;
-        beta=0.0;
-    }
-
-    int ierr;
-    cudaError err;
-    
-    err=cudaSetDevice( device );
+    cudaError err=cudaSetDevice( device );
     if(err != cudaSuccess) 
     {
         printf("Error: Cannot cudaSetDevice(%d)!\n", device);
-        return 1;
+        exit(err);
     }
-    
-    int nx, ny, nz;
-    gpe_get_lattice(&nx, &ny, &nz);
-    printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
-    
-    uint nxyz=nx*ny*nz;
-    uint ix, iy, iz, ixyz;
-    
-    double ekin, eint, eext, etot, etot_prev;
-    double time;
-    double rt;
+}
 
-    FILE * psiFile;
-  
-    if(type == 0) {
-        // ***************** Imaginary time projection **************************
-        printf("# IMAGINARY TIME PROJECTION\n");
-    }
-    else {
-        // ***************** Real time evolution **************************
-        printf("# REAL TIME EVOLUTION\n");
-    }
-
-    
-    // CPU memory for wave function - pinned for fast transfers
-    Complex *psi; // Complex type defined in gpe_engine.h - structure with two doubles x and y for real and imaginary parts
-    err=cudaHostAlloc( &psi , sizeof(Complex)*nxyz, cudaHostAllocDefault );
+/**
+ * Function allocate CPU memory for wave function. As a result it is pinned for fast transfers.
+ * @param nxyz It is product of nx, ny and nz lattice.
+ * @param psi It is structure with two doubles x and y for real and imaginary parts.
+ * */
+ extern "C" void alloc_host_memory(uint nxyz, Complex **psi)
+{
+    cudaError err=cudaHostAlloc( psi , sizeof(Complex)*nxyz, cudaHostAllocDefault );
     if(err != cudaSuccess) 
     {
         printf("Error: Cannot allocate memory!\n");
-        return 1;
+        exit(err);
     }
-    
-    if(type == 0) {
-        // Set initial wave function - constant
-        for(ixyz=0; ixyz<nxyz; ixyz++) { psi[ixyz].x = 1.0; psi[ixyz].y = 0.0; } // Fill with initial values
-    } 
-    else {
-        // Set initial wave function - read it from file psi.dat (see gpe_imag.cu)
-        printf("# Reading psi from file\n");
-        psiFile = fopen ("psi.dat", "rb");
-        size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
-        if (readok != 1)
-        {
-            printf("Reading error\n");
-            return 1;
-        }
-        fclose (psiFile);  
-    }
+}
 
-    
-    
-    // Create engine
-    gpe_exec( gpe_create_engine(alpha, beta, dt, npart), ierr );
-    
-    // Prepare user defined parameters
-    double params[3];
-    params[0] = 0.01; // omega_x
-    params[1] = 0.10; // omega_y
-    params[2] = 0.11; // omega_z
-    
-    // Copy parameters to engine
-    gpe_exec( gpe_set_user_params(3, params), ierr );
-    
-    // Copy wave function to GPU
-    gpe_exec( gpe_set_psi(0.0, psi), ierr );
-    if(type == 0) {
-        gpe_exec( gpe_normalize_psi(), ierr );
-    }
+extern "C" void free_host_memory(void *psi)
+{
+    cudaFreeHost(psi);
+}
 
-    // For nice printing
-    printf("#%7s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "comp.time");
-    
-    // initial energy
-    gpe_exec( gpe_energy(&time, &ekin, &eint, &eext), ierr );
-    etot = ekin + eint + eext;
-    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart);  
-    
-    // evolve in real time
-    while(1)
+extern "C" void set_initial_wave_function(uint nxyz, Complex *psi)
+{
+    uint ixyz;
+    for(ixyz=0; ixyz<nxyz; ixyz++) 
+    { 
+        psi[ixyz].x = 1.0; psi[ixyz].y = 0.0; 
+    }
+}
+
+extern "C" void read_initial_wave_function(uint nxyz, Complex *psi)
+{
+    FILE * psiFile;
+    printf("# Reading psi from file\n");
+    psiFile = fopen ("psi.dat", "rb");
+    size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
+    if (readok != 1)
     {
-        b_t(); // reset timer
-        
-        // Evolve 100 steps forward
-        gpe_exec( gpe_evolve(100), ierr ); 
-        
-        // Compute energy 
-        gpe_exec( gpe_energy(&time, &ekin, &eint, &eext), ierr );
-        
-        rt = e_t(0); // get time
-        
-        if(type == 0) {
-            etot_prev=etot;
-            etot = ekin + eint + eext;
-            double diff=(etot_prev-etot)/npart; // diference in energy per particle
-            printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);              
-            if(fabs(diff)<1.0e-9) break;
-        }
-        else {
-            etot = ekin + eint + eext;
-            printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, rt);  
-            if(time>100.) break;
-        }
-    }    
-    
-    // Get wave function and save it to file
-    gpe_exec( gpe_get_psi(&time, psi), ierr ) ;    
-            
-    // write to binary file
+        printf("Reading error\n");
+        exit(1);
+    }
+    fclose (psiFile); 
+}
+
+extern "C" void write_to_binary_file(uint nxyz, Complex *psi)
+{
+    FILE * psiFile;
     printf("# Writing psi to file\n");
 
-    if(0==type) psiFile = fopen ("psi.dat", "wb");
-    else psiFile = fopen ("psi2.dat", "wb");
-
+    //TODO 
+    // imag -> "psi.dat"
+    // real -> "psi2.dat"
+    psiFile = fopen ("psi.dat", "wb");
     fwrite (psi , sizeof(Complex)*nxyz, 1, psiFile);
-    fclose (psiFile);   
-    
-    // Write to txt file |Psi(x,y,x)|^2 - sections along x, y and z axis
-    FILE * fout;
+    fclose (psiFile);    
+}
 
-    if(0==type) fout = fopen("psi.txt", "w");
-    else fout = fopen("psi2.txt", "w");
+extern "C" void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
+{
+    FILE * fout;
+    uint ix, iy, iz, ixyz;
+
+    //TODO 
+    // imag -> "psi.dat"
+    // real -> "psi2.dat"
+    fout = fopen("psi.txt", "w");
 
     iy=ny/2;
     iz=nz/2;
@@ -214,12 +141,19 @@ extern "C" int gpe_compute(int type)
     }
     
     fclose(fout);
-    
-    // Destroy engine
-    gpe_exec( gpe_destroy_engine(), ierr) ;
-    
-    // Clear memory
-    cudaFreeHost(psi);
-    
-    return 0;
+}
+
+extern "C" void print_header()
+{
+    printf("#%7s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "comp.time");
+}
+
+extern "C" void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart);  
+}
+
+extern "C" void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
 }

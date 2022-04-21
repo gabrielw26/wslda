@@ -1577,5 +1577,3 @@ int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
         
     return 0;
 }
-
-

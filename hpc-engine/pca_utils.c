@@ -60,8 +60,10 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 32, // mb;
 32, // nb;
 GPUS_PER_NODE, // gpuspernode
-0.0, // alpha
-1.0, // beta
+0.0, // alpha_imag
+1.0, // beta_imag
+1.0, // alpha_real
+0.0, // beta_real
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 1.0e-6, // npartconveps_a
@@ -106,6 +108,7 @@ GPUS_PER_NODE, // gpuspernode
 0.0, // aSLDAe
 0, // pccrSLDAe
 0.0, // sclgth
+0, // gpuDevice
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -221,9 +224,7 @@ int parse_input_file(char * file_name)
         // PARTICLE NUMBER
         else if (strcmp (tag,"Na") == 0) {
             sscanf (s,"%s %lf %*s",tag,&md.Na);
-            md.npart = 2*md.Na;
-        }
-            
+        }            
         else if (strcmp (tag,"Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Nb);
         // INIT-0 parameters
@@ -265,11 +266,16 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
-        // gpe coefficients
-        else if (strcmp (tag,"alpha") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.alpha);
-        else if (strcmp (tag,"beta") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.beta);
+        // gpe imaginary time projection
+        else if (strcmp (tag,"alpha_imag") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.alpha_imag);
+        else if (strcmp (tag,"beta_imag") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.beta_imag);
+        // gpe real time evolution
+        else if (strcmp (tag,"alpha_imag") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.alpha_real);
+        else if (strcmp (tag,"beta_imag") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.beta_real);
         // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
@@ -386,6 +392,9 @@ int parse_input_file(char * file_name)
             md.aSLDAe=md.sclgth;
             md.aBdG=md.sclgth;
         }
+        // DEVICE SETTINGS
+        else if(strcmp(tag, "device") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.gpuDevice);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -463,6 +472,8 @@ int parse_input_file(char * file_name)
         }
 
     }
+    // sum Na & Nb particles
+    md.npart = md.Na + md.Na;
 
     // prepare for wprintf()
     sprintf(md.stdoutfile, "%s.stdout", md.outprefix);

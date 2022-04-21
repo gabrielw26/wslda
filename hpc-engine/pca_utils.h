@@ -73,9 +73,13 @@ typedef struct
     // GPUS distribution
     int gpuspernode; // number of gpus per node, defualt=1
 
-    // GPE coefficients
-    double alpha;    // imaginary part
-    double beta;     // real part
+    // GPE IMAGINARY TIME PROJECTION
+    double alpha_imag;      // imaginary part
+    double beta_imag;      // real part
+
+    // REAL TIME EVOLUTION
+    double alpha_real;      // imaginary part
+    double beta_real;      // real part
 
     // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
@@ -137,7 +141,8 @@ typedef struct
     double sclgth; // scattering length in units of lattice spacing
                    // meaningful only for FUNCTIONAL=BDG,SLDAE
                    // in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
-
+    // DEVICE SETTINGS
+    int gpuDevice;   // gpu machine number on which the program will be executed
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
