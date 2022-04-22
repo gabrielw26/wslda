@@ -17,7 +17,7 @@ int gpe_set_user_params_api(int size, double *params)
     gpe_exec( gpe_set_user_params(size, params), ierr );
     return ierr;
 }
-int gpe_set_psi_api(double t, double complex * psi)
+int gpe_set_psi_api(double t, __Complex * psi)
 {
     int ierr;
     gpe_exec( gpe_set_psi(t, (Complex *)psi), ierr );
@@ -41,7 +41,7 @@ int gpe_evolve_api(int nt)
     gpe_exec( gpe_evolve(nt), ierr );
     return ierr;
 }
-int gpe_get_psi_api(double *t, double complex * psi)
+int gpe_get_psi_api(double *t, __Complex * psi)
 {
     int ierr;
     gpe_exec( gpe_get_psi(t, (Complex *)psi), ierr );

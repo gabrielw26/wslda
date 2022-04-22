@@ -27,7 +27,7 @@ WINTERPDIR=$(WSLDADIR)lib/winterp/c/
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
        ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
-       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h \
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h wslda_predefines_test.h \
        wslda_api_version.h ../VERSION.h
 NVCCDEPS = gpe_utils.h gpe_timing.h
 DEPSLOCAL = predefines.h machine.h
@@ -36,7 +36,7 @@ WDERIVDEPS = wderiv.h
 WINTERPDEPS = winterp.h
 
 # SOURCE FILES
-DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c sldae_functional.c
+DEPSSRCS = wslda_potdens.c pca_utils.c wslda_writevars.c wslda_reproducibility.c wslda_errors.c
 POTENTIALSSRC=get_ext_potentials.cu
 CONNECTORSRC=gpe_engine_api.cu
 ENGINESRC=gpe_engine.cu
@@ -117,7 +117,7 @@ $(IMAGOBJ): $(IMAGSRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine_api.h
 $(REALOBJ): $(REALSRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine_api.h
 	$(CXX) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL)
+$(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL) logger.h problem-definition.h
 	python $(INCLUDEDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -I$(OBJDIR) -c -o $@ $<
 

@@ -8,6 +8,8 @@
 #include "gpe_utils.h"
 #include "pca_utils.h"
 #include "gpe_engine_api.h"
+#include "wslda_reproducibility.h"
+
 int wsldapid;
 
 void read_of_input_parameters(int argc , char ** argv)
@@ -52,6 +54,10 @@ int main( int argc , char ** argv )
     read_of_input_parameters(argc, argv);
     int input_idx = parse_command_line_and_get_idx_of_input_file(argc, argv);
     read_input_file(input_idx, argv);
+    
+//     file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
+//     sprintf(file_name, "%s_input.txt", md.outprefix);
+//     file_operation( copy_input_file(argv[i],file_name) ); 
     
     double ekin, eint, eext, etot, etot_prev, time, rt;
     double alpha=input->alpha_real;

@@ -9,6 +9,7 @@
 #include "pca_utils.h"
 #include "gpe_engine_api.h"
 int wsldapid;
+#define printf wprintf
 
 void read_of_input_parameters(int argc , char ** argv)
 {

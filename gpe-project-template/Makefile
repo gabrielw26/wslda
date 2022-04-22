@@ -23,10 +23,10 @@ BINDIR=.
 
 # COMPILER FLAGS
 NVCCFLAGS = -arch $(SM) -O3
-CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda-9.0/include/ -DTARGET_MACHINE=DWARF
+CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/ -DTARGET_MACHINE=DWARF
 
 # LIBRARIES
-LIBS=-L/usr/local/cuda-9.0/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
+LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
 
 # PARAMETERS
 PARAMS= -DNX=$(NX) -DNY=$(NY) -DNZ=$(NZ)

@@ -24,6 +24,10 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # default = rho delta j
 writevar           all
 
+# gpe_mode        real # imag 
+# alpha              0.0     # imaginary part
+# beta               1.0     # real part
+
 # ------------- IMAGINARY TIME PROJECTION -----------
 alpha_imag              0.0     # imaginary part
 beta_imag               1.0     # real part
