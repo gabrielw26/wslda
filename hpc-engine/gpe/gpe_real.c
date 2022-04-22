@@ -76,9 +76,22 @@ int main( int argc , char ** argv )
     double complex *psi;
     uint nxyz=nx*ny*nz;
     alloc_host_memory(nxyz, &psi);
-    read_initial_wave_function( nxyz, psi);
+    // TODO
+    if(input->iniitype==0)
+    {
+        set_initial_wave_function( nxyz, psi);
+    }
+    else if (input->iniitype==5)
+    {
+        // TODO: read from `inprefix`_psi.wdat
+        read_initial_wave_function( nxyz, psi);
+    }
+    else
+    {
+        // error
+    }
     gpe_create_engine_api(alpha, beta, dt, npart);
-    gpe_set_user_params_api(3, input->params);
+    gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_psi_api(0.0, psi);
 
     print_header();
@@ -86,21 +99,40 @@ int main( int argc , char ** argv )
 
     etot = ekin + eint + eext;
     print_intial_results(time, npart, etot, ekin, eint, eext);
+    
+    // Create empty WDATA set
+    // use example:
+    // https://gitlab.fizyka.pw.edu.pl/wtools/wdata/-/blob/master/c-examples/example-write.c
 
+    // TODO
+    // if(mode=...)
     while(time <= input->timesteps)
     {
         b_t(); // reset timer
+        // Psi(t)
         gpe_evolve_api(input->timesteps);
+        // Psi(t+timesteps*dt)
+        
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
 
         etot = ekin + eint + eext;
         print_intial_results(time, npart, etot, ekin, eint, eext);
+        
+        gpe_get_psi_api(&time, psi);
+        
+        // Add new data to WDATA set
+        // outprefix_psi.wdat        
+//         gpe_get_density(&time, psi);
+        // outprefix_density.wdat
+//         gpe_get_current(&time, psi);
+        // outprefix_current.wdat
+        
+        // add enetry to logger
     }
 
-    gpe_get_psi_api(&time, psi);
-    write_to_binary_file(nxyz, psi);
-    write_to_txt_file(nx, ny, nz, psi);
+    // close files
+    
     gpe_destroy_engine_api();
     free_host_memory(psi);
     return 0;

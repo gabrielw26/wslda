@@ -73,7 +73,7 @@ int main( int argc , char ** argv )
     alloc_host_memory(nxyz, &psi);
     set_initial_wave_function( nxyz, psi);
     gpe_create_engine_api(alpha, beta, dt, npart);
-    gpe_set_user_params_api(3, input->params);
+    gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_psi_api(0.0, psi);
     gpe_normalize_psi_api();
 
