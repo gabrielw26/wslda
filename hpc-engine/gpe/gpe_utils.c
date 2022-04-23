@@ -28,56 +28,27 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <math.h>
-#include <complex>
+#include <string.h>
+#include <tgmath.h>
+#include <complex.h>
 
 #include "predefines.h"
 #include "pca_utils.h"
-#include "gpe_engine.h"
+#include "gpe_utils.h"
 
-/**
- * Function set gpu device.
- * @param device It is gpu machine number on which the program will be executed.
- * */
- extern "C" void set_gpu_device(int device)
-{
-    cudaError err=cudaSetDevice( device );
-    if(err != cudaSuccess) 
-    {
-        printf("Error: Cannot cudaSetDevice(%d)!\n", device);
-        exit(err);
-    }
-}
 
-/**
- * Function allocate CPU memory for wave function. As a result it is pinned for fast transfers.
- * @param nxyz It is product of nx, ny and nz lattice.
- * @param psi It is structure with two doubles x and y for real and imaginary parts.
- * */
- extern "C" void alloc_host_memory(uint nxyz, Complex **psi)
-{
-    cudaError err=cudaHostAlloc( psi , sizeof(Complex)*nxyz, cudaHostAllocDefault );
-    if(err != cudaSuccess) 
-    {
-        printf("Error: Cannot allocate memory!\n");
-        exit(err);
-    }
-}
+#define Complex double complex
 
-extern "C" void free_host_memory(void *psi)
-{
-    cudaFreeHost(psi);
-}
-
-extern "C" void set_initial_wave_function(uint nxyz, Complex *psi)
+void set_initial_wave_function(uint nxyz, Complex *psi)
 {
     uint ixyz;
     for(ixyz=0; ixyz<nxyz; ixyz++) 
     { 
-        psi[ixyz].x = 1.0; psi[ixyz].y = 0.0; 
+        psi[ixyz] = 0.0+0.0*I; 
     }
 }
 
-extern "C" void read_initial_wave_function(uint nxyz, Complex *psi)
+void read_initial_wave_function(uint nxyz, Complex *psi)
 {
     FILE * psiFile;
     printf("# Reading psi from file\n");
@@ -91,7 +62,7 @@ extern "C" void read_initial_wave_function(uint nxyz, Complex *psi)
     fclose (psiFile); 
 }
 
-extern "C" void write_to_binary_file(uint nxyz, Complex *psi)
+void write_to_binary_file(uint nxyz, Complex *psi)
 {
     FILE * psiFile;
     printf("# Writing psi to file\n");
@@ -104,7 +75,7 @@ extern "C" void write_to_binary_file(uint nxyz, Complex *psi)
     fclose (psiFile);    
 }
 
-extern "C" void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
+void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
 {
     FILE * fout;
     uint ix, iy, iz, ixyz;
@@ -119,7 +90,7 @@ extern "C" void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(ix=0; ix<nx; ix++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", ix-nx/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
+        fprintf(fout, "%6d %12.6g\n", ix-nx/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
     }
     
     fprintf(fout, "\n\n");
@@ -128,7 +99,7 @@ extern "C" void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(iy=0; iy<ny; iy++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", iy-ny/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
+        fprintf(fout, "%6d %12.6g\n", iy-ny/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
     }
     
     fprintf(fout, "\n\n"); 
@@ -137,23 +108,60 @@ extern "C" void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(iz=0; iz<nz; iz++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", iz-nz/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
+        fprintf(fout, "%6d %12.6g\n", iz-nz/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
     }
     
     fclose(fout);
 }
 
-extern "C" void print_header()
+void print_header()
 {
     printf("#%7s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "comp.time");
 }
 
-extern "C" void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext)
+void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext)
 {
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart);  
 }
 
-extern "C" void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
+void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
 {
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
+}
+
+void read_of_input_parameters(int argc , char ** argv)
+{
+    int i;
+    char execcmd[ 256 ];
+    strcpy( execcmd , argv[ 0 ] ) ;
+    for( i = 1 ; i < argc ; i++ ) 
+    {
+        strcat( execcmd , " " ) ; 
+        strcat( execcmd , argv[ i ] ) ;
+    }
+}
+
+int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv)
+{
+    int i = readcmd( argc , argv ) ;
+    if( i == -1 )
+    {
+        printf( "TERMINATING! NO INPUT FILE.\n" ) ;
+        return(EXIT_FAILURE);
+    }
+    return i;
+}
+
+void read_input_file(int idx, char ** argv)
+{
+    // Read input file
+    // Info from file is loaded into metadata structure
+    int j = parse_input_file(argv[idx]);
+    if ( j == 0 )
+    {
+        printf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ idx ] ) ;
+        exit(EXIT_FAILURE);      
+    }
+        
+    // Input file tags are accessible through pointer `input`
 }

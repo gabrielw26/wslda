@@ -73,13 +73,10 @@ typedef struct
     // GPUS distribution
     int gpuspernode; // number of gpus per node, defualt=1
 
-    // GPE IMAGINARY TIME PROJECTION
-    double alpha_imag;      // imaginary part
-    double beta_imag;      // real part
-
-    // REAL TIME EVOLUTION
-    double alpha_real;      // imaginary part
-    double beta_real;      // real part
+    // GPE coefficients
+    double alpha;      
+    double beta;      
+    int gpe_mode;
 
     // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6

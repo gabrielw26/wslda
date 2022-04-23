@@ -6,35 +6,11 @@ inittype                0       #  0 - create uniform solution and start from it
                                 #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
                                 #  
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
-# ------------------ DEVICE SETTINGS ------------------
-device                  0       # gpu machine number on which the program will be executed
 
-# ------------------- INPUT/OUTPUT --------------------
-outprefix               test    # all output file with start with this prefix
-inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
-overwrite               1       # allow for overwriting results
-checkpoint              1       # do checkpoints after each iteration
-resetit                 1       # if 1 then reset iterations counter
-writewf                 0       # write wf at the end of computation yes=1, no=0
-# writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
-iogroups                8       # number of IO groups used for parallel wf writing, default=1
-
-# list of variables for writing
-# all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
-# default = rho delta j
-writevar           all
-
-# gpe_mode        real # imag 
-# alpha              0.0     # imaginary part
-# beta               1.0     # real part
-
-# ------------- IMAGINARY TIME PROJECTION -----------
-alpha_imag              0.0     # imaginary part
-beta_imag               1.0     # real part
-
-# ---------------- REAL TIME EVOLUTION --------------
-alpha_real              1.0     # imaginary part
-beta_real               0.0     # real part
+# ---------------- GPE COEFFICIENTS --------------
+alpha                   0.0     # imaginary part
+beta                    1.0     # real part
+gpe_mode                0       # 0-imag, 1-real    
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
 dt                      0.025    # integration time step, in units of eF^-1
@@ -54,34 +30,19 @@ params0                 0.01    # omega_x
 params1                 0.10    # omega_y
 params2                 0.11    # omega_z
 
-# ----------------- SCATTERING LENGTH -----------------
-sclgth    -1.0 # scattering length in units of lattice spacing
-               # meaningful only for FUNCTIONAL=BDG,SLDAE
-               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
-#referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
-
 # ----------------- SELF-CONSISTENT LOOP -----------------
-# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
 energyconveps           1.0e-9   # energy convergence epsilon, default=1.0e-6
-npartconveps            1.0e-6   # number of particles convergence epsilon, default=1.0e-6, for both components
-# npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
-# npartconveps_b          1.0e-6   # ... and `b` suffixes. 
-linearmixing            0.5      # mixing parameter (alpha) for linear mixing, default=0.5
-muchange                0.5      # coefficient for changing chemical potential, default=0.5, for both components
-# muchange_a              0.5      # or you can control muchange for each component separately using tags with `a` ...
-# muchange_b              0.5      # ... and `b` suffixes. 
-mumaxchange             0.05     # maximal amount that chemical potential can change between iterations, in units of Fermi energy
-# mumaxchange_a           0.05     # or you can control mumaxchange for each component separately using tags with `a` ...
-# mumaxchange_b           0.05     # ... and `b` suffixes. 
-maxiters                1000     # maximum number of iterations, default=10000
-# temperature             0.1      # requested temperature in units of eF, default T=0
-spinsymmetry            0        # set to 1 if you want to impose Na=Nb, default=0
-# killcurrents              0        # set to 1 if you want to impose by hand ja=jb=0 (solution has no currents), default=0
-nomixstart              0        # do not execute mixing for the first iteration
-                                 # use this option if you expect that memory buffers representing previous iterations 
-                                 # are not completely filled. It typically happens if automatic interpolation is used. 
-                                 # For more details see: Wiki -> Convergence control -> Disabling mixing in the first iteration
-# mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
+
+# ------------------ DEVICE SETTINGS ------------------
+device                  0       # gpu machine number on which the program will be executed
+
+# ------------------- INPUT/OUTPUT --------------------
+outprefix               test    # all output file with start with this prefix
+inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
+overwrite               1       # allow for overwriting results
+checkpoint              1       # do checkpoints after each iteration
+resetit                 1       # if 1 then reset iterations counter
+writewf                 0       # write wf at the end of computation yes=1, no=0
 
 # -------------- PARALLELIZATION SETTINGS --------------
 # NOTE: all matrices are processed collectively by p*q processes
@@ -94,11 +55,6 @@ nomixstart              0        # do not execute mixing for the first iteration
 #    in some case this procedure fails.
 # p                       2
 # q                       2
-
-# data block size 
-# if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
-mb                      32
-nb                      32
 
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver

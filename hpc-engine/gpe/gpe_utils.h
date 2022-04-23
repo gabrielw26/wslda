@@ -4,9 +4,6 @@
 #include <complex.h>
 #define Complex double complex
 
-void set_gpu_device(int device);
-void alloc_host_memory(uint nxyz, Complex **psi);
-void free_host_memory(void *psi);
 void set_initial_wave_function(uint nxyz, Complex *psi);
 void read_initial_wave_function(uint nxyz, Complex *psi);
 void write_to_binary_file(uint nxyz, Complex *psi);
@@ -14,6 +11,9 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi);
 void print_header();
 void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext);
 void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt);
+void read_of_input_parameters(int argc , char ** argv);
+int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv);
+void read_input_file(int idx, char ** argv);
 
 // TO MAKE COMPATIBILE WITH WSLDA TOOLKIT
 #ifndef TDWSLDA

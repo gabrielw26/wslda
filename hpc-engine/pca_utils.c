@@ -60,10 +60,9 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 32, // mb;
 32, // nb;
 GPUS_PER_NODE, // gpuspernode
-0.0, // alpha_imag
-1.0, // beta_imag
-1.0, // alpha_real
-0.0, // beta_real
+0.0, // alpha
+1.0, // beta
+0.0, // gpe_mode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 1.0e-6, // npartconveps_a
@@ -266,16 +265,13 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
-        // gpe imaginary time projection
-        else if (strcmp (tag,"alpha_imag") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.alpha_imag);
-        else if (strcmp (tag,"beta_imag") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.beta_imag);
-        // gpe real time evolution
-        else if (strcmp (tag,"alpha_imag") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.alpha_real);
-        else if (strcmp (tag,"beta_imag") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.beta_real);
+        // gpe coefficients
+        else if (strcmp (tag,"alpha") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.alpha);
+        else if (strcmp (tag,"beta") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.beta);
+        else if (strcmp (tag,"gpe_mode") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.gpe_mode);
         // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
