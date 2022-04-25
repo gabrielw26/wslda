@@ -11,8 +11,8 @@
 #include <complex>
 #define __Complex std::complex<double>
 #else
-#include <complex.h>
-#define __Complex double complex
+#include <cufft.h>
+#define __Complex cufftDoubleComplex
 #endif
 
 

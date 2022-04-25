@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <complex.h>
 
 #include "predefines.h"
 #include "gpe_utils.h"
@@ -37,7 +36,7 @@ int main( int argc , char ** argv )
     if(mode==0)  printf("# IMAGINARY TIME PROJECTION\n");
     if(mode==1)  printf("# REAL TIME EVOLUTION\n");
 
-    double complex *psi;
+    Complex *psi;
     uint nxyz=nx*ny*nz;
     alloc_host_memory(nxyz, &psi);
     // TODO

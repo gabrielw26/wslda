@@ -37,16 +37,15 @@
 #include "gpe_utils.h"
 
 
-#define Complex double complex
-
 void set_initial_wave_function(uint nxyz, Complex *psi)
 {
     uint ixyz;
     for(ixyz=0; ixyz<nxyz; ixyz++) 
     { 
-        psi[ixyz] = 0.0+0.0*I; 
+        psi[ixyz].x = 1.0; psi[ixyz].y = 0.0; 
     }
 }
+
 
 void read_initial_wave_function(uint nxyz, Complex *psi)
 {
@@ -90,7 +89,7 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(ix=0; ix<nx; ix++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", ix-nx/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
+        fprintf(fout, "%6d %12.6g\n", ix-nx/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
     }
     
     fprintf(fout, "\n\n");
@@ -99,7 +98,7 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(iy=0; iy<ny; iy++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", iy-ny/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
+        fprintf(fout, "%6d %12.6g\n", iy-ny/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
     }
     
     fprintf(fout, "\n\n"); 
@@ -108,11 +107,12 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     for(iz=0; iz<nz; iz++)
     {
         ixyz = iz + nz*iy + nz*ny*ix;
-        fprintf(fout, "%6d %12.6g\n", iz-nz/2, (creal(psi[ixyz])*creal(psi[ixyz]) + cimag(psi[ixyz])*cimag(psi[ixyz])) );
+        fprintf(fout, "%6d %12.6g\n", iz-nz/2, (psi[ixyz].x*psi[ixyz].x + psi[ixyz].y*psi[ixyz].y) );
     }
     
     fclose(fout);
 }
+
 
 void print_header()
 {

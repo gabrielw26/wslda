@@ -1,8 +1,8 @@
 #ifndef __GPE_UTILS__
 #define __GPE_UTILS__
 
-#include <complex.h>
-#define Complex double complex
+#include <cufft.h>
+typedef cufftDoubleComplex Complex;
 
 void set_initial_wave_function(uint nxyz, Complex *psi);
 void read_initial_wave_function(uint nxyz, Complex *psi);
