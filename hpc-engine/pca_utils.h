@@ -239,4 +239,6 @@ int init_conservation_of_quantity(int quantity_id, double value);
 int monitor_conservation_of_quantity(int quantity_id, double time, double value, double start_time, double stop_time, double tolerance);
 void print_conservation_of_quantity(int quantity_id, double value, double tolerance);
 
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
+
 #endif
