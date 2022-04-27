@@ -920,3 +920,27 @@ void print_conservation_of_quantity(int quantity_id, double value, double tolera
     double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
     wprintf("# INITIAL VALUE=%f, PRESENT VALUE=%f, RELATIVE CHANGE=%f [> %f]\n", __conserv_quantity_ref[quantity_id], value, test, tolerance);
 }
+
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v)
+{
+    double complex *U_d = (double complex *) U_d_v;
+    double complex u,v;
+    int i, ixyz;
+    size_t shift=0;
+    for(i=0; i<n; i++) // for each eigenstate
+    {
+        // If vector (u, v) is solution with eigenvalue E
+        // then vector (v^∗ , -u^∗) is also solution with eigenvalue -E.
+        
+        En[i]*=-1.0; // change sign
+        for(ixyz=0; ixyz<nxyz; ixyz++) // for each lattice point
+        {
+            u=U_d[shift+ixyz     ];
+            v=U_d[shift+ixyz+nxyz];
+            U_d[shift+ixyz     ]=     conj(v);
+            U_d[shift+ixyz+nxyz]=-1.0*conj(u);
+        }
+        
+        shift+=2*nxyz;
+    }
+}
