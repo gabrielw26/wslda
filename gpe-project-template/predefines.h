@@ -1,9 +1,12 @@
+
+#ifndef __PREDEFINES__
+#define __PREDEFINES__
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 8
-#define NY 8
-#define NZ 1
+#define NX 256
+#define NY 32
+#define NZ 32
 
 #define DX 1.0
 #define DY 1.0
@@ -12,8 +15,18 @@
 /**
  * Maximal number of parameters in params array
  * */
-#define MAX_USER_PARAMS 32 
+#define MAX_USER_PARAMS 32
 
+/**
+ * Minimal density to avoid numerical problems
+ * below this treshold density is regarded as zero
+ * */
+#define DENSEPSILON 1.0e-8
+
+/**
+ * GPE_FOR can be either PARTICLES or DIMERS. If PARTICLES then \f$\kappa=1\f$, if DIMERS then \f$\kappa=2\f$
+ * */
+#define GPE_FOR DIMERS
 
 /**
  * Machine file. 
@@ -31,4 +44,4 @@
  * For list of API versions see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/API-version
  * */
 #define API_VERSION 20220221
-
+#endif

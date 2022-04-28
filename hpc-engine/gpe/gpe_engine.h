@@ -73,12 +73,11 @@ typedef cufftDoubleComplex Complex;
 void gpe_get_lattice(int *_nx, int *_ny, int *_nz);
 
 /**
- * Function creates GPE engine.
+ * Function creates GPE engine with 1024 nthreads per block.
  * @param alpha \f$\alpha\f$ parameter of GPE equation [INPUT]
  * @param beta \f$\beta\f$ of GPE equation [INPUT]
  * @param dt integration step [INPUT]
  * @param npart number of particles [INPUT]
- * @param nthreads number of GPU threads. It has to be power of 2. Recommended 512 or 1024 [INPUT]
  * @return It returns 0 if success otherwise error code is returned.
  * */
 int gpe_create_engine(double alpha, double beta, double dt, double npart , int nthreads=1024);
@@ -100,7 +99,7 @@ int gpe_set_time(double t0);
 
 /**
  * Function sets user parameters. Maximal number of user parameters is 32.
- * User parameters are accessible in functions gpe_modify_psi(), gpe_external_potential(), gpe_EDF() and gpe_dEDFdn()
+ * User parameters are accessible in functions gpe_modify_psi(), v_ext(), compute_energy_gpe() and compute_potentials_gpe()
  * through array d_user_param.
  * @param size number of parameters, not bigger than 32 [INPUT]
  * @param params pointer to array with parameters [INPUT]
