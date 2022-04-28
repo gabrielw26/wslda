@@ -51,7 +51,23 @@ void read_initial_wave_function(uint nxyz, Complex *psi)
 {
     FILE * psiFile;
     printf("# Reading psi from file\n");
-    psiFile = fopen ("psi.dat", "rb");
+
+    char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
+    strcpy(psiFilename, input->inprefix);
+    switch (input->gpe_mode)
+    {
+    // input file for imaginary
+    case 0:
+        strcat(psiFilename, "_psi.dat");
+        break;
+    // input file for real
+    case 1:
+        strcat(psiFilename, "_psi2.dat");
+        break;
+    default:
+        break;
+    }
+    psiFile = fopen (psiFilename, "rb");
     size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
     if (readok != 1)
     {
@@ -66,10 +82,23 @@ void write_to_binary_file(uint nxyz, Complex *psi)
     FILE * psiFile;
     printf("# Writing psi to file\n");
 
-    //TODO 
-    // imag -> "psi.dat"
-    // real -> "psi2.dat"
-    psiFile = fopen ("psi.dat", "wb");
+    char* psiFilename = (char*)malloc(strlen(input->outprefix) * sizeof(char));
+    strcpy(psiFilename, input->outprefix);
+    switch (input->gpe_mode)
+    {
+    // output file for imaginary
+    case 0:
+        strcat(psiFilename, "_psi.dat");
+        break;
+    // output file for real
+    case 1:
+        strcat(psiFilename, "_psi2.dat");
+        break;
+    default:
+        break;
+    }
+
+    psiFile = fopen (psiFilename, "wb");
     fwrite (psi , sizeof(Complex)*nxyz, 1, psiFile);
     fclose (psiFile);    
 }
@@ -79,10 +108,23 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
     FILE * fout;
     uint ix, iy, iz, ixyz;
 
-    //TODO 
-    // imag -> "psi.dat"
-    // real -> "psi2.dat"
-    fout = fopen("psi.txt", "w");
+    char* psiFilename = (char*)malloc(strlen(input->outprefix) * sizeof(char));
+    strcpy(psiFilename, input->outprefix);
+    switch (input->gpe_mode)
+    {
+    // output file for imaginary
+    case 0:
+        strcat(psiFilename, "_psi.txt");
+        break;
+    // output file for real
+    case 1:
+        strcat(psiFilename, "_psi2.txt");
+        break;
+    default:
+        break;
+    }
+
+    fout = fopen(psiFilename, "w");
 
     iy=ny/2;
     iz=nz/2;

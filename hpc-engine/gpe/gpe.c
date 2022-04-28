@@ -36,21 +36,35 @@ int main( int argc , char ** argv )
     int nx, ny, nz, ierr;
     gpe_get_lattice_api(&nx, &ny, &nz);
     printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
-    if(mode==0)  printf("# IMAGINARY TIME PROJECTION\n");
-    if(mode==1)  printf("# REAL TIME EVOLUTION\n");
+
+    switch (mode)
+    {
+    case 0:
+        printf("# IMAGINARY TIME PROJECTION\n");
+        break;
+    case 1:
+        printf("# REAL TIME EVOLUTION\n");
+        break;
+    default:
+        break;
+    }
 
     Complex *psi;
     uint nxyz=nx*ny*nz;
     alloc_host_memory(nxyz, &psi);
-    // TODO
-    if(0==inittype) {
+
+    switch (inittype)
+    {
+    case 0:
         set_initial_wave_function( nxyz, psi);
-    } else if (5==inittype) {
-        // TODO: read from `inprefix`_psi.wdat
+        break;
+    case 5:
         read_initial_wave_function( nxyz, psi);
-    } else {
-        // unsuported inittype
+        break;
+    default:
+        break;
     }
+
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_psi_api(time0, psi);
