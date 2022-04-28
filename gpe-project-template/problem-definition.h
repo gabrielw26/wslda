@@ -14,17 +14,27 @@
  * @return value of the external potential V_spin(x,y,z)
  * */
 // analog of inline __device__  double gpe_external_potential(uint ix, uint iy, uint iz, uint it)
-double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+inline __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
-//     double x = DX*(ix-NX/2);
-//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
-//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
+    // harmonic trap:
+    // V(x,y,z) = 0.5*(omega_x*x)^2 + 0.5*(omega_y*y)^2 + 0.5*(omega_z*z)^2
     
+    // frequencies are passed through d_user_param array
+    double omega_x = params[0];
+    double omega_y = params[1];
+    double omega_z = params[2];
+    
+    // coordinate with respect to center of the box
+    double _ix = (double)(ix) - 1.0*(NX/2);
+    double _iy = (double)(iy) - 1.0*(NY/2);
+    double _iz = (double)(iz) - 1.0*(NZ/2);
 
-    // ADD HERE FORMULA FOR V_ext(r)
-    double V_ext = 0.0;
 
-    return V_ext; 
+    double trap =   0.5*_ix*_ix*omega_x*omega_x
+                  + 0.5*_iy*_iy*omega_y*omega_y 
+                  + 0.5*_iz*_iz*omega_z*omega_z;
+    
+    return trap;
 }
 
 /** 
@@ -59,29 +69,43 @@ void process_params(double *params, double *kF, double *mu, size_t extra_data_si
  * */
 double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data)
 {
-    if(input->referencekF>0.0) return input->referencekF; // take it from input file
+    return 0; // TODO
+    // if(input->referencekF>0.0) return input->referencekF; // take it from input file
     
-    // define here your prescription for computing kF
-    // ...
-    // default: extract max density and use it for definition of kF
-    double max_dens=0.0, kF;
-    int ixyz;
-    for(ixyz=0; ixyz<h_densities.nx*h_densities.ny*h_densities.nz; ixyz++) 
-        if(h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz]>max_dens) max_dens=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
+    // // define here your prescription for computing kF
+    // // ...
+    // // default: extract max density and use it for definition of kF
+    // double max_dens=0.0, kF;
+    // int ixyz;
+    // for(ixyz=0; ixyz<h_densities.nx*h_densities.ny*h_densities.nz; ixyz++) 
+    //     if(h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz]>max_dens) max_dens=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
     
-    // depending on dimensionality of the problem
-    if(NY==1 && NZ==1) kF = 0.5*M_PI*max_dens;                // 1D
-    else if(NZ==1)     kF = pow(2.0*M_PI*max_dens,1./2.);     // 2D
-    else               kF = pow(3.*M_PI*M_PI*max_dens,1./3.); // 3D
+    // // depending on dimensionality of the problem
+    // if(NY==1 && NZ==1) kF = 0.5*M_PI*max_dens;                // 1D
+    // else if(NZ==1)     kF = pow(2.0*M_PI*max_dens,1./2.);     // 2D
+    // else               kF = pow(3.*M_PI*M_PI*max_dens,1./3.); // 3D
     
-    return kF;
+    // return kF;
 }
 
-
-inline __device__  Complex gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
+/**
+ * Function changes wave function.
+ * This function is called before each integration step.
+ * NOTE: This function assumes that norm is not changed after modification. 
+ * @param ix - x coordinate, ix=0,1,...,d_nx-1, where d_nx is global variable 
+ * @param iy - y coordinate, iy=0,1,...,d_ny-1, where d_ny is global variable 
+ * @param iz - z coordinate, iy=0,1,...,d_nz-1, where d_ny is global variable 
+ * @param it - time value, ie. time = d_t0 + it*d_dt, d_t0 and d_dt are global variables
+ * @param psi - psi(ix, iy, iz, it) - psi is normalized, i.e. int n(r) d^3r = npart, where n(r) computed according gpe_density(psi)
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if modification is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+inline __device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
 {
-    psi[0]=0.0; 
-    return psi; // no change
+    // no change
+    return 0;
 }
 
 
@@ -129,7 +153,8 @@ int load_extra_data(size_t size, void *extra_data, double *params)
  * */
 double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
 {
-    return input->sclgth; // by default return value from input file.
+    return 0; // TODO
+    // return input->sclgth; // by default return value from input file.
     
     // however, here you can define your own prescription
     // it can be time and position dependent
@@ -145,17 +170,19 @@ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t 
  * Otherwise the function is ignored.
  * For more info see wiki pages. 
  * @param it iteration number
+ * @param rho - density, computed according gpe_density(psi)
  * @param energy  (OUTPUT)
- * @param npart array with contributions to the particle number (OUTPUT)
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-// analog gpe_EDF(double rho, uint it)
-int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
+inline __device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
 {
-    // call scattering_length()
+    // TODO call scattering_length()
+    // Density energy functional for unitary Fermi gas
+    // see: Phys. Rev. A 90, 043638 (2014)
+    (*energy) = 0.37*0.6*rho*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.; // unitary limit
     return 0;
 }
 
@@ -164,17 +191,18 @@ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_
  * Otherwise the function is ignored.
  * For more info see wiki pages. 
  * @param it iteration number
- * @param dEDFdn (OUTPUT)
- *                     updated values as output (INPUT/OUTPUT) 
+ * @param rho - density, computed according gpe_density(psi)
+ * @param dEDFdn (OUTPUT) updated values as output (INPUT/OUTPUT) 
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-// analog  gpe_dEDFdn(double rho, uint it)
-int compute_potentials_gpe(int it, double rho, double *dEDFdn double *params, size_t extra_data_size, void *extra_data)
+inline __device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
 {
-    // call scattering_length()
+    // TODO call scattering_length()
+    // see: Phys. Rev. A 90, 043638 (2014)
+    (*dEDFdn) = 0.37*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.0; // unitary limit
     return 0;
 }
 

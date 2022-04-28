@@ -80,10 +80,23 @@ __constant__ Complex d_exp_kkx2[NX]; // exp( (dt/(i*alpha-beta)) * 1/(2gamma) * 
 __constant__ Complex d_exp_kky2[NY]; // exp( (dt/(i*alpha-beta)) * 1/(2gamma) * ky^2 )
 __constant__ Complex d_exp_kkz2_over_nxyz[NZ]; // exp( (dt/(i*alpha-beta)) * 1/(2gamma) * kz^2 ) / nxyz
 
+__constant__ double d_user_param[MAX_USER_PARAMS];
+__constant__ uint d_nx; // lattice size in x direction
+__constant__ uint d_ny; // lattice size in y direction
+__constant__ uint d_nz; // lattice size in z direction
+__constant__ double d_dt;
+__constant__ double d_t0;
+__constant__ double d_npart;
+__constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe_set_psi_ref() function to set it
+
 #define PARTICLES 1
 #define DIMERS 2
 
-#include "gpe_user_defined.h"
+// TODO -> enable wslda_density in problem-definition.h file
+#define double_complex Complex
+#define __externc
+#include "wslda_potdens.h"
+#include "problem-definition.h"
 
 #if GPE_FOR == PARTICLES
 #define GAMMA 1.0
@@ -788,16 +801,17 @@ __global__ void __gpe_exp_Vstep1_(uint it, Complex *psi_in, Complex *psi_out, do
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     
     if(ixyz<nxyz)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
         
         lpsi = psi_in[ixyz]; // psi to register
-        lpsi=gpe_modify_psi(ix, iy, iz, it, lpsi); // modify psi
+        gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         lrho = gpe_density(lpsi); // compute density
-        lv=gpe_external_potential(ix, iy, iz, it) + gpe_dEDFdn(lrho,it); // external potential + mean field
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field
         
         wrkR[ixyz]=lv; // it will be use later
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
@@ -813,16 +827,17 @@ __global__ void __gpe_exp_Vstep1_qf_(uint it, Complex *psi_in, Complex *psi_out,
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     
     if(ixyz<nxyz)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
         
         lpsi = psi_in[ixyz]; // psi to register
-        lpsi=gpe_modify_psi(ix, iy, iz, it, lpsi); // modify psi
+        gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         lrho = gpe_density(lpsi); // compute density
-        lv=gpe_external_potential(ix, iy, iz, it) + gpe_dEDFdn(lrho,it) + qfpotential[ixyz]; 
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn + qfpotential[ixyz]; 
            // external potential + mean field + quantum friction potential
         
         wrkR[ixyz]=lv; // it will be use later
@@ -839,7 +854,7 @@ __global__ void __gpe_exp_Vstep2_(uint it, Complex *psi_in, Complex *psi_out, do
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     
     if(ixyz<nxyz)
     {
@@ -851,12 +866,13 @@ __global__ void __gpe_exp_Vstep2_(uint it, Complex *psi_in, Complex *psi_out, do
         lpsi=cplxMul(lpsi, exp_lv); // finalize step from predictor
         
         lrho = gpe_density(lpsi); // compute density
-        lv=0.5*(lv + gpe_external_potential(ix, iy, iz, it+1) + gpe_dEDFdn(lrho,it+1)); // external potential + mean field - take average
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn); // external potential + mean field - take average
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
         
         lpsi = psi_out[ixyz]; // psi to register
-        lpsi=gpe_modify_psi(ix, iy, iz, it, lpsi); // modify psi
+        gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         psi_out[ixyz] = cplxMul(lpsi, exp_lv); // apply and save      
     }    
 }
@@ -882,7 +898,7 @@ __global__ void __gpe_exp_Vstep2_part2_(uint it, Complex *psi_in, Complex *psi_o
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     
     if(ixyz<nxyz)
     {
@@ -891,12 +907,13 @@ __global__ void __gpe_exp_Vstep2_part2_(uint it, Complex *psi_in, Complex *psi_o
         lpsi = psi_in[ixyz]; // psi to register
         lv = wrkR[ixyz]; // potentials to register
         lrho = gpe_density(lpsi); // compute density
-        lv=0.5*(lv + gpe_external_potential(ix, iy, iz, it+1) + gpe_dEDFdn(lrho,it+1)); // external potential + mean field - take average
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn); // external potential + mean field - take average
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
         
         lpsi = psi_out[ixyz]; // psi to register
-        lpsi=gpe_modify_psi(ix, iy, iz, it, lpsi); // modify psi
+        gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         psi_out[ixyz] = cplxMul(lpsi, exp_lv); // apply and save      
     }    
 }
@@ -908,7 +925,7 @@ __global__ void __gpe_exp_Vstep2_part2_qf_(uint it, Complex *psi_in, Complex *ps
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     
     if(ixyz<nxyz)
     {
@@ -917,13 +934,14 @@ __global__ void __gpe_exp_Vstep2_part2_qf_(uint it, Complex *psi_in, Complex *ps
         lpsi = psi_in[ixyz]; // psi to register
         lv = wrkR[ixyz]; // potentials to register
         lrho = gpe_density(lpsi); // compute density
-        lv=0.5*(lv + gpe_external_potential(ix, iy, iz, it+1) + gpe_dEDFdn(lrho,it+1) + qfpotential[ixyz]) ; 
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn + qfpotential[ixyz]) ; 
           // external potential + mean field + quantum friction potential - take average 
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
         
         lpsi = psi_out[ixyz]; // psi to register
-        lpsi=gpe_modify_psi(ix, iy, iz, it, lpsi); // modify psi
+        gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         psi_out[ixyz] = cplxMul(lpsi, exp_lv); // apply and save      
     }    
 }
@@ -1098,7 +1116,7 @@ __global__ void __gpe_add_potential_part__(uint it, Complex *psi_in, Complex *ps
     
     // registers
     Complex lpsi, exp_lv;
-    double lrho, lv;
+    double lrho, lv, dEDFdn;
     Complex Hpsi;
     
     if(ixyz<nxyz)
@@ -1107,7 +1125,8 @@ __global__ void __gpe_add_potential_part__(uint it, Complex *psi_in, Complex *ps
         
         lpsi = psi_in[ixyz]; // psi to register
         lrho = gpe_density(lpsi); // compute density
-        lv=gpe_external_potential(ix, iy, iz, it) + gpe_dEDFdn(lrho,it); // external potential + mean field
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field
         
         // K*psi -> K*psi + V*psi
         psi_add[ixyz] = cplxAdd(psi_add[ixyz] , cplxScale(lpsi, lv));
@@ -1143,8 +1162,8 @@ __global__ void __gpe_imprint_psi__(int it, Complex *psi)
     
     if(ixyz<nxyz)
     {      
-        ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
-        psi[ixyz] = gpe_modify_psi(ix, iy, iz, it, psi[ixyz]);
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i);
+        gpe_modify_psi(ix, iy, iz, it, &(psi[ixyz]), d_user_param, 0, NULL); // modify psi
     }    
 }
 
@@ -1153,16 +1172,15 @@ __global__ void __gpe_imprint_psi_and_compute_potential__(int it, Complex *psi, 
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x;
     uint ix, iy, iz, i;
     Complex lpsi;
-    double lrho;
+    double lrho, dEDFdn;
     
     if(ixyz<nxyz)
     {      
-        ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
-        lpsi = gpe_modify_psi(ix, iy, iz, it, psi[ixyz]);
-        lrho = gpe_density(lpsi); // compute density
-        U[ixyz]=gpe_external_potential(ix, iy, iz, it) + gpe_dEDFdn(lrho,it); // external potential + mean field        
-        psi[ixyz]=lpsi;
-        psi_copy[ixyz]=lpsi;
+        ixyz2ixiyiz(ixyz,ix,iy,iz,i);
+        gpe_modify_psi(ix, iy, iz, it, &(psi[ixyz]), d_user_param, 0, NULL); // modify psi
+        lrho = gpe_density(psi[ixyz]); // compute density
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
+        U[ixyz]=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field        
     }    
 }
 
@@ -1429,7 +1447,7 @@ __global__ void __gpe_compute_vext__(uint it, double *rho, double *wrk)
     if(ixyz<nxyz)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
-        wrk[ixyz]=rho[ixyz]*gpe_external_potential(ix, iy, iz, it);
+        wrk[ixyz]=rho[ixyz]*v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL);
     }
 }
 
@@ -1438,7 +1456,7 @@ __global__ void __gpe_compute_vint__(uint it, double *rho, double *wrk)
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x;
     if(ixyz<nxyz)
     {
-        wrk[ixyz]=gpe_EDF(rho[ixyz], it);
+        compute_energy_gpe(it, rho[ixyz], &(wrk[ixyz]), d_user_param, NULL, NULL);
     }
 }
 
@@ -1451,8 +1469,8 @@ __global__ void __gpe_compute_vext_vint__(uint it, double *rho, double *wrk1, do
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
         lrho=rho[ixyz];
-        wrk1[ixyz]=lrho*gpe_external_potential(ix, iy, iz, it);
-        wrk2[ixyz]=gpe_EDF(lrho, it);
+        wrk1[ixyz]=lrho*v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL);
+        compute_energy_gpe(it, lrho, &(wrk2[ixyz]), d_user_param, NULL, NULL);
     }
 }
 

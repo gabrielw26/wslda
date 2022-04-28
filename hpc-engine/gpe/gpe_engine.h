@@ -99,7 +99,7 @@ int gpe_set_time(double t0);
 
 /**
  * Function sets user parameters. Maximal number of user parameters is 32.
- * User parameters are accessible in functions gpe_modify_psi(), gpe_external_potential(), gpe_EDF() and gpe_dEDFdn()
+ * User parameters are accessible in functions gpe_modify_psi(), v_ext(), compute_energy_gpe() and compute_potentials_gpe()
  * through array d_user_param.
  * @param size number of parameters, not bigger than 32 [INPUT]
  * @param params pointer to array with parameters [INPUT]

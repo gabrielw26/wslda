@@ -29,7 +29,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h wslda_predefines_test.h \
        wslda_api_version.h ../VERSION.h
-NVCCDEPS = gpe_utils.h gpe_timing.h
+ENGINEDEPS = $(INCLUDEDIR)wslda_potdens.h $(BINDIR)problem-definition.h
 DEPSLOCAL = predefines.h machine.h
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
@@ -51,7 +51,7 @@ WINTERPLIB = winterp.o
 # FLAGS
 NOWORNING := -Xcudafe "--diag_suppress=declared_but_not_referenced --diag_suppress=set_but_not_used"
 CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ -DTDWSLDA
-NVCCFLAGS := $(NVCCFLAGS) $(NOWORNING) $(PARAMS) -I$(INCLUDEDIR) -I./ -DTDWSLDA
+NVCCFLAGS := $(NVCCFLAGS) $(NOWORNING) -I$(INCLUDEDIR) -I./ -DTDWSLDA
 
 # TRANSFORMATIONS
 ## DEPENDENCIES
@@ -118,7 +118,7 @@ $(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
 $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 
-engine: $(ENGINESRC)
+engine: $(ENGINESRC) $(ENGINEDEPS)
 	$(NVCC) $(NVCCFLAGS) -c $(ENGINESRC) -o $(ENGINEOBJ) 
 
 engine_connector: $(CONNECTORSRC)

@@ -21,12 +21,15 @@ int main( int argc , char ** argv )
 //     file_operation( copy_input_file(argv[i],file_name) ); 
     
     double ekin, eint, eext, etot, etot_prev, time, rt, diff=-1;
-    double alpha=input->alpha;
-    double beta=input->beta;
-    double dt=input->dt;
-    double npart=input->npart;
     const int device=input->gpuDevice;
     const int mode=input->gpe_mode;
+    const double alpha=input->alpha;
+    const double beta=input->beta;
+    const double npart=input->npart;
+    const double dt=input->dt;
+    const double time0 = 0.0;
+    int inittype = input->inittype;
+    if(mode==1) inittype = 5;
     
     set_gpu_device(device);
 
@@ -40,19 +43,17 @@ int main( int argc , char ** argv )
     uint nxyz=nx*ny*nz;
     alloc_host_memory(nxyz, &psi);
     // TODO
-    if(mode==0) {
+    if(0==inittype) {
         set_initial_wave_function( nxyz, psi);
-    } else if (mode==1) {
+    } else if (5==inittype) {
         // TODO: read from `inprefix`_psi.wdat
         read_initial_wave_function( nxyz, psi);
-    }
-    else
-    {
-        // error
+    } else {
+        // unsuported inittype
     }
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
-    gpe_set_psi_api(0.0, psi);
+    gpe_set_psi_api(time0, psi);
     if(mode==0) gpe_normalize_psi_api();
 
     print_header();

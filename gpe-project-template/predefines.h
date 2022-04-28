@@ -23,6 +23,10 @@
  * */
 #define DENSEPSILON 1.0e-8
 
+/**
+ * GPE_FOR can be either PARTICLES or DIMERS. If PARTICLES then \f$\kappa=1\f$, if DIMERS then \f$\kappa=2\f$
+ * */
+#define GPE_FOR DIMERS
 
 /**
  * Machine file. 
