@@ -3,18 +3,28 @@
 #include <string.h>
 #include <math.h>
 
-#include "predefines.h"
-#include "gpe_utils.h"
-#include "pca_utils.h"
-#include "gpe_engine_api.h"
-#include "wslda_reproducibility.h"
 #include "wdata.h"
 
-int wsldapid;
+
+// #include "pca_settings.h"
+// #include "wslda_potdens.h"
+
+
+// #include "pca_macro.h"
+
+#include "wslda_toolkit.h"
+#include "pca_logger.h"
+#include "logger.h"
+#include "predefines.h"
+#include "gpe_utils.h"
+// #include "pca_utils.h"
+#include "gpe_engine_api.h"
+#include "wslda_reproducibility.h"
 
 int main( int argc , char ** argv ) 
 {
-    read_of_input_parameters(argc, argv);
+    char execcmd[ 256 ];
+    read_of_input_parameters(execcmd, argc, argv);
     int input_idx = parse_command_line_and_get_idx_of_input_file(argc, argv);
     read_input_file(input_idx, argv);
     
@@ -35,7 +45,7 @@ int main( int argc , char ** argv )
     
     set_gpu_device(device);
 
-    int nx, ny, nz, ierr;
+    int nx, ny, nz, ierr, it = 0;
     gpe_get_lattice_api(&nx, &ny, &nz);
     printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
 
@@ -52,8 +62,10 @@ int main( int argc , char ** argv )
     }
 
     Complex *psi;
+    double *density, *currents, *energy;
+    wslda_potential nullPotential;
     uint nxyz=nx*ny*nz;
-    alloc_host_memory(nxyz, &psi);
+    alloc_host_memory(nxyz, &psi, &density, &currents);
 
     switch (inittype)
     {
@@ -77,6 +89,8 @@ int main( int argc , char ** argv )
 
     etot = ekin + eint + eext;
     print_intial_results(time, npart, etot, ekin, eint, eext);
+    cppmallocl(energy, ENERGYITEMS, double);
+
     
     // Create empty WDATA set
     // use example:
@@ -127,13 +141,17 @@ int main( int argc , char ** argv )
     gpe_get_psi_api(&time, psi);
     wdata_write_cycle(&wmd, "psi", psi);
     
-//         gpe_get_density(&time, psi);
-    // outprefix_density.wdat
-//         gpe_get_current(&time, psi);
-    // outprefix_current.wdat
+    gpe_get_density(&time, density);
+    wdata_write_cycle(&wmd, "density_a", density);
+
+    gpe_get_currents(&time, currents);
+    wdata_write_cycle(&wmd, "current_a", currents);
+
     wdata_add_cycle(&wmd);
     wdata_write_metadata_to_file(&wmd, "");
     
+    logger_create_header(execcmd);
+
     // TODO
     // if(mode=...)
     while(1)
@@ -145,6 +163,10 @@ int main( int argc , char ** argv )
         
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
+        
+        // TODO: other energies???
+        energy[EKIN] = ekin;
+
 
         if(mode==0) { //TOREMOVE
             etot_prev=etot;
@@ -161,24 +183,22 @@ int main( int argc , char ** argv )
         gpe_get_psi_api(&time, psi);
         wdata_write_cycle(&wmd, "psi", psi);
         
-//         gpe_get_density(&time, psi);
-        // outprefix_density.wdat
-//         gpe_get_current(&time, psi);
-        // outprefix_current.wdat
+        gpe_get_density(&time, density);
+        wdata_write_cycle(&wmd, "density_a", density);
+
+        gpe_get_currents(&time, currents);
+        wdata_write_cycle(&wmd, "current_a", currents);
         
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        // add entry to logger
-        // na początku kodu utworzyć plik tekstowy outprefix.wlog
-        //kF=referencekF();
-        // przygotować strukture wslda_density
-        // logger(...)
+        logger_add_entry(it++, convert_into_wslda_density(density, nxyz), nullPotential, input->referencekF, NULL, energy, &npart, NULL, 0, NULL);
+        
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
         if(time > dt*input->timesteps*input->measurements) 
         {
-            if(mode==0) printf("WARNING: ...\n")
+            if(mode==0) printf("WARNING: ...\n");
             break; // do not allow to iterate infinitly long
         }
     }

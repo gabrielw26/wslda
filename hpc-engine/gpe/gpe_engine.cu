@@ -1536,7 +1536,7 @@ int gpe_energy(double *t, double *ekin, double *eint, double *eext)
     return 0;
 }
 
-int gpe_get_density(double *t, double * density)
+int gpe_density(double *t, double * density)
 {
     __gpe_compute_density__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2R);
     cudaError err;
@@ -1546,7 +1546,7 @@ int gpe_get_density(double *t, double * density)
     return 0;
 }
 
-int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
+int gpe_currents(double *t, double * currents)
 {
     int ierr;
     cudaError err;
@@ -1570,21 +1570,21 @@ int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jx , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );    
+    myerrcheck( cudaMemcpy( currents , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );    
     
     // Compute d / dy and jy
     __gpe_multiply_by_ky__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi2, gpe_mem.d_wrk2);
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jy , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
+    myerrcheck( cudaMemcpy( currents + nxyz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
     
     // Compute d / dz and jz
     __gpe_multiply_by_kz__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi2, gpe_mem.d_wrk2);
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
+    myerrcheck( cudaMemcpy( currents + 2 * nxyz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
 
     // Free memory
     if(alloc) 
@@ -1592,6 +1592,7 @@ int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
         myerrcheck( cudaFree(gpe_mem.d_wrk3R) );  
         gpe_mem.d_wrk3R = NULL;      
     }
-        
+
+
     return 0;
 }

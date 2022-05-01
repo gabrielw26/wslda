@@ -11,7 +11,7 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi);
 void print_header();
 void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext);
 void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt);
-void read_of_input_parameters(int argc , char ** argv);
+void read_of_input_parameters(char* execcmd, int argc , char ** argv);
 int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv);
 void read_input_file(int idx, char ** argv);
 

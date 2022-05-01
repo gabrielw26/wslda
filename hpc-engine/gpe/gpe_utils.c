@@ -171,10 +171,9 @@ void print_results(double time, double npart, double etot, double ekin, double e
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
 }
 
-void read_of_input_parameters(int argc , char ** argv)
+void read_of_input_parameters(char* execcmd, int argc , char ** argv)
 {
     int i;
-    char execcmd[ 256 ];
     strcpy( execcmd , argv[ 0 ] ) ;
     for( i = 1 ; i < argc ; i++ ) 
     {
