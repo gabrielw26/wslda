@@ -5,21 +5,28 @@
 
 #include "wdata.h"
 
+#include "wslda_functionals.h"
 
-// #include "pca_settings.h"
-// #include "wslda_potdens.h"
+#include "pca_settings.h"
+#include "wslda_potdens.h"
 
-
-// #include "pca_macro.h"
-
-#include "wslda_toolkit.h"
+#include "pca_utils.h"
 #include "pca_logger.h"
-#include "logger.h"
+
+double dc_ec;
+
 #include "predefines.h"
 #include "gpe_utils.h"
-// #include "pca_utils.h"
+
 #include "gpe_engine_api.h"
 #include "wslda_reproducibility.h"
+
+int wsldapid; // process id - global variable
+int wsldapnp; // total number of processes - global variable
+#define printf wprintf
+#include "logger.h"
+#undef printf
+
 
 int main( int argc , char ** argv ) 
 {
@@ -37,7 +44,7 @@ int main( int argc , char ** argv )
     const int mode=input->gpe_mode;
     const double alpha=input->alpha;
     const double beta=input->beta;
-    const double npart=input->npart;
+    double npart=input->npart;
     const double dt=input->dt;
     const double time0 = 0.0;
     int inittype = input->inittype;
