@@ -1,11 +1,9 @@
 # ------------------- INITIALIZATION ------------------
 # See: Wiki -> Initialization of the solver
-inittype                0       #  0 - create uniform solution and start from it,
-                                # 10 - read uniform solution from file `inprefix`/uniform.solution
-                                #  
-                                #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
-                                #  
-                                # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
+inittype                0       #  0 - create uniform solution and start from it
+                                #    - prepeared for imaginary evolution
+                                #  5 - start from checkpoint, inprefix points to folder with checkpoint binary file 
+                                #    - prepeared for real time evolution
 
 # ---------------- GPE COEFFICIENTS --------------
 alpha                   0.0     # imaginary part
