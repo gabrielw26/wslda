@@ -1,4 +1,6 @@
 
+#include "stdio.h"
+
 static int lineid; // line id 
 
 /**
@@ -80,22 +82,12 @@ int logger(FILE *log,
     
     
     // add entry
-    fprintf(log, "%6d %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
+    fprintf(log, "%6d %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
         it, // 1
-        npart[SPINA], // 2
-        npart[SPINB], // 3
-        npart[SPINA]+npart[SPINB], // 4
         E_tot/Effg, // 5
         observable[EKIN]/Effg, // 6
         observable[EPOT]/Effg, // 7
-        observable[EPAIR]/Effg, // 8
-        observable[ECURRENT]/Effg, // 9
         observable[EPOTEXT]/Effg, //10
-        observable[EPAIREXT]/Effg, //11
-        observable[EVELEXT]/Effg, //12
-        observable[ENTROPY]/(npart[SPINA]+npart[SPINB]), //13
-        mu[SPINA]/eF, //14
-        mu[SPINB]/eF, //15
         kF, // 16
         eF, // 17
         Effg, // 18
