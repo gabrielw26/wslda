@@ -117,7 +117,7 @@ int load_extra_data(size_t size, void *extra_data, double *params)
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the scattering length a(x,y,z,t).
  * */
-__device__ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
+__device__ double scattering_length(int it, double *params, size_t extra_data_size, void *extra_data)
 {
     return d_sclgth; // by default return value from input file.
     
@@ -144,7 +144,9 @@ __device__ double scattering_length(int ix, int iy, int iz, int it, double *para
  * */
 __device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
 {
-    // TODO call scattering_length()
+    // Use if needed
+    // double sclgth = scattering_length(it, params, extra_data_size, extra_data);
+
     // Density energy functional for unitary Fermi gas
     // see: Phys. Rev. A 90, 043638 (2014)
     (*energy) = 0.37*0.6*rho*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.; // unitary limit
@@ -165,7 +167,9 @@ __device__ int compute_energy_gpe(int it, double rho, double *energy, double *pa
  * */
 __device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
 {
-    // TODO call scattering_length()
+    // Use if needed
+    // double sclgth = scattering_length(it, params, extra_data_size, extra_data);
+    
     // see: Phys. Rev. A 90, 043638 (2014)
     (*dEDFdn) = 0.37*pow(3.0*M_PI*M_PI*rho, 2.0/3.0)/2.0; // unitary limit
     return 0;

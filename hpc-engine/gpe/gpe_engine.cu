@@ -69,6 +69,7 @@ gpe_mem_t gpe_mem;
 
 
 // CONST MEMORY - device
+__constant__ double d_sclgth;
 __constant__ double d_alpha;
 __constant__ double d_beta;
 __constant__ double d_qfcoeff; // quantum friction coeff
@@ -89,9 +90,6 @@ __constant__ double d_dt;
 __constant__ double d_t0;
 __constant__ double d_npart;
 __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe_set_psi_ref() function to set it
-
-// VARIABLE MEMORY device
-__device__ double d_sclgth;
 
 #define PARTICLES 1
 #define DIMERS 2
