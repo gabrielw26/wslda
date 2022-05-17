@@ -94,10 +94,10 @@ __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe
 #define PARTICLES 1
 #define DIMERS 2
 
-// TODO -> enable wslda_density in problem-definition.h file
-#define double_complex Complex
-#define __externc
-#include "wslda_potdens.h"
+// // TODO -> enable wslda_density in problem-definition.h file
+// #define double_complex Complex
+// #define __externc
+// #include "wslda_potdens.h"
 #include "problem-definition.h"
 
 #if GPE_FOR == PARTICLES
