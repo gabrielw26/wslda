@@ -61,6 +61,7 @@ typedef struct
     double qfcoeff;
     int threads;
     int blocks;
+    double sclgth;
     
 } gpe_mem_t;
 
@@ -88,6 +89,9 @@ __constant__ double d_dt;
 __constant__ double d_t0;
 __constant__ double d_npart;
 __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe_set_psi_ref() function to set it
+
+// VARIABLE MEMORY device
+__device__ double d_sclgth;
 
 #define PARTICLES 1
 #define DIMERS 2
@@ -656,6 +660,15 @@ int gpe_set_user_params(int size, double *params)
     if(size>MAX_USER_PARAMS) return -9;
     
     myerrcheck( cudaMemcpyToSymbol(d_user_param, params, MAX_USER_PARAMS*sizeof(double)) ) ;
+    
+    return 0;
+}
+
+int gpe_set_sclgth(double sclgth)
+{
+    cudaError err;
+    myerrcheck( cudaMemcpyToSymbol(d_sclgth, &sclgth, sizeof(double)) ) ;
+    gpe_mem.sclgth=sclgth;
     
     return 0;
 }

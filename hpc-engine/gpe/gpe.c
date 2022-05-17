@@ -69,6 +69,7 @@ int main( int argc , char ** argv )
 
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
+    gpe_set_sclgth_api(input->sclgth);
     gpe_set_psi_api(time0, psi);
     if(mode==0) gpe_normalize_psi_api();
 
@@ -178,7 +179,7 @@ int main( int argc , char ** argv )
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
         if(time > dt*input->timesteps*input->measurements) 
         {
-            if(mode==0) printf("WARNING: ...\n")
+            if(mode==0) printf("WARNING: ...\n");
             break; // do not allow to iterate infinitly long
         }
     }

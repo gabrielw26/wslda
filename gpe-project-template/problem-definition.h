@@ -117,10 +117,9 @@ int load_extra_data(size_t size, void *extra_data, double *params)
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the scattering length a(x,y,z,t).
  * */
-double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
+__device__ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
 {
-    return 0; // TODO
-    // return input->sclgth; // by default return value from input file.
+    return d_sclgth; // by default return value from input file.
     
     // however, here you can define your own prescription
     // it can be time and position dependent
@@ -143,7 +142,7 @@ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t 
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-inline __device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
+__device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
 {
     // TODO call scattering_length()
     // Density energy functional for unitary Fermi gas
@@ -164,7 +163,7 @@ inline __device__ int compute_energy_gpe(int it, double rho, double *energy, dou
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-inline __device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
+__device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
 {
     // TODO call scattering_length()
     // see: Phys. Rev. A 90, 043638 (2014)
