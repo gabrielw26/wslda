@@ -14,7 +14,7 @@
  * @return value of the external potential V_spin(x,y,z)
  * */
 // analog of inline __device__  double gpe_external_potential(uint ix, uint iy, uint iz, uint it)
-inline __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
+__device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
     // harmonic trap:
     // V(x,y,z) = 0.5*(omega_x*x)^2 + 0.5*(omega_y*y)^2 + 0.5*(omega_z*z)^2
@@ -102,37 +102,9 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if modification is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-inline __device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
+__device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
 {
     // no change
-    return 0;
-}
-
-
-/**
- * This function provides size of extra_data array, in bytes.
- * The extra_data of specified size will be allocated by the main process.
- * This function is thread-safe.
- * @param params with input file parameters. 
- *              NOTE: the array contains bare input file values, not processed by process_params()!
- * @return size of the extra_data array that needs to be allocated, if 0 then extra_data will not be allocated.
- * */
-size_t get_extra_data_size(double *params)
-{
-    return 0;
-}
-
-/**
- * This function loads data into extra_data array.
- * This function is thread-safe.
- * @param size size of array computed using function get_extra_data_size()
- * @param extra_data pointer to array that should be filled with data
- * @param params with input file parameters. 
- *               NOTE: the array contains bare input file values, not processed by process_params()!
- * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
- * */
-int load_extra_data(size_t size, void *extra_data, double *params)
-{
     return 0;
 }
 
@@ -151,7 +123,7 @@ int load_extra_data(size_t size, void *extra_data, double *params)
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the scattering length a(x,y,z,t).
  * */
-double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
+__device__ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t extra_data_size, void *extra_data)
 {
     return 0; // TODO
     // return input->sclgth; // by default return value from input file.
@@ -160,10 +132,6 @@ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t 
     // it can be time and position dependent
     // ...
 }
-
-/**
- * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
- * */
 
 /**
  * This function computes internal energy in case is CUSTOMEDF functional is selected.
@@ -177,7 +145,7 @@ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t 
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-inline __device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
+__device__ int compute_energy_gpe(int it, double rho, double *energy, double *params, size_t extra_data_size, void *extra_data)
 {
     // TODO call scattering_length()
     // Density energy functional for unitary Fermi gas
@@ -198,7 +166,7 @@ inline __device__ int compute_energy_gpe(int it, double rho, double *energy, dou
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-inline __device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
+__device__ int compute_potentials_gpe(int it, double rho, double *dEDFdn, double *params, size_t extra_data_size, void *extra_data)
 {
     // TODO call scattering_length()
     // see: Phys. Rev. A 90, 043638 (2014)

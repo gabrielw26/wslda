@@ -8,8 +8,8 @@ inittype                0       #  0 - create uniform solution and start from it
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
 
 # ---------------- GPE COEFFICIENTS --------------
-alpha                   0.0     # imaginary part
-beta                    1.0     # real part
+alpha                   1.0     # imaginary part
+beta                    0.0     # real part
 gpe_mode                0       # 0-imag, 1-real. Real mode use fixed inittype==5.
 
 # ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              

@@ -109,33 +109,27 @@ int main( int argc , char ** argv )
     cppmallocl(energy, ENERGYITEMS, double);
 
     
-//     // Load data
-//     if(ip==0) extra_data_size = get_extra_data_size(md.params);
-//     MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-//     if(extra_data_size>0)
-//     {
-//         if(ip==0) wprintf("# EXTRA_DATA IS ACTIVE.\n");
-//         if(ip==0) wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
-//         if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
-//         {                                                             
-//             wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
-//             wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
-//             MPI_Finalize() ;
-//             /* Arrays will be cleared automatically */
-//             return( EXIT_FAILURE ) ; 
-//         }
-//         if(ip==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
-//         if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
-//         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-//         
-//         // copy extra data to GPU
-//         gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
-//         gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
-//         gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
-//         
-//         // reproducibility pack
-//         if(ip==0) save_extradata_to_file(extra_data_size, extra_data);
-//     }
+    // Load data
+    void *extra_data = NULL;
+    size_t extra_data_size = get_extra_data_size(input->params);
+    if(extra_data_size>0)
+    {
+        wprintf("# EXTRA_DATA IS ACTIVE.\n");
+        wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+        if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+        {                                                             
+            wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+            wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+            return( EXIT_FAILURE ) ; 
+        }
+        wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
+        host_exec( load_extra_data(extra_data_size, extra_data, input->params) );
+            
+        gpe_set_extra_data_api(extra_data, extra_data_size);
+        
+        // reproducibility pack
+        save_extradata_to_file_with_outprefix(extra_data_size, extra_data, input->outprefix);
+    }
 //     wprintf("# EXECUTING: process_params(input->params, [%f], NULL, %zu, extra_data)\n", kF, extra_data_size);
 //     process_params(md.params, &kF, NULL, extra_data_size, extra_data);
     

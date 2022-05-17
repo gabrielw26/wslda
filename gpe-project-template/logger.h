@@ -4,6 +4,34 @@
 static int lineid; // line id 
 
 /**
+ * This function provides size of extra_data array, in bytes.
+ * The extra_data of specified size will be allocated by the main process.
+ * This function is thread-safe.
+ * @param params with input file parameters. 
+ *              NOTE: the array contains bare input file values, not processed by process_params()!
+ * @return size of the extra_data array that needs to be allocated, if 0 then extra_data will not be allocated.
+ * */
+size_t get_extra_data_size(double *params)
+{
+    return 0;
+}
+
+/**
+ * This function loads data into extra_data array.
+ * This function is thread-safe.
+ * @param size size of array computed using function get_extra_data_size()
+ * @param extra_data pointer to array that should be filled with data
+ * @param params with input file parameters. 
+ *               NOTE: the array contains bare input file values, not processed by process_params()!
+ * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * */
+int load_extra_data(size_t size, void *extra_data, double *params)
+{
+    return 0;
+}
+
+
+/**
  * This function adds new entry to `outprefix`.wlog file.
  * It is executed at the end of each iteration
  * @param log pointer to file 
