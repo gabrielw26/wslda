@@ -52,7 +52,7 @@ int main( int argc , char ** argv )
     
     set_gpu_device(device);
 
-    int nx, ny, nz, ierr, it = 0;
+    int nx, ny, nz, ierr, it = 0, i;
     gpe_get_lattice_api(&nx, &ny, &nz);
     printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
 
@@ -86,6 +86,16 @@ int main( int argc , char ** argv )
         break;
     }
 
+    wslda_density densall;
+    densall.nx=NX; densall.ny=NY; densall.nz=NZ; 
+    densall.datadim=3;
+    densall.blocklength=NX*NY*NZ;
+    densall.nu=(double_complex *)psi;
+    densall.rho_a=density;
+    densall.rho_b=density;
+    densall.j_a_x=currents; densall.j_a_y=currents+nxyz; densall.j_a_z=currents+nxyz*2;
+    densall.j_b_x=currents; densall.j_b_y=currents+nxyz; densall.j_b_z=currents+nxyz*2;
+    
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_psi_api(time0, psi);
@@ -98,6 +108,36 @@ int main( int argc , char ** argv )
     print_intial_results(time, npart, etot, ekin, eint, eext);
     cppmallocl(energy, ENERGYITEMS, double);
 
+    
+//     // Load data
+//     if(ip==0) extra_data_size = get_extra_data_size(md.params);
+//     MPI_Bcast( &extra_data_size , sizeof(size_t) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+//     if(extra_data_size>0)
+//     {
+//         if(ip==0) wprintf("# EXTRA_DATA IS ACTIVE.\n");
+//         if(ip==0) wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+//         if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+//         {                                                             
+//             wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+//             wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+//             MPI_Finalize() ;
+//             /* Arrays will be cleared automatically */
+//             return( EXIT_FAILURE ) ; 
+//         }
+//         if(ip==0) wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
+//         if(ip==0) cpu_exec( load_extra_data(extra_data_size, extra_data, md.params) );
+//         MPI_Bcast( extra_data , extra_data_size , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+//         
+//         // copy extra data to GPU
+//         gpu_exec( gpu_malloc(extra_data_size, (void **)&d_extra_data) );
+//         gpu_exec( memcopy_host2gpu(extra_data, d_extra_data,  extra_data_size) ); 
+//         gpu_exec( memcopy_extra_data(extra_data_size, d_extra_data) );
+//         
+//         // reproducibility pack
+//         if(ip==0) save_extradata_to_file(extra_data_size, extra_data);
+//     }
+//     wprintf("# EXECUTING: process_params(input->params, [%f], NULL, %zu, extra_data)\n", kF, extra_data_size);
+//     process_params(md.params, &kF, NULL, extra_data_size, extra_data);
     
     // Create empty WDATA set
     // use example:
@@ -148,10 +188,10 @@ int main( int argc , char ** argv )
     gpe_get_psi_api(&time, psi);
     wdata_write_cycle(&wmd, "psi", psi);
     
-    gpe_get_density(&time, density);
+    gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
     wdata_write_cycle(&wmd, "density_a", density);
 
-    gpe_get_currents(&time, currents);
+    gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
     wdata_write_cycle(&wmd, "current_a", currents);
 
     wdata_add_cycle(&wmd);
@@ -190,16 +230,16 @@ int main( int argc , char ** argv )
         gpe_get_psi_api(&time, psi);
         wdata_write_cycle(&wmd, "psi", psi);
         
-        gpe_get_density(&time, density);
+        gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
         wdata_write_cycle(&wmd, "density_a", density);
 
-        gpe_get_currents(&time, currents);
+        gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
         wdata_write_cycle(&wmd, "current_a", currents);
         
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        logger_add_entry(it++, convert_into_wslda_density(density, nxyz), nullPotential, input->referencekF, NULL, energy, &npart, NULL, 0, NULL);
+        logger_add_entry(it++, densall, nullPotential, input->referencekF, NULL, energy, &npart, NULL, 0, NULL);
         
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
@@ -211,10 +251,6 @@ int main( int argc , char ** argv )
     }
 
     // close files
-    
-//     gpe_get_psi_api(&time, psi); //TOREMOVE
-//     write_to_binary_file(nxyz, psi); //TOREMOVE
-//     write_to_txt_file(nx, ny, nz, psi); //TOREMOVE
 
     gpe_destroy_engine_api();
     free_host_memory(psi);
