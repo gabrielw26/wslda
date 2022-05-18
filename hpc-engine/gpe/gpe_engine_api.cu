@@ -17,6 +17,12 @@ int gpe_set_user_params_api(int size, double *params)
     gpe_exec( gpe_set_user_params(size, params), ierr );
     return ierr;
 }
+int gpe_set_sclgth_api(double sclgth)
+{
+    int ierr;
+    gpe_exec( gpe_set_sclgth(sclgth), ierr );
+    return ierr;
+}
 int gpe_set_psi_api(double t, __Complex * psi)
 {
     int ierr;
