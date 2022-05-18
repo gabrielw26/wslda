@@ -64,6 +64,13 @@ typedef cufftDoubleComplex Complex;
 /****************************** GPE ENGINE *********************************/
 /***************************************************************************/
 /**
+ * Function set extra data in device constant memory
+ * @param * extra_data array of extra data
+ * @param * extra_data_size size of extra data
+ * */
+int gpe_set_extra_data(void* extra_data, size_t extra_data_size);
+
+/**
  * Function provides sizes of mesh 
  * provided in compilation process.
  * @param *_nx size of mesh in x direction [OUTPUT]

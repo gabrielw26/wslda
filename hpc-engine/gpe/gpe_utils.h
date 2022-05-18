@@ -4,6 +4,18 @@
 #include <cufft.h>
 typedef cufftDoubleComplex Complex;
 
+#include "wslda_errors.h"
+#define host_exec( cmd )                                                         \
+    { ierr=cmd;                                                                 \
+    if(ierr)                                                                    \
+    {                                                                           \
+        fprintf( stderr , "CPU ERROR: cannot execute: %s\n" , #cmd) ;\
+        fprintf( stderr , "file=`%s`, line=%d\n" ,__FILE__,__LINE__) ;          \
+        fprintf( stderr , "Error=%d\nExiting!\n" ,ierr) ;                       \
+        report_error(ierr, stderr);                                             \
+        return( EXIT_FAILURE ) ;                                                \
+    } }
+
 void set_initial_wave_function(uint nxyz, Complex *psi);
 void read_initial_wave_function(uint nxyz, Complex *psi);
 void write_to_binary_file(uint nxyz, Complex *psi);
@@ -14,6 +26,8 @@ void print_results(double time, double npart, double etot, double ekin, double e
 void read_of_input_parameters(char* execcmd, int argc , char ** argv);
 int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv);
 void read_input_file(int idx, char ** argv);
+void save_extradata_to_file_with_outprefix(size_t size, void *extra_data, char* outprefix);
+int malloc_extra_data(size_t extra_data_size, void *extra_data);
 
 // TO MAKE COMPATIBILE WITH WSLDA TOOLKIT
 #ifndef TDWSLDA

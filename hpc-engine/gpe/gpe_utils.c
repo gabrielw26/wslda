@@ -37,7 +37,6 @@
 #include "pca_utils.h"
 #include "gpe_utils.h"
 
-
 void set_initial_wave_function(uint nxyz, Complex *psi)
 {
     uint ixyz;
@@ -46,7 +45,6 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
         psi[ixyz].x = 1.0; psi[ixyz].y = 0.0; 
     }
 }
-
 
 void read_initial_wave_function(uint nxyz, Complex *psi)
 {
@@ -225,4 +223,28 @@ void read_input_file(int idx, char ** argv)
     }
         
     // Input file tags are accessible through pointer `input`
+}
+
+void save_extradata_to_file_with_outprefix(size_t size, void *extra_data, char* outprefix)
+{
+    char fname[1024];
+    sprintf(fname, "%s_extra_data.dat", outprefix);
+    wprintf("# SAVING EXTRA_DATA TO FILE: %s\n", fname);
+    FILE * f = fopen(fname, "wb");
+    fwrite(extra_data, size, 1, f);
+    fclose(f);
+}
+
+int malloc_extra_data(size_t extra_data_size, void *extra_data)
+{
+    wprintf("# EXTRA_DATA IS ACTIVE.\n");
+    wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+    if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+    {                                                             
+        wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+        wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+        return( EXIT_FAILURE ) ; 
+    }
+    wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
+    return 0;
 }

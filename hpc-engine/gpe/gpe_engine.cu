@@ -91,6 +91,9 @@ __constant__ double d_t0;
 __constant__ double d_npart;
 __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe_set_psi_ref() function to set it
 
+__constant__ void *dc_extra_data;
+__constant__ size_t dc_extra_data_size;
+
 #define PARTICLES 1
 #define DIMERS 2
 
@@ -392,14 +395,12 @@ static __device__ __host__ inline Complex cplxInv(Complex c)
 /***************************************************************************/ 
 /****************************** FUNCTIONS **********************************/
 /***************************************************************************/
-/**
- * Function computes density from wave function psi
- * */
-inline __device__  double gpe_density(Complex psi)
+int gpe_set_extra_data(void* extra_data, size_t extra_data_size)
 {
-    return GAMMA * (psi.x*psi.x + psi.y*psi.y); // |psi|^2 * GAMMA, where GAMMA=1 for particles, GAMMA=2 for dimers
+    if( cudaMemcpyToSymbol(dc_extra_data,      &extra_data,      sizeof(void *))!= cudaSuccess ) return 1;
+    if( cudaMemcpyToSymbol(dc_extra_data_size, &extra_data_size, sizeof(size_t))!= cudaSuccess ) return 2;
+    return 0;
 }
-
 
 void gpe_get_lattice(int *_nx, int *_ny, int *_nz)
 {
@@ -740,6 +741,11 @@ int gpe_clear_psi_ref()
     
     
     return 0;
+}
+
+__device__  double gpe_density(Complex psi)
+{
+    return GAMMA * (psi.x*psi.x + psi.y*psi.y); // |psi|^2 * GAMMA, where GAMMA=1 for particles, GAMMA=2 for dimers
 }
 
 __global__ void __gpe_compute_density__(Complex *psi_in, double *rho_out)
