@@ -199,8 +199,6 @@ int main( int argc , char ** argv )
     
     logger_create_header(execcmd);
 
-    // TODO
-    // if(mode=...)
     while(1)
     {
         b_t(); // reset timer
@@ -245,7 +243,7 @@ int main( int argc , char ** argv )
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
         if(time > dt*input->timesteps*input->measurements) 
         {
-            if(mode==0) printf("WARNING: ...\n");
+            if(mode==0) printf("WARNING: Program has executed %d steps and still doesn't converge.\n", input->measurements);
             break; // do not allow to iterate infinitly long
         }
     }
