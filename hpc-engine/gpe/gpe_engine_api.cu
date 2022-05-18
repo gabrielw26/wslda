@@ -21,6 +21,10 @@ int gpe_set_extra_data_api(void* extra_data, size_t extra_data_size)
 {
     int ierr;
     gpe_exec( gpe_set_extra_data(extra_data, extra_data_size), ierr );    
+int gpe_set_sclgth_api(double sclgth)
+{
+    int ierr;
+    gpe_exec( gpe_set_sclgth(sclgth), ierr );
     return ierr;
 }
 int gpe_set_psi_api(double t, __Complex * psi)

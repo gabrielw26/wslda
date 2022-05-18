@@ -115,6 +115,14 @@ int gpe_set_time(double t0);
 int gpe_set_user_params(int size, double *params);
 
 /**
+ * Function sets scattering length.
+ * This variable is accessible in functions scattering_length() through d_sclgth.
+ * @param sclgth variable sets in input structure.
+ * @return It returns 0 if success otherwise error code is returned.
+ * */
+int gpe_set_sclgth(double sclgth);
+
+/**
  * Functions sets value of quantum friction coefficient.
  * Note - quantum friction produces extra cost in computation process - overhead is about 50%! 
  * @param qfcoeff - quantum friction coefficient \f$\gamma\f$. If qfcoeff==0.0 then quantum friction is deactivated. [INPUT]
