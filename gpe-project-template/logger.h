@@ -48,7 +48,7 @@ void process_params(double *params, double *kF, double *mu, size_t extra_data_si
     // PROCESS INPUT FILE PARAMETERS
 }
 
-
+/** 
  * This function computes Fermi momentum, which is used as the reference value. 
  * Other reference scales are set automatically to: eF=kF^2/2, Effg=(3/5)*N*eF (N-total number of particles)
  * For more details see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Reference%20scales
