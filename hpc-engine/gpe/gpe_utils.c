@@ -234,3 +234,17 @@ void save_extradata_to_file_with_outprefix(size_t size, void *extra_data, char* 
     fwrite(extra_data, size, 1, f);
     fclose(f);
 }
+
+int malloc_extra_data(size_t extra_data_size, void *extra_data)
+{
+    wprintf("# EXTRA_DATA IS ACTIVE.\n");
+    wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+    if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+    {                                                             
+        wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+        wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+        return( EXIT_FAILURE ) ; 
+    }
+    wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
+    return 0;
+}

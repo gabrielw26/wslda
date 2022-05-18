@@ -37,24 +37,6 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
     return trap;
 }
 
-/** 
- * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * After loading params array from input file, the parameters are processed by this routine.
- * The routine is executed at beginning of each iteration.
- * @param params array of size MAX_USER_PARAMS with parameters from input file. 
- * @param kF typical Fermi momentum scale of the problem. 
- *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to maximal density.
- *           You can also set kF at request in this function using (*kF)=myvalue;
- * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
-{
-    // PROCESS INPUT FILE PARAMETERS 
-}
-
 /**
  * This function computes Fermi momentum, which is used as the reference value. 
  * Other reference scales are set automatically to: eF=kF^2/2, Effg=(3/5)*N*eF (N-total number of particles)

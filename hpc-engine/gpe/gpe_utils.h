@@ -27,6 +27,7 @@ void read_of_input_parameters(char* execcmd, int argc , char ** argv);
 int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv);
 void read_input_file(int idx, char ** argv);
 void save_extradata_to_file_with_outprefix(size_t size, void *extra_data, char* outprefix);
+int malloc_extra_data(size_t extra_data_size, void *extra_data);
 
 // TO MAKE COMPATIBILE WITH WSLDA TOOLKIT
 #ifndef TDWSLDA
