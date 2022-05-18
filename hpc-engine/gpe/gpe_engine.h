@@ -64,6 +64,13 @@ typedef cufftDoubleComplex Complex;
 /****************************** GPE ENGINE *********************************/
 /***************************************************************************/
 /**
+ * Function set extra data in device constant memory
+ * @param * extra_data array of extra data
+ * @param * extra_data_size size of extra data
+ * */
+int gpe_set_extra_data(void* extra_data, size_t extra_data_size);
+
+/**
  * Function provides sizes of mesh 
  * provided in compilation process.
  * @param *_nx size of mesh in x direction [OUTPUT]
@@ -170,7 +177,7 @@ int gpe_clear_psi_ref();
  * @param density corresponding density [OUTPUT]
  * @return It returns 0 if success otherwise error code is returned.
  * */
-int gpe_get_density(double *t, double * density);
+int gpe_density(double *t, double * density);
 
 /**
  * Function returns currents computed from wave function \f$\vec{j}(\vec{r}, t)=\frac{1}{\kappa}\textrm{Im}[\Psi^*(\vec{r}, t)\vec{\nabla}\Psi(\vec{r}, t)]\f$ 
@@ -182,7 +189,7 @@ int gpe_get_density(double *t, double * density);
  * @param jz z coordinate of currents i.e. j_z(r,t) [OUTPUT]
  * @return It returns 0 if success otherwise error code is returned.
  * */
-int gpe_get_currents(double *t, double * jx, double * jy, double * jz);
+int gpe_currents(double *t, double * currents);
 
 /**
  * Function normalizes state

@@ -91,6 +91,9 @@ __constant__ double d_t0;
 __constant__ double d_npart;
 __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe_set_psi_ref() function to set it
 
+__constant__ void *dc_extra_data;
+__constant__ size_t dc_extra_data_size;
+
 #define PARTICLES 1
 #define DIMERS 2
 
@@ -392,14 +395,12 @@ static __device__ __host__ inline Complex cplxInv(Complex c)
 /***************************************************************************/ 
 /****************************** FUNCTIONS **********************************/
 /***************************************************************************/
-/**
- * Function computes density from wave function psi
- * */
-inline __device__  double gpe_density(Complex psi)
+int gpe_set_extra_data(void* extra_data, size_t extra_data_size)
 {
-    return GAMMA * (psi.x*psi.x + psi.y*psi.y); // |psi|^2 * GAMMA, where GAMMA=1 for particles, GAMMA=2 for dimers
+    if( cudaMemcpyToSymbol(dc_extra_data,      &extra_data,      sizeof(void *))!= cudaSuccess ) return 1;
+    if( cudaMemcpyToSymbol(dc_extra_data_size, &extra_data_size, sizeof(size_t))!= cudaSuccess ) return 2;
+    return 0;
 }
-
 
 void gpe_get_lattice(int *_nx, int *_ny, int *_nz)
 {
@@ -740,6 +741,11 @@ int gpe_clear_psi_ref()
     
     
     return 0;
+}
+
+__device__  double gpe_density(Complex psi)
+{
+    return GAMMA * (psi.x*psi.x + psi.y*psi.y); // |psi|^2 * GAMMA, where GAMMA=1 for particles, GAMMA=2 for dimers
 }
 
 __global__ void __gpe_compute_density__(Complex *psi_in, double *rho_out)
@@ -1543,7 +1549,7 @@ int gpe_energy(double *t, double *ekin, double *eint, double *eext)
     return 0;
 }
 
-int gpe_get_density(double *t, double * density)
+int gpe_density(double *t, double * density)
 {
     __gpe_compute_density__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2R);
     cudaError err;
@@ -1553,7 +1559,7 @@ int gpe_get_density(double *t, double * density)
     return 0;
 }
 
-int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
+int gpe_currents(double *t, double * currents)
 {
     int ierr;
     cudaError err;
@@ -1577,21 +1583,21 @@ int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jx , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );    
+    myerrcheck( cudaMemcpy( currents , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );    
     
     // Compute d / dy and jy
     __gpe_multiply_by_ky__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi2, gpe_mem.d_wrk2);
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jy , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
+    myerrcheck( cudaMemcpy( currents + nxyz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
     
     // Compute d / dz and jz
     __gpe_multiply_by_kz__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi2, gpe_mem.d_wrk2);
     cufft_result=cufftExecZ2Z(gpe_mem.plan, gpe_mem.d_wrk2, gpe_mem.d_wrk2, CUFFT_INVERSE);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;    
     __gpe_overlap_real__<<<gpe_mem.blocks, gpe_mem.threads>>>(gpe_mem.d_psi, gpe_mem.d_wrk2, gpe_mem.d_wrk3R);    
-    myerrcheck( cudaMemcpy( jz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
+    myerrcheck( cudaMemcpy( currents + 2 * nxyz , gpe_mem.d_wrk3R , sizeof(double)*nxyz, cudaMemcpyDeviceToHost ) );
 
     // Free memory
     if(alloc) 
@@ -1599,6 +1605,7 @@ int gpe_get_currents(double *t, double * jx, double * jy, double * jz)
         myerrcheck( cudaFree(gpe_mem.d_wrk3R) );  
         gpe_mem.d_wrk3R = NULL;      
     }
-        
+
+
     return 0;
 }

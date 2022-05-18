@@ -3,18 +3,35 @@
 #include <string.h>
 #include <math.h>
 
-#include "predefines.h"
-#include "gpe_utils.h"
-#include "pca_utils.h"
-#include "gpe_engine_api.h"
-#include "wslda_reproducibility.h"
 #include "wdata.h"
 
-int wsldapid;
+#include "wslda_functionals.h"
+
+#include "pca_settings.h"
+#include "wslda_potdens.h"
+
+#include "pca_utils.h"
+#include "pca_logger.h"
+
+double dc_ec;
+
+#include "predefines.h"
+#include "gpe_utils.h"
+
+#include "gpe_engine_api.h"
+#include "wslda_reproducibility.h"
+
+int wsldapid; // process id - global variable
+int wsldapnp; // total number of processes - global variable
+#define printf wprintf
+#include "logger.h"
+#undef printf
+
 
 int main( int argc , char ** argv ) 
 {
-    read_of_input_parameters(argc, argv);
+    char execcmd[ 256 ];
+    read_of_input_parameters(execcmd, argc, argv);
     int input_idx = parse_command_line_and_get_idx_of_input_file(argc, argv);
     read_input_file(input_idx, argv);
     
@@ -27,7 +44,7 @@ int main( int argc , char ** argv )
     const int mode=input->gpe_mode;
     const double alpha=input->alpha;
     const double beta=input->beta;
-    const double npart=input->npart;
+    double npart=input->npart;
     const double dt=input->dt;
     const double time0 = 0.0;
     int inittype = input->inittype;
@@ -35,25 +52,15 @@ int main( int argc , char ** argv )
     
     set_gpu_device(device);
 
-    int nx, ny, nz, ierr;
+    int nx, ny, nz, ierr, it = 0, i;
     gpe_get_lattice_api(&nx, &ny, &nz);
     printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
 
-    switch (mode)
-    {
-    case 0:
-        printf("# IMAGINARY TIME PROJECTION\n");
-        break;
-    case 1:
-        printf("# REAL TIME EVOLUTION\n");
-        break;
-    default:
-        break;
-    }
-
     Complex *psi;
+    double *density, *currents, *energy;
+    wslda_potential nullPotential;
     uint nxyz=nx*ny*nz;
-    alloc_host_memory(nxyz, &psi);
+    alloc_host_memory(nxyz, &psi, &density, &currents);
 
     switch (inittype)
     {
@@ -67,17 +74,54 @@ int main( int argc , char ** argv )
         break;
     }
 
+    wslda_density densall;
+    densall.nx=NX; densall.ny=NY; densall.nz=NZ; 
+    densall.datadim=3;
+    densall.blocklength=NX*NY*NZ;
+    densall.nu=(double_complex *)psi;
+    densall.rho_a=density;
+    densall.rho_b=density;
+    densall.j_a_x=currents; densall.j_a_y=currents+nxyz; densall.j_a_z=currents+nxyz*2;
+    densall.j_b_x=currents; densall.j_b_y=currents+nxyz; densall.j_b_z=currents+nxyz*2;
+    
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_sclgth_api(input->sclgth);
     gpe_set_psi_api(time0, psi);
     if(mode==0) gpe_normalize_psi_api();
 
+    // Load data
+    void *extra_data = NULL;
+    size_t extra_data_size = get_extra_data_size(input->params);
+    if(extra_data_size>0)
+    {
+        host_exec( malloc_extra_data(extra_data_size, extra_data) );
+        host_exec( load_extra_data(extra_data_size, extra_data, input->params) );            
+        gpe_set_extra_data_api(extra_data, extra_data_size);
+        save_extradata_to_file_with_outprefix(extra_data_size, extra_data, input->outprefix);  // reproducibility pack
+    }
+    wprintf("# EXECUTING: process_params(input->params, [%f], NULL, %zu, extra_data)\n", input->referencekF, extra_data_size);
+    process_params(input->params, &(input->referencekF), NULL, extra_data_size, extra_data);
+
+    switch (mode)
+    {
+    case 0:
+        printf("# IMAGINARY TIME PROJECTION\n");
+        break;
+    case 1:
+        printf("# REAL TIME EVOLUTION\n");
+        break;
+    default:
+        break;
+    }
+
     print_header();
     gpe_energy_api(&time, &ekin, &eint, &eext);
 
     etot = ekin + eint + eext;
     print_intial_results(time, npart, etot, ekin, eint, eext);
+    cppmallocl(energy, ENERGYITEMS, double);
+
     
     // Create empty WDATA set
     // use example:
@@ -128,15 +172,17 @@ int main( int argc , char ** argv )
     gpe_get_psi_api(&time, psi);
     wdata_write_cycle(&wmd, "psi", psi);
     
-//         gpe_get_density(&time, psi);
-    // outprefix_density.wdat
-//         gpe_get_current(&time, psi);
-    // outprefix_current.wdat
+    gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
+    wdata_write_cycle(&wmd, "density_a", density);
+
+    gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
+    wdata_write_cycle(&wmd, "current_a", currents);
+
     wdata_add_cycle(&wmd);
     wdata_write_metadata_to_file(&wmd, "");
     
-    // TODO
-    // if(mode=...)
+    logger_create_header(execcmd);
+
     while(1)
     {
         b_t(); // reset timer
@@ -146,6 +192,10 @@ int main( int argc , char ** argv )
         
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
+        
+        // TODO: other energies???
+        energy[EKIN] = ekin;
+
 
         if(mode==0) { //TOREMOVE
             etot_prev=etot;
@@ -162,36 +212,30 @@ int main( int argc , char ** argv )
         gpe_get_psi_api(&time, psi);
         wdata_write_cycle(&wmd, "psi", psi);
         
-//         gpe_get_density(&time, psi);
-        // outprefix_density.wdat
-//         gpe_get_current(&time, psi);
-        // outprefix_current.wdat
+        gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
+        wdata_write_cycle(&wmd, "density_a", density);
+
+        gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
+        wdata_write_cycle(&wmd, "current_a", currents);
         
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        // add entry to logger
-        // na początku kodu utworzyć plik tekstowy outprefix.wlog
-        //kF=referencekF();
-        // przygotować strukture wslda_density
-        // logger(...)
+        logger_add_entry(it++, densall, nullPotential, input->referencekF, NULL, energy, &npart, NULL, 0, NULL);
+        
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
         if(time > dt*input->timesteps*input->measurements) 
         {
-            if(mode==0) printf("WARNING: ...\n");
+            if(mode==0) printf("WARNING: Program has executed %d steps and still doesn't converge.\n", input->measurements);
             break; // do not allow to iterate infinitly long
         }
     }
 
     // close files
-    
-//     gpe_get_psi_api(&time, psi); //TOREMOVE
-//     write_to_binary_file(nxyz, psi); //TOREMOVE
-//     write_to_txt_file(nx, ny, nz, psi); //TOREMOVE
 
     gpe_destroy_engine_api();
     free_host_memory(psi);
-
+    free(extra_data);
     return 0;
 }

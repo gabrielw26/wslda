@@ -33,9 +33,9 @@
 #include <complex.h>
 
 #include "predefines.h"
+#include "wdata.h"
 #include "pca_utils.h"
 #include "gpe_utils.h"
-
 
 void set_initial_wave_function(uint nxyz, Complex *psi)
 {
@@ -46,35 +46,53 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
     }
 }
 
-
 void read_initial_wave_function(uint nxyz, Complex *psi)
 {
-    FILE * psiFile;
-    printf("# Reading psi from file\n");
+//     FILE * psiFile;
 
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
-    switch (input->gpe_mode)
-    {
-    // input file for imaginary
-    case 0:
-        strcat(psiFilename, "_psi.dat");
-        break;
-    // input file for real
-    case 1:
-        strcat(psiFilename, "_psi2.dat");
-        break;
-    default:
-        break;
-    }
-    psiFile = fopen (psiFilename, "rb");
-    size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
-    if (readok != 1)
-    {
-        printf("Reading error\n");
-        exit(1);
-    }
-    fclose (psiFile); 
+    strcat(psiFilename, ".wtxt");
+    printf("# Reading psi from wdata set: `%s`\n", psiFilename);
+    wdata_metadata mdin;
+    // TODO - obsługa bledu
+    int ierr = wdata_parse_metadata_file(psiFilename, &mdin);
+//     if (ierr != 0)
+//     {
+//         printf("Cannot read metadata file! ERROR: #%d\n", ierr);
+//         return 1;
+//     }
+    ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
+//     if (ierr != 0)
+//     {
+//         printf("ERROR: Cannot read psi!\n");
+//         return 1;
+//     }
+
+   
+    
+//     strcat(psiFilename, "_psi.wdat");
+//     switch (input->gpe_mode)
+//     {
+//     // input file for imaginary
+//     case 0:
+//         strcat(psiFilename, "_psi.dat");
+//         break;
+//     // input file for real
+//     case 1:
+//         strcat(psiFilename, "_psi2.dat");
+//         break;
+//     default:
+//         break;
+//     }
+//     psiFile = fopen (psiFilename, "rb");
+//     size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
+//     if (readok != 1)
+//     {
+//         printf("Reading error\n");
+//         exit(1);
+//     }
+//     fclose (psiFile); 
 }
 
 void write_to_binary_file(uint nxyz, Complex *psi)
@@ -171,10 +189,9 @@ void print_results(double time, double npart, double etot, double ekin, double e
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
 }
 
-void read_of_input_parameters(int argc , char ** argv)
+void read_of_input_parameters(char* execcmd, int argc , char ** argv)
 {
     int i;
-    char execcmd[ 256 ];
     strcpy( execcmd , argv[ 0 ] ) ;
     for( i = 1 ; i < argc ; i++ ) 
     {
@@ -206,4 +223,28 @@ void read_input_file(int idx, char ** argv)
     }
         
     // Input file tags are accessible through pointer `input`
+}
+
+void save_extradata_to_file_with_outprefix(size_t size, void *extra_data, char* outprefix)
+{
+    char fname[1024];
+    sprintf(fname, "%s_extra_data.dat", outprefix);
+    wprintf("# SAVING EXTRA_DATA TO FILE: %s\n", fname);
+    FILE * f = fopen(fname, "wb");
+    fwrite(extra_data, size, 1, f);
+    fclose(f);
+}
+
+int malloc_extra_data(size_t extra_data_size, void *extra_data)
+{
+    wprintf("# EXTRA_DATA IS ACTIVE.\n");
+    wprintf("# ALLOCATING EXTRA_DATA OF SIZE %ld B.\n", extra_data_size); fflush(stdout);
+    if ( ( extra_data = (void *) malloc( extra_data_size ) ) == NULL  )
+    {                                                             
+        wfprintf( stderr , "error: cannot malloc()! Exiting!\n") ; 
+        wfprintf( stderr , "error: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; 
+        return( EXIT_FAILURE ) ; 
+    }
+    wprintf("# EXECUTING: load_extra_data(%zu, extra_data, input->params)\n", extra_data_size);
+    return 0;
 }

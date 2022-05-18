@@ -17,6 +17,10 @@ int gpe_set_user_params_api(int size, double *params)
     gpe_exec( gpe_set_user_params(size, params), ierr );
     return ierr;
 }
+int gpe_set_extra_data_api(void* extra_data, size_t extra_data_size)
+{
+    int ierr;
+    gpe_exec( gpe_set_extra_data(extra_data, extra_data_size), ierr );    
 int gpe_set_sclgth_api(double sclgth)
 {
     int ierr;
@@ -39,6 +43,18 @@ int gpe_energy_api(double *t, double *ekin, double *eint, double *eext)
 {
     int ierr;
     gpe_exec( gpe_energy(t, ekin, eint, eext), ierr );
+    return ierr;
+}
+int gpe_get_density(double* t, double* density)
+{
+    int ierr;
+    gpe_exec( gpe_density(t, density), ierr );
+    return ierr;
+}
+int gpe_get_currents(double* t, double* currents)
+{
+    int ierr;
+    gpe_exec( gpe_currents(t, currents), ierr );
     return ierr;
 }
 int gpe_evolve_api(int nt)
@@ -75,13 +91,28 @@ void set_gpu_device(int device)
 }
 
 /**
- * Function allocate CPU memory for wave function. As a result it is pinned for fast transfers.
+ * Function allocate CPU memory for wave function, density and currents. As a result it is pinned for fast transfers.
  * @param nxyz It is product of nx, ny and nz lattice.
  * @param psi It is structure with two doubles x and y for real and imaginary parts.
+ * @param density It is double.
+ * @param currents It is vector of doubles.
  * */
-void alloc_host_memory(uint nxyz, __Complex **psi)
+void alloc_host_memory(uint nxyz, __Complex **psi, double** density, double** currents)
 {
-    cudaError err=cudaHostAlloc( psi , sizeof(Complex)*nxyz, cudaHostAllocDefault );
+    cudaError err;
+    err=cudaHostAlloc(psi , sizeof(Complex)*nxyz, cudaHostAllocDefault );
+    if(err != cudaSuccess) 
+    {
+        printf("Error: Cannot allocate memory!\n");
+        exit(err);
+    }
+    err=cudaHostAlloc( density , sizeof(double)*nxyz, cudaHostAllocDefault );
+    if(err != cudaSuccess) 
+    {
+        printf("Error: Cannot allocate memory!\n");
+        exit(err);
+    }
+    err=cudaHostAlloc( currents , 3*sizeof(double)*nxyz, cudaHostAllocDefault );
     if(err != cudaSuccess) 
     {
         printf("Error: Cannot allocate memory!\n");

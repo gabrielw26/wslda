@@ -19,15 +19,19 @@
 EXTERN void gpe_get_lattice_api(int *_nx, int *_ny, int *_nz);
 EXTERN int gpe_create_engine_api(double alpha, double beta, double dt, double npart);
 EXTERN int gpe_set_user_params_api(int size, double *params);
+EXTERN int gpe_set_extra_data_api(void* extra_data, size_t extra_data_size);
 EXTERN int gpe_set_sclgth_api(double sclgth);
 EXTERN int gpe_set_psi_api(double t, __Complex * psi);
 EXTERN int gpe_normalize_psi_api();
 EXTERN int gpe_energy_api(double *t, double *ekin, double *eint, double *eext);
+EXTERN int gpe_get_density(double* t, double* density);
+EXTERN int gpe_get_currents(double* t, double* currents);
+EXTERN int gpe_evolve_api(int nt);
 EXTERN int gpe_evolve_api(int nt);
 EXTERN int gpe_get_psi_api(double *t, __Complex * psi);
 EXTERN int gpe_destroy_engine_api();
 EXTERN void set_gpu_device(int device);
-EXTERN void alloc_host_memory(uint nxyz, __Complex **psi);
+EXTERN void alloc_host_memory(uint nxyz, __Complex **psi, double** density, double** currents);
 EXTERN void free_host_memory(void *psi);
 
 #undef EXTERN
