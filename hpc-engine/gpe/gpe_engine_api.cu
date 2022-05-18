@@ -20,7 +20,8 @@ int gpe_set_user_params_api(int size, double *params)
 int gpe_set_extra_data_api(void* extra_data, size_t extra_data_size)
 {
     int ierr;
-    gpe_exec( gpe_set_extra_data(extra_data, extra_data_size), ierr );    
+    gpe_exec( gpe_set_extra_data(extra_data, extra_data_size), ierr );
+}   
 int gpe_set_sclgth_api(double sclgth)
 {
     int ierr;
