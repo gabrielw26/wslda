@@ -61,6 +61,7 @@ typedef struct
     double qfcoeff;
     int threads;
     int blocks;
+    double sclgth;
     
 } gpe_mem_t;
 
@@ -68,6 +69,7 @@ gpe_mem_t gpe_mem;
 
 
 // CONST MEMORY - device
+__constant__ double d_sclgth;
 __constant__ double d_alpha;
 __constant__ double d_beta;
 __constant__ double d_qfcoeff; // quantum friction coeff
@@ -92,10 +94,6 @@ __constant__ Complex *d_psi_ref; // pointer to reference psi on device - use gpe
 #define PARTICLES 1
 #define DIMERS 2
 
-// TODO -> enable wslda_density in problem-definition.h file
-#define double_complex Complex
-#define __externc
-#include "wslda_potdens.h"
 #include "problem-definition.h"
 
 #if GPE_FOR == PARTICLES
@@ -660,6 +658,15 @@ int gpe_set_user_params(int size, double *params)
     return 0;
 }
 
+int gpe_set_sclgth(double sclgth)
+{
+    cudaError err;
+    myerrcheck( cudaMemcpyToSymbol(d_sclgth, &sclgth, sizeof(double)) ) ;
+    gpe_mem.sclgth=sclgth;
+    
+    return 0;
+}
+
 int gpe_set_quantum_friction_coeff(double qfcoeff)
 {
     cudaError err;
@@ -810,8 +817,8 @@ __global__ void __gpe_exp_Vstep1_(uint it, Complex *psi_in, Complex *psi_out, do
         lpsi = psi_in[ixyz]; // psi to register
         gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL) + dEDFdn; // external potential + mean field
         
         wrkR[ixyz]=lv; // it will be use later
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
@@ -836,8 +843,8 @@ __global__ void __gpe_exp_Vstep1_qf_(uint it, Complex *psi_in, Complex *psi_out,
         lpsi = psi_in[ixyz]; // psi to register
         gpe_modify_psi(ix, iy, iz, it, &lpsi, d_user_param, 0, NULL); // modify psi
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn + qfpotential[ixyz]; 
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL) + dEDFdn + qfpotential[ixyz]; 
            // external potential + mean field + quantum friction potential
         
         wrkR[ixyz]=lv; // it will be use later
@@ -866,8 +873,8 @@ __global__ void __gpe_exp_Vstep2_(uint it, Complex *psi_in, Complex *psi_out, do
         lpsi=cplxMul(lpsi, exp_lv); // finalize step from predictor
         
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn); // external potential + mean field - take average
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, 0, NULL) + dEDFdn); // external potential + mean field - take average
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
         
@@ -907,8 +914,8 @@ __global__ void __gpe_exp_Vstep2_part2_(uint it, Complex *psi_in, Complex *psi_o
         lpsi = psi_in[ixyz]; // psi to register
         lv = wrkR[ixyz]; // potentials to register
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn); // external potential + mean field - take average
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, 0, NULL) + dEDFdn); // external potential + mean field - take average
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
         
@@ -934,8 +941,8 @@ __global__ void __gpe_exp_Vstep2_part2_qf_(uint it, Complex *psi_in, Complex *ps
         lpsi = psi_in[ixyz]; // psi to register
         lv = wrkR[ixyz]; // potentials to register
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, NULL, NULL) + dEDFdn + qfpotential[ixyz]) ; 
+        compute_potentials_gpe(it+1, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=0.5*(lv + v_ext(ix, iy, iz, it+1, NULL, d_user_param, 0, NULL) + dEDFdn + qfpotential[ixyz]) ; 
           // external potential + mean field + quantum friction potential - take average 
         exp_lv = cplxExp( cplxScale(d_step_coeff,lv) );
         wrkC[ixyz]=exp_lv; // it will be used later
@@ -1125,8 +1132,8 @@ __global__ void __gpe_add_potential_part__(uint it, Complex *psi_in, Complex *ps
         
         lpsi = psi_in[ixyz]; // psi to register
         lrho = gpe_density(lpsi); // compute density
-        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        lv=v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL) + dEDFdn; // external potential + mean field
         
         // K*psi -> K*psi + V*psi
         psi_add[ixyz] = cplxAdd(psi_add[ixyz] , cplxScale(lpsi, lv));
@@ -1179,8 +1186,8 @@ __global__ void __gpe_imprint_psi_and_compute_potential__(int it, Complex *psi, 
         ixyz2ixiyiz(ixyz,ix,iy,iz,i);
         gpe_modify_psi(ix, iy, iz, it, &(psi[ixyz]), d_user_param, 0, NULL); // modify psi
         lrho = gpe_density(psi[ixyz]); // compute density
-        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, NULL, NULL); //compute potentials defining Hamiltonian
-        U[ixyz]=v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL) + dEDFdn; // external potential + mean field        
+        compute_potentials_gpe(it, lrho, &dEDFdn, d_user_param, 0, NULL); //compute potentials defining Hamiltonian
+        U[ixyz]=v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL) + dEDFdn; // external potential + mean field        
     }    
 }
 
@@ -1447,7 +1454,7 @@ __global__ void __gpe_compute_vext__(uint it, double *rho, double *wrk)
     if(ixyz<nxyz)
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
-        wrk[ixyz]=rho[ixyz]*v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL);
+        wrk[ixyz]=rho[ixyz]*v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL);
     }
 }
 
@@ -1456,7 +1463,7 @@ __global__ void __gpe_compute_vint__(uint it, double *rho, double *wrk)
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x;
     if(ixyz<nxyz)
     {
-        compute_energy_gpe(it, rho[ixyz], &(wrk[ixyz]), d_user_param, NULL, NULL);
+        compute_energy_gpe(it, rho[ixyz], &(wrk[ixyz]), d_user_param, 0, NULL);
     }
 }
 
@@ -1469,8 +1476,8 @@ __global__ void __gpe_compute_vext_vint__(uint it, double *rho, double *wrk1, do
     {
         ixyz2ixiyiz(ixyz,ix,iy,iz,i); 
         lrho=rho[ixyz];
-        wrk1[ixyz]=lrho*v_ext(ix, iy, iz, it, NULL, d_user_param, NULL, NULL);
-        compute_energy_gpe(it, lrho, &(wrk2[ixyz]), d_user_param, NULL, NULL);
+        wrk1[ixyz]=lrho*v_ext(ix, iy, iz, it, NULL, d_user_param, 0, NULL);
+        compute_energy_gpe(it, lrho, &(wrk2[ixyz]), d_user_param, 0, NULL);
     }
 }
 
