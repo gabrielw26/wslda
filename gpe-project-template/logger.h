@@ -33,7 +33,6 @@ int load_extra_data(size_t size, void *extra_data, double *params)
 /** 
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
  * After loading params array from input file, the parameters are processed by this routine.
- * The routine is executed at beginning of each iteration.
  * @param params array of size MAX_USER_PARAMS with parameters from input file. 
  * @param kF typical Fermi momentum scale of the problem. 
  *           kF=referencekF if the referencekF tag is indicated in the input file, 
