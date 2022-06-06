@@ -39,7 +39,7 @@ int main( int argc , char ** argv )
 //     sprintf(file_name, "%s_input.txt", md.outprefix);
 //     file_operation( copy_input_file(argv[i],file_name) ); 
     
-    double ekin, eint, eext, etot, etot_prev, time, rt, diff=-1;
+    double ekin, eint, eext, etot, etot_prev, time, rt, kF, diff=-1;
     const int device=input->gpuDevice;
     const int mode=input->gpe_mode;
     const double alpha=input->alpha;
@@ -49,6 +49,17 @@ int main( int argc , char ** argv )
     const double time0 = 0.0;
     int inittype = input->inittype;
     if(mode==1) inittype = 5;
+
+     if(input->referencekF>0.0) 
+    {
+        kF = input->referencekF;
+        printf("# kF=%f (TAKEN FROM input)\n", kF);
+    }
+    else
+    {
+        kF = 1.0;
+        printf("# kF=%f (DEFAULT VALUE!, YOU CAN SET IT VIA input)\n", kF);
+    }
     
     set_gpu_device(device);
 
@@ -100,8 +111,8 @@ int main( int argc , char ** argv )
         gpe_set_extra_data_api(extra_data, extra_data_size);
         save_extradata_to_file_with_outprefix(extra_data_size, extra_data, input->outprefix);  // reproducibility pack
     }
-    wprintf("# EXECUTING: process_params(input->params, [%f], NULL, %zu, extra_data)\n", input->referencekF, extra_data_size);
-    process_params(input->params, &(input->referencekF), NULL, extra_data_size, extra_data);
+    wprintf("# EXECUTING: process_params(input->params, [%f], NULL, %zu, extra_data)\n", kF, extra_data_size);
+    process_params(input->params, &(kF), NULL, extra_data_size, extra_data);
 
     switch (mode)
     {
@@ -221,7 +232,7 @@ int main( int argc , char ** argv )
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        logger_add_entry(it++, densall, nullPotential, input->referencekF, NULL, energy, &npart, NULL, 0, NULL);
+        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, &npart, NULL, 0, NULL);
         
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
