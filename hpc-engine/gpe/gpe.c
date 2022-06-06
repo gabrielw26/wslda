@@ -23,7 +23,7 @@ double dc_ec;
 
 int wsldapid; // process id - global variable
 int wsldapnp; // total number of processes - global variable
-#define printf wprintf
+ #define printf wprintf
 #include "logger.h"
 #undef printf
 
@@ -48,7 +48,11 @@ int main( int argc , char ** argv )
     const double dt=input->dt;
     const double time0 = 0.0;
     int inittype = input->inittype;
-    if(mode==1) inittype = 5;
+    double* npartArr = (double*)malloc(2 * sizeof(double));
+    npartArr[SPINA] = input->Na;
+    npartArr[SPINB] = input->Nb;
+
+    // if(mode==1) inittype = 5;
 
      if(input->referencekF>0.0) 
     {
@@ -203,20 +207,17 @@ int main( int argc , char ** argv )
         
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
-        
+
         // TODO: other energies???
         energy[EKIN] = ekin;
+        energy[EPOT] = eint;
+        energy[EPOTEXT] = eext;
 
+        etot_prev=etot;
+        etot = ekin + eint + eext;
+        diff=(etot_prev-etot)/npart; // diference in energy per particle
+        print_results(time, npart, etot, ekin, eint, eext, diff, rt);
 
-        if(mode==0) { //TOREMOVE
-            etot_prev=etot;
-            etot = ekin + eint + eext;
-            diff=(etot_prev-etot)/npart; // diference in energy per particle
-            print_results(time, npart, etot, ekin, eint, eext, diff, rt);
-        } else if(mode==1) { //TOREMOVE
-            etot = ekin + eint + eext;
-            print_intial_results(time, npart, etot, ekin, eint, eext);
-        }
 
         
         // Add new data to WDATA set
@@ -232,7 +233,7 @@ int main( int argc , char ** argv )
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, &npart, NULL, 0, NULL);
+        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, npartArr, NULL, 0, NULL);
         
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged

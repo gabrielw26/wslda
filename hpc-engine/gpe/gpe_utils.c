@@ -48,51 +48,24 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
 
 void read_initial_wave_function(uint nxyz, Complex *psi)
 {
-//     FILE * psiFile;
-
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
     strcat(psiFilename, ".wtxt");
     printf("# Reading psi from wdata set: `%s`\n", psiFilename);
     wdata_metadata mdin;
-    // TODO - obsługa bledu
-    int ierr = wdata_parse_metadata_file(psiFilename, &mdin);
-//     if (ierr != 0)
-//     {
-//         printf("Cannot read metadata file! ERROR: #%d\n", ierr);
-//         return 1;
-//     }
-    ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
-//     if (ierr != 0)
-//     {
-//         printf("ERROR: Cannot read psi!\n");
-//         return 1;
-//     }
 
-   
-    
-//     strcat(psiFilename, "_psi.wdat");
-//     switch (input->gpe_mode)
-//     {
-//     // input file for imaginary
-//     case 0:
-//         strcat(psiFilename, "_psi.dat");
-//         break;
-//     // input file for real
-//     case 1:
-//         strcat(psiFilename, "_psi2.dat");
-//         break;
-//     default:
-//         break;
-//     }
-//     psiFile = fopen (psiFilename, "rb");
-//     size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
-//     if (readok != 1)
-//     {
-//         printf("Reading error\n");
-//         exit(1);
-//     }
-//     fclose (psiFile); 
+    int ierr = wdata_parse_metadata_file(psiFilename, &mdin);
+    if (ierr != 0)
+    {
+        printf("Cannot read metadata file! ERROR: #%d\n", ierr);
+        return 1;
+    }
+    ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
+    if (ierr != 0)
+    {
+        printf("ERROR: Cannot read psi!\n");
+        return 1;
+    }
 }
 
 void write_to_binary_file(uint nxyz, Complex *psi)
