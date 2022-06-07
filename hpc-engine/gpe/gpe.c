@@ -17,6 +17,7 @@ double dc_ec;
 
 #include "predefines.h"
 #include "gpe_utils.h"
+#include "problem-definition.h"
 
 #include "gpe_engine_api.h"
 #include "wslda_reproducibility.h"

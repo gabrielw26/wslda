@@ -99,7 +99,7 @@ gpe: $(GPEOBJ) $(COREOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) $(CFLAGS) $(LIBS) $^ -o $(BINDIR)gpe-wslda-3d
 
-$(GPEOBJ): $(GPESRC) $(DEPSLOCAL) $(DEPS) $(SRCDIR)gpe_engine_api.h
+$(GPEOBJ): $(GPESRC) $(DEPSLOCAL) $(ENGINEDEPS) $(DEPS) $(SRCDIR)gpe_engine_api.h
 	$(CXX) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(INCLUDEDIR)wslda_reproducibility.c $(INCLUDEDIR)wslda_reproducibility.h $(INCLUDEDIR)pca_settings.h $(DEPSLOCAL) logger.h problem-definition.h
