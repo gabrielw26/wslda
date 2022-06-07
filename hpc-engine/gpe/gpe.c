@@ -54,7 +54,7 @@ int main( int argc , char ** argv )
 
     // if(mode==1) inittype = 5;
 
-     if(input->referencekF>0.0) 
+    if(input->referencekF>0.0) 
     {
         kF = input->referencekF;
         printf("# kF=%f (TAKEN FROM input)\n", kF);
@@ -83,7 +83,8 @@ int main( int argc , char ** argv )
         set_initial_wave_function( nxyz, psi);
         break;
     case 5:
-        read_initial_wave_function( nxyz, psi);
+        ierr = read_initial_wave_function( nxyz, psi);
+        if(0 != ierr) return ierr;
         break;
     default:
         break;

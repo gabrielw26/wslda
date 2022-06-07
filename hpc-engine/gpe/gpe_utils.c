@@ -46,7 +46,7 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
     }
 }
 
-void read_initial_wave_function(uint nxyz, Complex *psi)
+int read_initial_wave_function(uint nxyz, Complex *psi)
 {
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
@@ -66,6 +66,7 @@ void read_initial_wave_function(uint nxyz, Complex *psi)
         printf("ERROR: Cannot read psi!\n");
         return 1;
     }
+    return 0;
 }
 
 void write_to_binary_file(uint nxyz, Complex *psi)
