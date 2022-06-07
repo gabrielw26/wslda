@@ -17,7 +17,7 @@ typedef cufftDoubleComplex Complex;
     } }
 
 void set_initial_wave_function(uint nxyz, Complex *psi);
-void read_initial_wave_function(uint nxyz, Complex *psi);
+void read_initial_wave_function(uint nxyz, Complex *psi, double* time0);
 void write_to_binary_file(uint nxyz, Complex *psi);
 void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi);
 void print_header();

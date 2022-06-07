@@ -46,7 +46,7 @@ int main( int argc , char ** argv )
     const double beta=input->beta;
     double npart=input->npart;
     const double dt=input->dt;
-    const double time0 = 0.0;
+    double time0 = 0.0;
     int inittype = input->inittype;
     double* npartArr = (double*)malloc(2 * sizeof(double));
     npartArr[SPINA] = input->Na;
@@ -83,7 +83,7 @@ int main( int argc , char ** argv )
         set_initial_wave_function( nxyz, psi);
         break;
     case 5:
-        read_initial_wave_function( nxyz, psi);
+        read_initial_wave_function( nxyz, psi, &time0);
         break;
     default:
         break;
@@ -153,7 +153,7 @@ int main( int argc , char ** argv )
     wmd.dy = DY;
     wmd.dz = DZ;
     strcpy(wmd.prefix, input->outprefix);
-    wmd.t0 = 0.0;
+    wmd.t0 = time0;
     wmd.dt = input->dt*input->timesteps;
     
     // add variables to data set
@@ -237,7 +237,7 @@ int main( int argc , char ** argv )
         
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
-        if(time > dt*input->timesteps*input->measurements) 
+        if(time > time0 + dt*input->timesteps*input->measurements) 
         {
             if(mode==0) printf("WARNING: Program has executed %d steps and still doesn't converge.\n", input->measurements);
             break; // do not allow to iterate infinitly long

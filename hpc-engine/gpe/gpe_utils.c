@@ -46,7 +46,7 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
     }
 }
 
-void read_initial_wave_function(uint nxyz, Complex *psi)
+void read_initial_wave_function(uint nxyz, Complex *psi, double* t0)
 {
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
@@ -60,6 +60,7 @@ void read_initial_wave_function(uint nxyz, Complex *psi)
         printf("Cannot read metadata file! ERROR: #%d\n", ierr);
         return 1;
     }
+    *t0 = mdin.t0 + (mdin.cycles - 1) * mdin.dt; 
     ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
     if (ierr != 0)
     {
