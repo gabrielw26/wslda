@@ -17,12 +17,14 @@ typedef cufftDoubleComplex Complex;
     } }
 
 void set_initial_wave_function(uint nxyz, Complex *psi);
-void read_initial_wave_function(uint nxyz, Complex *psi);
+int read_initial_wave_function(uint nxyz, Complex *psi, double* time0);
 void write_to_binary_file(uint nxyz, Complex *psi);
 void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi);
-void print_header();
+void print_header_image();
+void print_header_real();
+void print_results_image(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt);
+void print_results_real(double time, double npart, double etot, double ekin, double eint, double eext, double rt);
 void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext);
-void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt);
 void read_of_input_parameters(char* execcmd, int argc , char ** argv);
 int parse_command_line_and_get_idx_of_input_file(int argc , char ** argv);
 void read_input_file(int idx, char ** argv);

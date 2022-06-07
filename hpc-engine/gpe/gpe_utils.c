@@ -46,53 +46,28 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
     }
 }
 
-void read_initial_wave_function(uint nxyz, Complex *psi)
+int read_initial_wave_function(uint nxyz, Complex *psi, double* t0)
 {
-//     FILE * psiFile;
-
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
     strcat(psiFilename, ".wtxt");
     printf("# Reading psi from wdata set: `%s`\n", psiFilename);
     wdata_metadata mdin;
-    // TODO - obsługa bledu
-    int ierr = wdata_parse_metadata_file(psiFilename, &mdin);
-//     if (ierr != 0)
-//     {
-//         printf("Cannot read metadata file! ERROR: #%d\n", ierr);
-//         return 1;
-//     }
-    ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
-//     if (ierr != 0)
-//     {
-//         printf("ERROR: Cannot read psi!\n");
-//         return 1;
-//     }
 
-   
-    
-//     strcat(psiFilename, "_psi.wdat");
-//     switch (input->gpe_mode)
-//     {
-//     // input file for imaginary
-//     case 0:
-//         strcat(psiFilename, "_psi.dat");
-//         break;
-//     // input file for real
-//     case 1:
-//         strcat(psiFilename, "_psi2.dat");
-//         break;
-//     default:
-//         break;
-//     }
-//     psiFile = fopen (psiFilename, "rb");
-//     size_t readok = fread (psi , sizeof(Complex)*nxyz, 1, psiFile);
-//     if (readok != 1)
-//     {
-//         printf("Reading error\n");
-//         exit(1);
-//     }
-//     fclose (psiFile); 
+    int ierr = wdata_parse_metadata_file(psiFilename, &mdin);
+    if (ierr != 0)
+    {
+        printf("Cannot read metadata file! ERROR: #%d\n", ierr);
+        return 1;
+    }
+    *t0 = mdin.t0 + (mdin.cycles - 1) * mdin.dt; 
+    ierr = wdata_read_cycle(&mdin, "psi", mdin.cycles-1, psi);
+    if (ierr != 0)
+    {
+        printf("ERROR: Cannot read psi!\n");
+        return 1;
+    }
+    return 0;
 }
 
 void write_to_binary_file(uint nxyz, Complex *psi)
@@ -174,19 +149,29 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
 }
 
 
-void print_header()
+void print_header_image()
+{
+    printf("#%7s %12s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "diff", "comp.time");
+}
+
+void print_header_real()
 {
     printf("#%7s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "comp.time");
+}
+
+void print_results_image(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
+}
+
+void print_results_real(double time, double npart, double etot, double ekin, double eint, double eext, double rt)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, rt);  
 }
 
 void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext)
 {
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart);  
-}
-
-void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
-{
-    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
 }
 
 void read_of_input_parameters(char* execcmd, int argc , char ** argv)

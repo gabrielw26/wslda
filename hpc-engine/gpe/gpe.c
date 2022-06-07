@@ -23,7 +23,7 @@ double dc_ec;
 
 int wsldapid; // process id - global variable
 int wsldapnp; // total number of processes - global variable
-#define printf wprintf
+ #define printf wprintf
 #include "logger.h"
 #undef printf
 
@@ -46,11 +46,15 @@ int main( int argc , char ** argv )
     const double beta=input->beta;
     double npart=input->npart;
     const double dt=input->dt;
-    const double time0 = 0.0;
+    double time0 = 0.0;
     int inittype = input->inittype;
-    if(mode==1) inittype = 5;
+    double* npartArr = (double*)malloc(2 * sizeof(double));
+    npartArr[SPINA] = input->Na;
+    npartArr[SPINB] = input->Nb;
 
-     if(input->referencekF>0.0) 
+    //if(mode==1) inittype = 5;
+
+    if(input->referencekF>0.0) 
     {
         kF = input->referencekF;
         printf("# kF=%f (TAKEN FROM input)\n", kF);
@@ -79,7 +83,8 @@ int main( int argc , char ** argv )
         set_initial_wave_function( nxyz, psi);
         break;
     case 5:
-        read_initial_wave_function( nxyz, psi);
+        ierr = read_initial_wave_function( nxyz, psi, &time0);
+        if(0 != ierr) return ierr;
         break;
     default:
         break;
@@ -118,15 +123,17 @@ int main( int argc , char ** argv )
     {
     case 0:
         printf("# IMAGINARY TIME PROJECTION\n");
+        print_header_image();
         break;
     case 1:
         printf("# REAL TIME EVOLUTION\n");
+        print_header_real();
         break;
     default:
         break;
     }
 
-    print_header();
+    
     gpe_energy_api(&time, &ekin, &eint, &eext);
 
     etot = ekin + eint + eext;
@@ -149,7 +156,7 @@ int main( int argc , char ** argv )
     wmd.dy = DY;
     wmd.dz = DZ;
     strcpy(wmd.prefix, input->outprefix);
-    wmd.t0 = 0.0;
+    wmd.t0 = time0;
     wmd.dt = input->dt*input->timesteps;
     
     // add variables to data set
@@ -203,20 +210,28 @@ int main( int argc , char ** argv )
         
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
-        
+
         // TODO: other energies???
         energy[EKIN] = ekin;
+        energy[EPOT] = eint;
+        energy[EPOTEXT] = eext;
 
-
-        if(mode==0) { //TOREMOVE
-            etot_prev=etot;
-            etot = ekin + eint + eext;
-            diff=(etot_prev-etot)/npart; // diference in energy per particle
-            print_results(time, npart, etot, ekin, eint, eext, diff, rt);
-        } else if(mode==1) { //TOREMOVE
-            etot = ekin + eint + eext;
-            print_intial_results(time, npart, etot, ekin, eint, eext);
-        }
+        etot_prev=etot;
+        etot = ekin + eint + eext;
+        diff=(etot_prev-etot)/npart; // diference in energy per particle
+        
+        
+        switch (mode)
+        {
+        case 0:
+            print_results_image(time, npart, etot, ekin, eint, eext, diff, rt);
+            break;
+        case 1:
+            print_results_real(time, npart, etot, ekin, eint, eext, rt);
+            break;
+        default:
+            break;
+        }    
 
         
         // Add new data to WDATA set
@@ -232,11 +247,11 @@ int main( int argc , char ** argv )
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, &npart, NULL, 0, NULL);
+        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, npartArr, NULL, 0, NULL);
         
 
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
-        if(time > dt*input->timesteps*input->measurements) 
+        if(time > time0 + dt*input->timesteps*input->measurements) 
         {
             if(mode==0) printf("WARNING: Program has executed %d steps and still doesn't converge.\n", input->measurements);
             break; // do not allow to iterate infinitly long
