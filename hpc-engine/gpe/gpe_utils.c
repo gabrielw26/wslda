@@ -46,7 +46,7 @@ void set_initial_wave_function(uint nxyz, Complex *psi)
     }
 }
 
-void read_initial_wave_function(uint nxyz, Complex *psi, double* t0)
+int read_initial_wave_function(uint nxyz, Complex *psi, double* t0)
 {
     char* psiFilename = (char*)malloc(strlen(input->inprefix) * sizeof(char));
     strcpy(psiFilename, input->inprefix);
@@ -67,6 +67,7 @@ void read_initial_wave_function(uint nxyz, Complex *psi, double* t0)
         printf("ERROR: Cannot read psi!\n");
         return 1;
     }
+    return 0;
 }
 
 void write_to_binary_file(uint nxyz, Complex *psi)
@@ -148,19 +149,29 @@ void write_to_txt_file(uint nx, uint ny, uint nz, Complex *psi)
 }
 
 
-void print_header()
+void print_header_image()
+{
+    printf("#%7s %12s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "diff", "comp.time");
+}
+
+void print_header_real()
 {
     printf("#%7s %12s %12s %12s %12s %12s %12s\n", "time", "etot", "ekin", "eint", "eext", "(eint+eext)", "comp.time");
+}
+
+void print_results_image(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
+}
+
+void print_results_real(double time, double npart, double etot, double ekin, double eint, double eext, double rt)
+{
+    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, rt);  
 }
 
 void print_intial_results(double time, double npart, double etot, double ekin, double eint, double eext)
 {
     printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart);  
-}
-
-void print_results(double time, double npart, double etot, double ekin, double eint, double eext, double diff, double rt)
-{
-    printf("%8.2f %12.8f %12.8f %12.8f %12.8f %12.8f %12.6g %12.4f\n",time, etot/npart, ekin/npart, eint/npart, eext/npart, (eint+eext)/npart, diff, rt);
 }
 
 void read_of_input_parameters(char* execcmd, int argc , char ** argv)

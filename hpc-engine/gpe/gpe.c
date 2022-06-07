@@ -52,9 +52,9 @@ int main( int argc , char ** argv )
     npartArr[SPINA] = input->Na;
     npartArr[SPINB] = input->Nb;
 
-    // if(mode==1) inittype = 5;
+    //if(mode==1) inittype = 5;
 
-     if(input->referencekF>0.0) 
+    if(input->referencekF>0.0) 
     {
         kF = input->referencekF;
         printf("# kF=%f (TAKEN FROM input)\n", kF);
@@ -83,7 +83,8 @@ int main( int argc , char ** argv )
         set_initial_wave_function( nxyz, psi);
         break;
     case 5:
-        read_initial_wave_function( nxyz, psi, &time0);
+        ierr = read_initial_wave_function( nxyz, psi, &time0);
+        if(0 != ierr) return ierr;
         break;
     default:
         break;
@@ -122,15 +123,17 @@ int main( int argc , char ** argv )
     {
     case 0:
         printf("# IMAGINARY TIME PROJECTION\n");
+        print_header_image();
         break;
     case 1:
         printf("# REAL TIME EVOLUTION\n");
+        print_header_real();
         break;
     default:
         break;
     }
 
-    print_header();
+    
     gpe_energy_api(&time, &ekin, &eint, &eext);
 
     etot = ekin + eint + eext;
@@ -216,8 +219,19 @@ int main( int argc , char ** argv )
         etot_prev=etot;
         etot = ekin + eint + eext;
         diff=(etot_prev-etot)/npart; // diference in energy per particle
-        print_results(time, npart, etot, ekin, eint, eext, diff, rt);
-
+        
+        
+        switch (mode)
+        {
+        case 0:
+            print_results_image(time, npart, etot, ekin, eint, eext, diff, rt);
+            break;
+        case 1:
+            print_results_real(time, npart, etot, ekin, eint, eext, rt);
+            break;
+        default:
+            break;
+        }    
 
         
         // Add new data to WDATA set
