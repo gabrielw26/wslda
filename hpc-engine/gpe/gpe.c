@@ -53,8 +53,6 @@ int main( int argc , char ** argv )
     npartArr[SPINA] = input->Na;
     npartArr[SPINB] = input->Nb;
 
-    //if(mode==1) inittype = 5;
-
     if(input->referencekF>0.0) 
     {
         kF = input->referencekF;
@@ -212,7 +210,6 @@ int main( int argc , char ** argv )
         gpe_energy_api(&time, &ekin, &eint, &eext);
         rt = e_t(0); // get time
 
-        // TODO: other energies???
         energy[EKIN] = ekin;
         energy[EPOT] = eint;
         energy[EPOTEXT] = eext;
@@ -258,8 +255,6 @@ int main( int argc , char ** argv )
             break; // do not allow to iterate infinitly long
         }
     }
-
-    // close files
 
     gpe_destroy_engine_api();
     free_host_memory(psi);
