@@ -93,7 +93,7 @@ WINTERPLIB := $(addprefix $(WINTERPSRC),$(WINTERPLIB))
 # MAKE
 all: core gpe
 
-core: dirs engine engine_connector utils potentials
+core: $(OBJDIR) $(BINDIR) $(ENGINEOBJ) $(CONNECTOROBJ) $(UTILSOBJ) $(POTENTIALSOBJ)
 
 gpe: $(GPEOBJ) $(COREOBJ) $(DEPSOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
@@ -118,21 +118,24 @@ $(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
 $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $< 
 
-engine: $(ENGINESRC) $(ENGINEDEPS)
+$(ENGINEOBJ): $(ENGINESRC) $(ENGINEDEPS)
 	$(NVCC) $(NVCCFLAGS) -c $(ENGINESRC) -o $(ENGINEOBJ) 
 
-engine_connector: $(CONNECTORSRC)
+$(CONNECTOROBJ): $(CONNECTORSRC)
 	$(NVCC) $(NVCCFLAGS) -c $(CONNECTORSRC) -o $(CONNECTOROBJ)
 
-utils: $(UTILSSRC) $(DEPS)
+$(UTILSOBJ): $(UTILSSRC) $(DEPS)
 	$(CXX) $(CFLAGS) -c $(UTILSSRC) -o $(UTILSOBJ)
 
-potentials: $(POTENTIALSSRC)
+$(POTENTIALSOBJ): $(POTENTIALSSRC)
 	$(NVCC) $(NVCCFLAGS) -c $(POTENTIALSSRC) -o $(POTENTIALSOBJ)
 
-dirs:
+$(OBJDIR):
 	mkdir -p $(OBJDIR)
-	mkdir -p $(BINDIR)
+
+$(BINDIR):
+		mkdir -p $(BINDIR)
+
 
 clean:
 	rm -f $(OBJDIR)*.o
