@@ -54,13 +54,14 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
 __device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
 {
     // J. Dziarmaga, Z. Karkuszewski & KS, JPB 36, 1217 (2003)
-    const double fi = M_PI/0.5;    
-    const int min_x = min_y = min_z = 64;
-    const int max_x = max_y = max_z = 64*3;
+    const double fi = M_PI/5;    
+    const int min_x  = 64;
+    const int max_x  = 64*3;
     // sufrace YZ placed in ix = 128 
     if( min_x < ix && ix < max_x )
     {
-        psi.y *= exp(fi)
+        psi->x *= cos(fi);
+        psi->y *= sin(fi);
     }
     return 0;
 }
