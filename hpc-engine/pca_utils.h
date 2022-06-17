@@ -145,6 +145,14 @@ typedef struct
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
     char initialized; // technical variable, indicating that structure is initialized by the input file
     char stdoutfile[MD_CHAR_LGTH]; // technical variable,
+    
+    // CONSERVATION MONITORING
+    double Econservation_start; // # Start to monitor energy conservation from this time*eF, default Econservation_start=1e12 (infinity)
+    double Econservation_stop;  // # Stop to monitor energy conservation at this time*eF, default Econservation_stop=1e12 (infinity)
+    double Econservation_tol;   // # if |[E(t)-E(start_t)]/E(start_t)|>tol then the code will terminate
+    double Nconservation_start; // # Start to monitor total particle number conservation from this time*eF, default Nconservation_start=0 (infinity)
+    double Nconservation_stop;  // # Stop to monitor total particle number conservation at this time*eF, default Nconservation_stop=1e12 (infinity)
+    double Nconservation_tol;  // # if |[N(t)-N(start_t)]/N(start_t)|>tol then the code will terminate
 
     // POTENTIAL PARAMETERS
     double params[MAX_USER_PARAMS]; // double parameters
@@ -233,5 +241,11 @@ void copy_reprowftar();
 void save_extradata_to_file(size_t size, void *extra_data);
 
 double max_dxdydz();
+
+int init_conservation_of_quantity(int quantity_id, double value);
+int monitor_conservation_of_quantity(int quantity_id, double time, double value, double start_time, double stop_time, double tolerance);
+void print_conservation_of_quantity(int quantity_id, double value, double tolerance);
+
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
 
 #endif

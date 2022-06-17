@@ -1,8 +1,14 @@
 # 2022.xx.xx
+* Speed-up of diagonalization process with ELPA for spin-symmetric mode.
+* Minor bug fixes.
+
+# 2022.04.05
 * Update of SLDAE functional (redefinition of the effective mass, now A=alpha; added a new flag that forces the effective mass to be 1.0).
 * Redefinition of delta_ext, now it is consistent with https://arxiv.org/abs/2201.07626.
 * Automatic adjustment of energy cut-off has been improved.
 * Improvement: code can now compute in HF mode (delta=0) and fully polarized gas (Nb=0).
+* Added tool for generating [custom SLDAE functional](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Custom-SLDAE-functional).
+* Added [Monitoring of conservation laws](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Monitoring-of-conservation-laws).
 
 # 2022.01.05
 * A new functional SLDAE has been implemented.

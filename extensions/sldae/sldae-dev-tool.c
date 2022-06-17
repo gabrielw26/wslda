@@ -1555,7 +1555,7 @@ int main() {
         
     printf("Creating file: sldae_parameters.txt\n");
     FILE * txt = fopen("sldae_parameters.txt", "w");
-    fprintf(txt, "# 1: lambda\n");
+    fprintf(txt, "# 1: lambda=a*k_F\n");
     fprintf(txt, "# 2: ground_state_energy\n");
     fprintf(txt, "# 3: inverse_effective_mass\n");
     fprintf(txt, "# 4: chemical_potential\n");

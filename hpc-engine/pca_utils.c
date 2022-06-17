@@ -112,6 +112,12 @@ GPUS_PER_NODE, // gpuspernode
 "wdat", // dataformat
 0, // initialized
 "wslda.stdout", // stdoutfile
+1.0e12, // Econservation_start
+1.0e12, // Econservation_stop
+0.05,   // Econservation_tol
+0.0,    // Nconservation_start
+1.0e12, // Nconservation_stop
+0.05,   // Nconservation_tol
 };
 
 metadata_t *input = &md; // additional handler;
@@ -396,6 +402,19 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
         else if (strcmp (tag,"dataformat") == 0)
             sscanf (s,"%s %s %*s",tag,md.dataformat);
+        // CONSERVATION MONITORING
+        else if (strcmp (tag,"Econservation_start") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_start);
+        else if (strcmp (tag,"Econservation_stop") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_stop);
+        else if (strcmp (tag,"Econservation_tol") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Econservation_tol);
+        else if (strcmp (tag,"Nconservation_start") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_start);
+        else if (strcmp (tag,"Nconservation_stop") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_stop);
+        else if (strcmp (tag,"Nconservation_tol") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.Nconservation_tol);
         else
         {
             // POTENTIAL PARAMETERS
@@ -643,10 +662,10 @@ void print_version(char *suffix)
 #if DIAGONALIZATION_ROUTINE==PZHEEVD
     wprintf("# USING SCALAPACK WITH PZHEEVD.\n");
 #endif
-#if DIAGONALIZATION_ROUTINE==PZHEEVD
+#if DIAGONALIZATION_ROUTINE==PZHEEV
     wprintf("# USING SCALAPACK WITH PZHEEV.\n");
 #endif
-#if DIAGONALIZATION_ROUTINE==PZHEEVD
+#if DIAGONALIZATION_ROUTINE==ELPA
     wprintf("# USING ELPA.\n");
 #endif
 #endif
@@ -875,4 +894,71 @@ double max_dxdydz()
     if(d<DY) d=DY;
     if(d<DZ) d=DZ;
     return d; // return max value of lattice constant
+}
+
+// =========================================================================
+// ===================== MONITORING CONSERVATION OF PHYSICAL QUANTITIES ====
+// =========================================================================
+/**
+ * Author: Gabriel Wlazlowski
+ * Date: 05-04-2022
+ * */
+static double __conserv_quantity_ref[2]; // hiden global variable
+
+int init_conservation_of_quantity(int quantity_id, double value)
+{
+    __conserv_quantity_ref[quantity_id]=value;
+    return 0;
+}
+/**
+ * @return 0 - quantity is conserved or check is disabled, 1 - failure of conservation
+ * */
+int monitor_conservation_of_quantity(int quantity_id, double time, double value, double start_time, double stop_time, double tolerance)
+{
+//     printf("[%d] time=%f value=%f start_time=%f stop_time=%f tolerance=%f\n", quantity_id, time, value, start_time, stop_time, tolerance);
+    if(time<=start_time)
+    {
+        __conserv_quantity_ref[quantity_id]=value; // store as reference value
+        return 0; // skip check
+    }
+
+    
+    if(time>start_time && time<stop_time) // do conservation test
+    {
+        double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
+//         printf("[%d] test=%f\n", test);
+        if(test>tolerance) return 1; // failure
+    }
+        
+    return 0; // ok
+}
+
+void print_conservation_of_quantity(int quantity_id, double value, double tolerance)
+{
+    double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
+    wprintf("# INITIAL VALUE=%f, PRESENT VALUE=%f, RELATIVE CHANGE=%f [> %f]\n", __conserv_quantity_ref[quantity_id], value, test, tolerance);
+}
+
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v)
+{
+    double complex *U_d = (double complex *) U_d_v;
+    double complex u,v;
+    int i, ixyz;
+    size_t shift=0;
+    for(i=0; i<n; i++) // for each eigenstate
+    {
+        // If vector (u, v) is solution with eigenvalue E
+        // then vector (v^∗ , -u^∗) is also solution with eigenvalue -E.
+        
+        En[i]*=-1.0; // change sign
+        for(ixyz=0; ixyz<nxyz; ixyz++) // for each lattice point
+        {
+            u=U_d[shift+ixyz     ];
+            v=U_d[shift+ixyz+nxyz];
+            U_d[shift+ixyz     ]=     conj(v);
+            U_d[shift+ixyz+nxyz]=-1.0*conj(u);
+        }
+        
+        shift+=2*nxyz;
+    }
 }

@@ -19,6 +19,7 @@ int assure_reproducibility(const char *prefix)
     fprintf(f, "/**\n");
     fprintf(f, " * W-SLDA Toolkit\n");
     fprintf(f, " * Engine version: %s\n", VERSION);
+    fprintf(f, " * API version: %d\n", API_VERSION);
     fprintf(f, " * */\n\n");
     logger_h(f);
     fclose(f);
@@ -29,6 +30,7 @@ int assure_reproducibility(const char *prefix)
     fprintf(f, "/**\n");
     fprintf(f, " * W-SLDA Toolkit\n");
     fprintf(f, " * Engine version: %s\n", VERSION);
+    fprintf(f, " * API version: %d\n", API_VERSION);
     fprintf(f, " * */\n\n");
     problem_definition_h(f);
     fclose(f);
@@ -39,6 +41,7 @@ int assure_reproducibility(const char *prefix)
     fprintf(f, "/**\n");
     fprintf(f, " * W-SLDA Toolkit\n");
     fprintf(f, " * Engine version: %s\n", VERSION);
+    fprintf(f, " * API version: %d\n", API_VERSION);
     fprintf(f, " * */\n\n");
     predefines_h(f);
     fclose(f); 
@@ -49,6 +52,7 @@ int assure_reproducibility(const char *prefix)
     fprintf(f, "/**\n");
     fprintf(f, " * W-SLDA Toolkit\n");
     fprintf(f, " * Engine version: %s\n", VERSION);
+    fprintf(f, " * API version: %d\n", API_VERSION);
     fprintf(f, " * */\n\n");
     machine_h(f);
     fclose(f);

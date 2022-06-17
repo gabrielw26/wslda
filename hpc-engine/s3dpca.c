@@ -153,7 +153,6 @@ int wsldapnp; // total number of processes - global variable
 
 #define printf wprintf
 #include "logger.h"
-#undef printf
 
 typedef char * string;
 
@@ -944,6 +943,7 @@ int main( int argc , char ** argv )
     /* Set parameters */
     elpa_set(handle, "na", Hsize, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     int elpa_nev = (int)(ELPA_NEV_FRACTION*Hsize); if(elpa_nev>Hsize) elpa_nev=Hsize;
+    if(md.spinsymmetry>0) elpa_nev = Hsize/2 ; // Extract only negative energy eigenstates, and next convert them to positive ones
     elpa_set(handle, "nev", elpa_nev, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "local_nrows", nip, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
     elpa_set(handle, "local_ncols", niq, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
@@ -1110,7 +1110,7 @@ int main( int argc , char ** argv )
             wprintf( "The algorithm failed to compute eigenvalues!\n" );
             ABORT_NOBARRIER;
         }
-        if(elpa_nev<Hsize && En[elpa_nev-1]<dc_ec)
+        if(md.spinsymmetry==0 && elpa_nev<Hsize && En[elpa_nev-1]<dc_ec)
         {
             wprintf( "# !!!!!!! WARNING !!!!!!!: ELPA_NEV_FRACTION IS TOO SMALL!!!!!!!\n" );
         }
@@ -1136,11 +1136,19 @@ int main( int argc , char ** argv )
             ABORT_NOBARRIER;
         }
         // find min and max index energies in the interval E in [-ecut,+ecut]
+        double t_dc_ec_l=dc_ec_l, t_dc_ec_u=dc_ec_u; 
+#ifdef USE_ELPA
+        if(md.spinsymmetry==1) // special case - trick to speed-up computtion with ELPA!
+        {
+            t_dc_ec_l=-dc_ec_u; // <-- We extract only negative eigenstates
+            t_dc_ec_u= dc_ec_l; //     and convert them into positive ones using symmetry relation, see later
+        }
+#endif
         ix=-1; iy=Hsize;
         for(i=0; i<Hsize; i++)
         {
-            if(En[i]<dc_ec_l) ix=MAX(i,ix);
-            if(En[i]>dc_ec_u) iy=MIN(i,iy);
+            if(En[i]<t_dc_ec_l) ix=MAX(i,ix);
+            if(En[i]>t_dc_ec_u) iy=MIN(i,iy);
         }
         ix=ix+1; // shift to next eigenvalue
         nwf=iy-ix;
@@ -1192,6 +1200,11 @@ int main( int argc , char ** argv )
         }
 
         Cpzgemr2d(Hsize, nwf, U, 1, ix+1, DESCA, U_d, 1, 1, DESCUD, ictxt);
+#endif
+
+#ifdef USE_ELPA
+        // to finalize trick that speeds-up computation with ELPA
+        if(md.spinsymmetry==1) convert_eigenstates_negative_into_positive(niq_d, NXYZ, En_d_local, U_d);
 #endif
         rt_redistrib+=e_t(0);
 
