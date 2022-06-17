@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <mpi.h>
 
 #include "wdata.h"
 
@@ -17,6 +18,8 @@ double dc_ec;
 
 #include "predefines.h"
 #include "gpe_utils.h"
+#include "wslda_wavevectors.h"
+#include "pca_io.h"
 #include "problem-definition.h"
 
 #include "gpe_engine_api.h"
@@ -36,17 +39,19 @@ int main( int argc , char ** argv )
     int input_idx = parse_command_line_and_get_idx_of_input_file(argc, argv);
     read_input_file(input_idx, argv);
     
-//     file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
-//     sprintf(file_name, "%s_input.txt", md.outprefix);
-//     file_operation( copy_input_file(argv[i],file_name) ); 
+    int ierr, ip=0, i;
+    char file_name[256];
+    file_operation( check_if_can_overwrite_files() ); // terminate if file exists, and input->overwrite==0
+    sprintf(file_name, "%s_input.txt", md.outprefix);
+    file_operation( copy_input_file(argv[i],file_name) ); 
     
     double ekin, eint, eext, etot, etot_prev, time, rt, kF, diff=-1;
     const int device=input->gpuDevice;
     const int mode=input->gpe_mode;
-    const double alpha=input->alpha;
-    const double beta=input->beta;
+    double alpha=input->alpha;
+    double beta=input->beta;
     double npart=input->npart;
-    const double dt=input->dt;
+    double dt=input->dt;
     double time0 = 0.0;
     int inittype = input->inittype;
     double* npartArr = (double*)malloc(2 * sizeof(double));
@@ -63,10 +68,12 @@ int main( int argc , char ** argv )
         kF = 1.0;
         printf("# kF=%f (DEFAULT VALUE!, YOU CAN SET IT VIA input)\n", kF);
     }
+    double eF = kF*kF/2.0; // Fermi energy
     
     set_gpu_device(device);
+    
 
-    int nx, ny, nz, ierr, it = 0, i;
+    int nx, ny, nz, it = 0;
     gpe_get_lattice_api(&nx, &ny, &nz);
     printf("# GPE engine compiled for lattice: %d x %d x %d\n", nx, ny, nz);
 
@@ -83,6 +90,7 @@ int main( int argc , char ** argv )
         break;
     case 5:
         ierr = read_initial_wave_function( nxyz, psi, &time0);
+        if(input->resetit==1) time0=0.0;
         if(0 != ierr) return ierr;
         break;
     default:
@@ -99,6 +107,7 @@ int main( int argc , char ** argv )
     densall.j_a_x=currents; densall.j_a_y=currents+nxyz; densall.j_a_z=currents+nxyz*2;
     densall.j_b_x=currents; densall.j_b_y=currents+nxyz; densall.j_b_z=currents+nxyz*2;
     
+    printf("# CREATING GPE ENGINE[alpha=%f,beta=%f,dt=%f,npart=%f]\n", alpha, beta, dt, npart);
     gpe_create_engine_api(alpha, beta, dt, npart);
     gpe_set_user_params_api(MAX_USER_PARAMS, input->params);
     gpe_set_sclgth_api(input->sclgth);
@@ -160,28 +169,27 @@ int main( int argc , char ** argv )
     
     // add variables to data set
     // for each variable binary file of name `prefix_`varname`.wdat will be created
-    wdata_variable vdensity_a = {"density_a", "real", "none", "wdat"};
+    wdata_variable vdensity_a = {"rho_a", "real", "none", "wdat"};
     wdata_add_variable(&wmd, &vdensity_a);
     wdata_variable vdelta = {"psi", "complex", "none", "wdat"};
     wdata_add_variable(&wmd, &vdelta);
-    wdata_variable vcurrent_a = {"current_a", "vector", "none", "wdat"};
+    wdata_variable vcurrent_a = {"j_a", "vector", "none", "wdat"};
     wdata_add_variable(&wmd, &vcurrent_a);
 
     // add links to data sets
     // links are alternative names of the same variable
-    wdata_link ldensity_b = {"density_b", "density_a"};
+    wdata_link ldensity_b = {"rho_b", "rho_a"};
     wdata_add_link(&wmd, &ldensity_b);
-    wdata_link lcurrent_b = {"current_b", "current_a"};
+    wdata_link lcurrent_b = {"j_b", "j_a"};
     wdata_add_link(&wmd, &lcurrent_b);
     wdata_link ldelta = {"delta", "psi"};
     wdata_add_link(&wmd, &ldelta);
-
+    
     // add constants
-//     wdata_const lconst_eF = {"eF", 0.5, "MeV"};
-//     wdata_add_const(&wmd, &lconst_eF);
-// 
-//     wdata_const lconst_kF = {"kF", 1.0, "1/fm"};
-//     wdata_add_const(&wmd, &lconst_kF);
+    wdata_const lconst_eF = {"eF", eF, "none"};
+    wdata_add_const(&wmd, &lconst_eF);
+    wdata_const lconst_kF = {"kF", kF, "none"};
+    wdata_add_const(&wmd, &lconst_kF);
 
     // just in case - clear data sets
     // it removes binary files if they alredy exists
@@ -190,10 +198,10 @@ int main( int argc , char ** argv )
     wdata_write_cycle(&wmd, "psi", psi);
     
     gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
-    wdata_write_cycle(&wmd, "density_a", density);
+    wdata_write_cycle(&wmd, "rho_a", density);
 
     gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
-    wdata_write_cycle(&wmd, "current_a", currents);
+    wdata_write_cycle(&wmd, "j_a", currents);
 
     wdata_add_cycle(&wmd);
     wdata_write_metadata_to_file(&wmd, "");
@@ -237,17 +245,16 @@ int main( int argc , char ** argv )
         wdata_write_cycle(&wmd, "psi", psi);
         
         gpe_get_density(&time, density); for(i=0; i<nxyz; i++)  density[i]*=0.5;
-        wdata_write_cycle(&wmd, "density_a", density);
+        wdata_write_cycle(&wmd, "rho_a", density);
 
         gpe_get_currents(&time, currents); for(i=0; i<nxyz*3; i++)  currents[i]*=0.5;
-        wdata_write_cycle(&wmd, "current_a", currents);
+        wdata_write_cycle(&wmd, "j_a", currents);
         
         wdata_add_cycle(&wmd);
         wdata_write_metadata_to_file(&wmd, "");
         
-        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, npartArr, NULL, 0, NULL);
+        logger_add_entry(it++, densall, nullPotential, kF, NULL, energy, npartArr, input->params, extra_data_size, extra_data);
         
-
         if(mode==0 && fabs(diff) < input->energyconveps) break; // algorithm converged
         if(time > time0 + dt*input->timesteps*input->measurements) 
         {

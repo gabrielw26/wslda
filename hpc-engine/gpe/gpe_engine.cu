@@ -24,6 +24,7 @@
  ***************************************************************************/ 
 #include <math.h>
 #include <complex>      // std::complex
+#include <thrust/complex.h>
 
 #include "predefines.h"
 #include "gpe_engine.h"
@@ -1037,6 +1038,7 @@ int gpe_evolve(int nt)
     int i;
     int ierr;
         
+//     printf("#---> alpha=%f, beta=%f\n", gpe_mem.alpha, gpe_mem.beta);
     for(i=0; i<nt; i++)
     {
                 
