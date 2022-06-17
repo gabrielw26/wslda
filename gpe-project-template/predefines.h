@@ -4,9 +4,9 @@
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 256
-#define NY 32
-#define NZ 32
+#define NX 128
+#define NY 64
+#define NZ 64
 
 #define DX 1.0
 #define DY 1.0

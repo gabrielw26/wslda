@@ -267,9 +267,9 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
         // gpe coefficients
         else if (strcmp (tag,"alpha") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.alpha);
+            sscanf (s,"%s %lf %*s",tag,&md.alpha);
         else if (strcmp (tag,"beta") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.beta);
+            sscanf (s,"%s %lf %*s",tag,&md.beta);
         else if (strcmp (tag,"gpe_mode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpe_mode);
         // st-solver

@@ -1,5 +1,14 @@
 #ifdef  __cplusplus
 
+/**
+ * Switch function - performs switch in time interval [0-T]
+ * */
+__device__ __host__ inline double switch_function(double t, double T, double alpha)
+{
+    return 0.5*( 1.0+tanh( alpha*tan( M_PI_2*( 2.0*t/T-1.0 ) ) ) );
+}
+
+
 /** 
  * EXTERNAL POTENTIAL V_ext
  * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
@@ -16,23 +25,17 @@
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
-    // harmonic trap:
-    // V(x,y,z) = 0.5*(omega_x*x)^2 + 0.5*(omega_y*y)^2 + 0.5*(omega_z*z)^2
+    // potential for Josephson effect
+    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
+#define OMEGA_YX (1.01*NX/NY)
+#define OMEGA_ZX (0.99*NX/NZ)
     
-    // frequencies are passed through d_user_param array
-    double omega_x = params[0];
-    double omega_y = params[1];
-    double omega_z = params[2];
-    
-    // coordinate with respect to center of the box
-    double _ix = (double)(ix) - 1.0*(NX/2);
-    double _iy = (double)(iy) - 1.0*(NY/2);
-    double _iz = (double)(iz) - 1.0*(NZ/2);
+    double _ix = (double)(ix) - 1.0*(NX/2) + 0.5;
+    double _iy = (double)(iy) - 1.0*(NY/2) + 0.5;
+    double _iz = (double)(iz) - 1.0*(NZ/2) + 0.5;
+    double omega_x2 = params[0]; // passed from main part - this is 0.5*omega_x*omega_x
 
-
-    double trap =   0.5*_ix*_ix*omega_x*omega_x
-                  + 0.5*_iy*_iy*omega_y*omega_y 
-                  + 0.5*_iz*_iz*omega_z*omega_z;
+    double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + OMEGA_ZX*OMEGA_ZX*_iz*_iz);
     
     return trap;
 }
@@ -46,14 +49,30 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  * @param iz - z coordinate, iy=0,1,...,d_nz-1, where d_ny is global variable 
  * @param it - time value, ie. time = d_t0 + it*d_dt, d_t0 and d_dt are global variables
  * @param psi - psi(ix, iy, iz, it) - psi is normalized, i.e. int n(r) d^3r = npart, where n(r) computed according gpe_density(psi)
+ *              psi is of cufftDoubleComplex. 
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if modification is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
+
 __device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, double *params, size_t extra_data_size, void *extra_data)
 {
-    // no change
+    thrust::complex<double> *Psi = (thrust::complex<double> *)psi; // to simplify notation
+    
+
+    if(params[1]>0.5)
+    {
+        double psi_abs = sqrt(psi->x*psi->x + psi->y*psi->y);
+    //     
+        // exp(i*pi) = -1;
+        if(ix>0.1*NX && ix<0.9*NX)
+        {
+            if(ix<NX/2 - params[2]) {psi->x=psi_abs; psi->y=0.0;}
+            else                    {psi->x=-1.0*psi_abs; psi->y=0.0;} 
+        }
+    
+    }
     return 0;
 }
 
