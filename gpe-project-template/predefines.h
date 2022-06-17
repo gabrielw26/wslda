@@ -4,7 +4,7 @@
 /**
  * Define lattice size and lattice spacing
  * */
-#define NX 128
+#define NX 64
 #define NY 64
 #define NZ 64
 

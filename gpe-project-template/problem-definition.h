@@ -25,19 +25,14 @@ __device__ __host__ inline double switch_function(double t, double T, double alp
  * */
 __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t extra_data_size, void *extra_data)
 {
-    // potential for Josephson effect
-    // see: http://arxiv.org/pdf/1508.00733v1.pdf 
-#define OMEGA_YX (1.01*NX/NY)
-#define OMEGA_ZX (0.99*NX/NZ)
-    
-    double _ix = (double)(ix) - 1.0*(NX/2) + 0.5;
-    double _iy = (double)(iy) - 1.0*(NY/2) + 0.5;
-    double _iz = (double)(iz) - 1.0*(NZ/2) + 0.5;
-    double omega_x2 = params[0]; // passed from main part - this is 0.5*omega_x*omega_x
+//     double x = DX*(ix-NX/2);
+//     double y = DY*(iy-NY/2);     // for 1d code iy will be always 0
+//     double z = DZ*(iz-NZ/2);     // for 1d and 2d codes iz will be always 0
 
-    double trap = omega_x2*(_ix*_ix + OMEGA_YX*OMEGA_YX*_iy*_iy + OMEGA_ZX*OMEGA_ZX*_iz*_iz);
-    
-    return trap;
+    // ADD HERE FORMULA FOR V_ext(r)
+    double V_ext = 0.0;
+
+    return V_ext; 
 }
 
 /**
@@ -60,19 +55,8 @@ __device__  int gpe_modify_psi(int ix, int iy, int iz, int it, Complex *psi, dou
 {
     thrust::complex<double> *Psi = (thrust::complex<double> *)psi; // to simplify notation
     
-
-    if(params[1]>0.5)
-    {
-        double psi_abs = sqrt(psi->x*psi->x + psi->y*psi->y);
-    //     
-        // exp(i*pi) = -1;
-        if(ix>0.1*NX && ix<0.9*NX)
-        {
-            if(ix<NX/2 - params[2]) {psi->x=psi_abs; psi->y=0.0;}
-            else                    {psi->x=-1.0*psi_abs; psi->y=0.0;} 
-        }
+    // modify psi, according your needs
     
-    }
     return 0;
 }
 

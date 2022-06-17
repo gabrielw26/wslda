@@ -42,6 +42,7 @@ int logger(FILE *log,
     double eF = 0.5 * kF*kF;
     double Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
     double E_tot = observable[EKIN]+observable[EPOT]+observable[EPOTEXT];  
+    double t = (0.0+it*md.dt*md.timesteps);
     
     if(lineid==0) // HEADER
     {
@@ -53,30 +54,32 @@ int logger(FILE *log,
         fprintf(log,"#\n");
         fprintf(log,"# ========================= COLUMNS ========================\n");
         fprintf(log,"#  1: iteration number\n");
-        fprintf(log,"#  2: E_tot/Effg\n");
-        fprintf(log,"#  3: observable[EKIN]/Effg\n");
-        fprintf(log,"#  4: observable[EPOT]/Effg\n");
-        fprintf(log,"#  5: observable[EPOTEXT]/Effg\n");
-        fprintf(log,"#  6: kF\n");
-        fprintf(log,"#  7: eF = 0.5 * kF*kF\n");
-        fprintf(log,"#  8: Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF\n");
-        fprintf(log,"#  9: time per iteration (sec)\n");
-        fprintf(log,"# 10: time & date of entry\n");
+        fprintf(log,"#  2: time*eF\n");
+        fprintf(log,"#  3: E_tot/Effg\n");
+        fprintf(log,"#  4: observable[EKIN]/Effg\n");
+        fprintf(log,"#  5: observable[EPOT]/Effg\n");
+        fprintf(log,"#  6: observable[EPOTEXT]/Effg\n");
+        fprintf(log,"#  7: kF\n");
+        fprintf(log,"#  8: eF = 0.5 * kF*kF\n");
+        fprintf(log,"#  9: Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF\n");
+        fprintf(log,"# 10: time per iteration (sec)\n");
+        fprintf(log,"# 11: time & date of entry\n");
     }
     
     
     // add entry
-    fprintf(log, "%6d %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
+    fprintf(log, "%6d %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
         it, // 1
-        E_tot/Effg, // 2
-        observable[EKIN]/Effg, // 3
-        observable[EPOT]/Effg, // 4
-        observable[EPOTEXT]/Effg, //5
-        kF, // 6
-        eF, // 7
-        Effg, // 8
-        logger_get_time_from_last_entry(), //9
-        buffer // 10
+        t*eF, // 2
+        E_tot/Effg, // 3
+        observable[EKIN]/Effg, // 4
+        observable[EPOT]/Effg, // 5
+        observable[EPOTEXT]/Effg, //6
+        kF, // 7
+        eF, // 8
+        Effg, // 9
+        logger_get_time_from_last_entry(), // 10
+        buffer // 11
     );
     
     lineid++; // new line 
