@@ -1,6 +1,18 @@
 # Documentation - Wiki: 
 # https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
 
+# -------------- USER DEFINED PARAMETERS --------------
+# See: Wiki -> User defined parameters
+# Data flow: [Read params from input file] -> [execute process_params( )] -> [pass params to functions]
+#
+# params0                 0.0 # value of the params[0]
+# params1                 0.0 # value of the params[1]
+# ... and so on ...
+# ... if you need pass string parameter...
+# strings0           aaa # accessible via (global) variable strings[0]
+# strings1           bbb # accessible via (global) variable strings[1]
+# ... and so on ...
+
 # ------------------- INITIALIZATION ------------------
 # See: Wiki -> Initialization of the solver
 inittype                0       #  0 - create uniform solution and evolve it,

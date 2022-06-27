@@ -42,6 +42,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, // qfswitch;
 100.0, // Na;
 100.0, // Nb;
+200.0, // npart;
 -1.0, // init0Na;
 -1.0, // init0Nb;
 -1.0, // init0muchange;
@@ -59,6 +60,9 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 32, // mb;
 32, // nb;
 GPUS_PER_NODE, // gpuspernode
+0.0, // alpha
+1.0, // beta
+0.0, // gpe_mode
 1.0e-6, // energyconveps
 1.0e-6, // npartconveps
 1.0e-6, // npartconveps_a
@@ -103,6 +107,7 @@ GPUS_PER_NODE, // gpuspernode
 0.0, // aSLDAe
 0, // pccrSLDAe
 0.0, // sclgth
+0, // gpuDevice
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -222,8 +227,9 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"qfswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfswitch);
         // PARTICLE NUMBER
-        else if (strcmp (tag,"Na") == 0)
+        else if (strcmp (tag,"Na") == 0) {
             sscanf (s,"%s %lf %*s",tag,&md.Na);
+        }            
         else if (strcmp (tag,"Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Nb);
         // INIT-0 parameters
@@ -265,6 +271,13 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %d %*s",tag,&md.nb);
         else if (strcmp (tag,"gpuspernode") == 0)
             sscanf (s,"%s %d %*s",tag,&md.gpuspernode);
+        // gpe coefficients
+        else if (strcmp (tag,"alpha") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.alpha);
+        else if (strcmp (tag,"beta") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.beta);
+        else if (strcmp (tag,"gpe_mode") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.gpe_mode);
         // st-solver
         else if (strcmp (tag,"energyconveps") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.energyconveps);
@@ -381,6 +394,9 @@ int parse_input_file(char * file_name)
             md.aSLDAe=md.sclgth;
             md.aBdG=md.sclgth;
         }
+        // DEVICE SETTINGS
+        else if(strcmp(tag, "device") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.gpuDevice);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -471,6 +487,8 @@ int parse_input_file(char * file_name)
         }
 
     }
+    // sum Na & Nb particles
+    md.npart = md.Na + md.Na;
 
     // prepare for wprintf()
     sprintf(md.stdoutfile, "%s.stdout", md.outprefix);
@@ -919,4 +937,28 @@ void print_conservation_of_quantity(int quantity_id, double value, double tolera
 {
     double test=fabs( (value-__conserv_quantity_ref[quantity_id]) / __conserv_quantity_ref[quantity_id] );
     wprintf("# INITIAL VALUE=%f, PRESENT VALUE=%f, RELATIVE CHANGE=%f [> %f]\n", __conserv_quantity_ref[quantity_id], value, test, tolerance);
+}
+
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v)
+{
+    double complex *U_d = (double complex *) U_d_v;
+    double complex u,v;
+    int i, ixyz;
+    size_t shift=0;
+    for(i=0; i<n; i++) // for each eigenstate
+    {
+        // If vector (u, v) is solution with eigenvalue E
+        // then vector (v^∗ , -u^∗) is also solution with eigenvalue -E.
+        
+        En[i]*=-1.0; // change sign
+        for(ixyz=0; ixyz<nxyz; ixyz++) // for each lattice point
+        {
+            u=U_d[shift+ixyz     ];
+            v=U_d[shift+ixyz+nxyz];
+            U_d[shift+ixyz     ]=     conj(v);
+            U_d[shift+ixyz+nxyz]=-1.0*conj(u);
+        }
+        
+        shift+=2*nxyz;
+    }
 }

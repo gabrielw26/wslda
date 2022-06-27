@@ -1,0 +1,61 @@
+# -------------- USER DEFINED PARAMETERS --------------
+# See: Wiki -> User defined parameters
+# Data flow: [Read params from input file] -> [execute process_params( )] -> [pass params to functions]
+#
+# params0                 0.0 # value of the params[0]
+# params1                 0.0 # value of the params[1]
+# ... and so on ...
+# ... if you need pass string parameter...
+# strings0           aaa # accessible via (global) variable strings[0]
+# strings1           bbb # accessible via (global) variable strings[1]
+# ... and so on ...
+
+# ------------------- INITIALIZATION ------------------
+# See: Wiki -> Initialization of the solver
+inittype                0       #  0 - create uniform solution and start from it
+                                #    - prepeared for imaginary evolution
+                                #  5 - start from checkpoint, inprefix points to folder with checkpoint binary file 
+                                #    - prepeared for real time evolution
+
+# ---------------- GPE COEFFICIENTS --------------
+# GPE equation has form:
+#    (i*alpha - beta) dPsi/dt = H*Pis
+alpha                   0.0     # real-time evolution part
+beta                    1.0     # diffusive part
+gpe_mode                0       # 0-imag: break when energy change between iterations is less than  energyconveps
+                                # 1-real: break when reaching the requested number of measurements.
+                                #         This mode use fixed inittype==5.
+
+# ------------------- TIME EVOLUTION ----------------                                                                                                                                                                                              
+dt                      0.025   # integration time step, code units
+measurements            1000    # number of requested mesurments
+timesteps               100     # number of time steps between each measurement
+                                # measurements are written with time resolution: timesteps*dt
+                                # the total trajectory length is: measurements*timesteps*dt
+resetit                 1       # reset time counter
+
+# ----------------- PARTICLE NUMBERS -----------------
+Na                      400     # Requested number of particles a-type
+Nb                      400     # Requested number of particles b-type
+                                # For gpe solution Na == Nb
+                                # npart = Na + Nb
+                                
+# ----------------- SELF-CONSISTENT LOOP -----------------
+energyconveps           1.0e-9   # energy convergence epsilon, default=1.0e-6
+
+# ------------------ DEVICE SETTINGS ------------------
+device                  0       # gpu machine number on which the program will be executed
+
+# ------------------- INPUT/OUTPUT --------------------
+outprefix               test    # all output file with start with this prefix
+inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
+overwrite               1       # allow for overwriting results
+checkpoint              1       # do checkpoints after each iteration
+resetit                 1       # if 1 then reset iterations counter
+writewf                 0       # write wf at the end of computation yes=1, no=0
+
+# ----------------- SCATTERING LENGTH -----------------
+sclgth    -1.0 # scattering length in units of lattice spacing
+               # meaningful only for FUNCTIONAL=BDG,SLDAE
+               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+#referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)

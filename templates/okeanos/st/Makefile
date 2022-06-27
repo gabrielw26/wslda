@@ -1,6 +1,6 @@
 
 # COMPILER
-CXX=mpicc
+CXX=cc
 PYTHON=python
 
 # DIRECTORY SETTINGS

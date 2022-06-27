@@ -48,6 +48,7 @@ typedef struct
     // PARTICLE NUMBER
     double Na;                 // Requested number of particles a-type
     double Nb;                 // Requested number of particles b-type
+    double npart;              // Total number of particles
 
     // INIT-0 parameters
     double init0Na;            // Requested number of particles a-type - uniform solution
@@ -71,6 +72,11 @@ typedef struct
 
     // GPUS distribution
     int gpuspernode; // number of gpus per node, defualt=1
+
+    // GPE coefficients
+    double alpha;      
+    double beta;      
+    int gpe_mode;
 
     // static solver parameters
     double energyconveps; // convergence epsilon for energy- fraction of Effg needed to get convergence, default=1.0e-6
@@ -132,7 +138,8 @@ typedef struct
     double sclgth; // scattering length in units of lattice spacing
                    // meaningful only for FUNCTIONAL=BDG,SLDAE
                    // in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
-
+    // DEVICE SETTINGS
+    int gpuDevice;   // gpu machine number on which the program will be executed
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
@@ -238,5 +245,7 @@ double max_dxdydz();
 int init_conservation_of_quantity(int quantity_id, double value);
 int monitor_conservation_of_quantity(int quantity_id, double time, double value, double start_time, double stop_time, double tolerance);
 void print_conservation_of_quantity(int quantity_id, double value, double tolerance);
+
+void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
 
 #endif
