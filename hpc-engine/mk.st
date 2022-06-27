@@ -117,6 +117,9 @@ $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wsld
 	$(PYTHON) $(SRCDIR)reproducibility.py $(OBJDIR)
 	$(CXX) $(CFLAGS) -DWSLDA -I$(OBJDIR) -c -o $@ $<
 
+$(OBJDIR)pca_utils.o: $(SRCDIR)pca_utils.c $(SRCDIR)pca_utils.h $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) problem-definition.h logger.h
+	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
+
 $(OBJDIR)wslda_functionals.o: $(SRCDIR)wslda_functionals.c $(DEPS) $(WDATADEPS) $(WDERIVDEPS) $(DEPSLOCAL) problem-definition.h
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
 

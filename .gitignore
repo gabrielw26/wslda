@@ -168,3 +168,5 @@ extensions/sldae/sldae_parameters\.h
 st-testcase-uniform/st-wbsk-3d
 
 st-project-template/obj/
+
+gpe-project-template/obj/
