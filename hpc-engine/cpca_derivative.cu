@@ -431,7 +431,13 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
     cufftDoubleComplex * p_df_dy = p_df_dx+NX*(NY/2+1);
     
     // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    double * p_tmp = (double *) (p_df_dy+NX*(NY/2+1));
+    if( cudaMemcpy( p_tmp , f , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_df_dx);
+#else
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], f, p_df_dx);
+#endif
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
         
     // Step 2: Multiply by momentum
@@ -511,10 +517,20 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
     cufftDoubleComplex * p_fy = p_fx+NX*(NY/2+1);
     
     // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    double * p_tmp = (double *) (p_fy+NX*(NY/2+1));
+    if( cudaMemcpy( p_tmp , fx , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fx);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result; 
+    if( cudaMemcpy( p_tmp , fy , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fy);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result; 
+#else
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fx, p_fx);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fy, p_fy);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;   
+#endif
         
     // Step 2: Multiply by momentum
     kernel_compute_derivative_real_vector_f<<<nblocks, nthreads>>>(p_fx, p_fy, NULL);
@@ -578,7 +594,13 @@ extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads
     p_fx+=PCA_WORKSPACE_SHIFT*NXY;
     
     // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    double * p_tmp = (double *) (p_fx+NX*(NY/2+1));
+    if( cudaMemcpy( p_tmp , f , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fx);
+#else
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], f, p_fx);
+#endif
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
         
     // Step 2: Multiply by momentum
@@ -660,10 +682,20 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
     cufftDoubleComplex * p_fz = p_fy+NX*(NY/2+1);
     
     // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    double * p_tmp = (double *) (p_fz+NX*(NY/2+1));
+    if( cudaMemcpy( p_tmp , fx , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fx);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
+    if( cudaMemcpy( p_tmp , fy , NXY*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fy);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
+#else
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fx, p_fx);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;  
     cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], fy, p_fy);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;   
+#endif
         
     // Step 2: Multiply by momentum
     // (ikx*p_fx + iky*p_fy) -> p_fz
