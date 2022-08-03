@@ -976,7 +976,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     double * grad_j_corr_a = grad_alpha_a + NX*6; // (j+/n+ - alpha_a*ja/na), see GW notes
     double * grad_j_corr_b = grad_alpha_a + NX*9; // (j+/n+ - alpha_b*jb/nb), see GW notes
     double * laplace_alpha_a  = grad_alpha_a + NX*12;
-    double * laplace_alpha_b  = grad_alpha_b + NX*13;
+    double * laplace_alpha_b  = grad_alpha_a + NX*13;
 
     // Step 1: if quantum friction is active, update mean-field potentials
     if(qfalpha>0.0)

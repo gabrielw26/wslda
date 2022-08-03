@@ -87,12 +87,18 @@ extern "C" int create_cufftPlans(int batch_size,  int nwfip, size_t *workSize)
     cufft_result=cufftMakePlan3d(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], NX, NY, NZ, CUFFT_D2Z, &max_work_Size);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
     max_work_Size+=sizeof(cufftDoubleComplex)*NX*NY*(NZ/2+1)*3; // extra 3 arrays - see implementation of compute_gradient_real_f
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    max_work_Size+=sizeof(double)*NXYZ;
+#endif
     max_work_Size+=sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT; // add extra PCA_WORKSPACE_SHIFT buffers as temporary data for hamiltonian execution (2*PCA_WORKSPACE_SHIFT buffers in double precision)
     if(max_work_Size>*workSize) *workSize=max_work_Size;
     
     cufft_result=cufftMakePlan3d(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], NX, NY, NZ, CUFFT_Z2D, &max_work_Size);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
     max_work_Size+=sizeof(cufftDoubleComplex)*NX*NY*(NZ/2+1)*3; // extra 3 arrays - see implementation of compute_gradient_real_f
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    max_work_Size+=sizeof(double)*NXYZ;
+#endif
     max_work_Size+=sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT; // add extra PCA_WORKSPACE_SHIFT buffers as temporary data for hamiltonian execution (2*PCA_WORKSPACE_SHIFT buffers in double precision)
     if(max_work_Size>*workSize) *workSize=max_work_Size;
         
@@ -114,6 +120,9 @@ extern "C" int set_workspace_for_cufftPlan(void *workArea)
     pca_cufft_work_area = workArea; // save pointer to global structure
     cufftDoubleComplex *prt = (cufftDoubleComplex *)workArea;
     prt+=NX*NY*(NZ/2+1)*3;
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    prt+=sizeof(double)*NXYZ;
+#endif
     prt+=NXYZ*PCA_WORKSPACE_SHIFT;
     
     for(i=0; i<CUFFT_NUMBER_OF_PLANS; i++)
