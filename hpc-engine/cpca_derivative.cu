@@ -637,13 +637,13 @@ __global__ void kernel_compute_divergence_real_vector_f(cufftDoubleComplex *wf_d
         ixy2ixiy2dD2Z(ixyz,ix,iy); // decode cartesian coordinates
         
         // extract momentum
-        if(ix<NX/2)  kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix   ); // note: normalization factor is included
-        else         kx=2.*M_PI/( double )LX/( double )NXYZ * ( double )(ix-NX); // note: normalization factor is included
+        if(ix<NX/2)  kx=2.*M_PI/( double )LX/( double )NXY * ( double )(ix   ); // note: normalization factor is included
+        else         kx=2.*M_PI/( double )LX/( double )NXY * ( double )(ix-NX); // note: normalization factor is included
         
-        if(iy<NY/2)  ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy   ); // note: normalization factor is included
-        else         ky=2.*M_PI/( double )LY/( double )NXYZ * ( double )(iy-NY); // note: normalization factor is included
+        if(iy<NY/2)  ky=2.*M_PI/( double )LY/( double )NXY * ( double )(iy   ); // note: normalization factor is included
+        else         ky=2.*M_PI/( double )LY/( double )NXY * ( double )(iy-NY); // note: normalization factor is included
         
-        /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXYZ; // note: normalization factor is included */
+        /*k2 = -1.0*(kx*kx + ky*ky + kz*kz)/NXY; // note: normalization factor is included */
                                 
         res.x=0.0; res.y=0.0;
         
@@ -686,7 +686,7 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
 
     // get pointer to workspace
     cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    p_fx+=PCA_WORKSPACE_SHIFT*NXY;
     cufftDoubleComplex * p_fy = p_fx+NX*(NY/2+1);
     cufftDoubleComplex * p_fz = p_fy+NX*(NY/2+1);
     
