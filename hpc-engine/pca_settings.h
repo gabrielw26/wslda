@@ -20,7 +20,7 @@
 // uncomment this if you want to assure that data is copied to the working buffer 
 // before execution of derivative computation
 // it is related to issue encountered for hipfft implementation
-#define DERIVATIVE_COPY_DATA_MODE
+// #define DERIVATIVE_COPY_DATA_MODE
 #else
 
 #error "You need to select WSLDA or TDWSLDA!"
