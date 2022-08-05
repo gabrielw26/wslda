@@ -1,3 +1,7 @@
+# 2022.xx.xx
+* Porting code to HIP
+* Minor bug fixes related to stability of the code
+
 # 2022.06.27
 * Speed-up of diagonalization process with ELPA for spin-symmetric mode.
 * Minor bug fixes.
