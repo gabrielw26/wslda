@@ -44,3 +44,10 @@ NOTE: You MUST recompile code after each modification of `*.h` files
 ## STEP 4: Prepare job submission script & submit
 
 This part strongly depends on the target system. Please, refer to your (super)computer documentation.
+
+## PERFORMANCE ISSUES
+
+With AMDs, it was found that the code attains the highest performance with
+```
+nthreads                256
+```
