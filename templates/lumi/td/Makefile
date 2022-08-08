@@ -1,7 +1,3 @@
-# LOAD BEFORE COMPILATION
-# 
-# export WSLDA=...
-# source env.sh
 
 # COMPILERS
 CXX=cc
@@ -16,9 +12,9 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS=-D__HIP_PLATFORM_AMD__ -I$(HIP_PATH)/include 
-NVCCFLAGS= 
-HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a
+CFLAGS=-D__HIP_PLATFORM_AMD__ -I$(HIP_PATH)/include
+# NVCCFLAGS= 
+HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a 
 
 # LIBRARIES
 LIBS= -L$(HIP_LIB_PATH) -lamdhip64 -L$(EBROOTHIPFFT)/lib -lhipfft -lm

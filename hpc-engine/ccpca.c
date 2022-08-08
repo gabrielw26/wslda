@@ -573,8 +573,8 @@ int main( int argc , char ** argv )
     {
         if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
         
-        gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_subset ) );
-        gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_subset ) );
+        gpu_exec( host_malloc_pl((size_t)12*NX*sizeof(double), (void **)&h_densities_subset ) );
+        gpu_exec(     gpu_malloc((size_t)12*NX*sizeof(double), (void **)&d_densities_subset ) );
         
         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_subset ) );
         cppmallocl(h_weight_subset, nwfip, double);

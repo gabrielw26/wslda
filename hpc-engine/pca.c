@@ -830,8 +830,8 @@ int main( int argc , char ** argv )
     {
         if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
         
-        gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_subset ) );
-        gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_subset ) );
+        gpu_exec( host_malloc_pl((size_t)12*NXYZ*sizeof(double), (void **)&h_densities_subset ) );
+        gpu_exec(     gpu_malloc((size_t)12*NXYZ*sizeof(double), (void **)&d_densities_subset ) );
         
         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_subset ) );
         cppmallocl(h_weight_subset, nwfip, double);
@@ -932,7 +932,7 @@ int main( int argc , char ** argv )
     gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
-    MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce( MPI_IN_PLACE, h_densities, (size_t)12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
     if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
