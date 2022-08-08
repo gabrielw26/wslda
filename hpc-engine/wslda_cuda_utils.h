@@ -8,7 +8,8 @@
  * @author Gabriel Wlazlowski
  * @date 25.10.2020
  * */  
-
+#ifndef __WSLDA_CUDA_UTILS__
+#define __WSLDA_CUDA_UTILS__
 
 __global__ void kernel_cuda_set_array_elements(int array_dim, double *array,  double value)
 {
@@ -59,3 +60,4 @@ int cuda_scale_array_elements(int array_dim, double *array,  double value, int n
     return 0;
 }
 
+#endif

@@ -20,5 +20,8 @@ for cufile in *.cu; do
     hipify-perl -hip-kernel-execution-syntax -o hip/${cufile%.cu}.cpp $cufile
 done
 
+# Other files
+hipify-perl -hip-kernel-execution-syntax -o hip/wslda_cuda_utils.hpp wslda_cuda_utils.h
+
 set +x
 echo "---> Conversion of WSLDA to HIP is DONE."

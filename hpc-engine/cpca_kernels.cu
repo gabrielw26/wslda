@@ -12,7 +12,11 @@ typedef thrust::complex<double> Complex;
 #define CODEDIM 2
 #include "pca_macro.h"
 #include "pca_edf.h"
+#ifdef HIPMODE
+#include "hip/wslda_cuda_utils.hpp"
+#else
 #include "wslda_cuda_utils.h"
+#endif
 #define double_complex Complex
 #define __externc
 #include "wslda_potdens.h"
