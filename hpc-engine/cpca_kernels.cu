@@ -816,18 +816,17 @@ extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex
         kernel_compute_ovelap<<<nblocks, nthreads>>>((Complex *)wf1+shift, (Complex *)wf2+shift, (Complex *)wf1+shift+n*NXY, (Complex *)wf2+shift+n*NXY, re, im);
         shift+=NXY; // move pointer to next wf
 
+        ierr = local_reductions_many(2, NXY, workarea, workarea);
+        if(ierr!=0) return ierr;
+
         if(overlap_re!=NULL)
         {
-            ierr = local_reductionR(re, NXY, re, nthreads, 0);
-            if(ierr!=0) return ierr;
-            if( cudaMemcpy( overlap_re+iwf , re , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+            if( cudaMemcpy( overlap_re+iwf , workarea+0 , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
         }
 
         if(overlap_im!=NULL)
         {
-            ierr = local_reductionR(im, NXY, im, nthreads, 0);
-            if(ierr!=0) return ierr;
-            if( cudaMemcpy( overlap_im+iwf , im , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
+            if( cudaMemcpy( overlap_im+iwf , workarea+0 , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
         }
     }
     return 0;
