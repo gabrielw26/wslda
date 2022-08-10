@@ -25,6 +25,7 @@ done
 
 # Other files
 $HIPIFY_CMD -o hip/wslda_cuda_utils.hpp wslda_cuda_utils.h
+$HIPIFY_CMD -o hip/tdwslda_energy_generic.hpp tdwslda_energy_generic.h
 
 set +x
 echo "---> Conversion of WSLDA to HIP is DONE."
