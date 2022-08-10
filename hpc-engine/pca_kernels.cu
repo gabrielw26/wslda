@@ -214,12 +214,94 @@ __global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, 
  *                            delta - double complex array of size NXYZ
  *                     In total size of d_potentials is 4*NXYZ
  * @param d_workarea (INPUT/OUTPUT)
- *                   working buffer of size 5*NXYZ,
- *                   On OUTPUT first 9 elements contain energies and particle number [E_kin, E_pot, E_pair, E_CM, E_ext, Na, Nb, Laz, Lbz]
+ *                   working buffer of size PCA_WORKSPACE_SHIFT*NXYZ*sizeof(double complex),
+ *                   On OUTPUT first TDWSLDAITEMS elements contain energies and particle number, as specifie in pca_settings.h
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads)
+{
+    // number of blocks
+    int nblocks = (int)ceil((float)NXYZ/nthreads);
+    wslda_density densall=convert_into_wslda_density(d_densities, NXYZ);
+    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXYZ, NULL);
+
+    // Step 1: prepare buffers for local reductions
+    // intrinsic energy
+    double *E_kin = (double *)(d_workarea +  EKIN*NXYZ);
+    double *E_pot = (double *)(d_workarea +  EPOT*NXYZ);
+    double *E_pair= (double *)(d_workarea +  EPAIR*NXYZ);
+    double *E_Curr= (double *)(d_workarea +  ECURRENT*NXYZ);
+    tdwslda_compute_energy<<<nblocks, nthreads>>>(it, densall, potsall,
+                                                 E_kin, E_pot, E_pair, E_Curr
+                                                 );
+    
+    // external energy - potential
+    double *E_ext = (double *)(d_workarea +  EPOTEXT*NXYZ);
+#ifdef ENABLE_V_EXT
+    kernel_compute_energy_v_ext<<<nblocks, nthreads>>>(it,
+                                                    densall.rho_a, densall.rho_b, densall.nu,
+                                                    densall.j_a_x, densall.j_a_y, densall.j_a_z, densall.j_b_x, densall.j_b_y,densall. j_b_z,
+                                                    densall.tau_a, densall.tau_b,
+                                                    potsall.delta,
+                                                    E_ext
+                                                    );
+#else
+    cuda_set_array_elements(NXYZ, E_ext,  0.0, nthreads); // set this contribution to 0.0
+#endif
+    
+    // external energy - pairing
+    double *E_ext_pair = (double *)(d_workarea +  EPAIREXT*NXYZ);
+#ifdef ENABLE_DELTA_EXT
+    kernel_compute_energy_delta_ext<<<nblocks, nthreads>>>(it,
+                                                    densall.rho_a, densall.rho_b, densall.nu,
+                                                    densall.j_a_x, densall.j_a_y, densall.j_a_z, densall.j_b_x, densall.j_b_y, densall.j_b_z,
+                                                    densall.tau_a, densall.tau_b,
+                                                    potsall.delta,
+                                                    E_ext_pair
+                                                    );
+#else
+    cuda_set_array_elements(NXYZ, E_ext_pair,  0.0, nthreads); // set this contribution to 0.0
+#endif
+
+    // external energy - velocity
+    double *E_ext_vel = (double *)(d_workarea +  EVELEXT*NXYZ);
+#ifdef ENABLE_VELOCITY_EXT
+    kernel_compute_energy_velocity_ext<<<nblocks, nthreads>>>(it,
+                                                    densall.rho_a, densall.rho_b, densall.nu,
+                                                    densall.j_a_x, densall.j_a_y, densall.j_a_z, densall.j_b_x, densall.j_b_y, densall.j_b_z,
+                                                    densall.tau_a, densall.tau_b,
+                                                    potsall.delta,
+                                                    E_ext_vel
+                                                    );
+#else
+    cuda_set_array_elements(NXYZ, E_ext_vel,  0.0, nthreads); // set this contribution to 0.0
+#endif
+
+    // partile number
+    double *Na = (double *)(d_workarea +  NPARTA*NXYZ);
+    double *Nb = (double *)(d_workarea +  NPARTB*NXYZ);
+    if( cudaMemcpy(Na, densall.rho_a, sizeof(double)*NXYZ, cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -100;
+    if( cudaMemcpy(Nb, densall.rho_b, sizeof(double)*NXYZ, cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -100;
+    
+    // angular momentum
+    double *La = (double *)(d_workarea +  LZA*NXYZ);
+    double *Lb = (double *)(d_workarea +  LZB*NXYZ);
+    kernel_compute_angular_momentum_z<<<nblocks, nthreads>>>(densall.j_a_x, densall.j_a_y, densall.j_a_z, 
+                                                             densall.j_b_x, densall.j_b_y, densall.j_b_z, 
+                                                             La, Lb);
+
+    // Step 2: massive reductions
+    int ierr = local_reductions_many(TDWSLDAITEMS, NXYZ, d_workarea, d_workarea);
+    if(ierr!=0) return ierr;
+    
+    // add missing volume element
+    cuda_scale_array_elements(2, d_workarea +  NPARTA,  DXYZ, 1); // add missing volume element
+    
+    return 0;
+}
+
+extern "C" int compute_energy22(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)NXYZ/nthreads);
