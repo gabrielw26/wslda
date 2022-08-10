@@ -7,6 +7,9 @@
 # For example:
 #   export PATH=$PATH:/opt/HIPIFY/bin
 
+# SETTINGS
+HIPIFY_CMD="hipify-perl -hip-kernel-execution-syntax"
+
 echo "---> Converting WSLDA to HIP environment"
 set -x
 
@@ -17,11 +20,11 @@ rm -rf hip/*
 
 # Convert CUDA files
 for cufile in *.cu; do
-    hipify-perl -hip-kernel-execution-syntax -o hip/${cufile%.cu}.cpp $cufile
+    $HIPIFY_CMD -o hip/${cufile%.cu}.cpp $cufile
 done
 
 # Other files
-hipify-perl -hip-kernel-execution-syntax -o hip/wslda_cuda_utils.hpp wslda_cuda_utils.h
+$HIPIFY_CMD -o hip/wslda_cuda_utils.hpp wslda_cuda_utils.h
 
 set +x
 echo "---> Conversion of WSLDA to HIP is DONE."

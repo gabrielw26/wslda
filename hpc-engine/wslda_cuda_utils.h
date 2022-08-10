@@ -184,7 +184,16 @@ __global__ void __reduce_kernelR__(double *g_idata, double *g_odata, int n, int 
     if (blockSize >=  512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
     if (blockSize >=  256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
     if (blockSize >=  128) { if (tid <  64) { sdata[tid] += sdata[tid +  64]; } __syncthreads(); }
+#ifdef HIPMODE
+    if (blockSize >=   64) { if (tid <  32) { sdata[tid] += sdata[tid +  32]; } __syncthreads(); }
+    if (blockSize >=   32) { if (tid <  16) { sdata[tid] += sdata[tid +  16]; } __syncthreads(); }
+    if (blockSize >=   16) { if (tid <   8) { sdata[tid] += sdata[tid +   8]; } __syncthreads(); }
+    if (blockSize >=    8) { if (tid <   4) { sdata[tid] += sdata[tid +   4]; } __syncthreads(); }
+    if (blockSize >=    4) { if (tid <   2) { sdata[tid] += sdata[tid +   2]; } __syncthreads(); }
+    if (blockSize >=    2) { if (tid <   1) { sdata[tid] += sdata[tid +   1]; } __syncthreads(); }
+#else
     if (tid < 32) warpReduceR<blockSize>(sdata, tid);
+#endif
 
     if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }

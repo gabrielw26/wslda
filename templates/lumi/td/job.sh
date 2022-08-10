@@ -3,14 +3,16 @@
 #SBATCH --job-name=NAME          # <--- SET 
 #SBATCH --output="NAME.%J.out"   # <--- SET
 #SBATCH --error="NAME.%J.err"    # <--- SET
-#SBATCH --ntasks=16              # <--- SET: Number of processes you want to use, number of nodes is nnodes=ntasks/8
+#SBATCH --nodes=2                # <--- SET: Number of nodes, each noode has 8 GPUs
+#SBATCH --ntasks=16              # <--- SET: Number of processes you want to use, MUST be nodes*8 !!!
 #SBATCH --gpus=16                # <--- SET: MUST be the same as ntasks !!!
 #SBATCH --time=15:00             # <--- SET: Walltime HH:MM:SS
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=your@email   # <--- SET: if you want to get e-mail notification
 #SBATCH --partition=eap 
 #SBATCH --account=project_465000150 
-#SBATCH --cpus-per-task=1 
+#SBATCH --cpus-per-task=1        # Do not modify
+#SBATCH --ntasks-per-node=8      # Do not modify
 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
