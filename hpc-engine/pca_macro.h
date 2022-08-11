@@ -56,6 +56,10 @@
     
 #define TESTLINE                                                                \
     { wprintf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); }
+    
+    
+#define TESTLINE_BARRIER                                                                \
+    { wprintf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); MPI_Barrier( MPI_COMM_WORLD ); }
 
     
 // execution of function by GPU and CPU side.
