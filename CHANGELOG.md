@@ -1,6 +1,7 @@
 # 2022.xx.xx
-* Porting code to HIP
-* Minor bug fixes related to stability of the code
+* Porting code to HIP.
+* New library [B-Box](https://gitlab.fizyka.pw.edu.pl/wtools/wbox) has been incorporated into the W-SLDA.
+* Minor bug fixes related to the stability of the code.
 
 # 2022.06.27
 * Speed-up of diagonalization process with ELPA for spin-symmetric mode.
