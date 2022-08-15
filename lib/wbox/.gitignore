@@ -1,0 +1,8 @@
+*.o
+*so
+*.a
+c-examples/lattice*-insert
+c-examples/lattice*-merge
+c-examples/lattice*-rotate
+
+.vscode/
