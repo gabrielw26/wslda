@@ -21,6 +21,7 @@ typedef thrust::complex<double> Complex;
 #define __externc
 #include "wslda_potdens.h"
 #include "reduce_many.h"
+#include "pca_utils.h" // access to input (md) structure
 
 
 #ifdef TDWSLDA
