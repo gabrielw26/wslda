@@ -701,6 +701,8 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     ikzadd=1;
 #endif
     
+    if(nz==1) ikzadd=1; // strict 2D mode
+    
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
         sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz);
@@ -816,6 +818,7 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     ikzadd=1;
 #endif
     
+    if(nz==1) ikzadd=1; // strict 2D mode
 //     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
@@ -901,6 +904,8 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
 #ifdef USE_CUBIC_CUTOFF
     ikzadd=1;
 #endif
+    
+    if(nz==1) ikzadd=1; // strict 2D mode
     
 //     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
