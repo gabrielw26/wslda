@@ -101,8 +101,8 @@ GPUS_PER_NODE, // gpuspernode
 -10.0, // ccstart
 99999.0, // ccstop
 10.0, // ccswitch
-9.99, // hff_mu
-0.01, // hff_T
+9.99, // hkf_mu
+0.01, // hkf_T
 0.0, // subsetMinEn
 0.0, // subsetMaxEn
 0, // subsetShiftDmu
@@ -376,10 +376,10 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"ccswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ccswitch);
         // high frequency filter
-        else if (strcmp (tag,"hff_mu") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.hff_mu);
-        else if (strcmp (tag,"hff_T") == 0)
-            sscanf (s,"%s %lf %*s",tag,&md.hff_T);
+        else if (strcmp (tag,"hkf_mu") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.hkf_mu);
+        else if (strcmp (tag,"hkf_T") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.hkf_T);
         // subset tracking
         else if (strcmp (tag,"subsetMinEn") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.subsetMinEn);

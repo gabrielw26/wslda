@@ -125,8 +125,8 @@ typedef struct
     double ccswitch;                    // time for switch function
     
     // high frequency filter
-    double hff_mu; // high frequency filter: Fermi-Dirac mu parameter, in ec units
-    double hff_T;  // high frequency filter: Fermi-Dirac T parameter, in ec units
+    double hkf_mu; // high frequency filter: Fermi-Dirac mu parameter, in ec units
+    double hkf_T;  // high frequency filter: Fermi-Dirac T parameter, in ec units
 
     // subset tracking
     double subsetMinEn;     // if subsetMinEn!=subsetMaxEn then td code track densities arising from states
