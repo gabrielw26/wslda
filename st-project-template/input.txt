@@ -53,7 +53,9 @@ energyconveps           1.0e-6   # energy convergence epsilon, default=1.0e-6
 npartconveps            1.0e-6   # number of particles convergence epsilon, default=1.0e-6, for both components
 # npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
 # npartconveps_b          1.0e-6   # ... and `b` suffixes. 
-linearmixing            0.5      # mixing parameter (alpha) for linear mixing, default=0.5
+linearmixing            0.5      # mixing parameter for linear mixing scheme, default=0.5
+                                 # Limiting cases: 0.0=self-consistency is disabled, 
+                                 #                 1.0=fixed point iterations (solution from present iteration becomes input for next)
 muchange                0.5      # coefficient for changing chemical potential, default=0.5, for both components
 # muchange_a              0.5      # or you can control muchange for each component separately using tags with `a` ...
 # muchange_b              0.5      # ... and `b` suffixes. 

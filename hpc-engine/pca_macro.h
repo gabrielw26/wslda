@@ -1,5 +1,20 @@
 #include "wslda_errors.h"
 
+#ifdef VERBOSE
+
+#define EXEC_START_INFO(cmd) \
+    printf("VERBOSE[%3d]: LANCHING    %s [file=`%s`, line=%d]\n", ip, #cmd, __FILE__, __LINE__); fflush(stdout); 
+    
+#define EXEC_STOP_INFO(cmd) \
+    printf("VERBOSE[%3d]: DONE %6d=%s [file=`%s`, line=%d]\n", ip, ierr, #cmd, __FILE__, __LINE__); fflush(stdout);
+    
+#else
+    
+#define EXEC_START_INFO(cmd)
+#define EXEC_STOP_INFO(cmd)
+
+#endif
+
 // allocation of memory, not involving MPI
 #define cppmallocl(pointer,size,type)                                           \
     if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
@@ -41,12 +56,16 @@
     
 #define TESTLINE                                                                \
     { wprintf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); }
+    
+    
+#define TESTLINE_BARRIER                                                                \
+    { wprintf("# TESTLINE: PROCESS %4d REACHED LINE %d IN FILE %s\n", ip, __LINE__ , __FILE__); fflush(stdout); MPI_Barrier( MPI_COMM_WORLD ); }
 
     
 // execution of function by GPU and CPU side.
 // Check error and terminate if fail
 #define gpu_exec( cmd )                                                         \
-    { ierr=cmd;                                                                 \
+    { EXEC_START_INFO(cmd); ierr=cmd;  EXEC_STOP_INFO(cmd)                      \
     if(ierr)                                                                    \
     {                                                                           \
         fprintf( stderr , "GPU ERROR: ip[%d]: cannot execute: %s\n" ,ip, #cmd) ;\

@@ -23,7 +23,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h \
        wslda_api_version.h ../VERSION.h
 NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h \
-        reduce_many.h
+        reduce_many.h tdwslda_energy_generic.h
 
 WDATADEPS = wdata.h
 WDERIVDEPS = wderiv.h
@@ -96,6 +96,14 @@ ifneq (,$(wildcard machine.h))
 DEPSLOCAL := $(DEPSLOCAL) machine.h
 endif
 
+ifneq ($(strip $(HIPCC)),)
+HIPCCFLAGS := $(HIPCCFLAGS) -I$(INCLUDEDIR) -I./ -DTDWSLDA -DHIPMODE
+CFLAGS := $(CFLAGS) -DHIPMODE
+ifneq ($(strip $(WSLDA_MACHINE)),)
+HIPCCFLAGS := $(HIPCCFLAGS) -I$(WSLDA_MACHINE)
+endif
+endif
+
 all: 1d 2d 3d
 
 1d: dirs d1d
@@ -160,6 +168,22 @@ $(OBJDIR)%.o: $(WDERIVSRC)%.c $(DEPS) $(WDERIVDEPS)
 $(OBJDIR)%.o: $(WINTERPSRC)%.c $(DEPS) $(WINTERPDEPS)
 	$(CXX) $(CFLAGS) -DWSLDA -c -o $@ $<
 
+ifneq ($(strip $(HIPCC)),)
+
+$(OBJDIR)ccpca_kernels.o: $(SRCDIR)hip/ccpca_kernels.cpp $(NVCCDEPS) $(DEPSLOCAL) problem-definition.h
+	$(HIPCC) $(HIPCCFLAGS) -c -o $@ $<
+
+$(OBJDIR)cpca_kernels.o: $(SRCDIR)hip/cpca_kernels.cpp $(NVCCDEPS) $(DEPSLOCAL) problem-definition.h
+	$(HIPCC) $(HIPCCFLAGS) -c -o $@ $<
+
+$(OBJDIR)pca_kernels.o: $(SRCDIR)hip/pca_kernels.cpp $(NVCCDEPS) $(DEPSLOCAL) problem-definition.h
+	$(HIPCC) $(HIPCCFLAGS) -c -o $@ $<
+
+$(OBJDIR)%.o: $(SRCDIR)hip/%.cpp $(NVCCDEPS) $(DEPSLOCAL)
+	$(HIPCC) $(HIPCCFLAGS) -c -o $@ $<
+
+else
+
 $(OBJDIR)ccpca_kernels.o: $(SRCDIR)ccpca_kernels.cu $(NVCCDEPS) $(DEPSLOCAL) problem-definition.h
 	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $<
 
@@ -171,6 +195,8 @@ $(OBJDIR)pca_kernels.o: $(SRCDIR)pca_kernels.cu $(NVCCDEPS) $(DEPSLOCAL) problem
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu $(NVCCDEPS) $(DEPSLOCAL)
 	$(NVCC) $(NVCCFLAGS) -Xcudafe "--diag_suppress=declared_but_not_referenced" -Xcudafe "--diag_suppress=set_but_not_used" -c -o $@ $<
+
+endif
 
 .PHONY: clean all ver dirs
 

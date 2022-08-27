@@ -81,17 +81,17 @@ int main( int argc , char ** argv )
     double *d_potentials; // pointer to array with potentials [V_a, V_b, delta] (GPU)
     double *d_workarea; // pointer to working area, also used by cufft (GPU)
     double *h_energy; // buffer for energies (CPU)
-    cufftDoubleComplex *d_wf; // pointer to wave-functions (GPU)
-    cufftDoubleComplex *d_fkm1; // pointer to f_k-1 (GPU)
-    cufftDoubleComplex *d_fkm2; // pointer to f_k-2 (GPU)
-    cufftDoubleComplex *d_fkm3; // pointer to f_k-3 (GPU)
+    double complex *d_wf; // pointer to wave-functions (GPU)
+    double complex *d_fkm1; // pointer to f_k-1 (GPU)
+    double complex *d_fkm2; // pointer to f_k-2 (GPU)
+    double complex *d_fkm3; // pointer to f_k-3 (GPU)
 #if INTEGRATION_SCHEME==AB4AM5
-    cufftDoubleComplex *d_fkm4; // pointer to f_k-3 (GPU)
+    double complex *d_fkm4; // pointer to f_k-3 (GPU)
 #endif
-    cufftDoubleComplex *d_wf_d_dx; // pointer to derivative of wave-function d/dx (GPU)
-    cufftDoubleComplex *d_wf_laplace; // pointer to laplace of wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
-    cufftDoubleComplex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
-    cufftDoubleComplex *d_tmp_ptr;
+    double complex *d_wf_d_dx; // pointer to derivative of wave-function d/dx (GPU)
+    double complex *d_wf_laplace; // pointer to laplace of wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
+    double complex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
+    double complex *d_tmp_ptr;
     double *h_qpe_nwfip, *h_qpe_nwf; // buffers for quasiparticle energies
 
     // other technical variables
@@ -471,17 +471,17 @@ int main( int argc , char ** argv )
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================
     // ====================================================================================    
     // Allocate memory for wave-functions and derivatives
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf) );
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_fkm1) );
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_fkm2) );
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_fkm3) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_wf) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm1) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm2) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm3) );
 #if INTEGRATION_SCHEME==AB4AM5
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_fkm4) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm4) );
 #endif
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf_d_dx) );
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_wf_laplace) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_wf_d_dx) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_wf_laplace) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
-    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(cufftDoubleComplex), (void **)&d_alphawf_laplace) );
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_alphawf_laplace) );
 #endif
     gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_fbetaEn) );
     gpu_exec( gpu_malloc(nwfip*2*sizeof(double), (void **)&d_kkyz) ); // 2 accounts for ky and kz
@@ -544,15 +544,15 @@ int main( int argc , char ** argv )
     if(md.inittype!=5)
     { 
         // copy wave-functions
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_wf,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) );   
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_wf,  (size_t)2*nwfip*NX*sizeof(double complex)) );   
 
         // we start from eigenstates - then fkm1, fkm2, fkm3 are zero
         for(i=0; i<NX*nwfip*2; i++) h_wavefun[i]=0.0 + I*0.0;
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm1,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm2,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm3,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #if INTEGRATION_SCHEME==AB4AM5
-        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm4,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #endif
 
         // copy potentials
@@ -573,8 +573,8 @@ int main( int argc , char ** argv )
     {
         if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
         
-        gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_subset ) );
-        gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_subset ) );
+        gpu_exec( host_malloc_pl((size_t)12*NX*sizeof(double), (void **)&h_densities_subset ) );
+        gpu_exec(     gpu_malloc((size_t)12*NX*sizeof(double), (void **)&d_densities_subset ) );
         
         gpu_exec( gpu_malloc(nwfip*sizeof(double), (void **)&d_weight_subset ) );
         cppmallocl(h_weight_subset, nwfip, double);
@@ -854,7 +854,7 @@ int main( int argc , char ** argv )
 #endif
             // executing exp[-i*H(t)*dt]*psi
             // H*psi - first execution, d_fkm3 as working buffer
-            gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) );
+            gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(double complex)) );
             gpu_exec( apply_hamiltonian(0, nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
@@ -863,7 +863,7 @@ int main( int argc , char ** argv )
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
             // Store H*Psi
-            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm+i_step*2*nwfip*NX,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
+            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm+i_step*2*nwfip*NX,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
                         
             // Add contribution from Taylor expansion
             gpu_exec( taylor_expansion_contribution(1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
@@ -999,14 +999,14 @@ int main( int argc , char ** argv )
         
         // Copy fkm1, ..., fkm4 back to gpu
 #if INTEGRATION_SCHEME==AB3AM4
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #elif INTEGRATION_SCHEME==AB4AM5
-        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(cufftDoubleComplex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #endif        
         
         // clear memory

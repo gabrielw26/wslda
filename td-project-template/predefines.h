@@ -75,8 +75,8 @@
 
 /**
  * Active this flag in case of calculations for problems that preserve symmetry between spin up and down components.
- * In such case, the evolves only wave-functions for single spin component
- * and in consequence computing time decreases by factor of two
+ * In such case, the code evolves only wave functions for single spin component
+ * and in consequence computing time decreases by a factor of two.
  * */
 // #define SPINSYMMETRY_MODE
 

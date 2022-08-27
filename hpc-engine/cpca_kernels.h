@@ -3,6 +3,10 @@
 #ifndef __CPCA_KERNELS__
 #define __CPCA_KERNELS__
 
+#ifdef TDWSLDA_MAIN
+#define cufftDoubleComplex double complex
+#endif
+
 // EDF functions
 double polarization_h(double n_a, double n_b);
 double der_polarization__der_na_h(double n_a, double n_b);
@@ -89,6 +93,10 @@ int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads);
 int multiply_wf_by_alpha(int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, double *d_densities, int nthreads);
 int taylor_expansion_contribution(int it, double dt, int n, cufftDoubleComplex *wf_hpsi, 
                                              cufftDoubleComplex *wf_update, cufftDoubleComplex *wf_contr, int nthreads);
+
+#ifdef TDWSLDA_MAIN
+#undef cufftDoubleComplex
+#endif
 
 #endif
 
