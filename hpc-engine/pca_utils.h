@@ -123,6 +123,10 @@ typedef struct
     double ccstart;                     // start time for turning on current corrections, in units of eF
     double ccstop;                      // stop time for the current corrections, in units of eF
     double ccswitch;                    // time for switch function
+    
+    // high frequency filter
+    double hkf_mu; // high frequency filter: Fermi-Dirac mu parameter, in ec units
+    double hkf_T;  // high frequency filter: Fermi-Dirac T parameter, in ec units
 
     // subset tracking
     double subsetMinEn;     // if subsetMinEn!=subsetMaxEn then td code track densities arising from states

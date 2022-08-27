@@ -23,9 +23,14 @@
 #include <complex.h>
 
 #ifdef TDWSLDA
+#ifdef HIPMODE
+#include <hip/hip_runtime.h>
+#include <hipfft.h>
+#else 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
+#endif
 #define FDECORATOR __host__ __device__
 #else
 #define FDECORATOR

@@ -101,6 +101,8 @@ GPUS_PER_NODE, // gpuspernode
 -10.0, // ccstart
 99999.0, // ccstop
 10.0, // ccswitch
+9.99, // hkf_mu
+0.01, // hkf_T
 0.0, // subsetMinEn
 0.0, // subsetMaxEn
 0, // subsetShiftDmu
@@ -373,6 +375,11 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.ccstop);
         else if (strcmp (tag,"ccswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ccswitch);
+        // high frequency filter
+        else if (strcmp (tag,"hkf_mu") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.hkf_mu);
+        else if (strcmp (tag,"hkf_T") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.hkf_T);
         // subset tracking
         else if (strcmp (tag,"subsetMinEn") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.subsetMinEn);
@@ -841,13 +848,13 @@ void create_reprowf_tar(size_t extra_data_size)
     if(extra_data_size>0)
     {
         sprintf(cmd,
-            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp %s_extra_data.dat",
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat* %s_input.txt %s.wlog %s.stdout %s_check.stamp %s_extra_data.dat",
             md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
     else
     {
         sprintf(cmd,
-            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat %s_input.txt %s.wlog %s.stdout %s_check.stamp",
+            "tar -cf %s/reprowf.tar %s_machine.h %s_predefines.h %s_problem-definition.h %s_logger.h %s/checkpoint.dat* %s_input.txt %s.wlog %s.stdout %s_check.stamp",
             md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix, md.outprefix);
     }
         wprintf("# SYSTEM: %s\n", cmd);
@@ -860,12 +867,19 @@ void copy_checkpoint()
     sprintf(cmd, "cp -f %s_checkpoint.dat %s/checkpoint.dat", md.outprefix, md.outprefix);
     wprintf("# SYSTEM: %s\n", cmd);
     system(cmd);
+    sprintf(cmd, "cp -f %s_checkpoint.dat.init %s/checkpoint.dat.init", md.outprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
 }
 
 void copy_initcheckpoint()
 {
     char cmd[2048];
     sprintf(cmd, "cp -f %s_checkpoint.dat %s_checkpoint.dat.init", md.inprefix, md.outprefix);
+    wprintf("# SYSTEM: %s\n", cmd);
+    system(cmd);
+    // Overwrite existing checkpoint
+    sprintf(cmd, "cp -f %s_checkpoint.dat %s_checkpoint.dat", md.inprefix, md.outprefix);
     wprintf("# SYSTEM: %s\n", cmd);
     system(cmd);
 }

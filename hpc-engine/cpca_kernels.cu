@@ -12,39 +12,20 @@ typedef thrust::complex<double> Complex;
 #define CODEDIM 2
 #include "pca_macro.h"
 #include "pca_edf.h"
+#ifdef HIPMODE
+#include "hip/wslda_cuda_utils.hpp"
+#else
 #include "wslda_cuda_utils.h"
+#endif
 #define double_complex Complex
 #define __externc
 #include "wslda_potdens.h"
 #include "reduce_many.h"
-
-// ===========================================================================
-// ============================ CONSTANTS ====================================
-// ===========================================================================
-__constant__ double dc_mu_a; // chemical potentials
-__constant__ double dc_mu_b; // chemical potentials
-__constant__ double dc_ec; // energy cut-off
-__constant__ double dc_t0; // initial time, time=dc_t0 + dc_dt*it
-__constant__ double dc_dt; // itegration time step
-__constant__ double dc_kF; // reference kF
-__constant__ double dc_eF; // reference eF (=kF^2/2)
-__constant__ double dc_nF; // reference density nF (=kF^3 / (3*pi^2))
-__constant__ double dc_sclgth;
-
-__constant__ void *dc_extra_data;
-__constant__ size_t dc_extra_data_size;
-
-extern "C" int memcopy_extra_data(size_t extra_data_size, void *extra_data)
-{
-    if( cudaMemcpyToSymbol(dc_extra_data,      &extra_data,      sizeof(void *))!= cudaSuccess ) return 1;
-    if( cudaMemcpyToSymbol(dc_extra_data_size, &extra_data_size, sizeof(size_t))!= cudaSuccess ) return 2;
-    return 0;
-}
+#include "pca_utils.h" // access to input (md) structure
 
 
 #ifdef TDWSLDA
 
-__constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input file
 #include "problem-definition.h"
 
 #ifdef ENABLE_V_EXT
@@ -63,206 +44,6 @@ __constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input 
 
 // Functionals
 #include "tdwslda_functionals.h"
-
-/**
- * This function copies data to constant memory buffers
- * */
-extern "C" int memcopy_const(double mu_a, double mu_b, double ec, double t0, double dt, double kF)
-{
-    if( cudaMemcpyToSymbol(dc_mu_a, &mu_a, sizeof(double))!= cudaSuccess ) return 1;
-    if( cudaMemcpyToSymbol(dc_mu_b, &mu_b, sizeof(double))!= cudaSuccess ) return 2;
-    if( cudaMemcpyToSymbol(dc_ec, &ec, sizeof(double))!= cudaSuccess ) return 3;
-    if( cudaMemcpyToSymbol(dc_t0, &t0, sizeof(double))!= cudaSuccess ) return 4;
-    if( cudaMemcpyToSymbol(dc_dt, &dt, sizeof(double))!= cudaSuccess ) return 5;
-    if( cudaMemcpyToSymbol(dc_kF, &kF, sizeof(double))!= cudaSuccess ) return 6;
-    double eF = kF*kF/2.;
-    if( cudaMemcpyToSymbol(dc_eF, &eF, sizeof(double))!= cudaSuccess ) return 7;
-    double nF = kF*kF*kF / (3.*M_PI*M_PI);
-    if( cudaMemcpyToSymbol(dc_nF, &nF, sizeof(double))!= cudaSuccess ) return 7;
-
-    return 0;
-}
-
-/**
- * This function copies params to constant memory buffer
- * */
-extern "C" int memcopy_const_params(double *params)
-{
-    if( cudaMemcpyToSymbol(dc_params, params, MAX_USER_PARAMS*sizeof(double))!= cudaSuccess ) return 1;
-
-    return 0;
-}
-
-/**
- * This function copies BdG functional data
- * */
-extern "C" int memcopy_const_BdG(double aBdG)
-{
-    double gBdG = aBdG;
-    if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
-
-    return 0;
-}
-
-// ===========================================================================
-// ============================ FUNCTIONS ====================================
-// ===========================================================================
-
-extern "C" int set_gpu(int device)
-{
-    cudaError err=cudaSetDevice( device );
-    return (int)(err);
-}
-
-extern "C" int gpu_malloc(size_t size, void ** pointer)
-{
-    // Allocate memory on GPU
-    cudaError err=cudaMalloc( pointer , size );
-    return (int)(err);
-}
-
-extern "C" int gpu_free(void * pointer)
-{
-    cudaError err=cudaFree(pointer );
-    return (int)(err);
-}
-
-extern "C" int host_malloc_pl(size_t size, void ** pointer)
-{
-    // Allocate memory on GPU using page locked fashion
-    cudaError err=cudaHostAlloc( pointer , size, cudaHostAllocDefault );
-    return (int)(err);
-}
-
-extern "C" int host_free_pl(void * pointer)
-{
-    cudaError err=cudaFreeHost(pointer );
-    return (int)(err);
-}
-
-extern "C" int memcopy_host2gpu(void * host, void * gpu, size_t size)
-{
-    cudaError err=cudaMemcpy( gpu , host , size, cudaMemcpyHostToDevice );
-    return (int)(err);
-}
-
-extern "C" int memcopy_gpu2host(void * gpu, void * host, size_t size)
-{
-    cudaError err=cudaMemcpy( host , gpu , size, cudaMemcpyDeviceToHost );
-    return (int)(err);
-}
-
-extern "C" int memcopy_gpu2gpu(void * gpusrc, void * gpudst, size_t size)
-{
-    cudaError err=cudaMemcpy( gpudst , gpusrc , size, cudaMemcpyDeviceToDevice );
-    return (int)(err);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// LOCAL REDUCTIONS
-////////////////////////////////////////////////////////////////////////////////
-int opt_threads(int new_blocks,int threads, int current_size)
-{
-    int new_threads;
-    if(new_blocks==1)
-    {
-        new_threads=2;
-        while(new_threads<threads)
-        {
-            if(new_threads>=current_size) break;
-            new_threads*=2;
-        }
-    }
-    else new_threads=threads;
-    return new_threads;
-}
-
-template <unsigned int blockSize>
-__device__ void warpReduceR(volatile double *sdata, unsigned int tid)
-{
-    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
-    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
-    if (blockSize >= 16) sdata[tid] += sdata[tid +  8];
-    if (blockSize >=  8) sdata[tid] += sdata[tid +  4];
-    if (blockSize >=  4) sdata[tid] += sdata[tid +  2];
-    if (blockSize >=  2) sdata[tid] += sdata[tid +  1];
-}
-
-template <unsigned int blockSize>
-__global__ void __reduce_kernelR__(double *g_idata, double *g_odata, int n, int mode)
-{
-    extern __shared__ double sdata[];
-    unsigned int tid = threadIdx.x;
-    unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
-    unsigned int ishift=i+blockDim.x;
-
-    // Loading data
-//     if(mode==0) // sum of doubles
-    {
-        if(ishift<n) sdata[tid] = g_idata[i] + g_idata[ishift];
-        else if(i<n) sdata[tid] = g_idata[i];
-        else         sdata[tid] = 0.0;
-    }
-//     else // add here other modes
-
-
-    __syncthreads();
-
-    if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
-    if (blockSize >=  512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-    if (blockSize >=  256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-    if (blockSize >=  128) { if (tid <  64) { sdata[tid] += sdata[tid +  64]; } __syncthreads(); }
-    if (tid < 32) warpReduceR<blockSize>(sdata, tid);
-
-    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-}
-
-void call_reduction_kernelR(int dimGrid, int dimBlock, int size, double *d_idata, double *d_odata, int mode)
-{
-    int smemSize=dimBlock*sizeof(double);
-    switch (dimBlock)
-    {
-        case 1024:
-            __reduce_kernelR__<1024><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-        case 512:
-            __reduce_kernelR__< 512><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-        case 256:
-            __reduce_kernelR__< 256><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-        case 128:
-            __reduce_kernelR__< 128><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-        case 64:
-            __reduce_kernelR__<  64><<< dimGrid, dimBlock, smemSize >>>(d_idata, d_odata, size, mode); break;
-    }
-}
-/**
- * Function does fast reduction (sum of elements) of array.
- * Result is located in partial_sums[0] element
- * If partial_sums==array then array will be destroyed
- * @param mode 0: add numbers (no transformation)
- * */
-extern "C" int local_reductionR(double *array, int size, double *partial_sums, int threads, int mode)
-{
-    int blocks=(int)ceil((float)size/threads);
-    unsigned int lthreads=threads/2; // Threads is always power of 2
-    if(lthreads<64) lthreads=64; // at least 2*warp_size
-    unsigned int new_blocks, current_size;
-
-    // First reduction of the array
-    call_reduction_kernelR(blocks, lthreads, size, array, partial_sums, mode);
-
-    // Do iteratively reduction of partial_sums
-    current_size=blocks;
-    while(current_size>1)
-    {
-        new_blocks=(int)ceil((float)current_size/threads);
-        lthreads=opt_threads(new_blocks,threads, current_size)/2;
-        if(lthreads<64) lthreads=64; // at least 2*warp_size
-        call_reduction_kernelR(new_blocks, lthreads, current_size, partial_sums, partial_sums, 0);
-        current_size=new_blocks;
-    }
-
-    return 0;
-}
 
 // =======================================================================================
 // ================================ compute_potentials ===================================
@@ -418,149 +199,14 @@ __global__ void kernel_compute_angular_momentum_z(double *j_a_x, double *j_a_y, 
     }
 }
 
-/**
- * Function computes energy and particle number
- * NOTE: this function executes cudaMemcpy, thus it is BLOCKING!
- * @param it index of time step, it is ised for proper evaluation of external potential
- * @param d_densites (INPUT)
- *                   collective array with densities [rho_a, rho_b, tau_a, tau_b, nu, j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z]
- *                   where: rho_a, rho_b, tau_a, tau_b - double arrays of size NXY,
- *                          nu - double complex array of size NXY,
- *                          j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z - double arrays of size NXY
- *                   In total size of d_densites is 12*NXY
- * @param d_potentials (INPUT)
- *                     collective array with potentials [V_a, V_b, delta]
- *                     where: V_a, V_b - double arrays of size NXY
- *                            delta - double complex array of size NXY
- *                     In total size of d_potentials is 4*NXY
- * @param d_workarea (INPUT/OUTPUT)
- *                   working buffer of size 5*NXY,
- *                   On OUTPUT first 9 elements contain energies and particle number [E_kin, E_pot, E_pair, E_CM, E_ext, Na, Nb, Laz, Lbz]
- * @param nthreads number of threads per block
- * @return 0 - OK, otherwise ERROR
- * */
+#ifdef HIPMODE
+#include "hip/tdwslda_energy_generic.hpp"
+#else
+#include "tdwslda_energy_generic.h"
+#endif
 extern "C" int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads)
 {
-    // number of blocks
-    int nblocks = (int)ceil((float)NXY/nthreads);
-    wslda_density densall=convert_into_wslda_density(d_densities, NXY);
-    wslda_potential potsall=convert_into_wslda_potential(d_potentials, NXY, NULL);
-
-    // Set pointers for to simplify notation
-    // densities
-    Complex *nu   =(Complex *)(d_densities +  0*NXY);
-    double *rho_a = (double *)(d_densities +  2*NXY);
-    double *tau_a = (double *)(d_densities +  3*NXY);
-    double *j_a_x = (double *)(d_densities +  4*NXY);
-    double *j_a_y = (double *)(d_densities +  5*NXY);
-    double *j_a_z = (double *)(d_densities +  6*NXY);
-    double *rho_b = (double *)(d_densities +  7*NXY);
-    double *tau_b = (double *)(d_densities +  8*NXY);
-    double *j_b_x = (double *)(d_densities +  9*NXY);
-    double *j_b_y = (double *)(d_densities + 10*NXY);
-    double *j_b_z = (double *)(d_densities + 11*NXY);
-    // pontentials
-//     double *V_a = (double *)(d_potentials +  0*NXY);
-//     double *V_b = (double *)(d_potentials +  1*NXY);
-    Complex *delta = (Complex *)(d_potentials +  2*NXY);
-
-    // buffers for energies
-    double *E_kin = (double *)(d_workarea +  0*NXY);
-    double *E_pot = (double *)(d_workarea +  1*NXY);
-    double *E_pair= (double *)(d_workarea +  2*NXY);
-    double *E_CM  = (double *)(d_workarea +  3*NXY);
-    double *E_ext = (double *)(d_workarea +  4*NXY);
-
-//     // TODO - remove
-//     zero_array(NXY,j_a_x);
-//     zero_array(NXY,j_a_y);
-//     zero_array(NXY,j_a_z);
-//     zero_array(NXY,j_b_x);
-//     zero_array(NXY,j_b_y);
-//     zero_array(NXY,j_b_z);
-//     zero_array(NXY,j_b_z);
-
-    // Step 1: prepare buffers for local reductions
-    tdwslda_compute_energy<<<nblocks, nthreads>>>(it, densall, potsall,
-                                                 E_kin, E_pot, E_pair, E_CM
-                                                 );
-
-    // Step 2: do local reductions
-    int ierr, i;
-    for(i=0; i<4; i++)
-    {
-        ierr = local_reductionR(d_workarea +  i*NXY, NXY, d_workarea +  i*NXY, nthreads, 0);
-        if(ierr!=0) return ierr;
-    }
-
-    // Step 3: copy data to correct elements of d_workarea
-    if( cudaMemcpy( d_workarea+EKIN     , d_workarea +  0*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -100;
-    if( cudaMemcpy( d_workarea+EPOT     , d_workarea +  1*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -101;
-    if( cudaMemcpy( d_workarea+EPAIR    , d_workarea +  2*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -102;
-    if( cudaMemcpy( d_workarea+ECURRENT , d_workarea +  3*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -103;
-
-    // Step 4: external energies
-#ifdef ENABLE_V_EXT
-    kernel_compute_energy_v_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu,
-                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b,
-                                                    delta,
-                                                    E_ext
-                                                    );
-    ierr = local_reductionR(d_workarea +  4*NXY, NXY, d_workarea +  4*NXY, nthreads, 0);
-    if(ierr!=0) return ierr;
-    if( cudaMemcpy( d_workarea+EPOTEXT , d_workarea +  4*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -104;
-#else
-    cuda_set_array_elements(1, d_workarea+EPOTEXT,  0.0, 1); // set this contribution to 0.0
-#endif
-
-#ifdef ENABLE_DELTA_EXT
-    kernel_compute_energy_delta_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu,
-                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b,
-                                                    delta,
-                                                    E_ext
-                                                    );
-    ierr = local_reductionR(d_workarea +  4*NXY, NXY, d_workarea +  4*NXY, nthreads, 0);
-    if(ierr!=0) return ierr;
-    if( cudaMemcpy( d_workarea+EPAIREXT , d_workarea +  4*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -105;
-#else
-    cuda_set_array_elements(1, d_workarea+EPAIREXT,  0.0, 1); // set this contribution to 0.0
-#endif
-
-#ifdef ENABLE_VELOCITY_EXT
-    kernel_compute_energy_velocity_ext<<<nblocks, nthreads>>>(it,
-                                                    rho_a, rho_b, nu,
-                                                    j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z,
-                                                    tau_a, tau_b,
-                                                    delta,
-                                                    E_ext
-                                                    );
-    ierr = local_reductionR(d_workarea +  4*NXY, NXY, d_workarea +  4*NXY, nthreads, 0);
-    if(ierr!=0) return ierr;
-    if( cudaMemcpy( d_workarea+EVELEXT , d_workarea +  4*NXY , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -105;
-#else
-    cuda_set_array_elements(1, d_workarea+EVELEXT,  0.0, 1); // set this contribution to 0.0
-#endif
-
-
-    // Step 5: compute particle number
-    ierr = local_reductionR(rho_a, NXY, d_workarea +  NPARTA, nthreads, 0);
-    if(ierr!=0) return ierr;
-    ierr = local_reductionR(rho_b, NXY, d_workarea +  NPARTB, nthreads, 0);
-    if(ierr!=0) return ierr;
-    cuda_scale_array_elements(2, d_workarea +  NPARTA,  DXYZ*NZ, 1); // add missing volume element
-
-    // Step 6: commpute angular momentum
-    kernel_compute_angular_momentum_z<<<nblocks, nthreads>>>(j_a_x, j_a_y, j_a_z, j_b_x, j_b_y, j_b_z, d_workarea + LZA, d_workarea + LZB + NXY);
-    ierr = local_reductionR(d_workarea + LZA,       NXY, d_workarea + LZA, nthreads, 0);
-    if(ierr!=0) return ierr;
-    ierr = local_reductionR(d_workarea + LZB + NXY, NXY, d_workarea + LZB, nthreads, 0);
-    if(ierr!=0) return ierr;
-
-    return 0;
+    return compute_energy_generic(it, d_densities, d_potentials, d_workarea, nthreads);
 }
 
 // =======================================================================================
@@ -1020,7 +666,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     double * grad_j_corr_a = grad_alpha_a + NXY*6; // (j+/n+ - alpha_a*ja/na), see GW notes
     double * grad_j_corr_b = grad_alpha_a + NXY*9; // (j+/n+ - alpha_b*jb/nb), see GW notes
     double * laplace_alpha_a  = grad_alpha_a + NXY*12;
-    double * laplace_alpha_b  = grad_alpha_b + NXY*13;
+    double * laplace_alpha_b  = grad_alpha_a + NXY*13;
 
     // Step 1: if quantum friction is active, update mean-field potentials
     if(qfalpha>0.0)
@@ -1171,18 +817,17 @@ extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex
         kernel_compute_ovelap<<<nblocks, nthreads>>>((Complex *)wf1+shift, (Complex *)wf2+shift, (Complex *)wf1+shift+n*NXY, (Complex *)wf2+shift+n*NXY, re, im);
         shift+=NXY; // move pointer to next wf
 
+        ierr = local_reductions_many(2, NXY, workarea, workarea);
+        if(ierr!=0) return ierr;
+
         if(overlap_re!=NULL)
         {
-            ierr = local_reductionR(re, NXY, re, nthreads, 0);
-            if(ierr!=0) return ierr;
-            if( cudaMemcpy( overlap_re+iwf , re , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+            if( cudaMemcpy( overlap_re+iwf , workarea+0 , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
         }
 
         if(overlap_im!=NULL)
         {
-            ierr = local_reductionR(im, NXY, im, nthreads, 0);
-            if(ierr!=0) return ierr;
-            if( cudaMemcpy( overlap_im+iwf , im , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
+            if( cudaMemcpy( overlap_im+iwf , workarea+0 , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
         }
     }
     return 0;

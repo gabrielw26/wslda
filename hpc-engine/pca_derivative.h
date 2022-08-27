@@ -3,7 +3,12 @@
 #ifndef __PCA_DERIVATIVE__
 #define __PCA_DERIVATIVE__
 
+#ifdef TDWSLDA_MAIN
+#define cufftDoubleComplex double complex
+#else
 #include <cufft.h>
+#endif
+
 extern void *pca_cufft_work_area;
 int create_cufftPlans(int batch_size,  int nwfip, size_t *workSize);
 int set_workspace_for_cufftPlan(void *workArea);
@@ -13,4 +18,10 @@ int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double 
 int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 int compute_laplace(int n, cufftDoubleComplex *wf, cufftDoubleComplex *wf_laplace, int nthreads);
 int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
+int high_frequency_filter_d(double *in, double *out, double fd_mu, double fd_T, int nthreads);
+
+#ifdef TDWSLDA_MAIN
+#undef cufftDoubleComplex
+#endif
+
 #endif

@@ -36,5 +36,6 @@ typedef struct
 int create_fft_plans(metadata_s3dpca_fft *mdfft, int batch);
 int destroy_fft_plans(metadata_s3dpca_fft *mdfft);
 int compute_laplace_real_f(double *f, double *laplace_f, metadata_s3dpca_fft *mdfft);
+int high_frequency_filter_d(double *in, double *out, double fd_mu, double fd_T, metadata_s3dpca_fft *mdfft);
 
 #endif

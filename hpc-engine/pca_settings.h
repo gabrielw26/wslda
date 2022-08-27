@@ -17,6 +17,12 @@
 // DYNAMIC  CODE
 #include "predefines.h"
 
+#ifdef HIPMODE
+// uncomment this if you want to assure that data is copied to the working buffer 
+// before execution of derivative computation
+// it is related to issue encountered for hipfft implementation
+#define DERIVATIVE_COPY_DATA_MODE
+#endif
 #else
 
 #error "You need to select WSLDA or TDWSLDA!"
@@ -169,11 +175,7 @@
 
 // Technical variable - amount of memory that is locked for axiliary array used in apply_hamiltonian
 // i.e: sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT
-#define PCA_WORKSPACE_SHIFT 7
-#ifdef ENABLE_VELOCITY_EXT
-#undef PCA_WORKSPACE_SHIFT
 #define PCA_WORKSPACE_SHIFT 11
-#endif
 
 // Target machine
 // #define TARGET_MACHINE TITAN
