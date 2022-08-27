@@ -1,5 +1,5 @@
-# 2022.xx.xx
-* Porting code to HIP.
+# 2022.08.27
+* Porting code to [HIP](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Converting%20the%20toolkit%20to%20HIP).
 * New library [B-Box](https://gitlab.fizyka.pw.edu.pl/wtools/wbox) has been incorporated into the W-SLDA.
 * Minor bug fixes related to the stability of the code.
 
