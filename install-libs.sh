@@ -16,6 +16,10 @@ make -C lib/winterp
 echo "# Making lib/wdata.."
 make -C lib/wdata
 
+# wbox
+echo "# Making lib/wbox.."
+make -C lib/wdata
+
 # tools
 echo "# Making tools.."
 make -C tools

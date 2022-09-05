@@ -1,6 +1,7 @@
-
-# C compiler
-CC=gcc -std=c99
+# C compiler (with C99 dialect)
+ifeq ($(strip $(CC)),)
+    CC=gcc -std=gnu99
+endif
 
 # WDATA lib need only for compiling examples
 WDATA=-L../wdata/ -I../wdata/c/ -lwdata
