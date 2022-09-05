@@ -79,7 +79,7 @@
  * with uniformly distributed GPU cards across the nodes, 
  * and each node has `gpuspernode` (input file parameter) cards.
  * */
-// #define CUSTOM_GPU_DISTRIBUTION
+#define CUSTOM_GPU_DISTRIBUTION
 
 /**
  * This function is used to assign unique device-id to mpi process.
@@ -90,8 +90,14 @@
 #if defined(CUSTOM_GPU_DISTRIBUTION) && defined(TDWSLDA_MAIN)
 int assign_deviceid_to_mpi_process(MPI_Comm comm)
 {
+    int np, ip;
+    MPI_Comm_size(comm, &np);
+    MPI_Comm_rank(comm, &ip);
 
-    return 0;
+    if(ip==0) wprintf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
+
+    int device_id[8] = {4,5,2,3,6,7,0,1}; // accordint to LUST it is the optimal mapping
+    return device_id[ip % 8];
 }
 #endif
 
