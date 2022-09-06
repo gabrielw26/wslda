@@ -52,6 +52,13 @@
  * */
 
 /**
+ * Use this option if the machine has a GPU-aware MPI implementation,
+ * i.e machine can handle buffer irrespectively if it resides in host or device memory.
+ * Usage of GPU-aware MPI can boost the performance of the computation.
+ * */
+#define USE_GPU_AWARE_MPI
+
+/**
  * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
  * Performance of read/write checkpoint depends on the number of writes involved in IO process,
  * and optimal value depends on the computer. 
