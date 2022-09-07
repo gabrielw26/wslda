@@ -154,7 +154,7 @@ int main( int argc , char ** argv )
     if(ip==0) printf("# NUMBER OF TESTS: measurements=%d WITH timesteps=%d\n", md.measurements, md.timesteps);
     if(ip==0) printf("# %4s %12s\n", "it", "t [sec]");
     if(ip==0) printf("# ------------------\n");
-    for (i_meas=0; i_meas<md.measurements; i_meas++)
+    for (i_meas=-1; i_meas<md.measurements; i_meas++) // first measurement to initilize network only
     {
         b_t(); // reset timer
         for(i_step=0; i_step<md.timesteps*2; i_step++) // factor 2-(predictor, corrector)
@@ -170,6 +170,8 @@ int main( int argc , char ** argv )
         }
 
         double rt=e_t(0); // get timing
+        if(i_meas=-1) continue; // do not time, only for initialization of the network
+
         rt_tot+=rt;
         rt_tot2+=rt*rt;
 
