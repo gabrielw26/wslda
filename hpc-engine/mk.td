@@ -116,6 +116,8 @@ ext: dirs \
      (BINDIR)solve-uniform \
      (BINDIR)interpolate-dataset
 
+mpitime: dirs mpitimeexe
+
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS)
@@ -127,6 +129,12 @@ d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WI
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $^ $(LIBS)
+
+mpitimeexe: $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
+	$(CXX) -o $(BINDIR)mpitime $(CFLAGS) $(LIBS) -lm $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
+
+$(OBJDIR)mpitime.o: $(SRCDIR)mpitime.c $(DEPSLOCAL) $(DEPS)
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
