@@ -170,7 +170,7 @@ int main( int argc , char ** argv )
         }
 
         double rt=e_t(0); // get timing
-        if(i_meas=-1) continue; // do not time, only for initialization of the network
+        if(i_meas==-1) continue; // do not time, only for initialization of the network
 
         rt_tot+=rt;
         rt_tot2+=rt*rt;
