@@ -51,6 +51,15 @@ int main( int argc , char ** argv )
 
     if( ip == 0 )
     {
+        if(argc!=3)
+        {
+            wprintf( "USE\n" ) ;
+            wprintf( "\t%s input_file codedim=(1,2,3)\n", argv[0] ) ;
+            ierr = -1 ;
+            MPI_Abort( MPI_COMM_WORLD , ierr ) ;
+            return( EXIT_FAILURE ) ;
+        }
+
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
@@ -75,7 +84,7 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
 
-    int dim=atoi(argv[1]);
+    int dim=atoi(argv[2]);
     int ixyz, nxyz;
 
 
