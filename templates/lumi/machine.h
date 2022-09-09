@@ -101,7 +101,7 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     MPI_Comm_size(comm, &np);
     MPI_Comm_rank(comm, &ip);
 
-    if(ip==0) wprintf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
+    if(ip==0) printf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: LUMI\n");
 
     int device_id[8] = {4,5,2,3,6,7,0,1}; // accordint to LUST it is the optimal mapping
     return device_id[ip % 8];
