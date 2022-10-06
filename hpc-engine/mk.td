@@ -219,6 +219,7 @@ clean:
 	rm -f $(BINDIR)td-wslda-2d
 	rm -f $(BINDIR)td-wslda-3d
 	rm -f $(BINDIR)solve-uniform
+	rm -f $(BINDIR)mpitime
 
 ver:
 	$(CXX) --version
