@@ -21,7 +21,7 @@
  * Default settings are: ELPA_SOLVER_1STAGE
  * but you can overwrite using options below
  * */
-
+#define ELPA_API 20210430
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
@@ -31,8 +31,8 @@
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
-// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
+#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
+// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_AMD_GPU
 // #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
 
 /**
@@ -56,7 +56,7 @@
  * i.e machine can handle buffer irrespectively if it resides in host or device memory.
  * Usage of GPU-aware MPI can boost the performance of the computation.
  * */
-#define USE_GPU_AWARE_MPI
+// #define USE_GPU_AWARE_MPI
 
 /**
  * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
@@ -101,7 +101,7 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
     MPI_Comm_size(comm, &np);
     MPI_Comm_rank(comm, &ip);
 
-    if(ip==0) wprintf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
+    if(ip==0) printf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: DWARF\n");
 
     int device_id[8] = {4,5,2,3,6,7,0,1}; // accordint to LUST it is the optimal mapping
     return device_id[ip % 8];

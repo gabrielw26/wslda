@@ -144,10 +144,6 @@ int main( int argc , char ** argv )
     gpu_exec( host_malloc_pl((size_t)12*nxyz*sizeof(double), (void **)&h_densities) );
     gpu_exec(     gpu_malloc((size_t)12*nxyz*sizeof(double), (void **)&d_densities) );
 
-
-    for(ixyz=0; ixyz<12*nxyz; ixyz++) h_densities[i]=1.0;
-    gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*nxyz*sizeof(double)) ); // set array on gpu
-
     // ---------------------- TESTING LOOP---------------------------
     int i_meas, i_step;
     double rt_tot=0.0, rt_tot2=0.0;
@@ -156,9 +152,14 @@ int main( int argc , char ** argv )
     if(ip==0) printf("# ------------------\n");
     for (i_meas=-1; i_meas<md.measurements; i_meas++) // first measurement to initilize network only
     {
-        b_t(); // reset timer
+        double rt=0.0;
         for(i_step=0; i_step<md.timesteps*2; i_step++) // factor 2-(predictor, corrector)
         {
+            // reset array
+            for(ixyz=0; ixyz<mpipackagesize*nxyz; ixyz++) h_densities[ixyz]=1.0*i_step;
+            gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*nxyz*sizeof(double)) ); // set array on gpu
+
+            b_t(); // reset timer
             // densities - global reduction
 #ifdef USE_GPU_AWARE_MPI
             MPI_Allreduce( MPI_IN_PLACE, d_densities, mpipackagesize*nxyz, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -167,9 +168,19 @@ int main( int argc , char ** argv )
             MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*nxyz, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*nxyz*sizeof(double)) );
 #endif
+            rt+=e_t(0); // get timing
+
+            // check corretness
+            gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*nxyz*sizeof(double)) ); // set array on gpu
+            for(ixyz=0; ixyz<mpipackagesize*nxyz; ixyz++) if(fabs(h_densities[ixyz]-1.0*i_step*np)>1.0e-9)
+            {
+                wprintf( "ERROR!!! [ip=%d] INCORRECT SUM[%d]=%f; EXPECTED=%f\n", ip, ixyz, h_densities[ixyz], 1.0*i_step*np) ;
+                ierr = -1 ;
+                MPI_Abort( MPI_COMM_WORLD , ierr ) ;
+                return( EXIT_FAILURE ) ;
+            }
         }
 
-        double rt=e_t(0); // get timing
         if(i_meas==-1) continue; // do not time, only for initialization of the network
 
         rt_tot+=rt;
