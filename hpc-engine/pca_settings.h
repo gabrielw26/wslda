@@ -252,6 +252,13 @@
 #define PZHEEVD 2
 #define ELPA 3
 
+#ifdef ELPA_USE_GPU_NVIDIA
+#define ELPA_USE_GPU
+#endif
+#ifdef ELPA_USE_GPU_AMD
+#define ELPA_USE_GPU
+#endif
+
 #define SPHERICAL_CUTOFF 88
 #define CUBIC_CUTOFF 89
 
