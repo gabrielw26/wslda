@@ -965,24 +965,22 @@ int main( int argc , char ** argv )
     if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 
+    int telpa_gpu=0;
 #ifdef ELPA_USE_GPU
     if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
-
-#if ELPA_API>=20210430
-    elpa_set(handle, "nvidia-gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#else
-    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    telpa_gpu=1;
 #endif
 
-#else
-
 #if ELPA_API>=20210430
-    elpa_set(handle, "nvidia-gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#ifdef ELPA_USE_GPU_AMD
+    elpa_set(handle, "amd-gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #else
-    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    elpa_set(handle, "nvidia-gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+#else
+    elpa_set(handle, "gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #endif
     
-#endif
 #ifdef MATRIX_IS_REAL
     elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info);
     if(iam==0) wprintf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));

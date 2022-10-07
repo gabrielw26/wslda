@@ -23,9 +23,9 @@
  * */
 #define ELPA_API 20210430
 /**
- * uncomment it if you want to activate GPUs for diagonalizations 
+ * uncomment it if you want to activate GPUs for diagonalizations
  * */
-#define ELPA_USE_GPU
+#define ELPA_USE_GPU_AMD
 
 /**
  * Select ELPA kernels,
@@ -33,7 +33,7 @@
  * */
 #define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
 // #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_AMD_GPU
-// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
+// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_AMD_GPU
 
 /**
  * Fraction of eigenvectors to be extracted in each cycle.
