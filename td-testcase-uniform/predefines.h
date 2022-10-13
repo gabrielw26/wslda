@@ -94,15 +94,15 @@
 /**
  * Meaningful only in case of ASLDA and SLDAE.
  * Parameters defining stabilization procedure of ASLDA functional. 
- * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
+ * For regions with density smaller than SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
  * contribution from current term j^2/2n is assumed to be zero. 
- * For regions with density above ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
+ * For regions with density above SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
  * the contribution is assumed to be intact by stabilization procedure. 
  * For more info see: 
  * https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
  * */
-#define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
-#define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
+#define SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
+#define SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
 
 /**
  * Active this flag in order to store quasi-particle energies for each measurement.

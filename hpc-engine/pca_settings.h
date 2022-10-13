@@ -52,6 +52,14 @@
 #define SLDA_FORCE_A1
 #endif
 
+#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#endif
+
+#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#endif
+
 // ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
 // ===================================================================================
@@ -89,14 +97,14 @@
 #define G1 0.642
 
 // regularization function parameters
-#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
-#define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#ifdef SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define P_NMIN SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
 #else
 #define P_NMIN 1.0e-7
 #endif
 
-#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
-#define P_NMAX ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#ifdef SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define P_NMAX SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
 #else
 #define P_NMAX 1.0e-5
 #endif
