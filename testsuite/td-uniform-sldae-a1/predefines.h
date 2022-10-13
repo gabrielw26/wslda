@@ -33,7 +33,7 @@
  * Meaningful only in case SLDAE.
  * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
  * */
-#define SLDAE_FORCE_A1
+#define SLDA_FORCE_A1
 
 /**
  * Select which external potentials you want to use in simulations.

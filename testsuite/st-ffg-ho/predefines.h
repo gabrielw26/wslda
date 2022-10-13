@@ -22,7 +22,7 @@
  *  - SLDAE:
  *      for simulating Fermi gas for an arbitrary value of akF,
  *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
- *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
+ *      To speed-up computation, you can use SLDA_FORCE_A1 option.
  *      It sets effective mass=1, which renders the current dependence of the functional. 
  *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
@@ -43,7 +43,7 @@
  * Meaningful only in case SLDAE.
  * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
  * */
-// #define SLDAE_FORCE_A1
+// #define SLDA_FORCE_A1
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 

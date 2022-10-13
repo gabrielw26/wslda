@@ -42,7 +42,7 @@
  * Meaningful only in case SLDAE.
  * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
  * */
-#define SLDAE_FORCE_A1
+#define SLDA_FORCE_A1
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 

@@ -45,6 +45,14 @@
 #define INTEGRATION_SCHEME AB4AM5
 
 // ===================================================================================
+// ================================= LEGACY ==========================================
+// ===================================================================================
+// Relted to change starting from version 13.10.2022
+#ifdef SLDAE_FORCE_A1
+#define SLDA_FORCE_A1
+#endif
+
+// ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
 // ===================================================================================
 
@@ -57,39 +65,23 @@
 // if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
 #if FUNCTIONAL==BDG
 #define BDG_MODE
-#define FAST_CONST_EFFECTIVE_MASS_MODE
+#define SLDA_FORCE_A1
+#endif
+
+#if FUNCTIONAL==SLDA
+#define SLDA_FORCE_A1
+#endif
+
+#ifdef SLDA_FORCE_A1
 #define A0 1.000
 #define A1 0.0
 #define A2 0.0
-#endif
-
-#if FUNCTIONAL==ASLDA
-// effective mass - not 1.0 then current corrections are needed!
-#define CURRENT_CORRECTIONS
+#define FAST_CONST_EFFECTIVE_MASS_MODE
+#else
 #define A0 1.094
 #define A1 0.156
 #define A2 -0.532
-#endif
-
-#if FUNCTIONAL==SLDAE
-// effective mass - not 1.0 then current corrections are needed!
 #define CURRENT_CORRECTIONS
-#endif
-
-
-#if FUNCTIONAL==SLDA
-// effective mass - equal 1.0 then no current corrections
-// activate this flag to skip computation of gradients of wf - significant spped up
-#define FAST_CONST_EFFECTIVE_MASS_MODE
-#define A0 1.000
-#define A1 0.0
-#define A2 0.0
-#endif
-
-#ifndef A0
-#define A0 1.000
-#define A1 0.0
-#define A2 0.0
 #endif
 
 // normal part
@@ -193,7 +185,7 @@
 #undef BDG_MODE
 #endif
 
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
 #define FAST_CONST_EFFECTIVE_MASS_MODE
 #endif 
 

@@ -10,28 +10,27 @@
 #define DY (1.0)
 #define DZ (1.0)
 
+
 /**
  * Select functional:
- *  - SLDA: 
- *      for simulating unitary Fermi gas, 
- *      it sets effective mass of particles to 1.0 which assures better convergence properties,
- *      in case of time time-dependent calculations SLDA is about 2x faster than ASLDA.
+ *  - SLDA:
+ *      for simulating unitary Fermi gas,
+ *      it is equivalent to selecting ASLDA functional with SLDA_FORCE_A1 option.
  *  - ASLDA:
  *      for simulating unitary Fermi gas,
  *      at qualitative level it produces results compatible with SLDA, however it is more accurate,
- *      due to presence of current terms in the functional it has worse convergence properties.
+ *      due to presence of current terms in the functional, but it has worse convergence properties.
+ *      For more info see: https://arxiv.org/abs/1008.3933
  *  - SLDAE:
  *      for simulating Fermi gas for an arbitrary value of akF,
- *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
- *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
- *      It sets effective mass=1, which renders the current dependence of the functional. 
+ *      for small and negative akF the functional is compatible with BDG, while for large akF is compatible with ASLDA.
  *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
  *      for simulating systems in BCS regime,
  *      equations of motion are equivalent to Bogoliubov-de-Gennes equations,
  *  - CUSTOMEDF:
  *      use this option to define your custom functional,
- *      then you need to provide body of functions: tdwslda_compute_energy( ) and tdwslda_compute_potentials( )
+ *      then you need to provide body of functions: compute_energy_custom( ) and compute_potentials_custom( )
  *      in problem-definition.h file
  * */
 #define FUNCTIONAL SLDA
@@ -41,10 +40,11 @@
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
- * Meaningful only in case SLDAE.
- * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
+ * Sets effective mass to be equal.
+ * Speeds-up computation (approximately by a factor of two), but it also decreases accuracy of the functional.
+ * If functional is SLDA or BDG this option is activated automatically.
  * */
-// #define SLDAE_FORCE_A1
+// #define SLDA_FORCE_A1
 
 /**
  * Select which external potentials you want to use in simulations.
