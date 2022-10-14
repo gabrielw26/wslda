@@ -111,7 +111,7 @@ alpha_parameter_d0 (double _x)
   b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
   return 1.;
 #else
   return 1. + pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
@@ -131,7 +131,7 @@ alpha_parameter_d1 (double _x)
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
   
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
   return 0.;
 #else
   return pade_d1 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
@@ -151,7 +151,7 @@ alpha_parameter_d2 (double _x)
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
   
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
   return 0.;
 #else
   return pade_d2 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
@@ -285,7 +285,7 @@ a_functional_d0 (double _x)
   b2 = 1.73800000; // = (2. * pow(U_APS, 2) + 6. * pow(V_APS, 2));
   b3 = 0.66854900; // = 4. * V_APS * (pow(U_APS, 2) + pow(V_APS, 2));
   b4 = 0.10150800; // = pow(pow(U_APS, 2) + pow(V_APS, 2), 2);
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
   return 1.;
 #else
   return 1. + pade_d0 (_x, a1, a2, a3, a4, b1, b2, b3, b4);
