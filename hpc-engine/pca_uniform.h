@@ -67,7 +67,7 @@ void testsuite_file_uniform(double nerr, double eerr, int wmu, double muerr, int
     fclose(f);
 }
 
-inline double fbeta(double E, double beta)
+double fbeta(double E, double beta)
 {
     double bE=beta*E;
     if(bE>50.) return 0.0; // to avoid numerical problems
