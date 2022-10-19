@@ -1,0 +1,151 @@
+# Test finds BdG solution for uniform system,
+# and compares with results provided by BCS formulas
+#   delta_bcs = eF*( 8.0 / exp(2) * exp(M_PI/(2.*input->sclgth*kF)) );
+#   E_bcs = Effg - (3./8.)*(npart[SPINA]+npart[SPINB])*delta_bcs*delta_bcs/eF;
+#
+# --------------------------------------------------------------------------
+# --------> 1D
+# --------------------------------------------------------------------------
+tag: bcs-1d-akF0.75-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 120 mpirun -np 16 ./st-wslda-1d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-1d-akF0.75-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 120 mpirun -np 16 ./st-wslda-1d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-1d-akF0.66-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 120 mpirun -np 16 ./st-wslda-1d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-1d-akF0.66-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 1d
+test: st-wslda-1d
+exec: timeout 120 mpirun -np 16 ./st-wslda-1d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+# --------------------------------------------------------------------------
+# --------> 2D
+# --------------------------------------------------------------------------
+tag: bcs-2d-akF0.75-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 120 mpirun -np 16 ./st-wslda-2d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-2d-akF0.75-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 120 mpirun -np 16 ./st-wslda-2d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-2d-akF0.66-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 120 mpirun -np 16 ./st-wslda-2d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-2d-akF0.66-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 2d
+test: st-wslda-2d
+exec: timeout 120 mpirun -np 16 ./st-wslda-2d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+# --------------------------------------------------------------------------
+# --------> 3D
+# --------------------------------------------------------------------------
+tag: bcs-3d-akF0.75-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 600 mpirun -np 16 ./st-wslda-3d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-3d-akF0.75-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.75" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 600 mpirun -np 16 ./st-wslda-3d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-3d-akF0.66-Ec1
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 600 mpirun -np 16 ./st-wslda-3d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
+
+tag: bcs-3d-akF0.66-Ec2
+exec: cp input.txt input.txt.test
+exec: echo "sclgth    -0.66" >> input.txt.test
+exec: echo "ec 4.25" >> input.txt.test
+exec: rm -rf test*
+exec: make -f ../st-templates-full/Makefile.r clean
+exec: make -f ../st-templates-full/Makefile.r 3d
+test: st-wslda-3d
+exec: timeout 600 mpirun -np 16 ./st-wslda-3d input.txt.test
+test: test_testsuite.ok
+diff: test.cmp test.ref
