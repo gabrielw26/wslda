@@ -30,6 +30,9 @@ st-checkpoint
 # -> HF mode
 st-ffg-ho
 
+# -> check BCS limit
+st-bcs
+
 # ----- td-wslda ------
 # -> test functionals (spherical/cubic cutoff)
 td-uniform-aslda

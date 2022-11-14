@@ -40,6 +40,9 @@ int wsldapnp; // total number of processes - global variable
 #include "tdwslda_static_vars.h"
 #define printf wprintf
 #include "logger.h"
+#define API_LOGGER
+#include "wslda_api_version.h"
+#undef API_LOGGER
 
 
 int main( int argc , char ** argv ) 
@@ -322,7 +325,8 @@ int main( int argc , char ** argv )
         kF=pow(3.0*M_PI*M_PI*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b), 1.0/3.0);
         eF_a=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ; 
+        // Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        Effg = 0.6*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b)*eF*LXYZ;
     }
     else if(md.inittype==5) 
     {
@@ -827,7 +831,7 @@ int main( int argc , char ** argv )
     init_conservation_of_quantity(0, N_tot_init);
     init_conservation_of_quantity(1, energy_tot);
 #ifndef UNIFORM_TEST_MODE
-    if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+    if(md.inittype!=5) Effg = energy_unit(kF, mu, &h_energy[NPARTA], md.params, extra_data_size, extra_data); // set correct value of Effg
 #endif
 
     // report result
@@ -858,6 +862,7 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXY*sizeof(double)) );
         file_operation( check_stamp_entry_coeff(file_name, 12, NXY, h_densities, TDWSLDAITEMS, h_energy, LZ) ); 
         
+        wprintf("# REFERENCE VALUES: kF=%f, eF=%f, Effg=%f\n", kF, eF, Effg);
         wprintf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "Laz/Na", "Lbz/Nb", "rt"); 
         wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb); fflush(stdout);
         

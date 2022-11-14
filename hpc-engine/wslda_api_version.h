@@ -8,6 +8,7 @@
  * */  
 
 #if API_VERSION<20220221
+
 #ifdef API_PROBLEM_DEFINITION
 double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data)
 {
@@ -29,4 +30,35 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
     return kF;
 }
 #endif
+
+#ifdef API_LOGGER
+// empty
+#endif
+
+#endif
+
+#if API_VERSION<20221114
+
+#ifdef API_PROBLEM_DEFINITION
+// empty
+#endif
+
+
+#ifdef API_LOGGER
+double energy_unit(double kF, double *mu, double *npart,
+           double *params, size_t extra_data_size, void *extra_data)
+{
+    double Effg;
+    double eF = kF*kF/2.0; // Fermi energy
+    double N = npart[SPINA]+npart[SPINB]; // total number of particles
+
+    // depending on dimensionality of the problem
+    if(NY==1 && NZ==1) Effg=(1./3.)*N*eF;   // 1D
+    else if(NZ==1)     Effg=(1./2.)*N*eF;   // 2D
+    else               Effg=(3./5.)*N*eF;   // 3D
+
+    return Effg;
+}
+#endif
+
 #endif

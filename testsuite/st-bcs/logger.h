@@ -2,30 +2,6 @@
 static int lineid; // line id 
 
 /**
- * This function defines the unit in which energies are printed in stdout.
- * @param kF typical Fermi momentum scale of the problem, value returned by referencekF() function.
- * @param mu array with chemical potentials: mu[SPINA], mu[SPINB].
- * @param npart array with computed particle numbers: npart[SPINA] and npart[SPINB].
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-double energy_unit(double kF, double *mu, double *npart,
-           double *params, size_t extra_data_size, void *extra_data)
-{
-    double Effg;
-    double eF = kF*kF/2.0; // Fermi energy
-    double N = npart[SPINA]+npart[SPINB]; // total number of particles
-
-    // depending on dimensionality of the problem
-    if(NY==1 && NZ==1) Effg=(1./3.)*N*eF;   // 1D
-    else if(NZ==1)     Effg=(1./2.)*N*eF;   // 2D
-    else               Effg=(3./5.)*N*eF;   // 3D
-
-    return Effg;
-}
-
-/**
  * This function adds new entry to `outprefix`.wlog file.
  * It is executed at the end of each iteration
  * @param log pointer to file 
@@ -33,11 +9,10 @@ double energy_unit(double kF, double *mu, double *npart,
  * @param h_densities structure with densities, see (wiki) documentation for list of fields.
  * @param h_potentials struture with potentials, see (wiki) documentation for list of fields.
  * @param kF typical Fermi momentum scale of the problem. 
- *  * @param mu array with chemical potentials: mu[SPINA], mu[SPINB].
  * @param observable array with observables: 
  *                      contributions to the energy: EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT
  *                      entropy: ENTROPY
- * @param npart array with computed particle numbers: npart[SPINA] and  npart[SPINB].
+ * @param npart array with computed particle numbers: npart[SPINA] and  npart[SPINB]
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
@@ -63,7 +38,7 @@ int logger(FILE *log,
     strftime (buffer,20,"%x-%X",timeinfo);
     
     double eF = 0.5 * kF*kF;
-    double Effg = energy_unit(kF, mu, npart, params, extra_data_size, extra_data);
+    double Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
     double E_tot = observable[EKIN]+observable[EPOT]+observable[EPAIR]+observable[ECURRENT]+observable[EPOTEXT]+observable[EPAIREXT]+observable[EVELEXT];    
     
     if(lineid==0) // HEADER
@@ -126,6 +101,28 @@ int logger(FILE *log,
         logger_get_time_from_last_entry(), //19
         buffer // 20
     );
+
+    // for testsuite
+    char fname [512];
+
+    // result of calculation
+    sprintf(fname,"%s.cmp", md.outprefix);
+    FILE *fcmp = fopen(fname, "w");
+    fprintf(fcmp,"energy     %20.10g\n", E_tot);
+    fprintf(fcmp,"delta      %20.10g\n", cabs(h_potentials.delta[0]));
+    fprintf(fcmp,"kF         %20.10g\n", kF);
+    fclose(fcmp);
+
+    // result of BCS formulas
+    double delta_bcs = eF*( 8.0 / exp(2) * exp(M_PI/(2.*input->sclgth*kF)) );
+    double E_bcs = Effg - (3./8.)*(npart[SPINA]+npart[SPINB])*delta_bcs*delta_bcs/eF;
+    sprintf(fname,"%s.ref", md.outprefix);
+    fcmp = fopen(fname, "w");
+    fprintf(fcmp,"energy     %20.10g  %20.10g\n", E_bcs, 0.01*fabs(E_bcs));  // <-- Note: lattice is small, 1% tolerance!
+    fprintf(fcmp,"delta      %20.10g  %20.10g\n", delta_bcs, 0.1*fabs(delta_bcs)); // <-- Note: lattice is small, 10% tolerance!
+    fprintf(fcmp,"kF         %20.10g  1.0e-6\n", pow(6.*M_PI*M_PI*h_densities.rho_a[0],1./3.));
+    fclose(fcmp);
+
     
     lineid++; // new line 
     return 0;
