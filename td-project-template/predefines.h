@@ -55,12 +55,15 @@
  *       function velocity_ext(...) from problem definition will be called in each iteration.
  *   - ENABLE_MODIFY_POTENTIALS:
  *       function modify_potentials(...) from problem definition will be called in each iteration.
+ *   - ENABLE_MODIFY_ENERGIES:
+ *       function modify_energies(...) from problem definition will be called in each iteration.
  * In order to achieve best performance disable call of empty functions.
  * */
 #define ENABLE_V_EXT
 // #define ENABLE_DELTA_EXT
 // #define ENABLE_VELOCITY_EXT
 // #define ENABLE_MODIFY_POTENTIALS
+// #define ENABLE_MODIFY_ENERGIES
 
 /**
  * Maximal number of parameters in params array

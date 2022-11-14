@@ -40,7 +40,36 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
 #if API_VERSION<20221114
 
 #ifdef API_PROBLEM_DEFINITION
-// empty
+void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *params, size_t extra_data_size, void *extra_data)
+{
+    // DETERMINE LOCAL SIZES OF ARRAYS (CODE DIMENSIONALITY DEPENDENT)
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    int ix, iy, iz, ixyz;
+
+    // extract volume element
+    double volume_element=0.0;
+    if(h_densities.datadim==3) volume_element=DX*DY*DZ;
+    if(h_densities.datadim==2) volume_element=DX*DY*LZ;
+    if(h_densities.datadim==1) volume_element=DX*LY*LZ;
+
+    // ITERATE OVER ALL POINTS TO INTEGRATE OVER ALL POINTS
+    double myE_contrib=0.0;
+    ixyz=0;
+    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    {
+        double x = DX*(ix-lNX/2);
+        double y = DY*(iy-lNY/2); // for 1d code y will be always 0
+        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be always 0
+
+        // compute your contribution to the energy
+        // myE_contrib += (...)*volume_element;
+
+        ixyz++; // go to the next point, it should be the last line of the triple loop
+    }
+
+    // Add contributio to desired tag, for example
+    // energy[EPOT]+=myE_contrib;
+}
 #endif
 
 

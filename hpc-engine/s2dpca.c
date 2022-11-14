@@ -113,6 +113,7 @@ void process_params(double *params, double *kF, double *mu, size_t extra_data_si
 double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
+void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -1574,6 +1575,7 @@ int main( int argc , char ** argv )
 
         // ------------------------ energy ----------------------
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
+        modify_energies(it, densall, potsall, energy, dc_params, extra_data_size, extra_data); // API call
 
         // ---------------------- entropy -----------------------
         if(iam==0) wprintf("# ENTROPY [T/eF=%16.8g]: it=%d\n", 1.0/(beta*eF), it);
