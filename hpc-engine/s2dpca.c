@@ -152,6 +152,9 @@ double aBdG;
 
 #define printf wprintf
 #include "logger.h"
+#define API_LOGGER
+#include "wslda_api_version.h"
+#undef API_LOGGER
 
 typedef char * string;
 
@@ -176,7 +179,7 @@ int main( int argc , char ** argv )
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
     double S=0.0, S_old=0.0; // entropy
 
-    double eF_a, eF_b, eF, Effg, kF;
+    double eF_a, eF_b, eF, Effg=0.0, kF=0.0;
     double mu[2]; // chemical potential
     double ec; // energy cut-off
     double rt_zheev, rt_dens, rt_pot, rt_other, rt_me, rt_redistrib, rt_tot=0.0; // run time
@@ -647,7 +650,8 @@ int main( int argc , char ** argv )
         kF=pow(3.0*M_PI*M_PI*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b), 1.0/3.0);
         eF_a=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        // Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        Effg = 0.6*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b)*eF*LXYZ;
 
         // set global variables
         dc_mu_a=__md_pca_uniform.mu_a;
@@ -865,14 +869,17 @@ int main( int argc , char ** argv )
 
     // NOTE settings some variables
 #ifndef UNIFORM_TEST_MODE
-    if(md.referencekF>0.0) kF = md.referencekF;
+    if(kF==0.0 && md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * (md.Na+md.Nb) * eF;
+    double __ttmpnpart[2]={md.Na, md.Nb};
+    for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
+    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+    process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+    dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
+    if(Effg==0.0) Effg = energy_unit(kF, mu, __ttmpnpart, dc_params, extra_data_size, extra_data);
     beta = 1.0 / (md.temperature * eF);
     dc_ec = md.ec;
 #endif
-
-    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
 
     wdata_metadata wdmd;
     file_operation( create_wdata_metadata(&md, CODEDIM, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
@@ -880,6 +887,7 @@ int main( int argc , char ** argv )
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
     wdata_setconst(&wdmd, "eF", eF);
+    wdata_setconst(&wdmd, "Effg", Effg);
     wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
     wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
 
@@ -1463,6 +1471,7 @@ int main( int argc , char ** argv )
 
         // ------------------ update chemical potentials ------------------
         b_t();
+        if(iam==0) wprintf("# REFERENCE VALUES: kF=%f, eF=%f\n", kF, eF);
         if(iam==0) wprintf("# MUCHANGE FROM: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
         for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
@@ -1603,8 +1612,9 @@ int main( int argc , char ** argv )
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
 
-        if(iam==0) wprintf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
-        Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
+        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+        Effg = energy_unit(kF, mu, npart, dc_params, extra_data_size, extra_data);
+        if(iam==0) wprintf("# CONVERGENCE REPORT ENERGY: it=%d [in Effg=%f units]\n", it, Effg);
         E_tot=0.0; E_tot_old=0.0;
         for(i=0; i<ENERGYITEMS; i++)
         {
@@ -1642,6 +1652,7 @@ int main( int argc , char ** argv )
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
         wdata_setconst(&wdmd, "eF", eF);
+        wdata_setconst(&wdmd, "Effg", Effg);
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
