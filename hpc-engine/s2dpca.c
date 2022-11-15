@@ -888,7 +888,6 @@ int main( int argc , char ** argv )
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
     wdata_setconst(&wdmd, "eF", eF);
-    wdata_setconst(&wdmd, "Effg", Effg);
     wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
     wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
 
@@ -1654,7 +1653,6 @@ int main( int argc , char ** argv )
         // set constants after update
         wdata_setconst(&wdmd, "kF", kF);
         wdata_setconst(&wdmd, "eF", eF);
-        wdata_setconst(&wdmd, "Effg", Effg);
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );

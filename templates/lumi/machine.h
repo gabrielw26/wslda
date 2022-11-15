@@ -77,7 +77,7 @@
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-#define PRINT_GPU_DISTRIBUTION
+// #define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 

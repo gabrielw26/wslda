@@ -1,3 +1,5 @@
+// // Here are useful functions that can speed-up coding of your problem
+// #include "../extensions/wslda_utils.h"
 
 /**
  * THIS FUNCTION IS CALLED AT THE BEGINNING OF SIMULATION.
