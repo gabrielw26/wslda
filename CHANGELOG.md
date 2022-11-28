@@ -1,5 +1,8 @@
 # 2022.xx.xx
+* Optimization of the HIP version of the code.
 * The td codes can boost the performance by exploiting GPU-aware MPI.
+* New API_VERSION=20221120.
+* Minor bug fixes related to the stability, improved database of test and templates.
 
 # 2022.08.27
 * Porting code to [HIP](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Converting%20the%20toolkit%20to%20HIP).
