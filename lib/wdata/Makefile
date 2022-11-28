@@ -38,6 +38,7 @@ tools: lib
 	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-merge.c -o ./bin/wdata-merge -I./c/ -L. -lwdata -lm
 
 clean:
 	rm *.o
