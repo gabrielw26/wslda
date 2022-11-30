@@ -1,6 +1,7 @@
 # 2022.xx.xx
 * Optimization of the HIP version of the code.
 * The td codes can boost the performance by exploiting GPU-aware MPI.
+* Performance improvement of SLDAE functional.
 * New API_VERSION=20221120.
 * Minor bug fixes related to the stability, improved database of test and templates.
 

@@ -218,6 +218,8 @@
     #define EXCHANGE_SIZE   7
     #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   3
+    #elif FUNCTIONAL==SLDAE
+    #define EXCHANGE_SIZE   3
     #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
     #else
@@ -234,6 +236,8 @@
     #if FUNCTIONAL==ASLDA
     #define EXCHANGE_SIZE   12
     #elif FUNCTIONAL==SLDA
+    #define EXCHANGE_SIZE   8
+    #elif FUNCTIONAL==SLDAE
     #define EXCHANGE_SIZE   8
     #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
