@@ -364,7 +364,7 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
         x2x1 = conj(me[ci + nx*ri]);
         diff = x1x2 - x2x1;
         
-        if(fabs(creal(diff))>1.0e-14 || fabs(cimag(diff))>1.0e-14) 
+        if(fabs(creal(diff))>1.0e-9 || fabs(cimag(diff))>1.0e-9)
         {
             wprintf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
                 ri, ci, creal(x1x2), cimag(x1x2), creal(x2x1), cimag(x2x1)
@@ -372,7 +372,21 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
             hermitian_violated=1;
         }
     }
-    
+
+    // // TEST check with the formula
+    // // Both the formula and numerical approch should give EXACTLY the same result
+    // for(ri=0; ri<nx; ri++) for(ci=0; ci<nx; ci++)
+    // {
+    //     double complex f=0.0;
+    //     if(ri!=ci) f= M_PI/(nx*dx) * pow(-1.,ri-ci)*cos(M_PI*(ri-ci)/nx)/sin(M_PI*(ri-ci)/nx);
+    //     f*=-1.0*I;
+    //
+    //     if(cabs(me[ri + nx*ci]-f)>1.0e-6)
+    //     {
+    //         wprintf("ERROR: %d %d (%f,%f) == (%f,%f)\n", ri, ci, creal(me[ri + nx*ci]),cimag(me[ri + nx*ci]), creal(f), cimag(f));
+    //         hermitian_violated=2;
+    //     }
+    // }
     
     // clear
     free(fft1);

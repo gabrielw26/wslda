@@ -381,7 +381,7 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
         x2x1 = conj(me[ci + nx*ri]);
         diff = x1x2 - x2x1;
         
-        if(fabs(creal(diff))>1.0e-14 || fabs(cimag(diff))>1.0e-14) 
+        if(fabs(creal(diff))>1.0e-9 || fabs(cimag(diff))>1.0e-9)
         {
             wprintf("# ERROR[compute_matrix_elements_of_momentum_operator]: hermitian problem: %6d %6d (%f,%f) <=> (%f,%f)\n",
                 ri, ci, creal(x1x2), cimag(x1x2), creal(x2x1), cimag(x2x1)
