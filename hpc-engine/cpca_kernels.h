@@ -77,16 +77,16 @@ int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleCompl
                             int nthreads);
 int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
                               double *workarea, int nthreads);
-int amb_step1(int n, cufftDoubleComplex *ykm1, 
+int abm_step1(int n, cufftDoubleComplex *ykm1, 
                          cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, 
                          int nthreads);
-int amb_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
+int abm_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
                          cufftDoubleComplex *fkm3, 
                          int nthreads);
-int amb45_step1(int n, cufftDoubleComplex *ykm1, 
+int abm45_step1(int n, cufftDoubleComplex *ykm1, 
                          cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, cufftDoubleComplex *fkm4, 
                          int nthreads);
-int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
+int abm45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out, 
                          cufftDoubleComplex *fkm4, 
                          int nthreads);
 int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads);

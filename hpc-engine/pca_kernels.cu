@@ -834,9 +834,9 @@ extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex
 }
 
 // =======================================================================================
-// ====================================== amb_step1 ======================================
+// ====================================== abm_step1 ======================================
 // =======================================================================================
-__global__ void kernel_amb_step1(size_t n, Complex *ykm1,
+__global__ void kernel_abm_step1(size_t n, Complex *ykm1,
                          Complex *fkm1, Complex *fkm2, Complex *fkm3)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -869,21 +869,21 @@ __global__ void kernel_amb_step1(size_t n, Complex *ykm1,
  * @param fkm3 array f_{k-3} of size 2*n*NXYZ
  * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb_step1(int n, cufftDoubleComplex *ykm1,
+extern "C" int abm_step1(int n, cufftDoubleComplex *ykm1,
                          cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
-    kernel_amb_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3);
+    kernel_abm_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3);
 
     return 0;
 }
 
 // =======================================================================================
-// ====================================== amb45_step1 ======================================
+// ====================================== abm45_step1 ======================================
 // =======================================================================================
-__global__ void kernel_amb45_step1(size_t n, Complex *ykm1,
+__global__ void kernel_abm45_step1(size_t n, Complex *ykm1,
                          Complex *fkm1, Complex *fkm2, Complex *fkm3, Complex *fkm4)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -917,21 +917,21 @@ __global__ void kernel_amb45_step1(size_t n, Complex *ykm1,
  * @param fkm4 array f_{k-4} of size 2*n*NXYZ
  * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb45_step1(int n, cufftDoubleComplex *ykm1,
+extern "C" int abm45_step1(int n, cufftDoubleComplex *ykm1,
                          cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, cufftDoubleComplex *fkm4,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
-    kernel_amb45_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4);
+    kernel_abm45_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4);
 
     return 0;
 }
 
 // =======================================================================================
-// ====================================== amb_step4 ======================================
+// ====================================== abm_step4 ======================================
 // =======================================================================================
-__global__ void kernel_amb_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm3)
+__global__ void kernel_abm_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm3)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm3;
@@ -958,21 +958,21 @@ __global__ void kernel_amb_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, 
  * @param fkm3 array f_{k-3} of size 2*n*NXYZ
  * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
+extern "C" int abm_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
                          cufftDoubleComplex *fkm3,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
-    kernel_amb_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm3);
+    kernel_abm_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm3);
 
     return 0;
 }
 
 // =======================================================================================
-// ====================================== amb45_step4 ======================================
+// ====================================== abm45_step4 ======================================
 // =======================================================================================
-__global__ void kernel_amb45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm4)
+__global__ void kernel_abm45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm4)
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex _ykm1, _fkm4;
@@ -999,13 +999,13 @@ __global__ void kernel_amb45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out
  * @param fkm4 array f_{k-3} of size 2*n*NXYZ
  * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
+extern "C" int abm45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
                          cufftDoubleComplex *fkm4,
                          int nthreads)
 {
     // number of blocks
     int nblocks = (int)ceil((float)2*NXYZ*n/nthreads);
-    kernel_amb45_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm4);
+    kernel_abm45_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm4);
 
     return 0;
 }

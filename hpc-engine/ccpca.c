@@ -1100,9 +1100,9 @@ int main( int argc , char ** argv )
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
 #if INTEGRATION_SCHEME==AB3AM4
-            gpu_exec( amb_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, md.nthreads) );
+            gpu_exec( abm_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, md.nthreads) );
 #elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( amb45_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, md.nthreads) );
+            gpu_exec( abm45_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, md.nthreads) );
 #else
             CHECK PCA_SETTINGS.H
 #endif
@@ -1153,10 +1153,10 @@ int main( int argc , char ** argv )
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 #if INTEGRATION_SCHEME==AB3AM4
-            gpu_exec( amb_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
                          d_wf, d_fkm3, md.nthreads) );  
 #elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( amb45_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+            gpu_exec( abm45_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
                          d_wf, d_fkm4, md.nthreads) );
 #else
             CHECK PCA_SETTINGS.H
