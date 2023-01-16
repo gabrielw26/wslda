@@ -676,6 +676,18 @@ void print_version(char *suffix)
     wprintf("# USING ELPA.\n");
 #endif
 #endif
+
+#ifdef TDWSLDA
+#if INTEGRATION_SCHEME==AB3AM4
+    wprintf("# INTEGRATION SCHEME: AB3AM4\n");
+#endif
+#if INTEGRATION_SCHEME==AB4AM5
+    wprintf("# INTEGRATION SCHEME: AB4AM5\n");
+#endif
+#if INTEGRATION_SCHEME==AB5AM5
+    wprintf("# INTEGRATION SCHEME: AB5AM5\n");
+#endif
+#endif
 }
 
 /**

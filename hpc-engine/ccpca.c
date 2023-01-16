@@ -85,12 +85,11 @@ int main( int argc , char ** argv )
     double *d_workarea; // pointer to working area, also used by cufft (GPU)
     double *h_energy; // buffer for energies (CPU)
     double complex *d_wf; // pointer to wave-functions (GPU)
-    double complex *d_fkm1; // pointer to f_k-1 (GPU)
-    double complex *d_fkm2; // pointer to f_k-2 (GPU)
-    double complex *d_fkm3; // pointer to f_k-3 (GPU)
-#if INTEGRATION_SCHEME==AB4AM5
-    double complex *d_fkm4; // pointer to f_k-3 (GPU)
-#endif
+    double complex *d_fkm1=NULL; // pointer to f_k-1 (GPU)
+    double complex *d_fkm2=NULL; // pointer to f_k-2 (GPU)
+    double complex *d_fkm3=NULL; // pointer to f_k-3 (GPU)
+    double complex *d_fkm4=NULL; // pointer to f_k-4 (GPU)
+    double complex *d_fkm5=NULL; // pointer to f_k-5 (GPU)
     double complex *d_wf_d_dx; // pointer to derivative of wave-function d/dx (GPU)
     double complex *d_wf_laplace; // pointer to laplace of wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
     double complex *d_alphawf_laplace=NULL; // pointer to laplace of alpha*wave-function (d^2/dx^2 + d^2/dy^2 + d^2/dz^2) (GPU)
@@ -479,7 +478,10 @@ int main( int argc , char ** argv )
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm1) );
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm2) );
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm3) );
-#if INTEGRATION_SCHEME==AB4AM5
+#if INTEGRATION_SCHEME>=AB4AM5
+    gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm4) );
+#endif
+#if INTEGRATION_SCHEME>=AB5AM5
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_fkm4) );
 #endif
     gpu_exec( gpu_malloc(NX*nwfip*2*sizeof(double complex), (void **)&d_wf_d_dx) );
@@ -525,8 +527,10 @@ int main( int argc , char ** argv )
                      h_fbetaEn, h_kkyz, mu, &ec, &kF, &eF, &Effg, &beta,
                      HowMany) );
         memsize = (size_t)(nwf)*(NX)*2*5*16;
+#elif INTEGRATION_SCHEME==AB5AM5
+        // TODO
 #else
-        CHECK PCA_SETTINGS.H
+        #error "INTEGRATION_SCHEME must be one of {AB3AM4, AB4AM5, AB5AM5}"
 #endif
         MPI_Barrier( MPI_COMM_WORLD ) ;
         rt = e_t(0);
@@ -555,8 +559,11 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
-#if INTEGRATION_SCHEME==AB4AM5
+#if INTEGRATION_SCHEME>=AB4AM5
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+#endif
+#if INTEGRATION_SCHEME>=AB5AM5
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm5,  (size_t)2*nwfip*NX*sizeof(double complex)) );
 #endif
 
         // copy potentials
@@ -821,7 +828,10 @@ int main( int argc , char ** argv )
 #elif INTEGRATION_SCHEME==AB4AM5
         selfstart_steps=4;
         exp_iters = 5;
-#endif  
+#elif INTEGRATION_SCHEME==AB5AM5
+        selfstart_steps=5;
+        exp_iters = 5;
+#endif
         double complex *h_fkm;
         cppmallocl(h_fkm, NX*nwfip*2*selfstart_steps,double complex);
 
@@ -1024,6 +1034,12 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+#elif INTEGRATION_SCHEME==AB5AM5
+        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm5,  (size_t)2*nwfip*NX*sizeof(double complex)) );
 #endif        
         
         // clear memory
@@ -1099,13 +1115,8 @@ int main( int argc , char ** argv )
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
-#if INTEGRATION_SCHEME==AB3AM4
-            gpu_exec( abm_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, md.nthreads) );
-#elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( abm45_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, md.nthreads) );
-#else
-            CHECK PCA_SETTINGS.H
-#endif
+            gpu_exec( abm_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
+
             // normalize wf 
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
@@ -1152,15 +1163,18 @@ int main( int argc , char ** argv )
             // compute value of quantum friction coefficient  and current corrections coeff
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
+
 #if INTEGRATION_SCHEME==AB3AM4
             gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
-                         d_wf, d_fkm3, md.nthreads) );  
+                         d_wf, d_fkm3, INTEGRATION_SCHEME, md.nthreads) );
 #elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( abm45_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
-                         d_wf, d_fkm4, md.nthreads) );
-#else
-            CHECK PCA_SETTINGS.H
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+                         d_wf, d_fkm4, INTEGRATION_SCHEME, md.nthreads) );
+#elif INTEGRATION_SCHEME==AB5AM5
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+                         d_wf, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
 #endif
+
             // normalize wf 
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
@@ -1221,8 +1235,13 @@ int main( int argc , char ** argv )
             d_fkm3=d_fkm2;
             d_fkm2=d_fkm1;
             d_fkm1=d_tmp_ptr;
-#else
-            CHECK PCA_SETTINGS.H
+#elif INTEGRATION_SCHEME==AB5AM5
+            d_tmp_ptr=d_fkm5;
+            d_fkm5=d_fkm4;
+            d_fkm4=d_fkm3;
+            d_fkm3=d_fkm2;
+            d_fkm2=d_fkm1;
+            d_fkm1=d_tmp_ptr;
 #endif
             // H*psi
             gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_fkm1, 
@@ -1361,8 +1380,8 @@ int main( int argc , char ** argv )
                         h_fbetaEn, h_kkyz, mu, &ec, &kF, & eF, &Effg, &beta,
                         HowMany);
             memsize = (size_t)(nwf)*(NX)*2*5*16;
-#else
-                CHECK PCA_SETTINGS.H
+#elif INTEGRATION_SCHEME==AB5AM5
+            // TODO
 #endif
             MPI_Barrier( MPI_COMM_WORLD ) ;
             rt = e_t(0);

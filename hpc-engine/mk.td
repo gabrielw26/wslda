@@ -22,7 +22,7 @@ DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h tdwslda_ode_integrator.h \
        wslda_api_version.h ../VERSION.h
-NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h \
+NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h tdwslda_ode_integrator.h \
         reduce_many.h tdwslda_energy_generic.h
 
 WDATADEPS = wdata.h

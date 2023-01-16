@@ -1421,7 +1421,6 @@ int main( int argc , char ** argv )
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
-
 #if INTEGRATION_SCHEME==AB3AM4
             gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
                          d_wf, d_fkm3, INTEGRATION_SCHEME, md.nthreads) );
@@ -1432,6 +1431,7 @@ int main( int argc , char ** argv )
             gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
                          d_wf, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
 #endif
+
             // normalize wf 
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives

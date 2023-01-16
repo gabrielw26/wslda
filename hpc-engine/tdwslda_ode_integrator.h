@@ -122,7 +122,7 @@ extern "C" int abm_step1(int n, cufftDoubleComplex *ykm1,
     {
         kernel_abm45_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4);
     }
-    else if(abm_scheme==AB4AM5)
+    else if(abm_scheme==AB5AM5)
     {
         kernel_abm55_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4, (Complex *)fkm5);
     }
@@ -207,7 +207,7 @@ extern "C" int abm_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex 
     {
         kernel_abm45_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm_last);
     }
-    else if(abm_scheme==AB4AM5)
+    else if(abm_scheme==AB5AM5)
     {
         kernel_abm55_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm_last);
     }
