@@ -42,7 +42,9 @@
 
 // Integration scheme AB - predictor, AM - correctior, number specify order
 // #define ITEGRATION_SCHEME AB3AM4
+#ifndef INTEGRATION_SCHEME
 #define INTEGRATION_SCHEME AB4AM5
+#endif
 
 // ===================================================================================
 // ================================= LEGACY ==========================================
@@ -188,6 +190,7 @@
 
 #define AB3AM4 34
 #define AB4AM5 45
+#define AB5AM5 55
 
 #ifdef ENABLE_MODIFY_POTENTIALS
 #undef BDG_MODE
