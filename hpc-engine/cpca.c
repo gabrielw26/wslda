@@ -31,7 +31,7 @@
 #include "pca_io.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
-#include "cpca_checkpoint.h"
+#include "tdwslda_checkpoint.h"
 #include "wslda_writevars.h"
 #include "wslda_reproducibility.h"
 
@@ -635,24 +635,18 @@ int main( int argc , char ** argv )
         if(ip==0) wprintf("# LOADING CHECKPOINT\n"); fflush(stdout);
         b_t();
         size_t memsize;
-#if INTEGRATION_SCHEME==AB3AM4
-         cpu_exec( load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
-                  d_wf, d_fkm1, d_fkm2, d_fkm3, 
-                  d_potentials, &t0, 
+        cpu_exec( load_checkpoint(h_wavefun, MPI_COMM_WORLD, md.inprefix,
+                  d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5,
+                  d_potentials, &t0,
                   &nwf, &nwfip,
-                  h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,  
-		  HowMany) );
+                  h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
+                  HowMany, INTEGRATION_SCHEME) );
+#if INTEGRATION_SCHEME==AB3AM4
         memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
-        cpu_exec( load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
-                     d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                     d_potentials, &t0, 
-                     &nwf, &nwfip,
-                     h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
-                     HowMany) );
         memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #elif INTEGRATION_SCHEME==AB5AM5
-        // TODO
+        memsize = (size_t)(nwf)*(NXY)*2*6*16;
 #else
         #error "INTEGRATION_SCHEME must be one of {AB3AM4, AB4AM5, AB5AM5}"
 #endif
@@ -1490,24 +1484,18 @@ int main( int argc , char ** argv )
             b_t(); // start measurment of time of writing
             time=t0+it*dt;
             size_t memsize;
-#if INTEGRATION_SCHEME==AB3AM4
-            save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                        d_wf, d_fkm1, d_fkm2, d_fkm3,
-                        d_potentials, &time, 
+            save_checkpoint(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                        d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5,
+                        d_potentials, &time,
                         nwf, nwfip,
-                        h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
-                        HowMany);
+                        h_fbetaEn, h_kkz, mu, &ec, &kF, & eF, &Effg, &beta,
+                        HowMany, INTEGRATION_SCHEME);
+#if INTEGRATION_SCHEME==AB3AM4
             memsize = (size_t)(nwf)*(NXY)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
-            save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                        d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                        d_potentials, &time, 
-                        nwf, nwfip,
-                        h_fbetaEn, h_kkz, mu, &ec, &kF, &eF, &Effg, &beta,
-                        HowMany);
             memsize = (size_t)(nwf)*(NXY)*2*5*16;
 #elif INTEGRATION_SCHEME==AB5AM5
-            // TODO
+            memsize = (size_t)(nwf)*(NXY)*2*6*16;
 #endif
             MPI_Barrier( MPI_COMM_WORLD ) ;
             rt = e_t(0);

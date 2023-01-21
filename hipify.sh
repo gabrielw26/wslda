@@ -10,7 +10,7 @@
 # SETTINGS
 HIPIFY_CMD="hipify-perl -hip-kernel-execution-syntax"
 
-echo "---> Converting WSLDA to HIP environment"
+echo "---> Converting WSLDA to HIP environment."
 set -x
 
 # Create & clear location for hip files
@@ -26,6 +26,7 @@ done
 # Other files
 $HIPIFY_CMD -o hip/wslda_cuda_utils.hpp wslda_cuda_utils.h
 $HIPIFY_CMD -o hip/tdwslda_energy_generic.hpp tdwslda_energy_generic.h
+$HIPIFY_CMD -o hip/tdwslda_ode_integrator.hpp tdwslda_ode_integrator.h
 
 set +x
 echo "---> Conversion of WSLDA to HIP is DONE."

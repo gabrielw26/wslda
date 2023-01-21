@@ -18,7 +18,7 @@ WINTERPINC=$(WSLDADIR)lib/winterp/c/
 WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
-       ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
+       ccpca_kernels.h ccpca_dens.h tdwslda_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
        wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h tdwslda_ode_integrator.h \
        wslda_api_version.h ../VERSION.h
@@ -151,10 +151,13 @@ $(OBJDIR)cpca.o: $(SRCDIR)cpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 $(OBJDIR)pca.o: $(SRCDIR)pca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS) logger.h
 	$(CXX) $(CFLAGS) -DCODEDIM=3 -c -o $@ $<
 
-$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+$(OBJDIR)pca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+	$(CXX) $(CFLAGS) -DCODEDIM=3 -c -o $@ $<
+
+$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
 
-$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h $(DEPSLOCAL) problem-definition.h logger.h

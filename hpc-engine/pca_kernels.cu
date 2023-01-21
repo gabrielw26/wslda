@@ -46,8 +46,11 @@ typedef thrust::complex<double> Complex;
 #include "tdwslda_functionals.h"
 
 // ode integrator
+#ifdef HIPMODE
+#include "hip/tdwslda_ode_integrator.hpp"
+#else
 #include "tdwslda_ode_integrator.h"
-
+#endif
 // =======================================================================================
 // ================================ compute_potentials ===================================
 // =======================================================================================
