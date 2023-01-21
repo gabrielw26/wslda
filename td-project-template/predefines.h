@@ -113,6 +113,16 @@
 // #define STORE_QPE
 
 /**
+ * Integration scheme ABxAMy, where
+ *   x - order of predictor,
+ *   y - order of corrector.
+ * Choose one: AB3AM4, AB4AM5, AB5AM5
+ * */
+// #define INTEGRATION_SCHEME AB3AM4
+#define INTEGRATION_SCHEME AB4AM5
+// #define INTEGRATION_SCHEME AB5AM5
+
+/**
  * Machine file. 
  * This file contains info about machine that will be used in the computation process.
  * You can specify the file in the following ways: 

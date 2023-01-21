@@ -117,11 +117,11 @@
  * Integration scheme ABxAMy, where
  *   x - order of predictor,
  *   y - order of corrector.
- * Choose one: AB3AM4, AB4AM5 (default), AB5AM5
+ * Choose one: AB3AM4, AB4AM5, AB5AM5
  * */
 // #define INTEGRATION_SCHEME AB3AM4
-// #define INTEGRATION_SCHEME AB4AM5
-#define INTEGRATION_SCHEME AB5AM5
+#define INTEGRATION_SCHEME AB4AM5
+// #define INTEGRATION_SCHEME AB5AM5
 
 /**
  * Machine file. 
