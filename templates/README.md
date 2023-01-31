@@ -8,6 +8,7 @@
 * `daint`: https://www.cscs.ch/computers/piz-daint/
 * `okeanos`: https://kdm.icm.edu.pl/Zasoby/komputery_w_icm.pl/#superkomputer-okeanos
 * `lumi`: https://www.lumi-supercomputer.eu/
+* `athena`: https://docs.cyfronet.pl/display/~plgpawlik/Athena
 
 ## Installing templates
 You can use tool
