@@ -21,19 +21,19 @@
  * Default settings are: ELPA_SOLVER_1STAGE
  * but you can overwrite using options below
  * */
-
+#define ELPA_API 20210430
 /**
- * uncomment it if you want to activate GPUs for diagonalizations 
+ * uncomment it if you want to activate GPUs for diagonalizations
  * */
-#define ELPA_USE_GPU
+#define ELPA_USE_GPU_AMD
 
 /**
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
-// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
-// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
+#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
+// #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_AMD_GPU
+// #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_AMD_GPU
 
 /**
  * Fraction of eigenvectors to be extracted in each cycle.
@@ -50,6 +50,13 @@
  * Settings for time-dependent codes.
  * Time-dependent codes require GPUs. 
  * */
+
+/**
+ * Use this option if the machine has a GPU-aware MPI implementation,
+ * i.e machine can handle buffer irrespectively if it resides in host or device memory.
+ * Usage of GPU-aware MPI can boost the performance of the computation.
+ * */
+// #define USE_GPU_AWARE_MPI
 
 /**
  * Number of mpi processes per IO group used for collective (parallel) writing of checkpoint files.
@@ -70,7 +77,7 @@
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-#define PRINT_GPU_DISTRIBUTION
+// #define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 
@@ -79,7 +86,7 @@
  * with uniformly distributed GPU cards across the nodes, 
  * and each node has `gpuspernode` (input file parameter) cards.
  * */
-// #define CUSTOM_GPU_DISTRIBUTION
+#define CUSTOM_GPU_DISTRIBUTION
 
 /**
  * This function is used to assign unique device-id to mpi process.
@@ -90,8 +97,14 @@
 #if defined(CUSTOM_GPU_DISTRIBUTION) && defined(TDWSLDA_MAIN)
 int assign_deviceid_to_mpi_process(MPI_Comm comm)
 {
+    int np, ip;
+    MPI_Comm_size(comm, &np);
+    MPI_Comm_rank(comm, &ip);
+    
+    if(ip==0) printf("# CUSTOM GPU DISTRIBUTION FOR MACHINE: LUMI\n");
 
-    return 0;
+    int device_id[8] = {4,5,2,3,6,7,0,1}; // accordint to LUST it is the optimal mapping
+    return device_id[ip % 8];
 }
 #endif
 

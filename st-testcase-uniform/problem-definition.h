@@ -1,3 +1,25 @@
+// // Here are useful functions that can speed-up coding of your problem
+// #include "../extensions/wslda_utils.h"
+
+/**
+ * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
+ * After loading params array from input file, the parameters are processed by this routine.
+ * The routine is executed at beginning of each iteration.
+ * @param params array of size MAX_USER_PARAMS with parameters from input file.
+ * @param kF typical Fermi momentum scale of the problem.
+ *           kF=referencekF if the referencekF tag is indicated in the input file,
+ *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to maximal density.
+ *           You can also set kF at request in this function using (*kF)=myvalue;
+ * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB].
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * For more info see: Wiki->User defined parameters
+ * */
+void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
+{
+    // PROCESS INPUT FILE PARAMETERS
+
+}
 
 /** 
  * EXTERNAL POTENTIAL V_ext
@@ -82,25 +104,6 @@ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, do
     return v_ext; 
 }
 
-/** 
- * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * After loading params array from input file, the parameters are processed by this routine.
- * The routine is executed at beginning of each iteration.
- * @param params array of size MAX_USER_PARAMS with parameters from input file. 
- * @param kF typical Fermi momentum scale of the problem. 
- *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to maximal density.
- *           You can also set kF at request in this function using (*kF)=myvalue;
- * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
-{
-    // PROCESS INPUT FILE PARAMETERS 
-
-}
-
 /**
  * This function computes Fermi momentum, which is used as the reference value. 
  * Other reference scales are set automatically to: eF=kF^2/2, Effg=(3/5)*N*eF (N-total number of particles)
@@ -181,7 +184,7 @@ void modify_densities(int it, wslda_density h_densities, double *params, size_t 
  * Before each diagonalization process, user can modify arbitrarily potentials
  * @param it iteration number
  * @param h_densities structure with densities, see (wiki) documentation for list of fields
- *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
+ *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
  * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
@@ -210,6 +213,50 @@ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_pote
     }
 }
 
+/**
+ * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
+ * User can modify arbitrarily expression for energy comptation
+ * @param it iteration number
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
+ * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ *                    NOTE: potential structure is processed by modify_potentials(...) function before call of this function.
+ * @param energy these entries user can modify.
+ *                    Contributions are stored in energy[ETAG], where TAG in {EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT}
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * */
+void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *params, size_t extra_data_size, void *extra_data)
+{
+    // DETERMINE LOCAL SIZES OF ARRAYS (CODE DIMENSIONALITY DEPENDENT)
+    int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    int ix, iy, iz, ixyz;
+
+    // extract volume element
+    double volume_element=0.0;
+    if(h_densities.datadim==3) volume_element=DX*DY*DZ;
+    if(h_densities.datadim==2) volume_element=DX*DY*LZ;
+    if(h_densities.datadim==1) volume_element=DX*LY*LZ;
+
+    // ITERATE OVER ALL POINTS TO INTEGRATE OVER ALL POINTS
+    double myE_contrib=0.0;
+    ixyz=0;
+    for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    {
+        double x = DX*(ix-lNX/2);
+        double y = DY*(iy-lNY/2); // for 1d code y will be always 0
+        double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be always 0
+
+        // compute your contribution to the energy
+        // myE_contrib += (...)*volume_element;
+
+        ixyz++; // go to the next point, it should be the last line of the triple loop
+    }
+
+    // Add contribution to desired tag, for example
+    // energy[EPOT]+=myE_contrib;
+}
 
 /**
  * This function provides size of extra_data array, in bytes.

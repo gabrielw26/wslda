@@ -96,6 +96,10 @@ extern "C" int compute_energy_generic(int it, double *d_densities, double *d_pot
                                                              La, Lb);
 #endif
 
+#ifdef ENABLE_MODIFY_ENERGIES
+    modify_energies<<<nblocks, nthreads>>>(it, densall, potsall, E_kin);
+#endif
+
     // Step 2: massive reductions
     int ierr = local_reductions_many(TDWSLDAITEMS, NUMBER_ELEMENT, d_workarea, d_workarea);
     if(ierr!=0) return ierr;

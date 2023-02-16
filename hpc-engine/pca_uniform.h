@@ -67,7 +67,7 @@ void testsuite_file_uniform(double nerr, double eerr, int wmu, double muerr, int
     fclose(f);
 }
 
-inline double fbeta(double E, double beta)
+double fbeta(double E, double beta)
 {
     double bE=beta*E;
     if(bE>50.) return 0.0; // to avoid numerical problems
@@ -170,7 +170,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double eF_a=pow(6.0*M_PI*M_PI*n0_a, 2.0/3.0) / 2.0;
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
-    double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    // double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    double Effg = 0.6*(n0_a+n0_b)*eF_avg*LXYZ;
     double kc=md.kc;
     double mu_a=0.37*eF_a;
     double mu_b=0.37*eF_b;
@@ -400,7 +401,9 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
         }
         eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        eF_avg=pow(3.0*M_PI*M_PI*(n_a+n_b), 2.0/3.0) / 2.0;
+        // Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        Effg = 0.6*(n_a+n_b)*eF_avg*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 
@@ -543,7 +546,8 @@ int read_uniform(int *nwf, int printout)
     double eF_a=pow(6.0*M_PI*M_PI*n0_a, 2.0/3.0) / 2.0;
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
-    double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    // double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    double Effg = 0.6*(n0_a+n0_b)*eF_avg*LXYZ;
     double kc=__md_pca_uniform.kc;
     double mu_a=__md_pca_uniform.mu_a;
     double mu_b=__md_pca_uniform.mu_b;
@@ -1145,7 +1149,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double eF_a=pow(6.0*M_PI*M_PI*n0_a, 2.0/3.0) / 2.0;
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
-    double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    // double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    double Effg = 0.6*(n0_a+n0_b)*eF_avg*LXYZ;
     double gbare=4.0*M_PI*md.aBdG;
     double kc=md.kc;
     double alph_a=1.0;
@@ -1367,7 +1372,9 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
         }
         eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        eF_avg=pow(3.0*M_PI*M_PI*(n_a+n_b), 2.0/3.0) / 2.0;
+        // Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        Effg = 0.6*(n_a+n_b)*eF_avg*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 
@@ -1612,7 +1619,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     double eF_a=pow(6.0*M_PI*M_PI*n0_a, 2.0/3.0) / 2.0;
     double eF_b=pow(6.0*M_PI*M_PI*n0_b, 2.0/3.0) / 2.0;
     double eF_avg=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 2.0/3.0) / 2.0;
-    double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    // double Effg = 0.6*n0_a*eF_a*LXYZ + 0.6*n0_b*eF_b*LXYZ;
+    double Effg = 0.6*(n0_a+n0_b)*eF_avg*LXYZ;
     double kc=md.kc;
     double mu_a=chemical_potential_d0(x_)*eF_a;
     double mu_b=chemical_potential_d0(x_)*eF_b;
@@ -1847,7 +1855,9 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         }
         eF_a=pow(6.0*M_PI*M_PI*n_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*n_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        eF_avg=pow(3.0*M_PI*M_PI*(n_a+n_b), 2.0/3.0) / 2.0;
+        // Effg = 0.6*n_a*eF_a*LXYZ + 0.6*n_b*eF_b*LXYZ;
+        Effg = 0.6*(n_a+n_b)*eF_avg*LXYZ;
         if(printout && md.init0debug>0) wprintf("# TEMPCONV: T=%f, iter=%d, delta/eF_a=%f, mu_a/eF_a=%f, delta/eF_b=%f, mu_b/eF_b=%f\n", T, iter, delta/eF_a, mu_a/eF_a, delta/eF_b, mu_b/eF_b);
         if(iter==maxiter && printout && md.init0debug>0) wprintf("# WARNING: MAXITER REACHED!\n");
 

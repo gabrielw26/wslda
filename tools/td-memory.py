@@ -25,7 +25,7 @@ if nwf==None:
     if codedim==3: nwf = 0.5*NX*NY*NZ # or use simple estimate
     elif codedim==2: nwf = 0.5*NX*NY*NZ
     elif codedim==2: nwf = 0.5*NX*NY*NZ
-    else: raise NameError, 'incorrect codedim'
+    else: raise NameError('incorrect codedim')
 
 if codedim==3:
     pass
@@ -35,7 +35,7 @@ elif codedim==2:
     NZ=1
     NY=1
 else: 
-    raise NameError, 'incorrect codedim'
+    raise NameError('incorrect codedim')
 
 def find_mem_per_gpu(ngpus):
     """
@@ -67,7 +67,7 @@ while 1:
         break
     
 # print minimal request
-print "MINIMAL NUMBER OF GPUs=%d" % gpus[0]
+print("MINIMAL NUMBER OF GPUs=%d" % gpus[0])
 
 # Data for plotting
 

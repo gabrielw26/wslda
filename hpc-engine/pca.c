@@ -29,7 +29,7 @@
 #include "pca_io.h"
 #include "pca_uniform.h"
 #include "pca_logger.h"
-#include "pca_checkpoint.h"
+#include "tdwslda_checkpoint.h"
 #include "wslda_writevars.h"
 #include "wslda_reproducibility.h"
 
@@ -38,6 +38,9 @@ int wsldapnp; // total number of processes - global variable
 #include "tdwslda_static_vars.h"
 #define printf wprintf
 #include "logger.h"
+#define API_LOGGER
+#include "wslda_api_version.h"
+#undef API_LOGGER
 
 int main( int argc , char ** argv ) 
 {
@@ -76,12 +79,11 @@ int main( int argc , char ** argv )
     double *d_workarea; // pointer to working area, also used by cufft (GPU)
     double *h_energy; // buffer for energies (CPU)
     double complex *d_wf; // pointer to wave-functions (GPU)
-    double complex *d_fkm1; // pointer to f_k-1 (GPU)
-    double complex *d_fkm2; // pointer to f_k-2 (GPU)
-    double complex *d_fkm3; // pointer to f_k-3 (GPU)
-#if INTEGRATION_SCHEME==AB4AM5
-    double complex *d_fkm4; // pointer to f_k-3 (GPU)
-#endif
+    double complex *d_fkm1=NULL; // pointer to f_k-1 (GPU)
+    double complex *d_fkm2=NULL; // pointer to f_k-2 (GPU)
+    double complex *d_fkm3=NULL; // pointer to f_k-3 (GPU)
+    double complex *d_fkm4=NULL; // pointer to f_k-4 (GPU)
+    double complex *d_fkm5=NULL; // pointer to f_k-5 (GPU)
     double complex *d_wf_d_dx; // pointer to derivative of wave-function d/dx (GPU)
     double complex *d_wf_d_dy; // pointer to derivative of wave-function d/dy (GPU)
     double complex *d_wf_d_dz; // pointer to derivative of wave-function d/dz (GPU)
@@ -316,7 +318,8 @@ int main( int argc , char ** argv )
         kF=pow(3.0*M_PI*M_PI*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b), 1.0/3.0);
         eF_a=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ; 
+        // Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        Effg = 0.6*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b)*eF*LXYZ;
     }
     else if(md.inittype==5) 
     {
@@ -737,8 +740,11 @@ int main( int argc , char ** argv )
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_fkm1) );
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_fkm2) );
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_fkm3) );
-#if INTEGRATION_SCHEME==AB4AM5
+#if INTEGRATION_SCHEME>=AB4AM5
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_fkm4) );
+#endif
+#if INTEGRATION_SCHEME>=AB5AM5
+    gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_fkm5) );
 #endif
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_wf_d_dx) );
     gpu_exec( gpu_malloc(NXYZ*nwfip*2*sizeof(double complex), (void **)&d_wf_d_dy) );
@@ -766,24 +772,20 @@ int main( int argc , char ** argv )
         if(ip==0) wprintf("# LOADING CHECKPOINT\n");
         b_t();
         size_t memsize;
+        cpu_exec( load_checkpoint(h_wavefun, MPI_COMM_WORLD, md.inprefix,
+                  d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5,
+                  d_potentials, &t0,
+                  &nwf, &nwfip,
+                  h_fbetaEn, NULL, mu, &ec, &kF, &eF, &Effg, &beta,
+                  HowMany, INTEGRATION_SCHEME) );
 #if INTEGRATION_SCHEME==AB3AM4
-        cpu_exec( load_all (h_wavefun, MPI_COMM_WORLD, md.inprefix,
-                    d_wf, d_fkm1, d_fkm2, d_fkm3, 
-                    d_potentials, &t0, 
-                    &nwf, &nwfip,
-                    h_fbetaEn, mu, &ec, &kF, &eF, &Effg, &beta,
-                    HowMany) );
         memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5
-        cpu_exec( load_all_45 (h_wavefun, MPI_COMM_WORLD, md.inprefix,
-                     d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                     d_potentials, &t0, 
-                     &nwf, &nwfip,
-                     h_fbetaEn, mu, &ec, &kF, &eF, &Effg, &beta,
-                     HowMany) );
+        memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
+#elif INTEGRATION_SCHEME==AB5AM5
         memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
 #else
-        CHECK PCA_SETTINGS.H
+        #error "INTEGRATION_SCHEME must be one of {AB3AM4, AB4AM5, AB5AM5}"
 #endif
 
         MPI_Barrier( MPI_COMM_WORLD ) ;
@@ -810,8 +812,11 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm1,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm2,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm3,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
-#if INTEGRATION_SCHEME==AB4AM5
+#if INTEGRATION_SCHEME>=AB4AM5
         gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm4,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
+#endif
+#if INTEGRATION_SCHEME>=AB5AM5
+        gpu_exec( memcopy_host2gpu(h_wavefun, d_fkm5,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
 #endif
 
         // copy potentials
@@ -931,9 +936,13 @@ int main( int argc , char ** argv )
     // densities - local reduction
     gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
     // densities - global reduction
+#ifdef USE_GPU_AWARE_MPI
+    MPI_Allreduce( MPI_IN_PLACE, d_densities, (size_t)12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
     gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
     MPI_Allreduce( MPI_IN_PLACE, h_densities, (size_t)12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+#endif
     if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -955,7 +964,7 @@ int main( int argc , char ** argv )
     init_conservation_of_quantity(0, N_tot_init);
     init_conservation_of_quantity(1, energy_tot);
 #ifndef UNIFORM_TEST_MODE
-    if(md.inittype!=5) Effg = 0.6 * N_tot_init * eF; // set correct value of Effg
+    if(md.inittype!=5) Effg = energy_unit(kF, mu, &h_energy[NPARTA], md.params, extra_data_size, extra_data); // set correct value of Effg
 #endif
     
     // report result
@@ -986,6 +995,7 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
         file_operation( check_stamp_entry(file_name, 12, NXYZ, h_densities, TDWSLDAITEMS, h_energy) ); 
         
+        wprintf("# REFERENCE VALUES: kF=%f, eF=%f, Effg=%f\n", kF, eF, Effg);
         wprintf("%12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %12s %8s\n", "time*eF", "Na", "Nb", "Na+Nb", "ETOT", "EKIN", "EPOT", "EPAIR", "ECURRENT", "EPOTEXT", "EPAIREXT", "EVELEXT", "Laz/Na", "Lbz/Nb", "rt"); 
         wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb);     
         
@@ -1068,7 +1078,10 @@ int main( int argc , char ** argv )
 #elif INTEGRATION_SCHEME==AB4AM5
         selfstart_steps=4;
         exp_iters = 5;
-#endif  
+#elif INTEGRATION_SCHEME==AB5AM5
+        selfstart_steps=5;
+        exp_iters = 5;
+#endif
         double complex *h_fkm;
         cppmallocl(h_fkm, NXYZ*nwfip*2*selfstart_steps,double complex);
 
@@ -1094,9 +1107,13 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
+#ifdef USE_GPU_AWARE_MPI
+            MPI_Allreduce( MPI_IN_PLACE, d_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+#endif
             if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -1177,9 +1194,13 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_fkm3, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
+#ifdef USE_GPU_AWARE_MPI
+            MPI_Allreduce( MPI_IN_PLACE, d_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+#endif
             if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -1264,6 +1285,12 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXYZ, d_fkm2,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXYZ, d_fkm3,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXYZ, d_fkm4,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) ); 
+#elif INTEGRATION_SCHEME==AB5AM5
+        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NXYZ, d_fkm1,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NXYZ, d_fkm2,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXYZ, d_fkm3,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXYZ, d_fkm4,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXYZ, d_fkm5,  (size_t)2*nwfip*NXYZ*sizeof(double complex)) );
 #endif        
         
         // clear memory
@@ -1277,9 +1304,13 @@ int main( int argc , char ** argv )
         // densities - local reduction
         gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
         // densities - global reduction
+#ifdef USE_GPU_AWARE_MPI
+        MPI_Allreduce( MPI_IN_PLACE, d_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) ); 
         MPI_Allreduce( MPI_IN_PLACE, h_densities, 12*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)12*NXYZ*sizeof(double)) );
+#endif
         if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
         if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -1335,13 +1366,8 @@ int main( int argc , char ** argv )
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
-#if INTEGRATION_SCHEME==AB3AM4
-            gpu_exec( amb_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, md.nthreads) );
-#elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( amb45_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, md.nthreads) );
-#else
-            CHECK PCA_SETTINGS.H
-#endif
+            gpu_exec( abm_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
+
             // normalize wf 
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
@@ -1360,9 +1386,13 @@ int main( int argc , char ** argv )
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             mpipackagesize = EXCHANGE_SIZE;
+#ifdef USE_GPU_AWARE_MPI
+            MPI_Allreduce( MPI_IN_PLACE, d_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) );
+#endif
             if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -1384,15 +1414,18 @@ int main( int argc , char ** argv )
             // compute value of quantum friction coefficient  and current corrections coeff
             qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
+
 #if INTEGRATION_SCHEME==AB3AM4
-            gpu_exec( amb_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
-                         d_wf, d_fkm3, md.nthreads) );  
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+                         d_wf, d_fkm3, INTEGRATION_SCHEME, md.nthreads) );
 #elif INTEGRATION_SCHEME==AB4AM5
-            gpu_exec( amb45_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
-                         d_wf, d_fkm4, md.nthreads) );
-#else
-            CHECK PCA_SETTINGS.H
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+                         d_wf, d_fkm4, INTEGRATION_SCHEME, md.nthreads) );
+#elif INTEGRATION_SCHEME==AB5AM5
+            gpu_exec( abm_step4(nwfip, d_wf_laplace, /* NOTE - d_wf_laplace as itermiediate buffer  */
+                         d_wf, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
 #endif
+
             // normalize wf 
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
@@ -1411,9 +1444,13 @@ int main( int argc , char ** argv )
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_d_dy, d_wf_d_dz, d_wf_laplace, d_fbetaEn, NULL, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
             if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
+#ifdef USE_GPU_AWARE_MPI
+            MPI_Allreduce( MPI_IN_PLACE, d_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
             gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
             MPI_Allreduce( MPI_IN_PLACE, h_densities, mpipackagesize*NXYZ, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             gpu_exec( memcopy_host2gpu(h_densities, d_densities,  (size_t)mpipackagesize*NXYZ*sizeof(double)) ); 
+#endif
             if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
@@ -1450,8 +1487,13 @@ int main( int argc , char ** argv )
             d_fkm3=d_fkm2;
             d_fkm2=d_fkm1;
             d_fkm1=d_tmp_ptr;
-#else
-            CHECK PCA_SETTINGS.H
+#elif INTEGRATION_SCHEME==AB5AM5
+            d_tmp_ptr=d_fkm5;
+            d_fkm5=d_fkm4;
+            d_fkm4=d_fkm3;
+            d_fkm3=d_fkm2;
+            d_fkm2=d_fkm1;
+            d_fkm1=d_tmp_ptr;
 #endif
             // H*psi
             gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_fkm1, 
@@ -1576,24 +1618,18 @@ int main( int argc , char ** argv )
             b_t(); // start measurment of time of writing
             time=t0+it*dt;
             size_t memsize;
-#if INTEGRATION_SCHEME==AB3AM4
-            save_all(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                        d_wf, d_fkm1, d_fkm2, d_fkm3,
+            save_checkpoint(h_wavefun, MPI_COMM_WORLD, md.outprefix,
+                        d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5,
                         d_potentials, &time,
                         nwf, nwfip,
-                        h_fbetaEn, mu, &ec, &kF, & eF, &Effg, &beta,
-                        HowMany);
+                        h_fbetaEn, NULL, mu, &ec, &kF, & eF, &Effg, &beta,
+                        HowMany, INTEGRATION_SCHEME);
+#if INTEGRATION_SCHEME==AB3AM4
             memsize = (size_t)(nwf)*(NX*NY*NZ)*2*4*16;
 #elif INTEGRATION_SCHEME==AB4AM5            
-            save_all_45(h_wavefun, MPI_COMM_WORLD, md.outprefix,
-                        d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4,
-                        d_potentials, &time, 
-                        nwf, nwfip,
-                        h_fbetaEn, mu, &ec, &kF, & eF, &Effg, &beta,
-                        HowMany);
             memsize = (size_t)(nwf)*(NX*NY*NZ)*2*5*16;
-#else
-                CHECK PCA_SETTINGS.H
+#elif INTEGRATION_SCHEME==AB5AM5
+            memsize = (size_t)(nwf)*(NX*NY*NZ)*2*6*16;
 #endif
             MPI_Barrier( MPI_COMM_WORLD ) ;
             rt = e_t(0);

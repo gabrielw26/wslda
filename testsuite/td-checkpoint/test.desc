@@ -1,68 +1,206 @@
-# These tests check is checkpoint write/read works ok
+# These tests check if checkpoint write/read works ok
 # --------------------------------------------------------------------------
-# 1d
+# 1d, AB3AM4
 # --------------------------------------------------------------------------
-tag: write-1d
+tag: write-1d-34
 exec: pwd
 exec: cp ../td-templates-full/*.h .
 exec: cp ../td-templates-full/input.cp* .
 exec: rm -rf test.cp.wrt*
-exec: make -f ../td-templates-full/Makefile.0.s clean
-exec: make -f ../td-templates-full/Makefile.0.s 1d
+exec: make -f ../td-templates-full/Makefile.0.s.34 clean
+exec: make -f ../td-templates-full/Makefile.0.s.34 1d
 test: td-wslda-1d
 exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.wrt.txt
 test: test.cp.wrt_testsuite.ok
 diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
 
-tag: read-1d
+tag: read-1d-34
 exec: rm -rf test.cp.read*
-exec: make -f ../td-templates-full/Makefile.0.s 1d
+exec: make -f ../td-templates-full/Makefile.0.s.34 1d
 test: td-wslda-1d
 exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.read.txt
 test: test.cp.read_testsuite.ok
 diff: test.cp.read.cmp test.cp.wrt_uniform.ref
 
 # --------------------------------------------------------------------------
-# 2d
+# 2d, AB3AM4
 # --------------------------------------------------------------------------
-tag: write-2d
+tag: write-2d-34
 exec: pwd
 exec: cp ../td-templates-full/*.h .
 exec: cp ../td-templates-full/input.cp* .
 exec: rm -rf test.cp.wrt*
-exec: make -f ../td-templates-full/Makefile.0.s clean
-exec: make -f ../td-templates-full/Makefile.0.s 2d
+exec: make -f ../td-templates-full/Makefile.0.s.34 clean
+exec: make -f ../td-templates-full/Makefile.0.s.34 2d
 test: td-wslda-2d
 exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.wrt.txt
 test: test.cp.wrt_testsuite.ok
 diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
 
-tag: read-2d
+tag: read-2d-34
 exec: rm -rf test.cp.read*
-exec: make -f ../td-templates-full/Makefile.0.s 2d
+exec: make -f ../td-templates-full/Makefile.0.s.34 2d
 test: td-wslda-2d
 exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.read.txt
 test: test.cp.read_testsuite.ok
 diff: test.cp.read.cmp test.cp.wrt_uniform.ref
 
 # --------------------------------------------------------------------------
-# 3d
+# 3d, AB3AM4
 # --------------------------------------------------------------------------
-tag: write-3d
+tag: write-3d-34
 exec: pwd
 exec: cp ../td-templates-full/*.h .
 exec: cp ../td-templates-full/input.cp* .
 exec: rm -rf test.cp.wrt*
-exec: make -f ../td-templates-full/Makefile.0.s clean
-exec: make -f ../td-templates-full/Makefile.0.s 3d
+exec: make -f ../td-templates-full/Makefile.0.s.34 clean
+exec: make -f ../td-templates-full/Makefile.0.s.34 3d
 test: td-wslda-3d
 exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.wrt.txt
 test: test.cp.wrt_testsuite.ok
 diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
 
-tag: read-3d
+tag: read-3d-34
 exec: rm -rf test.cp.read*
-exec: make -f ../td-templates-full/Makefile.0.s 3d
+exec: make -f ../td-templates-full/Makefile.0.s.34 3d
+test: td-wslda-3d
+exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 1d, AB4AM5
+# --------------------------------------------------------------------------
+tag: write-1d-45
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.45 clean
+exec: make -f ../td-templates-full/Makefile.0.s.45 1d
+test: td-wslda-1d
+exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-1d-45
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.45 1d
+test: td-wslda-1d
+exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 2d, AB4AM5
+# --------------------------------------------------------------------------
+tag: write-2d-45
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.45 clean
+exec: make -f ../td-templates-full/Makefile.0.s.45 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-2d-45
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.45 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 3d, AB4AM5
+# --------------------------------------------------------------------------
+tag: write-3d-45
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.45 clean
+exec: make -f ../td-templates-full/Makefile.0.s.45 3d
+test: td-wslda-3d
+exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-3d-45
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.45 3d
+test: td-wslda-3d
+exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 1d, AB45M5
+# --------------------------------------------------------------------------
+tag: write-1d-55
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.55 clean
+exec: make -f ../td-templates-full/Makefile.0.s.55 1d
+test: td-wslda-1d
+exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-1d-55
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.55 1d
+test: td-wslda-1d
+exec: timeout 300 mpirun -np 8 ./td-wslda-1d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 2d, AB45M5
+# --------------------------------------------------------------------------
+tag: write-2d-55
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.55 clean
+exec: make -f ../td-templates-full/Makefile.0.s.55 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-2d-55
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.55 2d
+test: td-wslda-2d
+exec: timeout 300 mpirun -np 8 ./td-wslda-2d input.cp.read.txt
+test: test.cp.read_testsuite.ok
+diff: test.cp.read.cmp test.cp.wrt_uniform.ref
+
+# --------------------------------------------------------------------------
+# 3d, AB45M5
+# --------------------------------------------------------------------------
+tag: write-3d-55
+exec: pwd
+exec: cp ../td-templates-full/*.h .
+exec: cp ../td-templates-full/input.cp* .
+exec: rm -rf test.cp.wrt*
+exec: make -f ../td-templates-full/Makefile.0.s.55 clean
+exec: make -f ../td-templates-full/Makefile.0.s.55 3d
+test: td-wslda-3d
+exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.wrt.txt
+test: test.cp.wrt_testsuite.ok
+diff: test.cp.wrt.cmp test.cp.wrt_uniform.ref
+
+tag: read-3d-55
+exec: rm -rf test.cp.read*
+exec: make -f ../td-templates-full/Makefile.0.s.55 3d
 test: td-wslda-3d
 exec: timeout 300 mpirun -np 8 ./td-wslda-3d input.cp.read.txt
 test: test.cp.read_testsuite.ok

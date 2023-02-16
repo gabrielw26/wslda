@@ -18,11 +18,11 @@ WINTERPINC=$(WSLDADIR)lib/winterp/c/
 WINTERPSRC=$(WSLDADIR)lib/winterp/c/
 
 DEPS = pca_io.h pca_kernels.h pca_macro.h pca_settings.h pca_uniform.h pca_utils.h pca_derivative.h pca_edf.h pca_dens.h pca_logger.h \
-       ccpca_kernels.h ccpca_dens.h cpca_checkpoint.h \
+       ccpca_kernels.h ccpca_dens.h tdwslda_checkpoint.h \
        cpca_kernels.h cpca_derivative.h cpca_dens.h wslda_potdens.h \
-       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h \
+       wslda_reproducibility.h wslda_errors.h wslda_wavevectors.h tdwslda_static_vars.h jdb.h sldae_functional.h wslda_predefines_test.h tdwslda_ode_integrator.h \
        wslda_api_version.h ../VERSION.h
-NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h \
+NVCCDEPS = pca_macro.h pca_settings.h pca_uext.h pca_derivative.h pca_edf.h cpca_derivative.h wslda_cuda_utils.h tdwslda_functionals.h tdwslda_ode_integrator.h \
         reduce_many.h tdwslda_energy_generic.h
 
 WDATADEPS = wdata.h
@@ -116,6 +116,8 @@ ext: dirs \
      (BINDIR)solve-uniform \
      (BINDIR)interpolate-dataset
 
+mpitime: dirs mpitimeexe
+
 d1d: $(OBJS1D) $(OBJS) $(NVCCOBJS1D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-1d $(CFLAGS) $^ $(LIBS)
@@ -127,6 +129,12 @@ d2d: $(OBJS2D) $(OBJS) $(NVCCOBJS2D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WI
 d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $^ $(LIBS)
+
+mpitimeexe: $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
+	$(CXX) -o $(BINDIR)mpitime $(CFLAGS) $(LIBS) -lm $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
+
+$(OBJDIR)mpitime.o: $(SRCDIR)mpitime.c $(DEPSLOCAL) $(DEPS)
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 (BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
@@ -143,10 +151,13 @@ $(OBJDIR)cpca.o: $(SRCDIR)cpca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 $(OBJDIR)pca.o: $(SRCDIR)pca.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS) logger.h
 	$(CXX) $(CFLAGS) -DCODEDIM=3 -c -o $@ $<
 
-$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+$(OBJDIR)pca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+	$(CXX) $(CFLAGS) -DCODEDIM=3 -c -o $@ $<
+
+$(OBJDIR)cpca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=2 -c -o $@ $<
 
-$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)cpca_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
+$(OBJDIR)ccpca_checkpoint.o: $(SRCDIR)tdwslda_checkpoint.c $(DEPS) $(DEPSLOCAL) $(WDATADEPS) $(WDERIVDEPS)
 	$(CXX) $(CFLAGS) -DCODEDIM=1 -c -o $@ $<
 
 $(OBJDIR)wslda_reproducibility.o: $(SRCDIR)wslda_reproducibility.c $(SRCDIR)wslda_reproducibility.h $(SRCDIR)pca_settings.h $(DEPSLOCAL) problem-definition.h logger.h
@@ -211,6 +222,7 @@ clean:
 	rm -f $(BINDIR)td-wslda-2d
 	rm -f $(BINDIR)td-wslda-3d
 	rm -f $(BINDIR)solve-uniform
+	rm -f $(BINDIR)mpitime
 
 ver:
 	$(CXX) --version

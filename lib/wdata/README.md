@@ -46,6 +46,7 @@ git subtree pull --prefix python https://github.com/forbes-group/wdata branch/de
 ```  
 
 Follow instructions from [this repo](https://hg.iscimath.org/forbes-group/wdata) to learn how to use this module. 
+The package can be found [here](https://pypi.org/project/wdata/).
 
 # Developers
 * Gabriel Wlazłowski, Warsaw University of Technology

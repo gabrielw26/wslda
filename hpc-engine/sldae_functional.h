@@ -60,7 +60,7 @@
 
 #include "pca_settings.h"
 // Select coefficients
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
 #include "sldae_parameters_A1.h"
 #else
 // default one

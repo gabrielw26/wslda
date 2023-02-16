@@ -45,6 +45,13 @@ typedef thrust::complex<double> Complex;
 // Functionals
 #include "tdwslda_functionals.h"
 
+// ode integrator
+#ifdef HIPMODE
+#include "hip/tdwslda_ode_integrator.hpp"
+#else
+#include "tdwslda_ode_integrator.h"
+#endif
+
 // =======================================================================================
 // ================================ compute_potentials ===================================
 // =======================================================================================
@@ -789,183 +796,6 @@ extern "C" int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex
             if( cudaMemcpy( overlap_im+iwf , workarea+0 , sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -334;
         }
     }
-    return 0;
-}
-
-// =======================================================================================
-// ====================================== amb_step1 ======================================
-// =======================================================================================
-__global__ void kernel_amb_step1(size_t n, Complex *ykm1,
-                         Complex *fkm1, Complex *fkm2, Complex *fkm3)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex _ykm1, _fkm1, _fkm2, _fkm3;
-    Complex dti;
-
-    if(ixyz<n*2*NX)
-    {
-        // read data
-        _ykm1=ykm1[ixyz];
-        _fkm1=fkm1[ixyz];
-        _fkm2=fkm2[ixyz];
-        _fkm3=fkm3[ixyz];
-
-        dti = Complex(0.0, -1.0*dc_dt);
-
-        // save data
-        ykm1[ixyz] = _ykm1 + dti*(_fkm1*(23./12.) - _fkm2*(16./12.) + _fkm3*(5./12.));
-        fkm3[ixyz] = _ykm1 + dti*(_fkm1*(19./24.) - _fkm2*( 5./24.) + _fkm3*(1./24.));
-
-    }
-}
-
-/**
- * Functions perform step 1 from intgration.pdf
- * @param n  number of wave-functions (u,v pairs) to process
- * @param ykm1 array y_{k-1} of size 2*n*NX
- * @param fkm1 array f_{k-1} of size 2*n*NX
- * @param fkm2 array f_{k-2} of size 2*n*NX
- * @param fkm3 array f_{k-3} of size 2*n*NX
- * @return 0 - OK, otherwise ERROR
- * */
-extern "C" int amb_step1(int n, cufftDoubleComplex *ykm1,
-                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3,
-                         int nthreads)
-{
-    // number of blocks
-    int nblocks = (int)ceil((float)2*NX*n/nthreads);
-    kernel_amb_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3);
-
-    return 0;
-}
-
-// =======================================================================================
-// ====================================== amb45_step1 ======================================
-// =======================================================================================
-__global__ void kernel_amb45_step1(size_t n, Complex *ykm1,
-                         Complex *fkm1, Complex *fkm2, Complex *fkm3, Complex *fkm4)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex _ykm1, _fkm1, _fkm2, _fkm3, _fkm4;
-    Complex dti;
-
-    if(ixyz<n*2*NX)
-    {
-        // read data
-        _ykm1=ykm1[ixyz];
-        _fkm1=fkm1[ixyz];
-        _fkm2=fkm2[ixyz];
-        _fkm3=fkm3[ixyz];
-        _fkm4=fkm4[ixyz];
-
-        dti = Complex(0.0, -1.0*dc_dt);
-
-        // save data
-        ykm1[ixyz] = _ykm1 + dti*(_fkm1*(55./24.  ) - _fkm2*(59./24.  ) + _fkm3*(37./24.  ) - _fkm4*(9./24.  ));
-        fkm4[ixyz] = _ykm1 + dti*(_fkm1*(646./720.) - _fkm2*(264./720.) + _fkm3*(106./720.) - _fkm4*(19./720.));
-    }
-}
-
-/**
- * Functions perform step 1 from intgration.pdf for algorithm AB4AM5
- * @param n  number of wave-functions (u,v pairs) to process
- * @param ykm1 array y_{k-1} of size 2*n*NX
- * @param fkm1 array f_{k-1} of size 2*n*NX
- * @param fkm2 array f_{k-2} of size 2*n*NX
- * @param fkm3 array f_{k-3} of size 2*n*NX
- * @param fkm4 array f_{k-4} of size 2*n*NX
- * @return 0 - OK, otherwise ERROR
- * */
-extern "C" int amb45_step1(int n, cufftDoubleComplex *ykm1,
-                         cufftDoubleComplex *fkm1, cufftDoubleComplex *fkm2, cufftDoubleComplex *fkm3, cufftDoubleComplex *fkm4,
-                         int nthreads)
-{
-    // number of blocks
-    int nblocks = (int)ceil((float)2*NX*n/nthreads);
-    kernel_amb45_step1<<<nblocks, nthreads>>>(n, (Complex *)ykm1, (Complex *)fkm1, (Complex *)fkm2, (Complex *)fkm3, (Complex *)fkm4);
-
-    return 0;
-}
-
-// =======================================================================================
-// ====================================== amb_step4 ======================================
-// =======================================================================================
-__global__ void kernel_amb_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm3)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex _ykm1, _fkm3;
-    Complex dti;
-
-    if(ixyz<n*2*NX)
-    {
-        // read data
-        _ykm1=ykm1_in[ixyz];
-        _fkm3=fkm3[ixyz];
-
-        dti = Complex(0.0, -1.0*dc_dt);
-
-        // save data
-        ykm1_out[ixyz] = dti*_ykm1*(9./24.) + _fkm3;
-    }
-}
-
-/**
- * Functions perform step 4 from intgration.pdf
- * @param n  number of wave-functions (u,v pairs) to process
- * @param ykm1_in array y_{k-1} of size 2*n*NX (INPUT)
- * @param ykm1_out array y_{k-1} of size 2*n*NX (OUTPUT)
- * @param fkm3 array f_{k-3} of size 2*n*NX
- * @return 0 - OK, otherwise ERROR
- * */
-extern "C" int amb_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
-                         cufftDoubleComplex *fkm3,
-                         int nthreads)
-{
-    // number of blocks
-    int nblocks = (int)ceil((float)2*NX*n/nthreads);
-    kernel_amb_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm3);
-
-    return 0;
-}
-
-// =======================================================================================
-// ====================================== amb45_step4 ======================================
-// =======================================================================================
-__global__ void kernel_amb45_step4(size_t n, Complex *ykm1_in, Complex *ykm1_out, Complex *fkm4)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex _ykm1, _fkm4;
-    Complex dti;
-
-    if(ixyz<n*2*NX)
-    {
-        // read data
-        _ykm1=ykm1_in[ixyz];
-        _fkm4=fkm4[ixyz];
-
-        dti = Complex(0.0, -1.0*dc_dt);
-
-        // save data
-        ykm1_out[ixyz] = dti*_ykm1*(251./720.) + _fkm4;
-    }
-}
-
-/**
- * Functions perform step 4 from intgration.pdf for algorithm AB4AM5
- * @param n  number of wave-functions (u,v pairs) to process
- * @param ykm1_in array y_{k-1} of size 2*n*NX (INPUT)
- * @param ykm1_out array y_{k-1} of size 2*n*NX (OUTPUT)
- * @param fkm4 array f_{k-3} of size 2*n*NX
- * @return 0 - OK, otherwise ERROR
- * */
-extern "C" int amb45_step4(int n, cufftDoubleComplex *ykm1_in, cufftDoubleComplex *ykm1_out,
-                         cufftDoubleComplex *fkm4,
-                         int nthreads)
-{
-    // number of blocks
-    int nblocks = (int)ceil((float)2*NX*n/nthreads);
-    kernel_amb45_step4<<<nblocks, nthreads>>>(n, (Complex *)ykm1_in, (Complex *)ykm1_out, (Complex *)fkm4);
-
     return 0;
 }
 

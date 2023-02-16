@@ -42,7 +42,25 @@
 
 // Integration scheme AB - predictor, AM - correctior, number specify order
 // #define ITEGRATION_SCHEME AB3AM4
+#ifndef INTEGRATION_SCHEME
 #define INTEGRATION_SCHEME AB4AM5
+#endif
+
+// ===================================================================================
+// ================================= LEGACY ==========================================
+// ===================================================================================
+// Relted to change starting from version 13.10.2022
+#ifdef SLDAE_FORCE_A1
+#define SLDA_FORCE_A1
+#endif
+
+#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#endif
+
+#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#endif
 
 // ===================================================================================
 // =========================== PARAMETERS OF EDF =====================================
@@ -57,39 +75,23 @@
 // if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
 #if FUNCTIONAL==BDG
 #define BDG_MODE
-#define FAST_CONST_EFFECTIVE_MASS_MODE
+#define SLDA_FORCE_A1
+#endif
+
+#if FUNCTIONAL==SLDA
+#define SLDA_FORCE_A1
+#endif
+
+#ifdef SLDA_FORCE_A1
 #define A0 1.000
 #define A1 0.0
 #define A2 0.0
-#endif
-
-#if FUNCTIONAL==ASLDA
-// effective mass - not 1.0 then current corrections are needed!
-#define CURRENT_CORRECTIONS
+#define FAST_CONST_EFFECTIVE_MASS_MODE
+#else
 #define A0 1.094
 #define A1 0.156
 #define A2 -0.532
-#endif
-
-#if FUNCTIONAL==SLDAE
-// effective mass - not 1.0 then current corrections are needed!
 #define CURRENT_CORRECTIONS
-#endif
-
-
-#if FUNCTIONAL==SLDA
-// effective mass - equal 1.0 then no current corrections
-// activate this flag to skip computation of gradients of wf - significant spped up
-#define FAST_CONST_EFFECTIVE_MASS_MODE
-#define A0 1.000
-#define A1 0.0
-#define A2 0.0
-#endif
-
-#ifndef A0
-#define A0 1.000
-#define A1 0.0
-#define A2 0.0
 #endif
 
 // normal part
@@ -97,14 +99,14 @@
 #define G1 0.642
 
 // regularization function parameters
-#ifdef ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
-#define P_NMIN ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#ifdef SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
+#define P_NMIN SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY
 #else
 #define P_NMIN 1.0e-7
 #endif
 
-#ifdef ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
-#define P_NMAX ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#ifdef SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
+#define P_NMAX SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY
 #else
 #define P_NMAX 1.0e-5
 #endif
@@ -188,12 +190,13 @@
 
 #define AB3AM4 34
 #define AB4AM5 45
+#define AB5AM5 55
 
 #ifdef ENABLE_MODIFY_POTENTIALS
 #undef BDG_MODE
 #endif
 
-#ifdef SLDAE_FORCE_A1
+#ifdef SLDA_FORCE_A1
 #define FAST_CONST_EFFECTIVE_MASS_MODE
 #endif 
 
@@ -218,6 +221,8 @@
     #define EXCHANGE_SIZE   7
     #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   3
+    #elif FUNCTIONAL==SLDAE
+    #define EXCHANGE_SIZE   3
     #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
     #else
@@ -235,6 +240,8 @@
     #define EXCHANGE_SIZE   12
     #elif FUNCTIONAL==SLDA
     #define EXCHANGE_SIZE   8
+    #elif FUNCTIONAL==SLDAE
+    #define EXCHANGE_SIZE   8
     #elif FUNCTIONAL==BDG
     #define EXCHANGE_SIZE   2
     #else
@@ -251,6 +258,13 @@
 #define PZHEEVR 1
 #define PZHEEVD 2
 #define ELPA 3
+
+#ifdef ELPA_USE_GPU_NVIDIA
+#define ELPA_USE_GPU
+#endif
+#ifdef ELPA_USE_GPU_AMD
+#define ELPA_USE_GPU
+#endif
 
 #define SPHERICAL_CUTOFF 88
 #define CUBIC_CUTOFF 89
