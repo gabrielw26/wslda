@@ -126,9 +126,11 @@ metadata_t *input = &md; // additional handler;
 
 // Taken from:
 // https://stackoverflow.com/questions/779875/what-function-is-to-replace-a-substring-from-a-string-in-c
-void replace_str(char *str,char *org,char *rep)
+int replace_str(char *str,char *org,char *rep)
 {
     char *ToRep = strstr(str,org);
+    if(ToRep==NULL) return 0;
+
     char *Rest = (char*)malloc(strlen(ToRep));
     strcpy(Rest,((ToRep)+strlen(org)));
 
@@ -136,7 +138,10 @@ void replace_str(char *str,char *org,char *rep)
     strcat(ToRep,Rest);
 
     free(Rest);
+    return 1;
 }
+
+
 
 // Checks if file exists
 static int _exists(const char *filename) 
@@ -180,10 +185,28 @@ int parse_input_file(char * file_name)
         tag[0]='#'; tag[1]='\0';
         sscanf (s,"%s %*s",tag);
 
-        // Loop over known tags;
-        if(strcmp (tag,"#") == 0)
+
+        // if commment - go to next line
+        if(strcmp (tag,"#") == 0) // example: # text
             continue;
-        else if (strcmp (tag,"inittype") == 0)
+        if(tag[0]=='#')           // example: #text
+            continue;
+
+
+        // remove unnecessary characters
+        // printf("B: %s", s); // for tests
+        replace_str(s,"="," "); // outprefix=test -> outprefix test
+        replace_str(s,";"," "); // outprefix test; -> outprefix test
+        for(i=0; i<10; i++) if(replace_str(s,"\""," ")==0) break; // outprefix "test" -> outprefix test // max 10 loops
+        for(i=0; i<100; i++) if(replace_str(s,"[ ","[")==0) break; // params[ 0 ] -> params[0 ] // max 100 loops
+        for(i=0; i<100; i++) if(replace_str(s," ]","]")==0) break; // params[0 ] -> params[0] // max 100 loops
+        replace_str(s,"[",""); // params[0] -> params0]
+        replace_str(s,"]",""); // params[0] -> params0
+        // printf("A: %s", s); // for tests
+        sscanf (s,"%s %*s",tag);
+
+        // Loop over known tags;
+        if         (strcmp (tag,"inittype") == 0)
             sscanf (s,"%s %d %*s",tag,&md.inittype);
         else if (strcmp (tag,"measurements") == 0)
             sscanf (s,"%s %d %*s",tag,&md.measurements);
