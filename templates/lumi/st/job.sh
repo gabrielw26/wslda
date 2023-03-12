@@ -9,7 +9,7 @@
 #SBATCH --time=02:15:00             # <--- SET: Walltime HH:MM:SS
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=your@email   # <--- SET: if you want to get e-mail notification
-#SBATCH --partition=pilot 
+#SBATCH --partition=standard-g
 #SBATCH --account=project_465000150 
 #SBATCH --cpus-per-task=1        # Do not modify
 #SBATCH --ntasks-per-node=8      # Do not modify
@@ -35,7 +35,6 @@
 # Set environment
 # export MPICH_GPU_SUPPORT_ENABLED=1 
 source ./env.sh
-
 
 # Execute the code
 #        <--- NOTE: MUST be the same as ntasks !!!

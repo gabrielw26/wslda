@@ -257,7 +257,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 //         // save potential to global memory
 //         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
 //         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential 
-//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
+//         h_potentials.delta[ixyz]=...;  // <-- pairing field
 //         ...
     }
 }
