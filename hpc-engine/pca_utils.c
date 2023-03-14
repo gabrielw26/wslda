@@ -109,7 +109,6 @@ GPUS_PER_NODE, // gpuspernode
 0.0, // aSLDAe
 0, // pccrSLDAe
 0.0, // sclgth
-0, // gpuDevice
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -424,9 +423,6 @@ int parse_input_file(char * file_name)
             md.aSLDAe=md.sclgth;
             md.aBdG=md.sclgth;
         }
-        // DEVICE SETTINGS
-        else if(strcmp(tag, "device") == 0)
-            sscanf (s,"%s %d %*s",tag,&md.gpuDevice);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
