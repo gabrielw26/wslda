@@ -34,7 +34,7 @@ if __name__ == '__main__':
         for d in folders:
             for f in ftorm:
                 cmd = "rm %s/%s/%s" % (WSLDA,d,f)
-                print cmd
+                print(cmd)
                 os.system(cmd)
         
         print("Done.")
@@ -44,18 +44,18 @@ if __name__ == '__main__':
     # Copy templates
     for ss in ['st-project-template','st-testcase-uniform']:
         cmd = "cp -r %s/templates/%s/st/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
-        print cmd
+        print(cmd)
         os.system(cmd)
         cmd = "cp %s/templates/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
-        print cmd
+        print(cmd)
         os.system(cmd)
         
     for ss in ['td-project-template','td-testcase-uniform']:
         cmd = "cp -r %s/templates/%s/td/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
-        print cmd
+        print(cmd)
         os.system(cmd)
         cmd = "cp %s/templates/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
-        print cmd
+        print(cmd)
         os.system(cmd)
         
     print("Done.")

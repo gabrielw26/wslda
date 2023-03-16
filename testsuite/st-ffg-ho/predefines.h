@@ -22,7 +22,7 @@
  *  - SLDAE:
  *      for simulating Fermi gas for an arbitrary value of akF,
  *      for small and negative akF the functional is equivalent to BDG, while for large akF is equivalent to ASLDA.
- *      To speed-up computation, you can use SLDAE_FORCE_A1 option.
+ *      To speed-up computation, you can use SLDA_FORCE_A1 option.
  *      It sets effective mass=1, which renders the current dependence of the functional. 
  *      For more info see: https://arxiv.org/abs/2201.07626
  *  - BDG:
@@ -43,7 +43,7 @@
  * Meaningful only in case SLDAE.
  * Sets effective mass to be equal, and speeds-up computation (approximately by a factor of two)
  * */
-// #define SLDAE_FORCE_A1
+// #define SLDA_FORCE_A1
 
 /**
  * activate this if you know that Hamiltonian matrix is real, 
@@ -75,15 +75,15 @@
 /**
  * Meaningful only in case of ASLDA and SLDAE.
  * Parameters defining stabilization procedure of ASLDA functional. 
- * For regions with density smaller than ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
+ * For regions with density smaller than SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 
  * contribution from current term j^2/2n is assumed to be zero. 
- * For regions with density above ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
+ * For regions with density above SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY 
  * the contribution is assumed to be intact by stabilization procedure. 
  * For more info see: 
  * https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Functionals#stabilization-of-aslda-functional
  * */
-#define ASLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
-#define ASLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
+#define SLDA_STABILIZATION_RETAIN_ABOVE_DENSITY  1.0e-5
+#define SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY 1.0e-7
 
 /**
  * Machine file. 

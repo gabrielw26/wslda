@@ -16,7 +16,7 @@ BINDIR=./
 # C compiler flags
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/ -DTARGET_MACHINE=TITAN
 # CUDA compiler flags
-NVCCFLAGS = -arch sm_30 -O3 
+NVCCFLAGS = -allow-unsupported-compiler -O3
 # prescription how to link with: FFTW, CUDA
 LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -I/usr/local/cuda/include/ -lfftw3 -lstdc++ -lm
 

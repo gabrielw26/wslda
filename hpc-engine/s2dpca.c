@@ -113,6 +113,7 @@ void process_params(double *params, double *kF, double *mu, size_t extra_data_si
 double referencekF(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *extra_data);
 void modify_potentials(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data);
+void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *params, size_t extra_data_size, void *extra_data);
 size_t get_extra_data_size(double *params);
 int load_extra_data(size_t size, void *extra_data, double *params);
 
@@ -152,6 +153,9 @@ double aBdG;
 
 #define printf wprintf
 #include "logger.h"
+#define API_LOGGER
+#include "wslda_api_version.h"
+#undef API_LOGGER
 
 typedef char * string;
 
@@ -176,7 +180,7 @@ int main( int argc , char ** argv )
     double Lz_a_old=0.0, Lz_b_old=0.0, Lz_old=0.0;
     double S=0.0, S_old=0.0; // entropy
 
-    double eF_a, eF_b, eF, Effg, kF;
+    double eF_a, eF_b, eF, Effg=0.0, kF=0.0;
     double mu[2]; // chemical potential
     double ec; // energy cut-off
     double rt_zheev, rt_dens, rt_pot, rt_other, rt_me, rt_redistrib, rt_tot=0.0; // run time
@@ -647,7 +651,8 @@ int main( int argc , char ** argv )
         kF=pow(3.0*M_PI*M_PI*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b), 1.0/3.0);
         eF_a=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_a, 2.0/3.0) / 2.0;
         eF_b=pow(6.0*M_PI*M_PI*__md_pca_uniform.n0_b, 2.0/3.0) / 2.0;
-        Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        // Effg = 0.6*__md_pca_uniform.n0_a*eF_a*LXYZ + 0.6*__md_pca_uniform.n0_b*eF_b*LXYZ;
+        Effg = 0.6*(__md_pca_uniform.n0_a+__md_pca_uniform.n0_b)*eF*LXYZ;
 
         // set global variables
         dc_mu_a=__md_pca_uniform.mu_a;
@@ -865,14 +870,17 @@ int main( int argc , char ** argv )
 
     // NOTE settings some variables
 #ifndef UNIFORM_TEST_MODE
-    if(md.referencekF>0.0) kF = md.referencekF;
+    if(kF==0.0 && md.referencekF>0.0) kF = md.referencekF;
     eF = 0.5*kF*kF;
-    Effg = 0.6 * (md.Na+md.Nb) * eF;
+    double __ttmpnpart[2]={md.Na, md.Nb};
+    for(i=0; i<MAX_USER_PARAMS; i++) dc_params[i]=md.params[i];
+    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+    process_params(dc_params, &kF, mu, extra_data_size, extra_data);
+    dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
+    if(Effg==0.0) Effg = energy_unit(kF, mu, __ttmpnpart, dc_params, extra_data_size, extra_data);
     beta = 1.0 / (md.temperature * eF);
     dc_ec = md.ec;
 #endif
-
-    mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
 
     wdata_metadata wdmd;
     file_operation( create_wdata_metadata(&md, CODEDIM, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
@@ -1027,24 +1035,22 @@ int main( int argc , char ** argv )
     if(iam==0) wprintf("# ELPA: SETTINGS SOLVER: `%s`\n", STRINGIZE(ELPA_USE_SOLVER));
     if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 
+    int telpa_gpu=0;
 #ifdef ELPA_USE_GPU
     if(iam==0) wprintf("# ELPA: ACTIVATING GPUs\n");
-    
+    telpa_gpu=1;
+#endif
+
 #if ELPA_API>=20210430
-    elpa_set(handle, "nvidia-gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#ifdef ELPA_USE_GPU_AMD
+    elpa_set(handle, "amd-gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #else
-    elpa_set(handle, "gpu", 1, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+    elpa_set(handle, "nvidia-gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
+#endif
+#else
+    elpa_set(handle, "gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #endif
     
-#else
-    
-#if ELPA_API>=20210430
-    elpa_set(handle, "nvidia-gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#else
-    elpa_set(handle, "gpu", 0, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
-#endif
-    
-#endif
 #ifdef MATRIX_IS_REAL
     elpa_set(handle, "real_kernel", ELPA_USE_REAL_KERNEL, &info);
     if(iam==0) wprintf("# ELPA: SETTINGS REAL KERNEL: `%s`\n", STRINGIZE(ELPA_USE_REAL_KERNEL));
@@ -1465,6 +1471,7 @@ int main( int argc , char ** argv )
 
         // ------------------ update chemical potentials ------------------
         b_t();
+        if(iam==0) wprintf("# REFERENCE VALUES: kF=%f, eF=%f\n", kF, eF);
         if(iam==0) wprintf("# MUCHANGE FROM: mu_a/eF=%16.8g  mu_b/eF=%16.8g\n", dc_mu_a/eF, dc_mu_b/eF);
         npart[SPINA]=0.0; npart[SPINB]=0.0;
         for(ixyz=0; ixyz<BLOCKLENGTH; ixyz++) {npart[SPINA]+=densall.rho_a[ixyz]; npart[SPINB]+=densall.rho_b[ixyz];}
@@ -1567,6 +1574,7 @@ int main( int argc , char ** argv )
 
         // ------------------------ energy ----------------------
         cpu_exec( compute_energy(it, densall, potsall, energy, npart) );
+        modify_energies(it, densall, potsall, energy, dc_params, extra_data_size, extra_data); // API call
 
         // ---------------------- entropy -----------------------
         if(iam==0) wprintf("# ENTROPY [T/eF=%16.8g]: it=%d\n", 1.0/(beta*eF), it);
@@ -1605,8 +1613,9 @@ int main( int argc , char ** argv )
         if(iam==0) wprintf("%9s: NEW=%16.8g OLD=%16.8g DIFF=%16.8g CONVSTATUS=%6s NPARTCONV=%16.8g\n",
             "SPINB", npart[SPINB], npart_old[SPINB], (npart[SPINB]-npart_old[SPINB]), convstatus[is_converged_local], nparttest);
 
-        if(iam==0) wprintf("# CONVERGENCE REPORT ENERGY: it=%d\n", it);
-        Effg = 0.6 * (npart[SPINA]+npart[SPINB]) * eF;
+        mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
+        Effg = energy_unit(kF, mu, npart, dc_params, extra_data_size, extra_data);
+        if(iam==0) wprintf("# CONVERGENCE REPORT ENERGY: it=%d [in Effg=%f units]\n", it, Effg);
         E_tot=0.0; E_tot_old=0.0;
         for(i=0; i<ENERGYITEMS; i++)
         {

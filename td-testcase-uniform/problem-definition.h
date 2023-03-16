@@ -1,3 +1,24 @@
+// // Here are useful functions that can speed-up coding of your problem
+// #include "../extensions/wslda_utils.h"
+
+/**
+ * THIS FUNCTION IS CALLED AT THE BEGINNING OF SIMULATION.
+ * After loading params array from input file, the parameters are processed by this routine.
+ * @param params array of size MAX_USER_PARAMS with parameters from input file.
+ * @param kF typical Fermi momentum scale of the problem.
+ *           kF=referencekF if the referencekF tag is indicated in the input file,
+ *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center.
+ *           Note that it is passed via a pointer, to access/modify it use kF[0] or (*kF).
+ * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB].
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * For more info see: Wiki->User defined parameters
+ * */
+extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
+{
+    // PROCESS INPUT FILE PARAMETERS
+
+}
 
 /** 
  * EXTERNAL POTENTIAL V_ext
@@ -87,24 +108,6 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
     return v_ext; 
 }
 
-/** 
- * THIS FUNCTION IS CALLED AT THE BEGINNING OF SIMULATION.
- * After loading params array from input file, the parameters are processed by this routine.
- * @param params array of size MAX_USER_PARAMS with parameters from input file. 
- * @param kF typical Fermi momentum scale of the problem. 
- *           kF=referencekF if the referencekF tag is indicated in the input file, 
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center.
- *           Note that it is passed via a pointer, to access/modify it use kF[0] or (*kF).
- * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB]. 
- * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
- * @param extra_data optional set of data uploaded by load_extra_data()
- * */
-extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
-{
-    // PROCESS INPUT FILE PARAMETERS 
-
-}
-
 /**
  * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
  * IT IS CALLED ONLY IF ENABLE_MODIFY_POTENTIALS IS DEFINED (in predefines.h)
@@ -114,6 +117,7 @@ extern "C" void process_params(double *params, double *kF, double *mu, size_t ex
  *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
  * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
  * Global variabls deliver by tdwslda_functionals_framework_enable.h are:
+ * GLOBAL VARIABLES ACCESSIBLE WITHIN THIS ROUTINE
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
@@ -133,6 +137,42 @@ __global__ void modify_potentials(int it, wslda_density h_densities, wslda_poten
         // and similarly for other potentials
         // ... below you can modify them your wish ...
         // 
+    }
+}
+#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
+
+/**
+ * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
+ * IT IS CALLED ONLY IF ENABLE_MODIFY_ENERGIES IS DEFINED (in predefines.h)
+ * User can modify arbitrarily expression for energy comptation
+ * @param it iteration number
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
+ * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ *                    NOTE: potential structure is processed by modify_potentials(...) function before call of this function.
+ * @param energy these entries user can modify.
+ *                    Contributions are stored in energy[ETAG], where TAG in {EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT}
+ * GLOBAL VARIABLES ACCESSIBLE WITHIN THIS ROUTINE
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * */
+#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
+__global__ void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix, iy, iz, i;
+
+    if(ixyz<NUMBER_ELEMENT)
+    {
+        // decode_ixyz2ixiyiz(ixyz,ix,iy,iz, i);
+        // // Now ix, iy, iz keeps lattice coordinate.
+
+        // compute your contribution to the energy
+        // double myE_contrib += (...)*VOLUME_ELEMENT;
+
+        // Add contribution to desired tag, for example
+        // energy[EPOT*NUMBER_ELEMENT+ixyz]+=myE_contrib;
     }
 }
 #include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
@@ -191,6 +231,10 @@ __device__ double scattering_length(int ix, int iy, int iz, int it, double *para
 /**
  * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
  * @see hpc-engine/tdwslda_functionals.h for more details
+ * GLOBAL VARIABLES ACCESSIBLE WITHIN ROUTINES BELOW
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
 
 #if FUNCTIONAL==CUSTOMEDF
@@ -218,7 +262,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 //         // save potential to global memory
 //         h_potentials.V_a[ixyz]=...;  // <-- mean field + external potential
 //         h_potentials.V_b[ixyz]=...;  // <-- mean field + external potential 
-//         h_potentials.delta[ixyz]=...;  // <-- mean field + external potential
+//         h_potentials.delta[ixyz]=...;  // <-- pairing field
 //         ...
     }
 }

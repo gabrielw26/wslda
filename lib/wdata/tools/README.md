@@ -64,3 +64,30 @@ With this tool, you can increase data dimensionality of an existing data set. Th
 # WRITING `testup.wtxt`
 # DONE.
 ```
+# wdata-merge
+With this tool, you can merge a few w-data sets into one.
+The current version provides only basic functionality.
+```
+[gabrielw@wutdell st-testcase-uniform]$ wdata-merge test16-mrg test16 test16-2
+# WDATA SETS MERGER
+# WORKING WITH: test16.wtxt...
+#       ADDING CYCLE 0->0 [time=-1.000000].
+#       ADDING CYCLE 1->1 [time=0.000000].
+#       ADDING CYCLE 2->2 [time=1.000000].
+#       ADDING CYCLE 3->3 [time=2.000000].
+#       ADDING CYCLE 4->4 [time=3.000000].
+#       ADDING CYCLE 5->5 [time=4.000000].
+#       ADDING CYCLE 6->6 [time=5.000000].
+#       ADDING CYCLE 7->7 [time=6.000000].
+#       ADDING CYCLE 8->8 [time=7.000000].
+#       ADDING CYCLE 9->9 [time=8.000000].
+#       ADDING CYCLE 10->10 [time=9.000000].
+# WORKING WITH: test16-2.wtxt...
+#       ADDING CYCLE 5->11 [time=10.000000].
+#       ADDING CYCLE 6->12 [time=11.000000].
+#       ADDING CYCLE 7->13 [time=12.000000].
+#       ADDING CYCLE 8->14 [time=13.000000].
+#       ADDING CYCLE 9->15 [time=14.000000].
+# WRITING NEW METADAFILE: `test16-mrg.wtxt`
+# DONE.
+```
