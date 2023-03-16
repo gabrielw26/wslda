@@ -142,8 +142,6 @@ typedef struct
     double sclgth; // scattering length in units of lattice spacing
                    // meaningful only for FUNCTIONAL=BDG,SLDAE
                    // in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
-    // DEVICE SETTINGS
-    int gpuDevice;   // gpu machine number on which the program will be executed
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat

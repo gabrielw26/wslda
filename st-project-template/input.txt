@@ -6,11 +6,12 @@
 # Data flow: [Read params from input file] -> [execute process_params( )] -> [pass params to functions]
 #
 # params0                 0.0 # value of the params[0]
-# params1                 0.0 # value of the params[1]
+# params[1]               0.0 # value of the params[1]
+# params[2]     =        0.0; # value of the params[2]
 # ... and so on ...
 # ... if you need pass string parameter...
 # strings0           aaa # accessible via (global) variable strings[0]
-# strings1           bbb # accessible via (global) variable strings[1]
+# strings[1]   =    "bbb"; # accessible via (global) variable strings[1]
 # ... and so on ...
 
 # ------------------- INITIALIZATION ------------------

@@ -5,6 +5,7 @@
 * New API_VERSION=20221120.
 * Minor bug fixes related to the stability, improved database of test and templates.
 * User can select integration scheme for time-dependent problems via predefines.h
+* Improved parser in the input file
 
 # 2022.08.27
 * Porting code to [HIP](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Converting%20the%20toolkit%20to%20HIP).

@@ -1,6 +1,5 @@
-# LOAD BEFORE COMPILATION
-# 
-# module load cuda/9.0
+# LOAD MODULES BEFORE COMPILATION
+# source env.sh
 
 # COMPILERS
 CXX=mpicc
