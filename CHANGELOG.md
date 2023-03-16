@@ -1,11 +1,11 @@
-# 2022.xx.xx
+# 2022.03.16
 * Optimization of the HIP version of the code.
 * The td codes can boost the performance by exploiting GPU-aware MPI.
 * Performance improvement of SLDAE functional.
 * New API_VERSION=20221120.
 * Minor bug fixes related to the stability, improved database of test and templates.
-* User can select integration scheme for time-dependent problems via predefines.h
-* Improved parser in the input file
+* User can select integration scheme for time-dependent problems via `predefines.h`
+* Improved parser of the input file
 
 # 2022.08.27
 * Porting code to [HIP](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Converting%20the%20toolkit%20to%20HIP).
