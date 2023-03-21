@@ -1,6 +1,8 @@
 #!/bin/bash
-export CC="cc -std=gnu99"
-export MPICPP="cc -lstdc++"
+export CC="gcc -std=gnu99"
+export MPICPP="mpic++ -std=gnu99"
+# export CC="cc -std=gnu99"
+# export MPICPP="cc -lstdc++"
 
 echo "Installing libs..."
 
