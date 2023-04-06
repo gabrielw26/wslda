@@ -1,7 +1,7 @@
 
 # COMPILER
 CXX=cc
-PYTHON=python
+PYTHON=python3
 
 # DIRECTORY SETTINGS 
 # W-SLDA installation folder (for read-only)

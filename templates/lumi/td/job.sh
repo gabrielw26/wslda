@@ -13,6 +13,7 @@
 #SBATCH --account=project_465000307 
 #SBATCH --cpus-per-task=1        # Do not modify
 #SBATCH --ntasks-per-node=8      # Do not modify
+#SBATCH --exclude=nid005917
 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
