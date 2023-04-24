@@ -1662,27 +1662,10 @@ int main( int argc , char ** argv )
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
 #endif
 
-        // checkpoint - only by iam==0
-        if(md.checkpoint && iam==0)
-        {
-            // prepare data info for writing
-            double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
-            // write checkpoint
-            file_operation(
-                wslda_st_write_checkpoint(CODEDIM, it, 11, twrt_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
-            );
-        }
-
-        rt_other+=e_t(0);
-
-        // ------------------ timing------------------
-        rt_tot=rt_zheev+rt_dens+rt_pot+rt_other+rt_me+rt_redistrib;
-        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_diag=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
-            rt_tot, rt_zheev, rt_zheev/rt_tot*100., rt_dens, rt_dens/rt_tot*100., rt_pot, rt_pot/rt_tot*100., rt_me, rt_me/rt_tot*100., rt_redistrib, rt_redistrib/rt_tot*100., rt_other, rt_other/rt_tot*100.);
-        fflush(stdout);
-
+        // Complete writing wave-functions
         if(saving_iteration==1)
         {
+            MPI_Barrier(MPI_COMM_WORLD);
             // Write missing files: info for the total set of wf and file with potentials
             if(iam==0)
             {
@@ -1709,7 +1692,30 @@ int main( int argc , char ** argv )
                 file_operation( check_stamp_entry_coeff(file_name, 12, BLOCKLENGTH, h_densities, ENERGYITEMS, energy, DZ*NZ) );
 #endif
             }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
 
+        // checkpoint - only by iam==0
+        if(md.checkpoint && iam==0)
+        {
+            // prepare data info for writing
+            double twrt_consts[11] = {dc_mu_a, dc_mu_b, dc_mu_a_old, dc_mu_b_old, dc_ec, beta, eF, kF, Effg, npart[SPINA], npart[SPINB]};
+            // write checkpoint
+            file_operation(
+                wslda_st_write_checkpoint(CODEDIM, it, 11, twrt_consts, POTDIM, h_potentials, DENSDIM, h_densities, ENERGYITEMS, energy, SOLDIM + 2, dens_in, dens_out)
+            );
+        }
+
+        rt_other+=e_t(0);
+
+        // ------------------ timing------------------
+        rt_tot=rt_zheev+rt_dens+rt_pot+rt_other+rt_me+rt_redistrib;
+        if(iam==0) wprintf("# TIMING rt_tot=%8.2f: rt_diag=%8.2f[%5.2f%%] rt_dens=%8.2f[%5.2f%%] rt_pot=%8.2f[%5.2f%%] rt_me=%8.2f[%5.2f%%] rt_redistrib=%8.2f[%5.2f%%] rt_other=%8.2f[%5.2f%%]\n",
+            rt_tot, rt_zheev, rt_zheev/rt_tot*100., rt_dens, rt_dens/rt_tot*100., rt_pot, rt_pot/rt_tot*100., rt_me, rt_me/rt_tot*100., rt_redistrib, rt_redistrib/rt_tot*100., rt_other, rt_other/rt_tot*100.);
+        fflush(stdout);
+
+        if(saving_iteration==1)
+        {
             if(iam==0)
             {
                 wprintf("# CREATING WAVE-FUNCTIONS REPRODUCIBILITY PACK: %s/reprowf.tar\n", md.outprefix);
