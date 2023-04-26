@@ -23,10 +23,10 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 #include "cpca_derivative.h"
-#include "cpca_kernels.h"
 #include "cpca_dens.h"
 #include "pca_utils.h"
 #include "wslda_potdens.h"
+#include "cpca_kernels.h"
 #include "wslda_wavevectors.h"
 #include "pca_io.h"
 #include "pca_uniform.h"
@@ -246,6 +246,7 @@ int main( int argc , char ** argv )
     
     // For easier access to data
     wslda_density densall = convert_into_wslda_density(h_densities, NXY);
+    wslda_density densall_d = convert_into_wslda_density(d_densities, NXY); // device analog
     wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXY, mu);
     reset_potentials(potsall);
     
@@ -755,17 +756,13 @@ int main( int argc , char ** argv )
     }
     
     // Process params and copy them to gpu;
-#ifdef TDWSLDA
     if(ip==0) wprintf("# EXECUTING: process_params(input->params, [%f], [%f,%f], %zu, extra_data)\n", kF, mu[SPINA], mu[SPINB], extra_data_size);
     process_params(md.params, &kF, mu, extra_data_size, extra_data);
-#else
-    process_params(md.params, kF, mu);
-#endif
+
     // Set constants
     eF=0.5*kF*kF;
-#ifdef TDWSLDA
     dt/=eF; // time step
-#endif
+
     gpu_exec( memcopy_const(mu[SPINA], mu[SPINB], ec, t0, dt, kF) );    
     md.ec=ec;
     TDWSLDA_SET_STATIC_VARS;
@@ -986,6 +983,9 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+#ifdef ENABLE_MODIFY_DENSITIES
+            modify_densities(0, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
+#endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
@@ -1071,6 +1071,9 @@ int main( int argc , char ** argv )
             if(md.spinsymmetry>0) symmetrize_densities_device(d_densities); // special calse: spin-symmetric system
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
+#endif
+#ifdef ENABLE_MODIFY_DENSITIES
+            modify_densities(0, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
@@ -1182,6 +1185,9 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
         if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+#ifdef ENABLE_MODIFY_DENSITIES
+        modify_densities(it, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
+#endif
         // potentials
         gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
         // energy
@@ -1264,6 +1270,9 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+#ifdef ENABLE_MODIFY_DENSITIES
+            modify_densities(it+1, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
+#endif
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
@@ -1272,7 +1281,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
             // H*psi
-            gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
+            gpu_exec( apply_hamiltonian(it+1, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace,
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) ); 
@@ -1322,6 +1331,9 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
             if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+#ifdef ENABLE_MODIFY_DENSITIES
+            modify_densities(it+1, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
+#endif
             // subset densities
             if(i_step==md.timesteps-1 && md.subsetMinEn!=md.subsetMaxEn) 
             {
@@ -1363,7 +1375,7 @@ int main( int argc , char ** argv )
             d_fkm1=d_tmp_ptr;
 #endif
             // H*psi
-            gpu_exec( apply_hamiltonian(it, nwfip, d_wf, d_fkm1, 
+            gpu_exec( apply_hamiltonian(it+1, nwfip, d_wf, d_fkm1,
                                     d_wf_d_dx, d_wf_d_dy, d_kkz, d_wf_laplace, d_alphawf_laplace, 
                                     d_densities, d_potentials, qfalpha, NULL, cccoeff, 
                                     md.nthreads) );            

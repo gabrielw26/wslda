@@ -7,8 +7,8 @@
 #include "pca_settings.h"
 #include "pca_macro.h"
 #define cufftDoubleComplex double complex
-#include "pca_kernels.h"
 #include "wslda_potdens.h"
+#include "pca_kernels.h"
 
 #ifndef CODEDIM
     CODEDIM NOT DEFINED!
