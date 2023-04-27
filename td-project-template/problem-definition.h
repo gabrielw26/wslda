@@ -138,7 +138,7 @@ extern "C" void modify_densities(int it, wslda_density h_densities, double *para
     // // To copy density from HOST to DEVICE use
     // memcopy_host2gpu(h_densities.rho_a, d_densities.rho_a, NUMBER_ELEMENT*sizeof(double));
     // // To update array of DEVICE params use
-    // cudaMemcpyToSymbol(dc_params, params, MAX_USER_PARAMS*sizeof(double));
+    // memcopy_const_params(params);
     // // To update array of DEVICE d_extra_data use
     // memcopy_host2gpu(h_extra_data, d_extra_data, extra_data_size);
 
@@ -208,7 +208,7 @@ __global__ void modify_energies(int it, wslda_density h_densities, wslda_potenti
         // // Now ix, iy, iz keeps lattice coordinate.
 
         // compute your contribution to the energy
-        // double myE_contrib += (...)*VOLUME_ELEMENT;
+        // double myE_contrib = (...)*VOLUME_ELEMENT;
 
         // Add contribution to desired tag, for example
         // energy[EPOT*NUMBER_ELEMENT+ixyz]+=myE_contrib;
