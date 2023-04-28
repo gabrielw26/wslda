@@ -141,6 +141,8 @@ extern "C" void modify_densities(int it, wslda_density h_densities, double *para
     // memcopy_const_params(params);
     // // To update array of DEVICE d_extra_data use
     // memcopy_host2gpu(h_extra_data, d_extra_data, extra_data_size);
+    // // To extract time use
+    // double time = hc_t0+hc_dt*it;
 
     // ... add here your code ...
 }
