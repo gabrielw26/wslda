@@ -20,6 +20,7 @@
 ##
 ## ------ COMPUTATION -------
 ## For computation it is recomended to use location:
+## SCRATCH="$(mkworkspace)"
 ## cd $SCRATCH
 
 cd $SLURM_SUBMIT_DIR
