@@ -9,6 +9,7 @@
 #SBATCH --nodes=2                  # SET: Number of nodes (min-max)
 #SBATCH --ntasks-per-node=24        # SET: Number of tasks per node (max)
 #SBATCH --cpus-per-task=1         # DO NOT MODIF: Number of cores per task (threads)
+##SBATCH --gres=gpu:tesla:4           # OPTIONALLY: if you want ELPA with GPUs 
 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:

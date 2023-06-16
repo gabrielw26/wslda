@@ -10,9 +10,9 @@
  * In case of ScaLapack it is recommended to use PZHEEVR, unless this routine does not work correctly (it may happen on some systems)
  * For more info see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Setting%20up%20diagonalization%20engine
  * */
-#define DIAGONALIZATION_ROUTINE PZHEEVR
+// #define DIAGONALIZATION_ROUTINE PZHEEVR
 // #define DIAGONALIZATION_ROUTINE PZHEEVD
-// #define DIAGONALIZATION_ROUTINE ELPA
+#define DIAGONALIZATION_ROUTINE ELPA
 
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
@@ -71,13 +71,13 @@
  * You can overwrite this value by using gpuspernode tag in the input file.
  * The flag is ingored if CUSTOM_GPU_DISTRIBUTION is selected.
  * */
-#define GPUS_PER_NODE 4
+#define GPUS_PER_NODE 1
 
 /**
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-#define PRINT_GPU_DISTRIBUTION
+// #define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 
