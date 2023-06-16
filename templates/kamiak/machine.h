@@ -71,13 +71,13 @@
  * You can overwrite this value by using gpuspernode tag in the input file.
  * The flag is ingored if CUSTOM_GPU_DISTRIBUTION is selected.
  * */
-#define GPUS_PER_NODE 1
+#define GPUS_PER_NODE 4
 
 /**
  * Activate this flag in order to print to stdout
  * applied mapping mpi-process <==> device-id.
  * */
-// #define PRINT_GPU_DISTRIBUTION
+#define PRINT_GPU_DISTRIBUTION
 
 /**
  * Activate this flag if target machine has non-standard distribution of GPUs. 
