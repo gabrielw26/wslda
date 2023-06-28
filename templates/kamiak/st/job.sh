@@ -6,11 +6,11 @@
 #SBATCH --mail-type=ALL            # SET: Email notification: BEGIN,END,FAIL,ALL
 #SBATCH --mail-user=your.name@wsu.edu  # SET: Email address for notifications
 #SBATCH --time=01:00:00             # SET: Wall clock time limit Days-HH:MM:SS
-#SBATCH --nodes=2                  # SET: Number of nodes (min-max)
+#SBATCH --nodes=2                   # SET: Number of nodes (min-max)
 #SBATCH --ntasks-per-node=24        # SET: Number of tasks per node (max)
-#SBATCH --cpus-per-task=1         # DO NOT MODIF: Number of cores per task (threads)
-##SBATCH --gres=gpu:tesla:4           # OPTIONALLY: if you want ELPA with GPUs 
-
+#SBATCH --cpus-per-task=1           # DO NOT MODIFY: Number of cores per task (threads)
+##SBATCH --gres=gpu:tesla:4         # OPTIONALLY: if you want ELPA with GPUs uncomment this line
+                                    # NOTE: Uncomment tag ELPA_USE_GPU_NVIDIA in machine.h
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
 ##      sbatch job.sh

@@ -54,6 +54,11 @@ You need to modify:
     input.txt
 ```        
 NOTE: You MUST recompile code after each modification of `*.h` files
+
+NOTE: If you want to use GPUs for diagonalizations uncomment in `machine.h` line
+```
+#define ELPA_USE_GPU_NVIDIA
+```
         
 ## STEP 4: Prepare job submission script & submit
 

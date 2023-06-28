@@ -17,21 +17,19 @@
 /**
  * ---------------------- ELPA SETTINGS ---------------------------
  * Fill this part only if ELPA library is used for diagonalization
- * 
- * Default settings are: ELPA_SOLVER_1STAGE
- * but you can overwrite using options below
  * */
+#define ELPA_API 20210430
 
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 
  * */
-// #define ELPA_USE_GPU
+// #define ELPA_USE_GPU_NVIDIA
 
 /**
  * Select ELPA kernels,
  * for more info see documentation of ELPA lib
  * */
-// #define ELPA_USE_SOLVER ELPA_SOLVER_2STAGE
+#define ELPA_USE_SOLVER ELPA_SOLVER_1STAGE
 // #define ELPA_USE_COMPLEX_KERNEL ELPA_2STAGE_COMPLEX_GPU
 // #define ELPA_USE_REAL_KERNEL ELPA_2STAGE_REAL_GPU
 
