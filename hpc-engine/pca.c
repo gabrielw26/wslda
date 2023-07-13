@@ -944,6 +944,9 @@ int main( int argc , char ** argv )
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
     if(gradients_computed) density_caculate_tau(d_densities, md.nthreads);
 #endif
+#ifdef ENABLE_MODIFY_DENSITIES
+    modify_densities(it, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
+#endif
     // potentials
 //     if(md.inittype!=5) gpu_exec( compute_potentials(it, d_densities, d_potentials, cccoeff, md.nthreads) );
     // energy
