@@ -91,6 +91,35 @@ int wbox_insert_init(wbox_insert_t *wbox_insert, const int ax, const int ay, con
  */
 int wbox_insert(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert, wbox_md_t *wbmd_big);
 
+
+/**
+ * @brief Function that calculates average over the boundaries of the box (`wmbd`).
+ * It works for 1D, 2D, and 3D.
+ *
+ * @param wbmd [in] - `wbox_md_t` type that stores the information about data from box.
+ * @return the average value of integer data
+ */
+int wbox_boundary_avg_int(wbox_md_t *wbmd);
+
+/**
+ * @brief Function that calculates average over the boundaries of the box (`wmbd`).
+ * It works for 1D, 2D, and 3D.
+ *
+ * @param wbmd [in] - `wbox_md_t` type that stores the information about data from box.
+ * @return the average value of double data
+ */
+double wbox_boundary_avg_double(wbox_md_t *wbmd);
+
+/**
+ * @brief Function that calculates average over the boundaries of the box (`wmbd`).
+ * It works for 1D, 2D, and 3D.
+ *
+ * @param wbmd [in] - `wbox_md_t` type that stores the information about data from box.
+ * @return the average value of complex data
+ */
+double complex wbox_boundary_avg_complex(wbox_md_t *wbmd);
+
+
 /**
  * @brief Function that inserts data from smaller 1D box (`wmbd`) into the 1D bigger box(`wmbd_big`) that is anchored in `wbox_insert`.
  * Function checks the anchor placements.
