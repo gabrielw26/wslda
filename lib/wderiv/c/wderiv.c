@@ -198,7 +198,9 @@ int wderiv_gradient2_3d_r(double *f, double *gradient_square)
         gradient_square[i] = tmp_dfdx2[i] + tmp_dfdy2[i] + tmp_dfdz2[i];
     }
     
-    
+    free(tmp_dfdx2);
+    free(tmp_dfdy2);
+    free(tmp_dfdz2);
     return WDERIV_OK;
 }
 int wderiv_laplace_3d_r(double *f, double *laplace)
@@ -366,7 +368,8 @@ int wderiv_gradient2_2d_r(double *f, double *gradient_square)
         gradient_square[i] = tmp_dfdx2[i] + tmp_dfdy2[i];
     }
     
-    
+    free(tmp_dfdx2);
+    free(tmp_dfdy2);
     return WDERIV_OK;
 }
 int wderiv_laplace_2d_r(double *f, double *laplace)
@@ -477,7 +480,7 @@ int wderiv_gradient2_1d_r(double *f, double *gradient_square) {
         gradient_square[i] = tmp_dfdx2[i];
     }
     
-    
+    free(tmp_dfdx2);
     return WDERIV_OK;
 }
 int wderiv_laplace_1d_r(double *f, double *laplace) {return wderiv_d2fdx2_1d_r(f, laplace);}
@@ -600,7 +603,9 @@ int wderiv_gradient2_3d_c(double complex *f, double complex *gradient_square)
         gradient_square[i] = tmp_dfdx2[i] + tmp_dfdy2[i] + tmp_dfdz2[i];
     }
     
-    
+    free(tmp_dfdx2);
+    free(tmp_dfdy2);
+    free(tmp_dfdz2);    
     return WDERIV_OK;
 }
 int wderiv_laplace_3d_c(double complex *f, double complex *laplace)
@@ -769,7 +774,8 @@ int wderiv_gradient2_2d_c(double complex *f, double complex *gradient_square)
         gradient_square[i] = tmp_dfdx2[i] + tmp_dfdy2[i];
     }
     
-    
+    free(tmp_dfdx2);
+    free(tmp_dfdy2);
     return WDERIV_OK;
 }
 int wderiv_laplace_2d_c(double complex *f, double complex *laplace)
@@ -880,7 +886,7 @@ int wderiv_gradient2_1d_c(double complex *f, double complex *gradient_square)
         gradient_square[i] = tmp_dfdx2[i];
     }
     
-    
+    free(tmp_dfdx2);
     return WDERIV_OK;
 }
 int wderiv_laplace_1d_c(double complex *f, double complex *laplace) {return wderiv_d2fdx2_1d_c(f, laplace);}
