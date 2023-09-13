@@ -27,6 +27,18 @@
 
 int main(int argc, char **argv)
 {
+#ifdef WDATA_STRIDE
+    printf("# WDATA STRIDER\n");
+
+    if (argc != 4)
+    {
+        printf("# Usage: %s file.wtxt outprefix stride\n", argv[0]);
+        printf("# \tfile.wtxt    - metadata file (INPUT)\n");
+        printf("# \toutprefix    - new metadata file will be written to outprefix.wtxt (OUTPUT)\n");
+        printf("# \tstride       - every `stride` frame will be taken only.\n");
+        return 0;
+    }
+#else
     printf("# WDATA SUBSET EXTRACTOR\n");
 
     if (argc != 5 && argc != 6)
@@ -40,6 +52,7 @@ int main(int argc, char **argv)
         printf("# \tstride       - every `stride` frame will be taken only from given range, optional, default stride=1\n");
         return 0;
     }
+#endif
 
     char ctmp1[512], ctmp2[512];
     char basedir[512];
@@ -51,6 +64,13 @@ int main(int argc, char **argv)
 
     printf("# WORKING DIR: `%s` --> `%s`\n", indir, outdir);
 
+#ifdef WDATA_STRIDE
+    int start = 0;
+    int stop = 999999999;
+
+    int stride = atoi(argv[3]);
+    printf("# STRIDE: %d\n", stride);
+#else
     int start = atoi(argv[3]);
     int stop = atoi(argv[4]);
     printf("# SUBTRUCTION RANGE: [%d,%d)\n", start, stop);
@@ -59,6 +79,7 @@ int main(int argc, char **argv)
     if (argc == 6)
         stride = atoi(argv[5]);
     printf("# STRIDE: %d\n", stride);
+#endif
 
     // create metadata handler
     wdata_metadata md;
@@ -77,6 +98,7 @@ int main(int argc, char **argv)
     mdout = md;
     mdout.cycles = 0;
     mdout.t0 = md.t0 + md.dt * start;
+    mdout.dt = md.dt*stride;
     strcpy(mdout.prefix, basename(argv[2]));
 
     // set working dirs

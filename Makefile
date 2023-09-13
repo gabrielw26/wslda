@@ -31,6 +31,7 @@ examples: lib
 tools: lib
 	mkdir -p ./bin/
 	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-stride -I./c/ -L. -lwdata -lm -DWDATA_STRIDE
 	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-merge.c -o ./bin/wdata-merge -I./c/ -L. -lwdata -lm
@@ -45,4 +46,7 @@ clean:
 	rm ./c-examples/example-write-many
 	rm ./c-examples/example-write-many-t_varying
 	rm ./bin/wdata-cut
+	rm ./bin/wdata-stride
 	rm ./bin/wdata-interpolate
+	rm ./bin/wdata-datadim-up
+	rm ./bin/wdata-merge
