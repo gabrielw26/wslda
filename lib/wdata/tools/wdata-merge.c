@@ -129,7 +129,7 @@ int main(int argc, char **argv)
             } // ivar
             wdata_add_cycle(&mdout);
         } // icycle
-        wdata_get_time(&mdout, md.cycles-1, &time);
+        wdata_get_time(&mdout, mdout.cycles-1, &time);
     } // i
 
     // Write new metadata file
