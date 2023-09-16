@@ -1,5 +1,6 @@
-# 2023.xx.xx
+# 2023.09.16
 * New API_VERSION=20230426. Added modify_densities(...) in td codes.
+* Update of libraries (folder `lib`) to the latest version.
 * Minor bug fixes and improvements.
 
 # 2023.03.16

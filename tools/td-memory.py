@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Script computes memory utilization by bsk_dynamic3d code
+# Script computes memory utilization by td-wslda codes
 
 # Import packages
 from math import *
@@ -68,6 +68,7 @@ while 1:
     
 # print minimal request
 print("MINIMAL NUMBER OF GPUs=%d" % gpus[0])
+print("TOTAL (MINIMAL) MEMEORY REQUEST=%.2f GB" % (find_mem_per_gpu(1)))
 
 # Data for plotting
 
