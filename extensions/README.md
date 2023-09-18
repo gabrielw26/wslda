@@ -6,6 +6,7 @@ Codes:
 * `post-processing-qpe/`: various codes that can be used for processing of quasiparticle energies obtained by td codes. 
 * `post-processing-td/`: various codes that can be used for processing of data from td runs.
 * `sldae/`: tools for generating SLDAE type functionals.
+* `vortex-tracking/`: tools for tracking of quantum vortices.
 * `parse-input-template.c`: This file demonstrate how to parse input file.
 * `extend-dataset-template.c`: This file provides template of code that adds new variable to existing w-dataset.
 * `st-test-external-potentials.c`: This file provides simple code that can be used for testing of correctness of implementation of external potentials. 
