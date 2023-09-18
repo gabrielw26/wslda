@@ -29,6 +29,17 @@ __constant__ size_t dc_extra_data_size;
 
 __constant__ double dc_params[MAX_USER_PARAMS]; // array with params from input file
 
+// For completness: host static variables
+static double hc_mu_a=0.0; // chemical potentials
+static double hc_mu_b=0.0; // chemical potentials
+static double hc_ec=0.0; // energy cut-off
+static double hc_t0=0.0; // initial time, time=hc_t0 + hc_dt*it
+static double hc_dt=0.0; // itegration time step
+static double hc_kF=0.0; // reference kF
+static double hc_eF=0.0; // reference eF (=kF^2/2)
+static double hc_nF=0.0; // reference density nF (=kF^3 / (3*pi^2))
+static double hc_sclgth=0.0;
+
 extern "C" int memcopy_extra_data(size_t extra_data_size, void *extra_data)
 {
     if( cudaMemcpyToSymbol(dc_extra_data,      &extra_data,      sizeof(void *))!= cudaSuccess ) return 1;
@@ -52,6 +63,16 @@ extern "C" int memcopy_const(double mu_a, double mu_b, double ec, double t0, dou
     double nF = kF*kF*kF / (3.*M_PI*M_PI);
     if( cudaMemcpyToSymbol(dc_nF, &nF, sizeof(double))!= cudaSuccess ) return 7;
 
+    // initialize host static variables
+    hc_mu_a=mu_a;
+    hc_mu_b=mu_b;
+    hc_ec=ec;
+    hc_t0=t0;
+    hc_dt=dt;
+    hc_kF=kF;
+    hc_eF=eF;
+    hc_nF=nF;
+
     return 0;
 }
 
@@ -72,6 +93,7 @@ extern "C" int memcopy_const_BdG(double aBdG)
 {
     double gBdG = aBdG;
     if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
+    hc_sclgth = gBdG; // and static variable
 
     return 0;
 }

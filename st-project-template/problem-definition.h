@@ -138,7 +138,7 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
 
 /**
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * Before each diagonalization process, user can modify arbitrarily densities
+ * Before each diagonalization process, the user can modify densities arbitrarily.
  * @param it iteration number
  * @param h_densities structure with densities, see (wiki) documentation for list of fields
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
@@ -170,7 +170,7 @@ void modify_densities(int it, wslda_density h_densities, double *params, size_t 
 
 /**
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * Before each diagonalization process, user can modify arbitrarily potentials
+ * Before each diagonalization process, the user can modify potentials arbitrarily.
  * @param it iteration number
  * @param h_densities structure with densities, see (wiki) documentation for list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.

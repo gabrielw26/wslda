@@ -9,6 +9,7 @@
 * `okeanos`: https://kdm.icm.edu.pl/Zasoby/komputery_w_icm.pl/#superkomputer-okeanos
 * `lumi`: https://www.lumi-supercomputer.eu/
 * `athena`: https://docs.cyfronet.pl/display/~plgpawlik/Athena
+* `kamiak`: https://hpc.wsu.edu/kamiak-hpc/what-is-kamiak/
 
 ## Installing templates
 You can use tool

@@ -11,7 +11,7 @@
 // very small number
 #define EPS 1.0e-14
 
-#include "fftw3.h"
+#include <fftw3.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sstream>

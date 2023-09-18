@@ -1,7 +1,7 @@
 
 # COMPILER
-CXX=cc
-PYTHON=python3
+CXX=mpiicc
+PYTHON=python
 
 # DIRECTORY SETTINGS 
 # W-SLDA installation folder (for read-only)
@@ -13,9 +13,9 @@ BINDIR=./
 
 # COMPILER FLAGS
 # C compiler flags
-CFLAGS= -std=gnu99 -O3 -I/project/project_465000307/share/elpa-libsci/PrgEnv-gnu-8.3.3/LUMI-22.06/rocm-5.1.4/include/elpa-2022.05.001
+CFLAGS= -std=c11 -O3 -DMKL_LP64 -I$(MKL_HOME)/include/intel64/lp64 -I$(ELPA_HOME)/include/elpa-2023.05.001
 # prescription how to link with: FFTW, Lapack, ScaLapack, ELPA (optionally)
-LIBS=-lfftw3 -lm -L/project/project_465000307/share/elpa-libsci/PrgEnv-gnu-8.3.3/LUMI-22.06/rocm-5.1.4/lib -lelpa 
+LIBS=-lfftw3 -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lm -I$(MKL_HOME)/include/intel64/lp64 -L$(ELPA_HOME)/lib -lelpa
 
 # ----- DO NOT MODIFY -----
 include $(WSLDADIR)/hpc-engine/mk.st

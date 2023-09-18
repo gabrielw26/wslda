@@ -1,4 +1,9 @@
-# 2022.03.16
+# 2023.09.16
+* New API_VERSION=20230426. Added modify_densities(...) in td codes.
+* Update of libraries (folder `lib`) to the latest version.
+* Minor bug fixes and improvements.
+
+# 2023.03.16
 * Optimization of the HIP version of the code.
 * The td codes can boost the performance by exploiting GPU-aware MPI.
 * Performance improvement of SLDAE functional.
