@@ -205,7 +205,7 @@ void print_help(char *progname);
 #define STRINGIZE2(s) #s
 #define STRINGIZE(s) STRINGIZE2(s)
 
-void print_version();
+void print_version(char *suffix);
 
 /**
  * Function preprocess comand line

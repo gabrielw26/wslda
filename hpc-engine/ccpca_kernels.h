@@ -99,5 +99,10 @@ int taylor_expansion_contribution(int it, double dt, int n, cufftDoubleComplex *
 #undef cufftDoubleComplex
 #endif
 
+#ifdef ENABLE_MODIFY_DENSITIES
+void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *h_extra_data,
+                              wslda_density d_densities,                                         void *d_extra_data);
+#endif
+
 #endif
 

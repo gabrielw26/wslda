@@ -56,38 +56,18 @@ int wbox_insert_1d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
     // DATATYPE
     const char dt = wbmd_big->datatype;
 
-    // EDGE VALUES
-    int int_edge;
-    double double_edge;
-    double complex complex_edge;
-    if (dt == 'i')
-        int_edge = (*((int *)wbmd_small->data + 0) + *((int *)wbmd_small->data + nxs - 1)) / 2; // Mean value of TWO edge points
-    else if (dt == 'r')
-        double_edge = (*((double *)wbmd_small->data + 0) + *((double *)wbmd_small->data + nxs - 1)) / 2; // Mean value of TWO edge points
-    else if (dt == 'c')
-        complex_edge = (*((double complex *)wbmd_small->data + 0) + *((double complex *)wbmd_small->data + nxs - 1)) / 2; // Mean value of TWO edge points
-
     // INSERT LOOP
     for (ixb = 0; ixb < nx_big; ixb++)
     {
         i_shift = ixb - ax;
-        if (ixb < ax || ixb >= ax + nxs) // FILL EDGE
+        if (ixb >= ax && ixb < ax + nxs) // FILL EDGE
         {
-            if (dt == 'i')
-                *((int *)wbmd_big->data + ixb) = int_edge;
-            else if (dt == 'r')
-                *((double *)wbmd_big->data + ixb) = double_edge;
-            else if (dt == 'c')
-                *((double complex *)wbmd_big->data + ixb) = complex_edge;
-        }
-        else // INSERT SMALL INTO BIG
-        {
-            if (dt == 'i')
-                *((int *)wbmd_big->data + ixb) = *((int *)wbmd_small->data + i_shift);
-            else if (dt == 'r')
-                *((double *)wbmd_big->data + ixb) = *((double *)wbmd_small->data + i_shift);
-            else if (dt == 'c')
-                *((double complex *)wbmd_big->data + ixb) = *((double complex *)wbmd_small->data + i_shift);
+          if (dt == 'i')
+          *((int *)wbmd_big->data + ixb) += *((int *)wbmd_small->data + i_shift);
+          else if (dt == 'r')
+          *((double *)wbmd_big->data + ixb) += *((double *)wbmd_small->data + i_shift);
+          else if (dt == 'c')
+          *((double complex *)wbmd_big->data + ixb) += *((double complex *)wbmd_small->data + i_shift);
         }
     }
 
@@ -114,64 +94,6 @@ int wbox_insert_2d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
     // DATATYPES
     const char dt = wbmd_big->datatype;
 
-    // PLANE VALUES
-    int int_plane;
-    int ixy;
-    double double_plane;
-    double complex complex_plane;
-    if (dt == 'i')
-    {
-        int plane_mean = 0;
-        int nof_points = 2 * nxs + 2 * nys;
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-        {
-            ixy =
-                plane_mean += *((int *)wbmd_small->data + ixs);             // Bottom X edge
-            plane_mean += *((int *)wbmd_small->data - ixs + nxs * nys - 1); // Top X edge
-        }
-        for (int iys = 0; iys < nys; iys++)
-        {
-            plane_mean += *((int *)wbmd_small->data + iys * nxs);           // Left Y edge
-            plane_mean += *((int *)wbmd_small->data + iys * nxs + nxs - 1); // Right Y edge
-        }
-        int_plane = plane_mean / nof_points; // Mean value of FOUR edges
-    }
-    else if (dt == 'r')
-    {
-        double plane_mean = 0.;
-        double nof_points = 2 * nxs + 2 * nys;
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-        {
-            plane_mean += *((double *)wbmd_small->data + ixs);                 // Bottom X edge
-            plane_mean += *((double *)wbmd_small->data - ixs + nxs * nys - 1); // Top X edge
-        }
-        for (int iys = 0; iys < nys; iys++)
-        {
-            plane_mean += *((double *)wbmd_small->data + iys * nxs);           // Left Y edge
-            plane_mean += *((double *)wbmd_small->data + iys * nxs + nxs - 1); // Right Y edge
-        }
-        double_plane = plane_mean / nof_points; // Mean value of FOUR edges
-    }
-    else if (dt == 'c')
-    {
-        double complex plane_mean = 0.;
-        double nof_points = 2 * nxs + 2 * nys;
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-        {
-            plane_mean += *((double complex *)wbmd_small->data + ixs);                 // Bottom X edge
-            plane_mean += *((double complex *)wbmd_small->data - ixs + nxs * nys - 1); // Top X edge
-        }
-        for (int iys = 0; iys < nys; iys++)
-        {
-            plane_mean += *((double complex *)wbmd_small->data + iys * nxs);           // Left Y edge
-            plane_mean += *((double complex *)wbmd_small->data + iys * nxs + nxs - 1); // Right Y edge
-        }
-        double_plane = plane_mean / nof_points; // Mean value of FOUR edges
-    }
-
     for (ixb = 0; ixb < nx_big; ixb++)
     {
         for (iyb = 0; iyb < ny_big; iyb++)
@@ -179,24 +101,15 @@ int wbox_insert_2d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
             ixy_big = (ixb * ny_big) + iyb;
             i_shift = (ixb - ax) * nys + iyb - ay;
 
-            if ((ixb < ax || ixb >= ax + nxs) ||
-                (iyb < ay || iyb >= ay + nys)) // FILL EDGE PLANES
+            if ((ixb >= ax && ixb < ax + nxs) &&
+                (iyb >= ay && iyb < ay + nys))
             {
-                if (dt == 'i')
-                    *((int *)wbmd_big->data + ixy_big) = int_plane;
-                else if (dt == 'r')
-                    *((double *)wbmd_big->data + ixy_big) = double_plane;
-                else if (dt == 'c')
-                    *((double complex *)wbmd_big->data + ixy_big) = complex_plane;
-            }
-            else
-            {
-                if (dt == 'i')
-                    *((int *)wbmd_big->data + ixy_big) = *((int *)wbmd_small->data + i_shift);
-                else if (dt == 'r')
-                    *((double *)wbmd_big->data + ixy_big) = *((double *)wbmd_small->data + i_shift);
-                else if (dt == 'c')
-                    *((double complex *)wbmd_big->data + ixy_big) = *((double complex *)wbmd_small->data + i_shift);
+              if (dt == 'i')
+                  *((int *)wbmd_big->data + ixy_big) += *((int *)wbmd_small->data + i_shift);
+              else if (dt == 'r')
+                  *((double *)wbmd_big->data + ixy_big) += *((double *)wbmd_small->data + i_shift);
+              else if (dt == 'c')
+                  *((double complex *)wbmd_big->data + ixy_big) += *((double complex *)wbmd_small->data + i_shift);
             }
         }
     }
@@ -227,120 +140,6 @@ int wbox_insert_3d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
     // DATATYPES
     const char dt = wbmd_big->datatype;
 
-    // PLANE VALUES
-    int int_plane;
-    double double_plane;
-    double complex complex_plane;
-
-    if (dt == 'i')
-    {
-        int plane_mean = 0.;
-        int nof_points = 2 * nxs * nys + 2 * nys * nzs + 2 * nxs * nzs;
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int iys = 0; iys < nys; iys++)
-            {
-                int ixys;
-                ixys = ixs * nys * nzs + iys * nzs;              // IZ = 0
-                plane_mean += *((int *)wbmd_small->data + ixys); // BOTTOM XY plane
-                ixys = ixs * nys * nzs + iys * nzs + (nzs - 1);  // IZ = NZ - 1
-                plane_mean += *((int *)wbmd_small->data + ixys); // TOP XY plane
-            }
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int ixzs;
-                ixzs = ixs * nys * nzs + izs;                    // IY = 0
-                plane_mean += *((int *)wbmd_small->data + ixzs); // LEFT YZ plane
-                ixzs = ixs * nys * nzs + (nys - 1) * nzs + izs;  // IY = NY - 1
-                plane_mean += *((int *)wbmd_small->data + ixzs); // RIGHT YZ plane
-            }
-
-        for (int iys = 0; iys < nys; iys++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int iyzs;
-                iyzs = iys * nzs + izs;                          // IX = 0
-                plane_mean += *((int *)wbmd_small->data + iyzs); // FRONT XZ plane
-                iyzs = (nxs - 1) * nys * nzs + iys * nzs + izs;  // IX = NX - 1
-                plane_mean += *((int *)wbmd_small->data + iyzs); // BACK XZ plane
-            }
-
-        int_plane = plane_mean / nof_points; // Mean value of SIX planes
-    }
-    else if (dt == 'r')
-    {
-        double plane_mean = 0.;
-        double nof_points = 2 * nxs * nys + 2 * nys * nzs + 2 * nxs * nzs;
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int iys = 0; iys < nys; iys++)
-            {
-                int ixys;
-                ixys = ixs * nys * nzs + iys * nzs;                 // IZ = 0
-                plane_mean += *((double *)wbmd_small->data + ixys); // BOTTOM XY plane
-                ixys = ixs * nys * nzs + iys * nzs + (nzs - 1);     // IZ = NZ - 1
-                plane_mean += *((double *)wbmd_small->data + ixys); // TOP XY plane
-            }
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int ixzs;
-                ixzs = ixs * nys * nzs + izs;                       // IY = 0
-                plane_mean += *((double *)wbmd_small->data + ixzs); // LEFT YZ plane
-                ixzs = ixs * nys * nzs + (nys - 1) * nzs + izs;     // IY = NY - 1
-                plane_mean += *((double *)wbmd_small->data + ixzs); // RIGHT YZ plane
-            }
-
-        for (int iys = 0; iys < nys; iys++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int iyzs;
-                iyzs = iys * nzs + izs;                             // IX = 0
-                plane_mean += *((double *)wbmd_small->data + iyzs); // FRONT XZ plane
-                iyzs = (nxs - 1) * nys * nzs + iys * nzs + izs;     // IX = NX - 1
-                plane_mean += *((double *)wbmd_small->data + iyzs); // BACK XZ plane
-            }
-
-        double_plane = plane_mean / nof_points; // Mean value of SIX planes
-    }
-    else if (dt == 'c')
-    {
-        double complex plane_mean = 0.;
-        double nof_points = 2 * nxs * nys + 2 * nys * nzs + 2 * nxs * nzs;
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int iys = 0; iys < nys; iys++)
-            {
-                int ixys;
-                ixys = ixs * nys * nzs + iys * nzs;                         // IZ = 0
-                plane_mean += *((double complex *)wbmd_small->data + ixys); // BOTTOM XY plane
-                ixys = ixs * nys * nzs + iys * nzs + (nzs - 1);             // IZ = NZ - 1
-                plane_mean += *((double complex *)wbmd_small->data + ixys); // TOP XY plane
-            }
-
-        for (int ixs = 0; ixs < nxs; ixs++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int ixzs;
-                ixzs = ixs * nys * nzs + izs;                               // IY = 0
-                plane_mean += *((double complex *)wbmd_small->data + ixzs); // LEFT YZ plane
-                ixzs = ixs * nys * nzs + (nys - 1) * nzs + izs;             // IY = NY - 1
-                plane_mean += *((double complex *)wbmd_small->data + ixzs); // RIGHT YZ plane
-            }
-
-        for (int iys = 0; iys < nys; iys++)
-            for (int izs = 0; izs < nzs; izs++)
-            {
-                int iyzs;
-                iyzs = iys * nzs + izs;                                     // IX = 0
-                plane_mean += *((double complex *)wbmd_small->data + iyzs); // FRONT XZ plane
-                iyzs = (nxs - 1) * nys * nzs + iys * nzs + izs;             // IX = NX - 1
-                plane_mean += *((double complex *)wbmd_small->data + iyzs); // BACK XZ plane
-            }
-
-        complex_plane = plane_mean / nof_points; // Mean value of SIX planes
-    }
-
     for (ixb = 0; ixb < nx_big; ixb++)
     {
         for (iyb = 0; iyb < ny_big; iyb++)
@@ -348,27 +147,17 @@ int wbox_insert_3d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
             for (izb = 0; izb < nz_big; izb++)
             {
                 ixyz_big = (ixb * ny_big * nz_big) + (iyb * nz_big) + izb;
-                i_shift = ((ixb - ax) * nys * nxs) + ((iyb - ay) * nxs) + (izb - az);
-
-                if ((ixb < ax || ixb >= ax + nxs) ||
-                    (iyb < ay || iyb >= ay + nys) ||
-                    (izb < az || izb >= az + nzs)) // FILL EDGE PLANES
+                i_shift = ((ixb - ax) * nys * nzs) + ((iyb - ay) * nzs) + (izb - az);
+                if ((ixb >= ax && ixb < ax + nxs) &&
+                    (iyb >= ay && iyb < ay + nys) &&
+                    (izb >= az && izb < az + nzs))
                 {
-                    if (dt == 'i')
-                        *((int *)wbmd_big->data + ixyz_big) = int_plane;
-                    else if (dt == 'r')
-                        *((double *)wbmd_big->data + ixyz_big) = double_plane;
-                    else if (dt == 'c')
-                        *((double complex *)wbmd_big->data + ixyz_big) = complex_plane;
-                }
-                else
-                {
-                    if (dt == 'i')
-                        *((int *)wbmd_big->data + ixyz_big) = *((int *)wbmd_small->data + i_shift);
-                    else if (dt == 'r')
-                        *((double *)wbmd_big->data + ixyz_big) = *((double *)wbmd_small->data + i_shift);
-                    else if (dt == 'c')
-                        *((double complex *)wbmd_big->data + ixyz_big) = *((double complex *)wbmd_small->data + i_shift);
+                  if (dt == 'i')
+                      *((int *)wbmd_big->data + ixyz_big) += *((int *)wbmd_small->data + i_shift);
+                  else if (dt == 'r')
+                      *((double *)wbmd_big->data + ixyz_big) += *((double *)wbmd_small->data + i_shift);
+                  else if (dt == 'c')
+                      *((double complex *)wbmd_big->data + ixyz_big) += *((double complex *)wbmd_small->data + i_shift);
                 }
             }
         }
@@ -379,13 +168,12 @@ int wbox_insert_3d(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert
 int wbox_insert(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert, wbox_md_t *wbmd_big)
 {
     int wbox_insert_return;
-
     if (wbmd_small->dim == 1)
-        wbox_insert_return = wbox_insert_1d(wbmd_small, wbox_insert, wbmd_big);
+        wbox_insert_return = wbox_insert_1d(&wbmd_small, &wbox_insert, &wbmd_big);
     else if (wbmd_small->dim == 2)
-        wbox_insert_return = wbox_insert_2d(wbmd_small, wbox_insert, wbmd_big);
+        wbox_insert_return = wbox_insert_2d(&wbmd_small, &wbox_insert, &wbmd_big);
     else if (wbmd_small->dim == 3)
-        wbox_insert_return = wbox_insert_3d(wbmd_small, wbox_insert, wbmd_big);
+        wbox_insert_return = wbox_insert_3d(&wbmd_small, &wbox_insert, &wbmd_big);
 
     return wbox_insert_return;
 }
@@ -574,4 +362,229 @@ int wbox_print_insert_params(const wbox_insert_t wb_insert)
            wb_insert.ax, wb_insert.ay, wb_insert.az, wb_insert.dim);
 
     return WBOX_SUCCESS_PRINT;
+}
+
+
+
+int wbox_boundary_avg_int(wbox_md_t *wbmd)
+{
+  const int nxs = wbmd->nx;
+  const int nys = wbmd->ny;
+  const int nzs = wbmd->nz;
+
+  const int dim = wbmd->dim;
+  printf("%d\n", dim);
+
+  int mean = 0;
+  int plane_mean = 0;
+  int nof_points;
+  if (dim == 3)
+  {
+    nof_points = 2 * (nxs * nys + nys * nzs + nxs * nzs) -4 * (nxs + nys + nzs) + 8;
+    // One need to avoid summind doubly edges and vertices three times.
+    // This is why sums do not always go from 0 to N
+    // Summing up for all X,Y at Z=0 and Z=NZ
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int iys = 0; iys < nys; iys++)
+    {
+      int ixys;
+      ixys = (ixs * nys  + iys) * nzs;              // IZ = 0
+      plane_mean += *((int *)wbmd->data + ixys); // BOTTOM XY plane
+      ixys = (ixs * nys + iys) * nzs + (nzs - 1);  // IZ = NZ - 1
+      plane_mean += *((int *)wbmd->data + ixys); // TOP XY plane
+    }
+    // Summing up for all X, Z:1...NZ-1 at Y=0 and Y=NY
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int ixzs;
+      ixzs = ixs * nys * nzs + izs;                    // IY = 0
+      plane_mean += *((int *)wbmd->data + ixzs); // LEFT YZ plane
+      ixzs = (ixs * nys + (nys - 1)) * nzs + izs;  // IY = NY - 1
+      plane_mean += *((int *)wbmd->data + ixzs); // RIGHT YZ plane
+    }
+    // Summing up  Y:1...NY-1, Z:1...NZ-1 at X=0 and X=NX
+    for (int iys = 1; iys < nys-1; iys++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int iyzs;
+      iyzs = iys * nzs + izs;                          // IX = 0
+      plane_mean += *((int *)wbmd->data + iyzs); // FRONT XZ plane
+      iyzs = ((nxs - 1) * nys + iys) * nzs + izs;  // IX = NX - 1
+      plane_mean += *((int *)wbmd->data + iyzs); // BACK XZ plane
+    }
+  }
+  else if (dim == 2)
+  {
+    nof_points = 2 * (nxs + nys - 2);
+    // One need to avoid summind doubly edges
+    // This is why sums do not always go from 0 to N
+    for (int ixs = 0; ixs < nxs; ixs++)
+    {
+        plane_mean += *((int *)wbmd->data + ixs);             // Bottom X edge
+        plane_mean += *((int *)wbmd->data + ixs + nxs * (nys - 1)); // Top X edge
+    }
+    for (int iys = 1; iys < nys-1; iys++)
+    {
+        plane_mean += *((int *)wbmd->data + iys * nxs + 1);       // Left Y edge
+        plane_mean += *((int *)wbmd->data + (iys - 2)* nxs); // Right Y edge
+    }
+
+  }
+  else if (dim == 1)
+  {
+    return (*((int *)wbmd->data) + *((int *)wbmd->data + wbmd->nx - 1)) / 2; // Mean value of TWO edge points
+  }
+
+
+  mean = plane_mean / nof_points; // Mean value of SIX planes
+  return mean;
+}
+
+double wbox_boundary_avg_double(wbox_md_t *wbmd)
+{
+  const int nxs = wbmd->nx;
+  const int nys = wbmd->ny;
+  const int nzs = wbmd->nz;
+
+  const int dim = wbmd->dim;
+
+  double mean = 0;
+  double plane_mean = 0;
+  int nof_points;
+  if (dim == 3)
+  {
+    nof_points = 2 * (nxs * nys + nys * nzs + nxs * nzs) -4 * (nxs + nys + nzs) + 8;
+    // One need to avoid summind doubly edges and vertices three times.
+    // This is why sums do not always go from 0 to N
+    // Summing up for all X,Y at Z=0 and Z=NZ
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int iys = 0; iys < nys; iys++)
+    {
+      int ixys;
+      ixys = (ixs * nys  + iys) * nzs;              // IZ = 0
+      plane_mean += *((double *)wbmd->data + ixys); // BOTTOM XY plane
+      ixys = (ixs * nys + iys) * nzs + (nzs - 1);  // IZ = NZ - 1
+      plane_mean += *((double *)wbmd->data + ixys); // TOP XY plane
+    }
+    // Summing up for all X, Z:1...NZ-1 at Y=0 and Y=NY
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int ixzs;
+      ixzs = ixs * nys * nzs + izs;                    // IY = 0
+      plane_mean += *((double *)wbmd->data + ixzs); // LEFT YZ plane
+      ixzs = (ixs * nys + (nys - 1)) * nzs + izs;  // IY = NY - 1
+      plane_mean += *((double *)wbmd->data + ixzs); // RIGHT YZ plane
+    }
+    // Summing up  Y:1...NY-1, Z:1...NZ-1 at X=0 and X=NX
+    for (int iys = 1; iys < nys-1; iys++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int iyzs;
+      iyzs = iys * nzs + izs;                          // IX = 0
+      plane_mean += *((double *)wbmd->data + iyzs); // FRONT XZ plane
+      iyzs = ((nxs - 1) * nys + iys) * nzs + izs;  // IX = NX - 1
+      plane_mean += *((double *)wbmd->data + iyzs); // BACK XZ plane
+    }
+  }
+  else if (dim == 2)
+  {
+    nof_points = 2 * (nxs + nys - 2);
+    // One need to avoid summind doubly edges
+    // This is why sums do not always go from 0 to N
+    for (int ixs = 0; ixs < nxs; ixs++)
+    {
+        plane_mean += *((double *)wbmd->data + ixs);             // Bottom X edge
+        plane_mean += *((double *)wbmd->data + ixs + nxs * (nys - 1)); // Top X edge
+    }
+    for (int iys = 1; iys < nys-1; iys++)
+    {
+        plane_mean += *((double *)wbmd->data + iys * nxs + 1);       // Left Y edge
+        plane_mean += *((double *)wbmd->data + (iys - 2)* nxs); // Right Y edge
+    }
+
+  }
+  else if (dim == 1)
+  {
+    return (*((double *)wbmd->data) + *((double *)wbmd->data + wbmd->nx - 1)) / 2; // Mean value of TWO edge points
+  }
+
+
+  mean = plane_mean / nof_points; // Mean value of SIX planes
+  return mean;
+}
+
+double complex wbox_boundary_avg_complex(wbox_md_t *wbmd)
+{
+  const int nxs = wbmd->nx;
+  const int nys = wbmd->ny;
+  const int nzs = wbmd->nz;
+
+  const int dim = wbmd->dim;
+
+  double complex mean = 0;
+  double complex plane_mean = 0;
+  int nof_points;
+  if (dim == 3)
+  {
+    nof_points = 2 * (nxs * nys + nys * nzs + nxs * nzs) -4 * (nxs + nys + nzs) + 8;
+    // One need to avoid summind doubly edges and vertices three times.
+    // This is why sums do not always go from 0 to N
+    // Summing up for all X,Y at Z=0 and Z=NZ
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int iys = 0; iys < nys; iys++)
+    {
+      int ixys;
+      ixys = (ixs * nys  + iys) * nzs;              // IZ = 0
+      plane_mean += *((double complex*)wbmd->data + ixys); // BOTTOM XY plane
+      ixys = (ixs * nys + iys) * nzs + (nzs - 1);  // IZ = NZ - 1
+      plane_mean += *((double complex*)wbmd->data + ixys); // TOP XY plane
+    }
+    // Summing up for all X, Z:1...NZ-1 at Y=0 and Y=NY
+    for (int ixs = 0; ixs < nxs; ixs++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int ixzs;
+      ixzs = ixs * nys * nzs + izs;                    // IY = 0
+      plane_mean += *((double complex*)wbmd->data + ixzs); // LEFT YZ plane
+      ixzs = (ixs * nys + (nys - 1)) * nzs + izs;  // IY = NY - 1
+      plane_mean += *((double complex*)wbmd->data + ixzs); // RIGHT YZ plane
+    }
+    // Summing up  Y:1...NY-1, Z:1...NZ-1 at X=0 and X=NX
+    for (int iys = 1; iys < nys-1; iys++)
+    for (int izs = 1; izs < nzs-1; izs++)
+    {
+      int iyzs;
+      iyzs = iys * nzs + izs;                          // IX = 0
+      plane_mean += *((double complex*)wbmd->data + iyzs); // FRONT XZ plane
+      iyzs = ((nxs - 1) * nys + iys) * nzs + izs;  // IX = NX - 1
+      plane_mean += *((double complex*)wbmd->data + iyzs); // BACK XZ plane
+    }
+  }
+  else if (dim == 2)
+  {
+    nof_points = 2 * (nxs + nys - 2);
+    // One need to avoid summind doubly edges
+    // This is why sums do not always go from 0 to N
+    for (int ixs = 0; ixs < nxs; ixs++)
+    {
+        plane_mean += *((double complex*)wbmd->data + ixs);             // Bottom X edge
+        plane_mean += *((double complex*)wbmd->data + ixs + nxs * (nys - 1)); // Top X edge
+    }
+    for (int iys = 1; iys < nys-1; iys++)
+    {
+        plane_mean += *((double complex*)wbmd->data + iys * nxs + 1);       // Left Y edge
+        plane_mean += *((double complex*)wbmd->data + (iys - 2)* nxs); // Right Y edge
+    }
+
+  }
+  else if (dim == 1)
+  {
+    return (*((double complex*)wbmd->data) + *((double complex*)wbmd->data + wbmd->nx - 1)) / 2; // Mean value of TWO edge points
+  }
+
+
+  mean = plane_mean / nof_points; // Mean value of SIX planes
+  return mean;
 }

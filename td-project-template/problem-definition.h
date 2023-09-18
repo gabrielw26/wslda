@@ -109,9 +109,50 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
 }
 
 /**
- * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
+ * THIS FUNCTION IS CALLED AFTER THE DENSITIES ARE CONSTRUCTED.
+ * IT IS CALLED ONLY IF ENABLE_MODIFY_DENSITIES IS DEFINED (in predefines.h)
+ * Before each computation of potentials, the user can modify densities arbitrarily.
+ * The function is called by HOST. You need to copy data from device to host, modify and copy it back.
+ * @param it iteration number
+ * (HOST POINTERS)
+ * @param h_densities structure with densities, see (wiki) documentation for list of fields (HOST)
+ *                    NOTE: some of densities can be destroyed.
+ *                    To avoid any problems copy densities from DEVICE to this (HOST) buffer.
+ * @param params array of input parameters (HOST).
+ *               NOTE: If you modify this array, you must copy it to the DEVICE.
+ *               Use: cudaMemcpyToSymbol(dc_params, params, MAX_USER_PARAMS*sizeof(double))
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded (HOST)
+ * @param h_extra_data optional set of data uploaded by load_extra_data() (HOST)
+ * (DEVICE POINTERS)
+ * @param d_densities structure with densities, see (wiki) documentation for list of fields (DEVICE)
+ * @param d_extra_data optional set of data uploaded by load_extra_data() (DEVICE)
+ *                     NOTE: further computation process uses only d_extra_data
+ * */
+#include "tdwslda_functionals_framework_enable.h" // DO NOT REMOVE!
+extern "C" void modify_densities(int it, wslda_density h_densities, double *params, size_t extra_data_size, void *h_extra_data,
+                                         wslda_density d_densities,                                         void *d_extra_data)
+{
+    // // SNIPPETS
+    // // To copy density from DEVICE to HOST use
+    // memcopy_gpu2host(d_densities.rho_a, h_densities.rho_a, NUMBER_ELEMENT*sizeof(double));
+    // // To copy density from HOST to DEVICE use
+    // memcopy_host2gpu(h_densities.rho_a, d_densities.rho_a, NUMBER_ELEMENT*sizeof(double));
+    // // To update array of DEVICE params use
+    // memcopy_const_params(params);
+    // // To update array of DEVICE d_extra_data use
+    // memcopy_host2gpu(h_extra_data, d_extra_data, extra_data_size);
+    // // To extract time use
+    // double time = hc_t0+hc_dt*it;
+
+    // ... add here your code ...
+}
+#include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
+
+/**
+ * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS.
  * IT IS CALLED ONLY IF ENABLE_MODIFY_POTENTIALS IS DEFINED (in predefines.h)
- * Before each diagonalization process, user can modify arbitrarily potentials
+ * Before each application of the Hamiltonian, the user can arbitrarily modify potentials.
+ * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param it iteration number
  * @param h_densities structure with densities, see (wiki) documentation for list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
@@ -143,7 +184,8 @@ __global__ void modify_potentials(int it, wslda_density h_densities, wslda_poten
 /**
  * THIS FUNCTION IS CALLED AFTER EACH COMPUTATION OF POTENTIALS
  * IT IS CALLED ONLY IF ENABLE_MODIFY_ENERGIES IS DEFINED (in predefines.h)
- * User can modify arbitrarily expression for energy comptation
+ * Users can modify arbitrary expressions for the energy computation.
+ * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param it iteration number
  * @param h_densities structure with densities, see (wiki) documentation for list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
@@ -168,7 +210,7 @@ __global__ void modify_energies(int it, wslda_density h_densities, wslda_potenti
         // // Now ix, iy, iz keeps lattice coordinate.
 
         // compute your contribution to the energy
-        // double myE_contrib += (...)*VOLUME_ELEMENT;
+        // double myE_contrib = (...)*VOLUME_ELEMENT;
 
         // Add contribution to desired tag, for example
         // energy[EPOT*NUMBER_ELEMENT+ixyz]+=myE_contrib;
@@ -207,6 +249,7 @@ extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
  * Scattering length, in code units.
  * This function is meaningful only in the case of BDG or SLDAE functionals.
  * For SLDA and ASLDA the scattering length is assumed to be infinite, and the function is ignored.
+ * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
  * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2),
  *           NOTE: in case of 1d code iy=0
@@ -230,6 +273,11 @@ __device__ double scattering_length(int ix, int iy, int iz, int it, double *para
 /**
  * ------------------------ FOR FUNCTIONAL == CUSTOMEDF ------------------------
  * @see hpc-engine/tdwslda_functionals.h for more details
+ * The function is called by DEVICE. All pointers are DEVICE pointers.
+ * GLOBAL VARIABLES ACCESSIBLE WITHIN ROUTINES BELOW
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
  * */
 
 #if FUNCTIONAL==CUSTOMEDF

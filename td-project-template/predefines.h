@@ -53,6 +53,8 @@
  *       function delta_ext(...) from problem definition will be called in each iteration.
  *   - ENABLE_VELOCITY_EXT:
  *       function velocity_ext(...) from problem definition will be called in each iteration.
+ *   - ENABLE_MODIFY_PDENSITIES:
+ *       function modify_densities(...) from problem definition will be called in each iteration.
  *   - ENABLE_MODIFY_POTENTIALS:
  *       function modify_potentials(...) from problem definition will be called in each iteration.
  *   - ENABLE_MODIFY_ENERGIES:
@@ -62,6 +64,7 @@
 #define ENABLE_V_EXT
 // #define ENABLE_DELTA_EXT
 // #define ENABLE_VELOCITY_EXT
+// #define ENABLE_MODIFY_DENSITIES
 // #define ENABLE_MODIFY_POTENTIALS
 // #define ENABLE_MODIFY_ENERGIES
 
@@ -137,4 +140,4 @@
  * Files: predefines.h, problem-definition.h, logger.h are assumed to be compatible with this API version
  * For list of API versions see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/API-version
  * */
-#define API_VERSION 20221120
+#define API_VERSION 20230426

@@ -3,7 +3,7 @@
 CXX=cc
 # NVCC=nvcc
 HIPCC=hipcc
-PYTHON=python
+PYTHON=python3
 
 # DIRECTORY SETTINGS 
 WSLDADIR=$(WSLDA)
