@@ -638,7 +638,14 @@ int winterp_create_interpolator(char datatype, int datadim, int *dims, double *s
         interp->nz=1;       interp->dz=1.0;
         
         shift=interp->nx*interp->ny*interp->nz;
-        cppmallocl(interp->datak,shift,double complex);
+        if(datatype=='v')
+        {
+            cppmallocl(interp->datak,shift*3,double complex);
+        }
+        else
+        {
+            cppmallocl(interp->datak,shift,double complex);
+        }
         
         if(datatype=='c')
         {
@@ -665,7 +672,14 @@ int winterp_create_interpolator(char datatype, int datadim, int *dims, double *s
         interp->nz=1;       interp->dz=1.0;
 
         shift=interp->nx*interp->ny*interp->nz;
-        cppmallocl(interp->datak,shift,double complex);
+        if(datatype=='v')
+        {
+            cppmallocl(interp->datak,shift*3,double complex);
+        }
+        else
+        {
+            cppmallocl(interp->datak,shift,double complex);
+        }
         
         if(datatype=='c')
         {
@@ -692,7 +706,14 @@ int winterp_create_interpolator(char datatype, int datadim, int *dims, double *s
         interp->nz=dims[2]; interp->dz=spacings[2];
         
         shift=interp->nx*interp->ny*interp->nz;
-        cppmallocl(interp->datak,shift,double complex);
+        if(datatype=='v')
+        {
+            cppmallocl(interp->datak,shift*3,double complex);
+        }
+        else
+        {
+            cppmallocl(interp->datak,shift,double complex);
+        }
         
         if(datatype=='c')
         {
