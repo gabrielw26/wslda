@@ -1,10 +1,15 @@
 /**
  * W-SLDA Toolkit
  *
- * Simple code showing how to compute observables like the energy of the flow and the condensation energy for 3d data
+ * Simple code showing how to compute observables like the energy of the flow and the condensation energy for 3d data.
  *
- * Copy this file to your project folder and compile using:
- *    gcc -std=gnu99 compute-observables-3d.c -I. -I$WSLDA/hpc-engine -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -lm -o compute-observables-3d
+ * To compile this code, you must install the WData C library:
+ *      https://gitlab.fizyka.pw.edu.pl/wtools/wdata
+ *
+ * It is also included in W-SLDA Toolkit.
+ *
+ * Compile:
+ *    gcc -std=gnu99 compute-observables-3d.c -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -lm -o compute-observables-3d
  *
  * */
 
@@ -17,15 +22,23 @@
 #include <complex.h>
 #include "wdata.h"
 
-void something_to_cheer_you_up_pid0(FILE *stream) {} // otherwise, pca_macro.h does not compile
-#include "pca_macro.h"
+#define cppmallocl(pointer,size,type)                                           \
+    if ( ( pointer = (type *) malloc( (size) * sizeof( type ) ) ) == NULL )     \
+    {                                                                           \
+        fprintf( stderr , "ERROR: cannot malloc()! Exiting!\n") ;               \
+        fprintf( stderr , "ERROR: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
+        return -1 ;                                                             \
+    }
+
+// void something_to_cheer_you_up_pid0(FILE *stream) {} // otherwise, pca_macro.h does not compile
+// #include "pca_macro.h"
 
 int main( int argc , char ** argv )
 {
     char *inprefix;
-    if(argc != 2)
+    if(argc != 2 && argc != 3)
     {
-        printf("%s prefix\n", argv[0]);
+        printf("%s prefix dens_eps[optionally]\n", argv[0]);
         return 1;
     }
 
@@ -36,6 +49,9 @@ int main( int argc , char ** argv )
     // create metadata handler
     wdata_metadata md;
     int ierr;
+
+    double dens_eps=1.0e-9;
+    if(argc == 3) dens_eps=atof(argv[2]);
 
     // read metadata from file
     printf("# Reading file `%s`\n", file_name);
@@ -101,7 +117,7 @@ int main( int argc , char ** argv )
 
         double Eflow = 0.0; // \int j^2/2n d^3r, flow energy
         for(ixyz=0; ixyz<nxyz; ixyz++)
-            Eflow+=(pow(j[ixyz+0*nxyz],2)+pow(j[ixyz+1*nxyz],2)+pow(j[ixyz+2*nxyz],2)) / (2.0*rho[ixyz]+1.0e-9) * dxyz;
+            Eflow+=(pow(j[ixyz+0*nxyz],2)+pow(j[ixyz+1*nxyz],2)+pow(j[ixyz+2*nxyz],2)) / (2.0*rho[ixyz]+dens_eps) * dxyz;
 
         double Econd = 0.0; // \int (3/8) \Delta^2*n/eF d^3r, BCS condensation energy
         for(ixyz=0; ixyz<nxyz; ixyz++)
