@@ -699,7 +699,7 @@ int main( int argc , char ** argv )
     double *d_densities_subset=NULL ; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
     if(md.subsetMinEn!=md.subsetMaxEn)
     {
-        if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
+        if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
         
         gpu_exec( host_malloc_pl((size_t)12*NXY*sizeof(double), (void **)&h_densities_subset ) );
         gpu_exec(     gpu_malloc((size_t)12*NXY*sizeof(double), (void **)&d_densities_subset ) );
