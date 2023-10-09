@@ -29,3 +29,5 @@ c-examples/example-write-many
 */.vscode
 c-examples/example-write-many-t_varying
 
+
+tools/wdata-section

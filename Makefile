@@ -32,9 +32,10 @@ tools: lib
 	mkdir -p ./bin/
 	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-stride -I./c/ -L. -lwdata -lm -DWDATA_STRIDE
-	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-merge.c -o ./bin/wdata-merge -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
+	$(CC) ./tools/wdata-section.c -o ./bin/wdata-section -I./c/ -L. -lwdata $(WINTERP) -lm
 
 clean:
 	rm *.o
@@ -50,3 +51,4 @@ clean:
 	rm ./bin/wdata-interpolate
 	rm ./bin/wdata-datadim-up
 	rm ./bin/wdata-merge
+	rm ./bin/wdata-section
