@@ -53,9 +53,9 @@ void print_help(char *pname)
     printf("\t -x, --x1: x-coordinate for starting point, default=0\n");
     printf("\t -y, --y1: y-coordinate for starting point, default=0, Ignore for 1D data\n");
     printf("\t -z, --z1: z-coordinate for starting point, default=0, Ignore for 1D and 2D data\n");
-    printf("\t -i, --x2: x-coordinate for final point, default=nx\n");
-    printf("\t -j, --y2: y-coordinate for final point, default=ny, Ignore for 1D data\n");
-    printf("\t -k, --z2: z-coordinate for final point, default=nz, Ignore for 1D and 2D data\n");
+    printf("\t -i, --x2: x-coordinate for final point, default=nx*dx\n");
+    printf("\t -j, --y2: y-coordinate for final point, default=ny*dy, Ignore for 1D data\n");
+    printf("\t -k, --z2: z-coordinate for final point, default=nz*dz, Ignore for 1D and 2D data\n");
     printf("\t -p, --points: number of sampling points along line (x1,y1,z1)-(x2,y2,z2), default=100\n");
     printf("\t -c, --cycle: cycle id, default=0\n");
     printf("\t -h, --help: print help\n");
@@ -255,9 +255,9 @@ int main( int argc , char ** argv )
     if(x1<0.0) x1=0.0;
     if(y1<0.0) y1=0.0;
     if(z1<0.0) z1=0.0;
-    if(x2<0.0) x2=wdmd.nx;
-    if(y2<0.0) y2=wdmd.ny;
-    if(z2<0.0) z2=wdmd.nz;
+    if(x2<0.0) x2=wdmd.nx*wdmd.dx;
+    if(y2<0.0) y2=wdmd.ny*wdmd.dy;
+    if(z2<0.0) z2=wdmd.nz*wdmd.dz;
     double dx = (x2-x1)/points;
     double dy = (y2-y1)/points;
     double dz = (z2-z1)/points;
