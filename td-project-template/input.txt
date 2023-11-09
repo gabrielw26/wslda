@@ -29,7 +29,7 @@ inittype                0       #  0 - create uniform solution and evolve it,
 outprefix               test    # all output file with start with this prefix
 inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # 1 - allow for overwriting existing files, 0 - do not allow for overwriting existing files
-iogroups                32      # number of IO groups used for parallel reading of data
+iogroups                8       # number of IO groups used for parallel reading of data
                                 # it must be the same as the value used for static calculations.
 checkpoint              1       # do checkpoint at the end of calculation: 1-yes, 0-no
 checkperiod             0       # periodicity of the checkpoint, meaningful only if checkpoint=1
@@ -89,15 +89,15 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver
-init0Na                 28.0   # requested number of particles of type a, default=Na
-init0Nb                 28.0   # requested number of particles of type b, default=Nb
-init0muchange           0.1   # Change rate of chemical potential
-init0Tstart             0.05  # Start temperature, in units of eF, default 0.2
-init0Tstop              0.05  # Stop temperature, in units of eF, default 0.05
-init0DeltaT             0.01  # change of temperature in units of eF, default 0.01
-init0eps                1.0e-9 # epsilon for convergence, default 1.0e-6
-init0scmix              0.5  # mixing parameter in self-consistent process, default 0.25
-init0maxiter            20000 # maximum number of iterations, default 100000
-# init0kc                 3.1415 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
-init0debug              1     # debug level, default=0 (no debug info),
-init0save               1     # save solution
+init0Na                 28.0     # requested number of particles of type a, default=Na
+init0Nb                 28.0     # requested number of particles of type b, default=Nb
+init0muchange           0.1      # Change rate of chemical potential
+init0Tstart             0.0      # Start temperature, in units of eF, default 0.2
+init0Tstop              0.0      # Stop temperature, in units of eF, default 0.05
+init0DeltaT             0.01     # change of temperature in units of eF, default 0.01
+init0eps                1.0e-9   # epsilon for convergence, default 1.0e-6
+init0scmix              0.5      # mixing parameter in self-consistent process, default 0.25
+init0maxiter            2000     # maximum number of iterations, default 100000
+# init0kc                 3.1415  # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
+init0debug              1        # debug level, default=0 (no debug info),
+init0save               1        # save solution
