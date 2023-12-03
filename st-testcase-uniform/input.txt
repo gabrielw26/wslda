@@ -93,13 +93,15 @@ nb                      8
 # For more info see wiki pages: Initialization of the st wslda solvers
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
+# init0na                 0.01689   # ...alternatively, you can request the desired density for particles of type a
+# init0nb                 0.01689   # ...alternatively, you can request the desired density for particles of type b
 # init0muchange           0.1    # change rate of chemical potentials, default muchange
-init0Tstart             0.0    # # start temperature, in units of eF, default value is equal to init0Tstop
-init0Tstop              0.0   # Temperature, in units of eF, default=temperature
-init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
+# init0Tstart             0.0    # # start temperature, in units of eF, default value is equal to init0Tstop
+# init0Tstop              0.0   # Temperature, in units of eF, default=temperature
+# init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
 # init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
 # init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
-init0kc                 2.7 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
+# init0kc                 3.14 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
 init0maxiter            1000   # maximum number of iterations, default=maxiters
 init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
 init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file

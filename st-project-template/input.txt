@@ -125,6 +125,8 @@ nb                      32
 # See: Wiki -> Initialization of the solver
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
+# init0na                 0.01689   # ...alternatively, you can request the desired density for particles of type a
+# init0nb                 0.01689   # ...alternatively, you can request the desired density for particles of type b
 # init0muchange           0.1    # change rate of chemical potentials, default muchange
 # init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
 # init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
