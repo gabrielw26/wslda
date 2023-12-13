@@ -925,7 +925,7 @@ int main( int argc , char ** argv )
     if(info!=0) error_msg_mpi_abort(iam, info!=0);
 
     lwork = ( int ) creal( tw[ 0 ] ) ;
-    lrwork = ( int ) creal( tw_[ 0 ] ) ;
+    lrwork = ( int )tw_[ 0 ] ;
 
     cppmallocl(work, lwork, double complex);
     cppmallocl(rwork, lrwork, double);
