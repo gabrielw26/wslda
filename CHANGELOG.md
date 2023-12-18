@@ -1,5 +1,6 @@
 # 2023.xx.xx
-* Minor improvements of inittype=0 mode
+* Minor improvements of inittype=0 mode.
+* New API_VERSION=20231218. User can define new wdata variables via logger.h.
 
 # 2023.09.16
 * New API_VERSION=20230426. Added modify_densities(...) in td codes.

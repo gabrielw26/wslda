@@ -26,22 +26,24 @@ double energy_unit(double kF, double *mu, double *npart,
 }
 
 /**
- * This function adds new entry to `outprefix`.wlog file.
+ * This function adds a new entry to `outprefix`.wlog file.
  * It is executed at the end of each iteration
- * @param log pointer to file 
+ * @param log pointer to file
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields.
- * @param kF typical Fermi momentum scale of the problem. 
- * @param observable array with observables: 
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields.
+ * @param h_potentials structure with potentials, see (wiki) documentation for the list of fields.
+ * @param kF typical Fermi momentum scale of the problem.
+ * @param mu array with values of chemical potentials
+ * @param observable array with observables:
  *                      contributions to the energy: EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT
+ *                      entropy: ENTROPY
  * @param npart array with computed particle numbers: npart[SPINA] and  npart[SPINB]
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
- * @return 0 if entry has been added successfuly, otherwise return error code. If nonzero value is returned the main code will terminate.
- * 
- * NOTES: 
+ * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
+ *
+ * NOTES:
  *   - in order to access fields from INPUT file use `md` global structure, ie.: md.inittype, md.outprefix, etc.
  * */
 int logger(FILE *log, 
@@ -131,5 +133,76 @@ int logger(FILE *log,
     );
     
     lineid++; // new line 
+    return 0;
+}
+
+/**
+ * Use this routine to customize the metadata file (wtxt) of data sets.
+ * This function is executed once at the beginning of the code.
+ * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
+ *
+ * NOTES:
+ *   - in order to access fields from INPUT file use `md` global structure, ie.: md.inittype, md.outprefix, etc.
+ * */
+int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
+           double *params, size_t extra_data_size, void *extra_data)
+{
+    // // To add variable use this template
+    // //                       var_name       type    unit
+    // wdata_variable var1 = {"real_var_name", "real", "none", "wdat"}; // scalar variable
+    // wdata_add_variable(wdmd, &var1);
+    // wdata_variable var2 = {"complex_var_name", "complex", "none", "wdat"}; // complex variable
+    // wdata_add_variable(wdmd, &var2);
+    // wdata_variable var3 = {"vector_var_name", "vector", "none", "wdat"}; // vector variable
+    // wdata_add_variable(wdmd, &var3);
+
+    return 0;
+}
+
+/**
+ * Use this routine write custom variable to wdata set.
+ * This function is executed once at the beginning of the code.
+ * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
+ * @param it iteration number.
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields.
+ * @param h_potentials structure with potentials, see (wiki) documentation for the list of fields.
+ * @param kF typical Fermi momentum scale of the problem.
+ * @param mu array with values of chemical potentials
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
+ *
+ * NOTES:
+ *   - in order to access fields from INPUT file use `md` global structure, ie.: md.inittype, md.outprefix, etc.
+ * */
+int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
+           int it,
+           wslda_density h_densities, wslda_potential h_potentials,
+           double kF, double *mu,
+           double *params, size_t extra_data_size, void *extra_data)
+{
+    // // DETERMINE LOCAL SIZES OF ARRAYS (CODE DIMENSIONALITY DEPENDENT)
+    // int lNX=h_densities.nx, lNY=h_densities.ny, lNZ=h_densities.nz; // local sizes
+    // int ix, iy, iz, ixyz;
+    //
+    // // ITERATE OVER ALL POINTS
+    // ixyz=0;
+    // for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
+    // {
+    //     double x = DX*(ix-lNX/2);
+    //     double y = DY*(iy-lNY/2); // for 1d code y will be always 0
+    //     double z = DZ*(iz-lNZ/2); // for 1d and 2d codes z will be always 0
+    //
+    //     ixyz++; // go to the next point, it should be the last line of the triple loop
+    // }
+
+    // // to add variable to binary file use this function
+    // wdata_write_cycle(wdmd, "var_name", pointer_to_data);
+
     return 0;
 }
