@@ -7,6 +7,7 @@
  * @date 21.02.2022
  * */  
 
+// -------------------------------- 20220221 --------------------------------
 #if API_VERSION<20220221
 
 #ifdef API_PROBLEM_DEFINITION
@@ -37,7 +38,8 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
 
 #endif
 
-#if API_VERSION<20221114
+// -------------------------------- 20221120 --------------------------------
+#if API_VERSION<20221120
 
 #ifdef API_PROBLEM_DEFINITION
 void modify_energies(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *params, size_t extra_data_size, void *extra_data)
@@ -88,6 +90,47 @@ double energy_unit(double kF, double *mu, double *npart,
 
     return Effg;
 }
+#endif
+
+#endif
+
+// -------------------------------- 20230426 --------------------------------
+#if API_VERSION<20230426
+
+#ifdef API_PROBLEM_DEFINITION
+// empty
+#endif
+
+#ifdef API_LOGGER
+// empty
+#endif
+
+#endif
+
+// -------------------------------- 20231218 --------------------------------
+#if API_VERSION<20231218
+
+#ifdef API_PROBLEM_DEFINITION
+// empty
+#endif
+
+#ifdef API_LOGGER
+
+int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
+           double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}
+
+int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
+           int it,
+           wslda_density h_densities, wslda_potential h_potentials,
+           double kF, double *mu,
+           double *params, size_t extra_data_size, void *extra_data)
+{
+    return 0;
+}
+
 #endif
 
 #endif

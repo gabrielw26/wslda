@@ -1,3 +1,22 @@
+# wdata-section
+*Purpose*: extracts section of selected variable along line specified by two points in space.
+```
+TOOL FOR GENERATING SECTION ALONG LINE (x1,y1,z1)--(x2,y2,z2) FOR SELECTED VARIABLE
+Usage: ./wdata-section -w wtxt -o output -v variable --x1 0 --y1 0 --z1 0 --x2 10 --y2 10 --z2 10 -p 100 -c 0
+         -w, --wtxt: wdata descriptor file [REQUIRED]
+         -v, --var: variable name [REQUIRED]
+         -o, --output: name of output file, default: prefix.var.cycle.txt
+         -x, --x1: x-coordinate for starting point, default=0
+         -y, --y1: y-coordinate for starting point, default=0, Ignore for 1D data
+         -z, --z1: z-coordinate for starting point, default=0, Ignore for 1D and 2D data
+         -i, --x2: x-coordinate for final point, default=nx
+         -j, --y2: y-coordinate for final point, default=ny, Ignore for 1D data
+         -k, --z2: z-coordinate for final point, default=nz, Ignore for 1D and 2D data
+         -p, --points: number of sampling points along line (x1,y1,z1)-(x2,y2,z2), default=100
+         -c, --cycle: cycle id, default=0
+         -h, --help: print help
+```
+
 # wdata-cut 
 *Purpose*: extracts subset from existing wdata set.  
 

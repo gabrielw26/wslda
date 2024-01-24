@@ -9,7 +9,7 @@
  * It is also included in W-SLDA Toolkit.
  *
  * Compile:
- *    gcc -std=gnu99 compute-observables-3d.c -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -lm -o compute-observables-3d
+ *    gcc -std=gnu99 compute-observables.c -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata -lm -o compute-observables
  *
  * */
 
@@ -58,17 +58,21 @@ int main( int argc , char ** argv )
     ierr = wdata_parse_metadata_file(file_name, &md);
     if(ierr!=0) {printf("Cannot read metadata file!\n"); return 1;}
 
-    // get basic info
-    if(md.datadim!=3)
-    {
-        printf("# Error: this code does computation for 3D data [datadim=%d]!\n", md.datadim);
-        return 1;
-    }
     int nx=md.nx, ny=md.ny, nz=md.nz;
-    int nxyz = nx*ny*nz;
+    int nxyz = nx*ny*nz;                  // default for datadim=3
     double dx=md.dx, dy=md.dy, dz=md.dz;
-    double dxyz = dx*dy*dz;
-    int ix, iy, iz, ixyz;
+    double dxyz = dx*dy*dz;               // default for datadim=3
+    if(md.datadim==2)
+    {
+        nxyz = nx*ny;
+        dxyz = dx*dy*(nz*dz);
+    }
+    if(md.datadim==1)
+    {
+        nxyz = nx;
+        dxyz = dx*(ny*dy)*(nz*dz);
+    }
+    int ixyz;
     int nom=md.cycles;
     double dt=md.dt, t0=md.t0, eF, kF;
     eF = wdata_getconst_value(&md, "eF");
@@ -124,7 +128,7 @@ int main( int argc , char ** argv )
         {
             double leF = 0.5*pow(3.0*M_PI*M_PI*rho[ixyz], 2./3.); // local Fermi energy
             double ldelta=cabs(delta[ixyz]);
-            Econd+=(3./8.)*pow(ldelta,2)*rho[ixyz]/(leF+1.0e-9) * dxyz;
+            Econd+=(3./8.)*pow(ldelta,2)*rho[ixyz]/(leF+dens_eps) * dxyz;
         }
 
         fprintf(fout, "%6d %12.6f %12.6f %12.6f %12.6f\n", inom, time*eF, Ntot, Eflow, Econd);

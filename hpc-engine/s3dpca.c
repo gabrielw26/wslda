@@ -828,6 +828,7 @@ int main( int argc , char ** argv )
 
     wdata_metadata wdmd;
     file_operation( create_wdata_metadata(&md, 3, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
+    cpu_exec( add_custom_variable_to_wdata_metadata(&wdmd, dc_params, extra_data_size, extra_data) );
 
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
@@ -853,6 +854,7 @@ int main( int argc , char ** argv )
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
     dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
+    if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it-1, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
     ECHOLINE;
 
@@ -925,7 +927,7 @@ int main( int argc , char ** argv )
     if(info!=0) error_msg_mpi_abort(iam, info!=0);
 
     lwork = ( int ) creal( tw[ 0 ] ) ;
-    lrwork = ( int ) creal( tw_[ 0 ] ) ;
+    lrwork = ( int )tw_[ 0 ] ;
 
     cppmallocl(work, lwork, double complex);
     cppmallocl(rwork, lrwork, double);
@@ -1533,6 +1535,7 @@ int main( int argc , char ** argv )
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
+        if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
 
         // Complete writing wave-functions

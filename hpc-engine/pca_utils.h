@@ -53,6 +53,8 @@ typedef struct
     // INIT-0 parameters
     double init0Na;            // Requested number of particles a-type - uniform solution
     double init0Nb;            // Requested number of particles b-type - uniform solution
+    double init0na;            // Requested density of particles a-type - uniform solution (overwrites init0Na)
+    double init0nb;            // Requested density of particles b-type - uniform solution (overwrites init0Na)
     double init0muchange;           // Change rate of chemical potential
     double init0Tstart;             // Start temperature, in units of eF, default 0.2
     double init0Tstop;              // Stop temperature, in units of eF, default 0.05

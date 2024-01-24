@@ -834,7 +834,7 @@ int main( int argc , char ** argv )
     double *d_densities_subset=NULL ; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
     if(md.subsetMinEn!=md.subsetMaxEn)
     {
-        if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATTES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
+        if(ip==0) wprintf("# ENABLING OF EXTRA TRACKING OF SUBSET OF QUASI_PARTICLE STATES, En/eF in[%f,%f]\n", md.subsetMinEn, md.subsetMaxEn);
         
         gpu_exec( host_malloc_pl((size_t)12*NXYZ*sizeof(double), (void **)&h_densities_subset ) );
         gpu_exec(     gpu_malloc((size_t)12*NXYZ*sizeof(double), (void **)&d_densities_subset ) );
@@ -1010,6 +1010,7 @@ int main( int argc , char ** argv )
     // Create binary files and add initial measurement
     wdata_metadata wdmd; 
     file_operation( create_wdata_metadata(&md, 3, t0, md.timesteps*dt, md.spinsymmetry, &wdmd) );
+    cpu_exec( add_custom_variable_to_wdata_metadata(&wdmd, md.params, extra_data_size, extra_data) );
     
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
@@ -1030,6 +1031,7 @@ int main( int argc , char ** argv )
     gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXYZ*sizeof(double)) );
     set_ptr_d_delta(d_potentials+2*NXYZ);
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
+    if(ip==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd , it, densall, potsall, kF, mu, md.params, extra_data_size, extra_data) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-3d") );
     
     if(ip==0)
@@ -1575,6 +1577,7 @@ int main( int argc , char ** argv )
         gpu_exec( memcopy_gpu2host(d_densities, h_densities,  (size_t)12*NXYZ*sizeof(double)) );
         gpu_exec( memcopy_gpu2host(d_potentials, h_potentials,  (size_t)12*NXYZ*sizeof(double)) );
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
+        if(ip==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd , it, densall, potsall, kF, mu, md.params, extra_data_size, extra_data) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-3d") );
         
         forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
