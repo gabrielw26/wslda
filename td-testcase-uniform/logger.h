@@ -212,7 +212,8 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
  * Use this routine to write wave functions to file.
  * NOTE: to use this routine, you need to be familiar with the MPI and data layout that WSLDA exploits.
  * @param it iteration number.
- * @param ... TODO ...
+ * @param nxyz number of lattice points
+ * @param nwfip number of wave functions per MPI prococess
  * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
@@ -221,14 +222,73 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
  * NOTES:
  *   - in order to access fields from INPUT file use `md` global structure, ie.: md.inittype, md.outprefix, etc.
  * */
-int write_wave_functions(int it, int nwfip, int nwf, double beta, MPI_Comm comm,
+int write_wave_functions(int it, int nxyz, int nwfip, int nwf, double beta, MPI_Comm comm,
                          double complex *h_wf, double *h_qpe, double *h_kky, double *h_kkz, int *h_cnt,  // Host pointers
                          double complex *d_wf,                                                           // Device pointers
                          double *params, size_t extra_data_size, void *extra_data
                         )
 {
-    printf("it=%d, %f", it, input->dt);
-    return 0;
+
+    int ip, np;
+    MPI_Comm_size(comm, &np); // np = total number of processes
+    MPI_Comm_rank(comm, &ip); // id of process st 0 <= ip < np
+
+    // Copy wave functions from device to host
+    memcopy_gpu2host(d_wf, h_wf, (size_t)2*nxyz*nwfip*sizeof(double complex));
+    // set pointers to u and v components
+    double complex *wf_u=h_wf+(size_t)0*nxyz*nwfip; // pointer to nwfip wave functions
+    double complex *wf_v=h_wf+(size_t)1*nxyz*nwfip; // pointer to nwfip wave functions
+
+    // get info about the number of wave functions kept by each MPI process
+    int * wf_tbl = (int *)malloc(np*sizeof(int));
+    MPI_Gather( &nwfip , 1 , MPI_INT , wf_tbl , 1 , MPI_INT , 0 , MPI_COMM_WORLD ) ;
+    MPI_Bcast( wf_tbl , np , MPI_INT , 0 , MPI_COMM_WORLD ) ;
+
+    // use MPI I/O to write a file
+    char file_name[128];
+    MPI_File fh;
+    MPI_Offset my_offset=0;
+    MPI_Status status;
+    int i, cnt ;
+    for(i=0; i<ip; i++) my_offset+=sizeof(double complex)*nxyz*wf_tbl[i];
+
+    // u component
+    sprintf(file_name, "%s_%06d_wf_u.wdat", md.outprefix, it);
+    if(ip==0) printf("# WRITING U COMPONENTS TO FILE `%s`\n", file_name);
+    MPI_File_open(comm, file_name, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    MPI_File_seek(fh, my_offset, MPI_SEEK_SET);
+    MPI_File_write_all(fh, wf_u , nxyz*nwfip, MPI_DOUBLE_COMPLEX, &status);
+    MPI_Get_count(&status, MPI_DOUBLE_COMPLEX, &cnt);
+    if(cnt!=nxyz*nwfip) { printf("# PROBLEM WITH WRITING OF U COMPONENTS BY PROCESS %s!\n", ip); return 1; }
+    MPI_File_close(&fh);
+
+    // v component
+    sprintf(file_name, "%s_%06d_wf_v.wdat", md.outprefix, it);
+    if(ip==0) printf("# WRITING V COMPONENTS TO FILE `%s`\n", file_name);
+    MPI_File_open(comm, file_name, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    MPI_File_seek(fh, my_offset, MPI_SEEK_SET);
+    MPI_File_write_all(fh, wf_v , nxyz*nwfip, MPI_DOUBLE_COMPLEX, &status);
+    MPI_Get_count(&status, MPI_DOUBLE_COMPLEX, &cnt);
+    if(cnt!=nxyz*nwfip) { printf("# PROBLEM WITH WRITING OF V COMPONENTS BY PROCESS %s!\n", ip); return 2; }
+    MPI_File_close(&fh);
+
+    // to be able to see the wave functions in VisIt add wtxt file
+    // see documentation of WDATA for more details
+    wdata_metadata wdmd;
+    wdmd.datadim = CODEDIM;
+    wdmd.nx = NX; wdmd.ny = NY; wdmd.nz = NZ;
+    wdmd.dx = DX; wdmd.dy = DY; wdmd.dz = DZ;
+    sprintf(wdmd.prefix, "%s_%06d", md.outprefix, it);
+    wdmd.t0 = 0.0; wdmd.dt = 1.0; wdmd.cycles=nwf;
+    wdata_variable vwf_u = {"wf_u", "complex", "none", "wdat"}; wdata_add_variable(&wdmd, &vwf_u);
+    wdata_variable vwf_v = {"wf_v", "complex", "none", "wdat"}; wdata_add_variable(&wdmd, &vwf_v);
+    sprintf(file_name, "%s_%06d.wtxt", md.outprefix, it);
+    if(ip==0) wdata_write_metadata_to_file(&wdmd,file_name);
+
+    // clear memory
+    free(wf_tbl);
+
+    return 0; // return OK status
 }
 
 

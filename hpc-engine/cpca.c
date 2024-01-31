@@ -929,7 +929,7 @@ int main( int argc , char ** argv )
     }
 
     // write wave-functions
-    cpu_exec ( write_wave_functions(it, nwfip, nwf, beta, MPI_COMM_WORLD,
+    cpu_exec ( write_wave_functions(it, NXY, nwfip, nwf, beta, MPI_COMM_WORLD,
                                     h_wavefun, h_fbetaEn, NULL, h_kkz, h_cnt, d_wf,
                                     md.params, extra_data_size, extra_data) );
     
@@ -1452,7 +1452,7 @@ int main( int argc , char ** argv )
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-2d") );
 
         // write wave-functions
-        cpu_exec ( write_wave_functions(it, nwfip, nwf, beta, MPI_COMM_WORLD,
+        cpu_exec ( write_wave_functions(it, NXY, nwfip, nwf, beta, MPI_COMM_WORLD,
                                         h_wavefun, h_qpe_nwfip, NULL, h_kkz, h_cnt, d_wf,
                                         md.params, extra_data_size, extra_data) );
                 
