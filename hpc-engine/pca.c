@@ -71,6 +71,7 @@ int main( int argc , char ** argv )
     double complex *h_wavefun; // pointer to wave-functions on host (cpu) side 
     double *h_fbetaEn; // pointer to weights of wave-functions on host (cpu) side
     double *d_fbetaEn; // pointer to weights of wave-functions on device (gpu) side
+    int    *h_cnt; // pointer to degenerecy of the state on host (cpu) side
     double *h_En; // pointer to eigen-values of wave-functions on host (cpu) side
     double *h_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
     double *d_densities; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (GPU)
@@ -827,7 +828,9 @@ int main( int argc , char ** argv )
     // copy weights
     for(i=0; i<nwfip; i++) h_qpe_nwfip[i]=fbeta(h_fbetaEn[i],beta); 
     gpu_exec( memcopy_host2gpu(h_qpe_nwfip, d_fbetaEn,  (size_t)nwfip*sizeof(double)) );  
-    
+    cppmallocl(h_cnt, nwfip,int);
+    for(i=0; i<nwfip; i++) h_cnt[i]=1; // no degeneracy
+
     // subset tracking
     double *h_weight_subset=NULL , *d_weight_subset=NULL;
     double *h_densities_subset=NULL; // pointer to array of densities [rho_a, rho_b, tau_a, tau_b, nu, \vec{j}_a, \vec{j}_b] (CPU)
@@ -1039,8 +1042,7 @@ int main( int argc , char ** argv )
 #ifdef STORE_QPE
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, NY, NZ, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
-        // save zeros for qpe for initial measurement - to avoid expensive computation of qpe
-        for(i=0; i<nwf; i++) h_qpe_nwf[i]=0.0;
+        MPI_Gatherv(h_fbetaEn,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );   
 #endif
@@ -1058,6 +1060,11 @@ int main( int argc , char ** argv )
         wslda_density densall_subset = convert_into_wslda_density(h_densities_subset, NXYZ);
         file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
     }
+
+    // write wave-functions
+    cpu_exec ( write_wave_functions(it, nwfip, nwf, beta, MPI_COMM_WORLD,
+                                    h_wavefun, h_fbetaEn, NULL, NULL, h_cnt, d_wf,
+                                    md.params, extra_data_size, extra_data) );
     
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
@@ -1522,9 +1529,9 @@ int main( int argc , char ** argv )
         }
         
         // ----------------------------- measurement -------------------------------------
-#ifdef STORE_QPE
         // Save quasiparticle energies - computation of energy will destroy them
         gpu_exec( memcopy_gpu2host(d_workarea, h_qpe_nwfip,  (size_t)nwfip*sizeof(double)) );
+#ifdef STORE_QPE
         MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
         if(ip==0)
         {
@@ -1579,6 +1586,11 @@ int main( int argc , char ** argv )
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
         if(ip==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd , it, densall, potsall, kF, mu, md.params, extra_data_size, extra_data) );
         if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-3d") );
+
+        // write wave-functions
+        cpu_exec ( write_wave_functions(it, nwfip, nwf, beta, MPI_COMM_WORLD,
+                                        h_wavefun, h_qpe_nwfip, NULL, NULL, h_cnt, d_wf,
+                                        md.params, extra_data_size, extra_data) );
         
         forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
         if(ip==0) 

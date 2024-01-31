@@ -164,7 +164,7 @@ int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
 }
 
 /**
- * Use this routine write custom variable to wdata set.
+ * Use this routine to write custom variable to wdata set.
  * This function is executed once at the beginning of the code.
  * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
  * @param it iteration number.
@@ -206,3 +206,29 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
 
     return 0;
 }
+
+
+/**
+ * Use this routine to write wave functions to file.
+ * NOTE: to use this routine, you need to be familiar with the MPI and data layout that WSLDA exploits.
+ * @param it iteration number.
+ * @param ... TODO ...
+ * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
+ * @param extra_data optional set of data uploaded by load_extra_data()
+ * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
+ *
+ * NOTES:
+ *   - in order to access fields from INPUT file use `md` global structure, ie.: md.inittype, md.outprefix, etc.
+ * */
+int write_wave_functions(int it, int nwfip, int nwf, double beta, MPI_Comm comm,
+                         double complex *h_wf, double *h_qpe, double *h_kky, double *h_kkz, int *h_cnt,  // Host pointers
+                         double complex *d_wf,                                                           // Device pointers
+                         double *params, size_t extra_data_size, void *extra_data
+                        )
+{
+    printf("it=%d, %f", it, input->dt);
+    return 0;
+}
+
+
