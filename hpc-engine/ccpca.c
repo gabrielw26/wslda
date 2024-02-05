@@ -779,12 +779,13 @@ int main( int argc , char ** argv )
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "td", it, densall, potsall) );
     if(ip==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd , it, densall, potsall, kF, mu, md.params, extra_data_size, extra_data) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-1d") );
+
+    MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
     if(ip==0)
     {  
 #ifdef STORE_QPE
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
-        MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );  
 #endif
