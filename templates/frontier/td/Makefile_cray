@@ -10,8 +10,8 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS= -D__HIP_PLATFORM_AMD__ -I$(ROCM_PATH)/include
-HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a -xhip
+CFLAGS= -D__HIP_PLATFORM_AMD__ -I$(ROCM_PATH)/include -O3
+HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a -xhip -O3
 
 # LIBRARIES
 LIBS= -L$(ROCM_PATH)/lib -lamdhip64 -lhipfft -L$(CRAYLIBS_X86_64)/lib -lcraymath
