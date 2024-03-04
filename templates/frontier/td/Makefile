@@ -1,7 +1,5 @@
-
 # COMPILERS
 CXX=cc
-# NVCC=nvcc
 HIPCC=hipcc
 PYTHON=python3
 
@@ -12,12 +10,11 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS=-D__HIP_PLATFORM_AMD__ -I$(HIP_PATH)/include -O3
-# NVCCFLAGS= 
-HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a -O3
+CFLAGS= -D__HIP_PLATFORM_AMD__ -I$(ROCM_PATH)/include -O3
+HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a -xhip -O3
 
 # LIBRARIES
-LIBS= -L$(HIP_LIB_PATH) -lamdhip64 -L$(EBROOTHIPFFT)/lib -lhipfft -lm
+LIBS= -L$(ROCM_PATH)/lib -lamdhip64 -lhipfft -L$(CRAYLIBS_X86_64)/lib -lcraymath
 
 
 # ----- DO NOT MODIFY -----

@@ -134,3 +134,25 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
 #endif
 
 #endif
+
+// -------------------------------- 20240131 --------------------------------
+#if API_VERSION<20240131
+
+#ifdef API_PROBLEM_DEFINITION
+// empty
+#endif
+
+#ifdef API_LOGGER
+
+int write_wave_functions(int it, int nxyz, int nwfip, int nwf, double beta, MPI_Comm comm,
+                         double complex *h_wf, double *h_qpe, double *h_kky, double *h_kkz, int *h_cnt,  // Host pointers
+                         double complex *d_wf,                                                           // Device pointers
+                         double *params, size_t extra_data_size, void *extra_data
+                        )
+{
+    return 0;
+}
+
+#endif
+
+#endif

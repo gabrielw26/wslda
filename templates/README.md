@@ -10,6 +10,7 @@
 * `lumi`: https://www.lumi-supercomputer.eu/
 * `athena`: https://docs.cyfronet.pl/display/~plgpawlik/Athena
 * `kamiak`: https://hpc.wsu.edu/kamiak-hpc/what-is-kamiak/
+* `frontier`: https://www.olcf.ornl.gov/frontier/
 
 ## Installing templates
 You can use tool

@@ -18,7 +18,7 @@
  * Switch function.
  * It rises smoothly from zero to one in range interval [0,1]
  * @param x
- * @param alpha controls smoothness of the step function
+ * @param alpha controls the smoothness of the step function
  * */
 CDECORATOR
 double smooth_from0to1(double x, double alpha)
@@ -29,6 +29,24 @@ double smooth_from0to1(double x, double alpha)
 }
 
 /**
+ * Function of form:
+ * f(x) = lv for x < xl;
+ *      = smooth switch from lv to rv for x in [xl,xr]
+ *      = rv for x > xr;
+ * @param x
+ * @param xl x coordinate for start of switching
+ * @param xr x coordinate for stop of switching
+ * @param lv left value, for x<xl
+ * @param rv right value, for x>xr
+ * @param alpha controls the smoothness of the step function
+ * */
+CDECORATOR
+double smooth_fromatob(double x, double xl, double xr, double lv, double rv)
+{
+    return lv + (rv-lv)*smooth_from0to1((x-xl)/(xr-xl),1.0);
+}
+
+/**
  * Smooth step function:
  *   [-infty,    x11) : 0
  *   [   x11,    x12) : increases smoothly from 0 to 1
@@ -36,7 +54,7 @@ double smooth_from0to1(double x, double alpha)
  *   [   x21,    x22) : decreases smoothly from 1 to 0
  *   [   x22, +infty] : 0
  * @param x
- * @param alpha controls smoothness of the step function
+ * @param alpha controls the smoothness of the step function
  * */
 CDECORATOR
 double smooth_step(double x, double x11, double x12, double x21, double x22, double alpha)

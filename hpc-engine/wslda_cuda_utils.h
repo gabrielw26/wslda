@@ -11,6 +11,10 @@
 #ifndef __WSLDA_CUDA_UTILS__
 #define __WSLDA_CUDA_UTILS__
 
+// patch for HIP mode
+#define hipHostAlloc hipHostMalloc
+
+
 // ===========================================================================
 // ============================ CONSTANTS ====================================
 // ===========================================================================
@@ -319,5 +323,8 @@ int cuda_scale_array_elements(int array_dim, double *array,  double value, int n
     kernel_cuda_scale_array_elements<<<nblocks, nthreads>>>(array_dim, array, value);
     return 0;
 }
+
+// patch for HIP mode
+#undef hipHostAlloc
 
 #endif
