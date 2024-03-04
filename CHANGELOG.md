@@ -1,7 +1,8 @@
-# 2023.xx.xx
+# 2023.03.01
 * Minor improvements of inittype=0 mode.
-* New API_VERSION=20240131. User can write wave functions from td code to file via logger.h and define new wdata variables via logger.h
-* Minor improvements in version for HIPMODE version.
+* New API_VERSION=20240131. Users can write wave functions from td code to file via logger.h and define new wdata variables via logger.h
+* Minor improvements in the HIPMODE version.
+* The database of internal tests has been extended.
 
 # 2023.09.16
 * New API_VERSION=20230426. Added modify_densities(...) in td codes.
