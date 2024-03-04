@@ -567,9 +567,7 @@ int main( int argc , char* argv[] )
         fftw_execute(plan_f);  
         for(ixyz=0; ixyz<nxyz; ixyz++) rho_b_k[ixyz]=delta_k[ixyz]/nxyz; 
         
-        // TODO  dla prądów
-        
-        
+
         for(ixyz=0; ixyz<nxyz; ixyz++) delta_k[ixyz]=delta[ixyz];
         fftw_execute(plan_f);  
         for(ixyz=0; ixyz<nxyz; ixyz++) delta_k[ixyz]=delta_k[ixyz]/nxyz;     
@@ -726,7 +724,6 @@ int main( int argc , char* argv[] )
         vortex_core.setY(_ys);
         rg = vortex_core; // use it as new value for starting point
                        
-//         break; // TODO remove
     }
     
     printf("# VORTEX-TRACKER: Done.\n");

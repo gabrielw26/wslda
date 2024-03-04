@@ -8,7 +8,8 @@
 #   export PATH=$PATH:/opt/HIPIFY/bin
 
 # SETTINGS
-HIPIFY_CMD="hipify-perl -hip-kernel-execution-syntax"
+HIPIFY_CMD="hipify-perl"
+# HIPIFY_CMD="hipify-perl -hip-kernel-execution-syntax"
 
 echo "---> Converting WSLDA to HIP environment."
 set -x

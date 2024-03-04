@@ -45,6 +45,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 200.0, // npart;
 -1.0, // init0Na;
 -1.0, // init0Nb;
+0.0, // init0na;
+0.0, // init0nb;
 -1.0, // init0muchange;
 -1.0, // init0Tstart;
 -1.0, // init0Tstop;
@@ -261,6 +263,16 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.init0Na);
         else if (strcmp (tag,"init0Nb") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0Nb);
+        else if (strcmp (tag,"init0na") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.init0na);
+            md.init0Na=md.init0na*LXYZ;
+        }
+        else if (strcmp (tag,"init0nb") == 0)
+        {
+            sscanf (s,"%s %lf %*s",tag,&md.init0nb);
+            md.init0Nb=md.init0nb*LXYZ;
+        }
         else if (strcmp (tag,"init0muchange") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.init0muchange);
         else if (strcmp (tag,"init0Tstart") == 0)

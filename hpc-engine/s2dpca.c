@@ -884,6 +884,7 @@ int main( int argc , char ** argv )
 
     wdata_metadata wdmd;
     file_operation( create_wdata_metadata(&md, CODEDIM, 1.0*(it-1), 1.0, md.spinsymmetry, &wdmd) );
+    cpu_exec( add_custom_variable_to_wdata_metadata(&wdmd, dc_params, extra_data_size, extra_data) );
 
     // set constants
     wdata_setconst(&wdmd, "kF", kF);
@@ -913,6 +914,7 @@ int main( int argc , char ** argv )
     modify_potentials(it-1, densall, potsall, dc_params, extra_data_size, extra_data) ;
     dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
     file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it-1, densall, potsall) );
+    if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it-1, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
 #if CODEDIM==1
     if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-1d") );
 #else
@@ -1656,6 +1658,7 @@ int main( int argc , char ** argv )
         wdata_setconst(&wdmd, "mu_a", mu[SPINA]);
         wdata_setconst(&wdmd, "mu_b", mu[SPINB]);
         file_operation( write_measurments(&wdmd, MPI_COMM_WORLD, "st", it, densall, potsall) );
+        if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
 #if CODEDIM==1
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-1d") );
 #else

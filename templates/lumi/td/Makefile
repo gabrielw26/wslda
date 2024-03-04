@@ -12,9 +12,9 @@ OBJDIR=./obj/
 BINDIR=./
 
 # COMPILER FLAGS
-CFLAGS=-D__HIP_PLATFORM_AMD__ -I$(HIP_PATH)/include
+CFLAGS=-D__HIP_PLATFORM_AMD__ -I$(HIP_PATH)/include -O3
 # NVCCFLAGS= 
-HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a 
+HIPCCFLAGS=-std=c++14 --offload-arch=gfx90a -O3
 
 # LIBRARIES
 LIBS= -L$(HIP_LIB_PATH) -lamdhip64 -L$(EBROOTHIPFFT)/lib -lhipfft -lm

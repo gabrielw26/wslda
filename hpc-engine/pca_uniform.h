@@ -219,8 +219,14 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     double ec=md.ec;
 
     // iterate over temperatures range
-    for(T=md.init0Tstart; T>=md.init0Tstop; T-=md.init0DeltaT)
+    double md_init0Tstart=fabs(md.init0Tstart);
+    double md_init0Tstop=fabs(md.init0Tstop);
+    double md_init0DeltaT=fabs(md.init0DeltaT);
+    double dsT=1.0, TT;
+    if(md_init0Tstart<md_init0Tstop) dsT=-1.0; // it is trick to allow increasing or decreasing temparture
+    for(TT=md_init0Tstart*dsT; TT>=md_init0Tstop*dsT; TT-=md_init0DeltaT)
     {
+        T=TT*dsT; // it should be always positive
         if(T<0.0) break;
         if(T<=1.0e-16) beta=1.0e16;
         else beta=1.0/(T*eF_avg);
@@ -1194,8 +1200,15 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     double energy_kin, energy_pot, energy_pair, energy_tot;
     double ec;
 
-    for(T=md.init0Tstart; T>=md.init0Tstop; T-=md.init0DeltaT)
+    // iterate over temperatures range
+    double md_init0Tstart=fabs(md.init0Tstart);
+    double md_init0Tstop=fabs(md.init0Tstop);
+    double md_init0DeltaT=fabs(md.init0DeltaT);
+    double dsT=1.0, TT;
+    if(md_init0Tstart<md_init0Tstop) dsT=-1.0; // it is trick to allow increasing or decreasing temparture
+    for(TT=md_init0Tstart*dsT; TT>=md_init0Tstop*dsT; TT-=md_init0DeltaT)
     {
+        T=TT*dsT; // it should be always positive
         if(T<0.0) break;
         if(T<=1.0e-16) beta=1.0e16;
         else beta=1.0/(T*eF_avg);
@@ -1670,8 +1683,14 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
 
     // iterate over temperatures range
-    for(T=md.init0Tstart; T>=md.init0Tstop; T-=md.init0DeltaT)
+    double md_init0Tstart=fabs(md.init0Tstart);
+    double md_init0Tstop=fabs(md.init0Tstop);
+    double md_init0DeltaT=fabs(md.init0DeltaT);
+    double dsT=1.0, TT;
+    if(md_init0Tstart<md_init0Tstop) dsT=-1.0; // it is trick to allow increasing or decreasing temparture
+    for(TT=md_init0Tstart*dsT; TT>=md_init0Tstop*dsT; TT-=md_init0DeltaT)
     {
+        T=TT*dsT; // it should be always positive
         if(T<0.0) break;
         if(T<=1.0e-16) beta=1.0e16;
         else beta=1.0/(T*eF_avg);
