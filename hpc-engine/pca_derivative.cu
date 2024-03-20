@@ -872,3 +872,30 @@ extern "C" int high_frequency_filter_d(double *in, double *out,
     
     return 0;
 }
+
+/**
+ * The function removes high frequencies from the signal represented by in array.
+ * The method uses the spectral method:
+ *     in ->fft->multiply by FD(mu,T)->ifft->out,
+ * where FD(mu,T)=1.0/(exp((ek-mu)/T)+1.0) is the Fermi-Dirac function and ek=k^2/2.
+ * @param n number of arrays (MASSIVE MODE)
+ * @param in signal to be cleaned (INPUT)
+ * @param out can be the same as input (OUTPUT)
+ * @param mu parameter of FD function (INPUT)
+ * @param T parameter of FD function (INPUT)
+ * @return 0-OK, otherwise PROBLEM
+ * */
+extern "C" int high_frequency_filter_massive_d(int n, double *in, double *out,
+                                     double fd_mu, double fd_T,
+                                     int nthreads)
+{
+    // FIXME: it can be improved by executing FFT Many
+    int i, ierr;
+    for(i=0; i<n; i++)
+    {
+        ierr = high_frequency_filter_d(in+i*NXYZ, out+i*NXYZ, fd_mu,fd_T,nthreads);
+        if(ierr!=0) return ierr;
+    }
+
+    return 0;
+}
