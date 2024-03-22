@@ -1,3 +1,6 @@
+# 2024.xx.xx
+* Improved stability of td codes (filtering of noise from mean-fields).
+
 # 2024.03.01
 * Minor improvements of inittype=0 mode.
 * New API_VERSION=20240131. Users can write wave functions from td code to file via logger.h and define new wdata variables via logger.h

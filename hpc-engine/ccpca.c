@@ -876,7 +876,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
-            if(md.hkf_mu<9.9*Emax)
+            if(md.hkf_mode>=1)
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }
@@ -971,7 +971,7 @@ int main( int argc , char ** argv )
             // NOTE - densities and potentials are computed for midpoint 
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
-            if(md.hkf_mu<9.9*Emax)
+            if(md.hkf_mode>=1)
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }
@@ -1174,7 +1174,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
-            if(md.hkf_mu<9.9*Emax)
+            if(md.hkf_mode>=1)
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }
@@ -1253,7 +1253,7 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );  
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
-            if(md.hkf_mu<9.9*Emax)
+            if(md.hkf_mode>=1)
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }

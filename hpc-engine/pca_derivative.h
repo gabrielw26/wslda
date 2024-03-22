@@ -19,6 +19,7 @@ int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 int compute_laplace(int n, cufftDoubleComplex *wf, cufftDoubleComplex *wf_laplace, int nthreads);
 int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
 int high_frequency_filter_d(double *in, double *out, double fd_mu, double fd_T, int nthreads);
+int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComplex *out, double fd_mu, double fd_T, int nthreads);
 int high_frequency_filter_massive_d(int n, double *in, double *out, double fd_mu, double fd_T, int nthreads);
 
 #ifdef TDWSLDA_MAIN
