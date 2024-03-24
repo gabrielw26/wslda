@@ -933,8 +933,8 @@ extern "C" int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComple
 
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
-    double * p_tmp = (double *)(p_fx+NXYZ);
-    if( cudaMemcpy( p_tmp , in , NXYZ*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufftDoubleComplex * p_tmp = (cufftDoubleComplex *)(p_fx+NXYZ);
+    if( cudaMemcpy( p_tmp , in , NXYZ*sizeof(cufftDoubleComplex), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
     cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], p_tmp, p_fx, CUFFT_FORWARD);
 #else
     cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], in, p_fx, CUFFT_FORWARD);
