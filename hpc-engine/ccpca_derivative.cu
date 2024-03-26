@@ -765,7 +765,7 @@ extern "C" int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComple
     cufftResult cufft_result;
 
     // number of blocks
-    int nblocks = (int)ceil((float)(NX/nthreads));
+    int nblocks = (int)ceil((float)(NX)/nthreads);
 
     // get pointer to workspace
     cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
