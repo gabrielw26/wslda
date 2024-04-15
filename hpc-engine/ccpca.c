@@ -116,7 +116,7 @@ int main( int argc , char ** argv )
     double rt;    
     
     // quantum friction
-    double qfalpha=0.0;
+    double qfswitch_it=0.0;
     
     // current corrections
     double cccoeff=0.0;
@@ -233,8 +233,13 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // ======================== ALLOCATE GPU AND CPU BUFFERS ==============================
     // ====================================================================================
-    gpu_exec( host_malloc_pl((size_t)12*NX*sizeof(double), (void **)&h_densities) );
-    gpu_exec(     gpu_malloc((size_t)12*NX*sizeof(double), (void **)&d_densities) );
+    // quantum friction buffers
+    mpipackagesize=12;
+    if(md.qfalpha>0.0 || md.qfbeta>0.0 || md.qfgamma>0.0) mpipackagesize += 3;// quantum friction is expected to be used
+
+    gpu_exec( host_malloc_pl((size_t)mpipackagesize*NX*sizeof(double), (void **)&h_densities) );
+    gpu_exec(     gpu_malloc((size_t)mpipackagesize*NX*sizeof(double), (void **)&d_densities) );
+    double *d_qf_densities=d_densities + 12*NX; // to simplify notation
     
     // potentials
     gpu_exec( host_malloc_pl((size_t)12*NX*sizeof(double), (void **)&h_potentials) );
@@ -840,12 +845,12 @@ int main( int argc , char ** argv )
         {
             // ----------------------------- predictor -----------------------------------
             // compute value of quantum friction coefficient
-            qfalpha = 0.0; // NOTE: I assume there is no quantum friction during the first steps
+            qfswitch_it = 0.0; // NOTE: I assume there is no quantum friction during the first steps
             cccoeff = h_smooth_step(t0+it*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
             
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
-            if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
+            if(qfswitch_it>0.0) gradients_computed=1; else gradients_computed=0;
 #endif
             if(gradients_computed)
             {
@@ -889,7 +894,7 @@ int main( int argc , char ** argv )
             gpu_exec( memcopy_gpu2gpu(d_wf, d_fkm3, (size_t)2*nwfip*NX*sizeof(double complex)) );
             gpu_exec( apply_hamiltonian(0, nwfip, d_fkm3, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
-                                    d_densities, d_potentials, qfalpha, NULL, cccoeff, 
+                                    d_densities, d_potentials, qfswitch_it, NULL, cccoeff,
                                     md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
@@ -921,7 +926,7 @@ int main( int argc , char ** argv )
                 // H*psi
                 gpu_exec( apply_hamiltonian(0, nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
-                                        d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
+                                        d_densities, d_potentials, qfswitch_it, d_qpe, cccoeff,
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
@@ -934,12 +939,12 @@ int main( int argc , char ** argv )
             
             // ----------------------------- corrector -----------------------------------
             // compute value of quantum friction coefficient
-            qfalpha = 0.0; // NOTE: I assume there is no quantum friction during the first steps
+            qfswitch_it = 0.0; // NOTE: I assume there is no quantum friction during the first steps
             cccoeff = h_smooth_step(t0+it*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
-            if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
+            if(qfswitch_it>0.0) gradients_computed=1; else gradients_computed=0;
 #endif
             if(gradients_computed)
             {
@@ -1000,7 +1005,7 @@ int main( int argc , char ** argv )
             // H*psi - first execution
             gpu_exec( apply_hamiltonian(0, nwfip, d_wf, d_fkm1, /* NOTE - d_fkm1 as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
-                                    d_densities, d_potentials, qfalpha, NULL, cccoeff, 
+                                    d_densities, d_potentials, qfswitch_it, NULL, cccoeff,
                                     md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
@@ -1029,7 +1034,7 @@ int main( int argc , char ** argv )
                 // H*psi
                 gpu_exec( apply_hamiltonian(0, nwfip, d_fkm2, d_fkm1,
                                         d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
-                                        d_densities, d_potentials, qfalpha, d_qpe, cccoeff, 
+                                        d_densities, d_potentials, qfswitch_it, d_qpe, cccoeff,
                                         md.nthreads) );
                 // Add contribution from Taylor expansion
                 gpu_exec( taylor_expansion_contribution(i_meas+1, dt, nwfip, d_fkm1, d_wf, d_fkm2, md.nthreads) );
@@ -1133,7 +1138,7 @@ int main( int argc , char ** argv )
         {
             // ----------------------------- predictor -----------------------------------
             // compute value of quantum friction coefficient and current corrections coeff
-            qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
+            qfswitch_it = quantum_friction_switch(t0+(it+1)*dt, eF);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
             gpu_exec( abm_step1(nwfip, d_wf, d_fkm1, d_fkm2, d_fkm3, d_fkm4, d_fkm5, INTEGRATION_SCHEME, md.nthreads) );
@@ -1142,7 +1147,7 @@ int main( int argc , char ** argv )
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
-            if(qfalpha>0.0) gradients_computed=1; else gradients_computed=0;
+            if(qfswitch_it>0.0) gradients_computed=1; else gradients_computed=0;
 #endif
             if(gradients_computed)
             {
@@ -1155,7 +1160,12 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            mpipackagesize = EXCHANGE_SIZE;
+            if(qfswitch_it>0.0) // quantum friction is on
+            {
+                gpu_exec( calculate_quantum_friction_densities(nwfip, d_wf, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_qf_densities, md.nthreads) );
+                mpipackagesize = 12+3;
+            }
+            else mpipackagesize = EXCHANGE_SIZE;
 #ifdef USE_GPU_AWARE_MPI
             MPI_Allreduce( MPI_IN_PLACE, d_densities, mpipackagesize*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
@@ -1186,12 +1196,12 @@ int main( int argc , char ** argv )
             // H*psi
             gpu_exec( apply_hamiltonian(it+1, nwfip, d_wf, d_wf_laplace, /* NOTE - d_wf_laplace as output buffer  */
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace,
-                                    d_densities, d_potentials, qfalpha, NULL, cccoeff, 
+                                    d_densities, d_potentials, qfswitch_it, NULL, cccoeff,
                                     md.nthreads) ); 
             
             // ----------------------------- corrector -----------------------------------
             // compute value of quantum friction coefficient  and current corrections coeff
-            qfalpha = md.qfalpha*h_smooth_step(t0+(it+1)*dt, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
+            qfswitch_it = quantum_friction_switch(t0+(it+1)*dt, eF);
             cccoeff = h_smooth_step(t0+(it+1)*dt, md.ccstart/eF,  md.ccstop/eF,  md.ccswitch/eF, 1.0);
 
 #if INTEGRATION_SCHEME==AB3AM4
@@ -1209,7 +1219,7 @@ int main( int argc , char ** argv )
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             // derivatives
 #ifdef FAST_CONST_EFFECTIVE_MASS_MODE
-            if(qfalpha>0.0 || i_step==md.timesteps-1) gradients_computed=1; else gradients_computed=0;
+            if(qfswitch_it>0.0 || i_step==md.timesteps-1) gradients_computed=1; else gradients_computed=0;
 #endif
             if(gradients_computed)
             {
@@ -1222,7 +1232,13 @@ int main( int argc , char ** argv )
             // densities - local reduction
             gpu_exec( calculate_densities(nwfip, d_wf, d_wf_d_dx, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_densities, gradients_computed, md.nthreads) );
             // densities - global reduction
-            if(i_step==md.timesteps-1) mpipackagesize = 12; else mpipackagesize = EXCHANGE_SIZE;
+            if(qfswitch_it>0.0) // quantum friction is on
+            {
+                gpu_exec( calculate_quantum_friction_densities(nwfip, d_wf, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_qf_densities, md.nthreads) );
+                mpipackagesize = 12+3;
+            }
+            else if(i_step==md.timesteps-1) mpipackagesize = 12;
+            else mpipackagesize = EXCHANGE_SIZE;
 #ifdef USE_GPU_AWARE_MPI
             MPI_Allreduce( MPI_IN_PLACE, d_densities, mpipackagesize*NX, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
@@ -1284,7 +1300,7 @@ int main( int argc , char ** argv )
             // H*psi
             gpu_exec( apply_hamiltonian(it+1, nwfip, d_wf, d_fkm1,
                                     d_wf_d_dx, d_kkyz, d_wf_laplace, d_alphawf_laplace, 
-                                    d_densities, d_potentials, qfalpha, NULL, cccoeff, 
+                                    d_densities, d_potentials, qfswitch_it, NULL, cccoeff,
                                     md.nthreads) );            
             
             it++; // update global time counter

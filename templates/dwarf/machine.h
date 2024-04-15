@@ -104,9 +104,12 @@ int assign_deviceid_to_mpi_process(MPI_Comm comm)
 
     int ompi_ppn=4;
     if(strcmp (processor_name,"node2061.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
+    if(strcmp (processor_name,"node2062.grid4cern.if.pw.edu.pl")==0) ompi_ppn=4;
+    if(strcmp (processor_name,"node2063.grid4cern.if.pw.edu.pl")==0) ompi_ppn=4;
+    if(strcmp (processor_name,"node2064.grid4cern.if.pw.edu.pl")==0) ompi_ppn=1;
+    if(strcmp (processor_name,"node2065.grid4cern.if.pw.edu.pl")==0) ompi_ppn=4;
     if(strcmp (processor_name,"node2067.grid4cern.if.pw.edu.pl")==0) ompi_ppn=8;
-    if(strcmp (processor_name,"node2068.grid4cern.if.pw.edu.pl")==0) ompi_ppn=2;
+    if(strcmp (processor_name,"node2068.grid4cern.if.pw.edu.pl")==0) ompi_ppn=1;
 
 
     deviceid=ip % 8;

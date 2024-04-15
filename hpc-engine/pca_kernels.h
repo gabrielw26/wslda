@@ -72,7 +72,7 @@ int compute_potentials(int it, double *d_densities, double *d_potentials, double
 int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads);
 int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
+                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double cccoeff,
                             int nthreads);
 int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
                               double *workarea, int nthreads);

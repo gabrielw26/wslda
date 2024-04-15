@@ -232,6 +232,7 @@ int copy_input_file(char * input_file, char * file_name);
 int wslda_check_settings();
 
 int wslda_check_array_against_naninf(int n, double *array);
+unsigned long wslda_control_sum(int n, double *array);
 
 void wprintf( const char * format, ... );
 void wfprintf(FILE *stream,  const char * format, ... );
@@ -252,5 +253,7 @@ int monitor_conservation_of_quantity(int quantity_id, double time, double value,
 void print_conservation_of_quantity(int quantity_id, double value, double tolerance);
 
 void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
+
+double quantum_friction_switch(double t, double eF);
 
 #endif

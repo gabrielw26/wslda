@@ -587,8 +587,7 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx)
  *                     where: V_a, V_b - double arrays of size NX
  *                            delta - double complex array of size NX
  *                     In total size of d_potentials is 4*NX
- * @param qfalpha coefficient for quantum friction term, beta coefficient in Eq.(3) in paper https://arxiv.org/abs/1305.6891,
- *                if qfalpha=0.0 then quantum friction is NOT active
+ * @param qfswitch switch coefficient for quantum friction term, if qfswitch=0.0 then quantum friction is NOT active
  * @param useqpe array of size [n]
  *               if NULL then quasiparticle energies will be computed from wf_in,
  *               otherwise given array will be used,
@@ -598,7 +597,7 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx)
  * */
 extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out,
                             cufftDoubleComplex *wf_d_dx, double *d_kkyz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff,
+                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double cccoeff,
                             int nthreads)
 {
     // number of blocks
@@ -638,9 +637,19 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     double * laplace_alpha_b  = grad_alpha_a + NX*13;
 
     // Step 1: if quantum friction is active, update mean-field potentials
-    if(qfalpha>0.0)
+    if(qfswitch>0.0)
     {
-//         printf("QUANTUM FRICTION ACTIVE! qfalpha=%f\n", qfalpha);
+        double qfalpha = md.qfalpha*qfswitch;
+        double qfbeta = md.qfbeta*qfswitch;
+        double qfgamma = md.qfgamma*qfswitch;
+
+        double * d_qf_density_for_U = (double *)  d_densities+12*NXYZ;;  // density for diagonal part (U) of quantum friction force
+        Complex *d_qf_density_for_D = (Complex *) d_qf_density_for_U + NXYZ; // density for off-diagonal part (Delta) of quantum friction force
+
+        // TODO: EA: Update this section
+        // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
+        // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
+
         // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
         ierr=compute_derivative_real_vector_f(j_a_x, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads);
         if(ierr!=0) return ierr;
