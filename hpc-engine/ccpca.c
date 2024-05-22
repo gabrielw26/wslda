@@ -1164,6 +1164,7 @@ int main( int argc , char ** argv )
             {
                 gpu_exec( calculate_quantum_friction_densities(nwfip, d_wf, d_wf_laplace, d_kkyz, d_fbetaEn, NULL, d_cnt, d_qf_densities, md.nthreads) );
                 mpipackagesize = 12+3;
+                
             }
             else mpipackagesize = EXCHANGE_SIZE;
 #ifdef USE_GPU_AWARE_MPI

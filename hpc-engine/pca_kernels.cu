@@ -396,7 +396,7 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
                                          double *vx_a, double *vy_a, double *vz_a, double *divv_a, double *vx_b, double *vy_b, double *vz_b, double *divv_b
                                         )
 {
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    size_t ixyz= threadIdx.x + blockIdx.x *  blockDim.x; // compute for this point
 
     double Va, Vb;
     Complex D;
@@ -493,7 +493,9 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     }
 }
 
-__global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
+
+/* //       OLD METHOD OF GRADIENT OF CURRENTS
+  __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
                                             double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
                                             double *V_a, double *V_b, double qfalpha)
 {
@@ -504,7 +506,27 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
         V_a[ixyz]-=qfalpha*(djax_dx[ixyz]+djay_dy[ixyz]+djaz_dz[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz]-=qfalpha*(djbx_dx[ixyz]+djby_dy[ixyz]+djbz_dz[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
     }
+} 
+ */ 
+                 
+
+ //       NEW METHOD OF LAPLACIAN OF WF
+ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, 
+                                             double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D, 
+                                             double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)
+{
+ 
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    if(ixyz<NXYZ)
+    {
+        // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
+        V_a[ixyz]   +=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_b[ixyz]   +=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        delta[ixyz] +=d_qf_density_for_D[ixyz]*qfbeta;       //UWAGAAAAAAA NOT FINAL FORM
+    }
 }
+
+
 
 __global__ void kernel_compute_qpe(Complex *wf1_u, Complex *wf2_u, Complex *wf1_v, Complex *wf2_v, double *re)
 {
@@ -639,7 +661,8 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy,
  * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out,
-                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
+                            cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, 
+                            cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
                             double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double cccoeff,
                             int nthreads)
 {
@@ -668,7 +691,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     double *V_b = (double *)(d_potentials +  1*NXYZ);
     Complex *delta = (Complex *)(d_potentials +  2*NXYZ);
 
-
+    // DERIVATIVES
     double * grad_alpha_a  = (double *)pca_cufft_work_area; // Use here work area of cuFFT
     double * grad_alpha_b  = grad_alpha_a + NXYZ*3;
     double * grad_j_corr_a = grad_alpha_a + NXYZ*6; // (j+/n+ - alpha_a*ja/na), see GW notes
@@ -683,23 +706,37 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         double qfbeta = md.qfbeta*qfswitch;
         double qfgamma = md.qfgamma*qfswitch;
 
-        double * d_qf_density_for_U = (double *)  d_densities+12*NXYZ;;  // density for diagonal part (U) of quantum friction force
-        Complex *d_qf_density_for_D = (Complex *) d_qf_density_for_U + NXYZ; // density for off-diagonal part (Delta) of quantum friction force
+        double * d_qf_density_for_Ua = (double *)  d_densities+12*NXYZ;  // density for diagonal part (U) of quantum friction force
+        double * d_qf_density_for_Ub = (double *)  d_qf_density_for_Ua+1*NXYZ;
+        Complex *d_qf_density_for_D = (Complex *) d_qf_density_for_Ua + 2*NXYZ; // density for off-diagonal part (Delta) of quantum friction force
 
         // TODO: EA: Update this section
         // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
         // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
 
-        // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
-        ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, j_a_z, grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, nthreads);
-        if(ierr!=0) return ierr;
-        ierr=compute_derivative_real_vector_f(j_b_x, j_b_y, j_b_z, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, nthreads);
-        if(ierr!=0) return ierr;
+    //    //******************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS***********************************************************  
+    // // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
 
-        // update mean field potential by friction term
+     
+    //     ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, j_a_z, grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, nthreads);
+    //     if(ierr!=0) return ierr;
+    //     ierr=compute_derivative_real_vector_f(j_b_x, j_b_y, j_b_z, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, nthreads);
+    //     if(ierr!=0) return ierr;
+
+    //     // update mean field potential by friction term
+    //     kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
+    //                                                 grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2,
+    //                                                 V_a, V_b, qfalpha);
+    
+
+       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************  
+        
+
+        // update mean field potential by friction terms
         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
-                                                    grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2,
-                                                    V_a, V_b, qfalpha);
+                                                    d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
+                                                    V_a, V_b, delta, qfalpha, qfbeta);
+        
     }
 
     // filtering of mean-fields
