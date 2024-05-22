@@ -448,24 +448,26 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     }
 }
 
- __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
+__global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D,
-                                             double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)
-{
+                                             double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)   //---------EA VERSION
+/* __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,  //---------GW VERSION
+                                            double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
+                                            double *V_a, double *V_b, double qfalpha)
+ */    {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     int ix;
     double coeff=0.0, r;
     if(ixyz<NX)
     {
-        // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
-        // V_a[ixyz]-=qfalpha*(djax_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        // V_b[ixyz]-=qfalpha*(djbx_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891 //---------GW VERSION
+            //V_a[ixyz]-=qfalpha*(djax_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+            //V_b[ixyz]-=qfalpha*(djbx_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
 
-        // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
+        // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891 //---------EA VERSION
         V_a[ixyz] +=0.0;//d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz] +=0.0;//d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] +=0.0;//d_qf_density_for_D[ixyz]*qfbeta;
-
+        delta[ixyz] +=0.0;//d_qf_density_for_D[ixyz]*qfbeta;  
     }
 }
 
@@ -656,29 +658,29 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
         // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
 
-//******************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS***********************************************************  
+//**************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS**************************************  //---------Gw VERSION
 
-/*          // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
-        ierr=compute_derivative_real_vector_f(j_a_x, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads);
-        if(ierr!=0) return ierr;
-        ierr=compute_derivative_real_vector_f(j_b_x, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads);
-        if(ierr!=0) return ierr;
+          // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
+        //ierr=compute_derivative_real_vector_f(j_a_x, NULL, NULL, grad_j_corr_a, NULL, NULL, nthreads);
+        //if(ierr!=0) return ierr;
+        //ierr=compute_derivative_real_vector_f(j_b_x, NULL, NULL, grad_j_corr_b, NULL, NULL, nthreads);
+        //if(ierr!=0) return ierr;
 
         // update mean field potential by friction term
-        kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
+/*         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     grad_j_corr_a, NULL, NULL, grad_j_corr_b, NULL, NULL,
                                                     V_a, V_b, qfalpha);     
- */    
+ */     
 
 
-       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************  
+       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************   //---------EA VERSION
    
             // update mean field potential by friction terms
-         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
+           kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
-                                                    V_a, V_b, delta, qfalpha, qfbeta);
-            
-    }
+                                                    V_a, V_b, delta, qfalpha, qfbeta);            
+                                                    
+     }
 
 
     // filtering of mean-fields

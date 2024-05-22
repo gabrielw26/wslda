@@ -384,6 +384,7 @@ extern "C" int symmetrize_densities_device(double *d_densities)
 // ================================================================================================
 // ============================ calculate_quantum_friction_densities ==============================
 // ================================================================================================
+//---------EA VERSION
 __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *wf, Complex *d_wf_laplace, double *kky, double *kkz,
                                          double *fbetaEn, double *d_weights,
                                          double *d_qf_density_for_Ua,double *d_qf_density_for_Ub, Complex *d_qf_density_for_D,
@@ -462,7 +463,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  * */
-extern "C" int calculate_quantum_friction_densities(int n, cufftDoubleComplex *wf,
+extern "C" int calculate_quantum_friction_densities(int n, cufftDoubleComplex *wf, //---------EA VERSION
                             cufftDoubleComplex *d_wf_laplace,
                             double *kkyz,
                             double *d_fbetaEn,
@@ -482,7 +483,7 @@ extern "C" int calculate_quantum_friction_densities(int n, cufftDoubleComplex *w
     double * d_qf_density_for_Ub = (double *) d_qf_densities + NXYZ;        // density for diagonal part (U) of quantum friction force
     Complex *d_qf_density_for_D = (Complex *) d_qf_densities + 2*NXYZ; // density for off-diagonal part (Delta) of quantum friction force
     
-    // kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, (Complex *)wf, (Complex *)d_wf_laplace, kky, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D, cnt);
+    //kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, (Complex *)wf, (Complex *)d_wf_laplace, kky, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D, cnt);
 
     return 0;
 }
