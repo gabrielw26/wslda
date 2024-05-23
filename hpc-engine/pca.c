@@ -231,7 +231,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // quantum friction buffers
     mpipackagesize=12;
-    if(md.qfalpha>0.0 || md.qfbeta>0.0 || md.qfgamma>0.0) mpipackagesize += 3;// quantum friction is expected to be used
+    if(md.qfalpha>0.0 || md.qfbeta>0.0 || md.qfgamma>0.0) mpipackagesize += 4;// quantum friction is expected to be used
 
     gpu_exec( host_malloc_pl((size_t)mpipackagesize*NXYZ*sizeof(double), (void **)&h_densities) );
     gpu_exec(     gpu_malloc((size_t)mpipackagesize*NXYZ*sizeof(double), (void **)&d_densities) );
@@ -1421,7 +1421,7 @@ int main( int argc , char ** argv )
             if(qfswitch_it>0.0) // quantum friction is on
             {
                 gpu_exec( calculate_quantum_friction_densities(nwfip, d_wf, d_wf_laplace, d_fbetaEn, NULL, d_qf_densities, md.nthreads) );
-                mpipackagesize = 12+3;
+                mpipackagesize = 12+4;
             }
             else mpipackagesize = EXCHANGE_SIZE;
 #ifdef USE_GPU_AWARE_MPI
@@ -1492,7 +1492,7 @@ int main( int argc , char ** argv )
             if(qfswitch_it>0.0) // quantum friction is on
             {
                 gpu_exec( calculate_quantum_friction_densities(nwfip, d_wf, d_wf_laplace, d_fbetaEn, NULL, d_qf_densities, md.nthreads) );
-                mpipackagesize = 12+3;
+                mpipackagesize = 12+4;
             }
             else if(i_step==md.timesteps-1) mpipackagesize = 12;
             else mpipackagesize = EXCHANGE_SIZE;
