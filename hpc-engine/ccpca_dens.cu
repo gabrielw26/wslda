@@ -53,7 +53,7 @@ __global__ void kernel_calculate_densities(size_t n, Complex *wf,
             ky = kky[iwf];
             kz = kkz[iwf];
 #ifndef TAU_COMPUTATION_VIA_GRADIENTS
-            kyz2=kz*kz + ky*ky; // do not kill N/2 component in case of laplace
+            kyz2=kz*kz + ky*ky;  
 #endif
 
             wcnt = cnt[iwf];  
@@ -398,6 +398,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 
     size_t iwf;
     double /*kx, kz,*/ wcnt;
+    double ky,kz,kyz2;
 
     double wght=1.0;
 
@@ -416,9 +417,10 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             fbmEn = DENS_FACTOR_M - fbEn;
             if(d_weights!=NULL) wght=d_weights[iwf];
             fbEn*=wght; fbmEn*=wght; 
+            ky = kky[iwf];
+            kz = kkz[iwf];
+            kyz2=kz*kz + ky*ky; // do not kill N/2 component in case of laplace
 
-            // ky = kky[iwf];
-            // kz = kkz[iwf];
             wcnt = cnt[iwf]; // degeneracy of the state
 
             // read u and v (from global memory)
@@ -433,15 +435,15 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
-                U_loc_a -= 0.0;//(thrust::conj(lap_u)*u).imag()*fbEn;
-                U_loc_b -= 0.0;//(thrust::conj(lap_v)*v).imag()*fbmEn;
-                D_loc   -= Complex(0.0, 0.0);//lap_u*thrust::conj(v)+u*thrust::conj(lap_v);    //ojooooooooooooo D_loc doesn't include thermal factors
+                U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
+                U_loc_b += (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
+                D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors
         }
 
     // send to global memory
-        d_qf_density_for_Ua[ixyz] =  0.0;//U_loc_a;   // TODO
-        d_qf_density_for_Ub[ixyz] =  0.0;//U_loc_b;   // TODO
-        d_qf_density_for_D[ixyz] =   0.0;//0.5*D_loc; // TODO
+        d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
+        d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
+        d_qf_density_for_D[ixyz] =   0.5*D_loc/DENS_FACTOR_M/(double)(LY*LZ); // TODO
     }
 }
 
