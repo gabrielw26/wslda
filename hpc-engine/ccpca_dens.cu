@@ -392,7 +392,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
                                         )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex u, v, lap_v, lap_u;
+    Complex u, v, lap_v, lap_u;x
     double fbEn, fbmEn;
     #define DENS_FACTOR_M 10000.
 
@@ -419,7 +419,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             fbEn*=wght; fbmEn*=wght; 
             ky = kky[iwf];
             kz = kkz[iwf];
-            kyz2=kz*kz + ky*ky; // do not kill N/2 component in case of laplace
+            kyz2=kz*kz + ky*ky; 
 
             wcnt = cnt[iwf]; // degeneracy of the state
 
@@ -431,15 +431,24 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             lap_u=d_wf_laplace[     iwf*NX+ixyz];
             lap_v=d_wf_laplace[n*NX+iwf*NX+ixyz];
 
+#ifdef SPINSYMMETRY_MODE
+            // do not compute U_loc_a - will taken from taub and U_loc_b 
+            // compute only contributions for j_b comming from derivatives of u (as derivatives for v don't add up ....?) --- complete formula ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt; 
+            U_loc_b += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;              
+#else
+
             // TODO: EA: use kernel_calculate_densities for reference
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
-                U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
-                U_loc_b += (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
-                D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors
+            U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
+            U_loc_b -= (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
+            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
         }
 
+#ifdef SPINSYMMETRY_MODE
+          U_loc_a = U_loc_b
+#endif
     // send to global memory
         d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
         d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
