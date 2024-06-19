@@ -465,8 +465,8 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
             //V_b[ixyz]-=qfalpha*(djbx_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
 
         // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891 //---------EA VERSION
-        V_a[ixyz] -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        V_b[ixyz] -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         delta[ixyz] -=d_qf_density_for_D[ixyz]*qfbeta;  
     }
 }

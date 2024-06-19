@@ -392,7 +392,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
                                         )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    Complex u, v, lap_v, lap_u;x
+    Complex u, v, lap_v, lap_u;
     double fbEn, fbmEn;
     #define DENS_FACTOR_M 10000.
 
@@ -428,13 +428,14 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             v=wf[n*NX+iwf*NX+ixyz];
 
             // read laplaces of u and v (from global memory)
-            lap_u=d_wf_laplace[     iwf*NX+ixyz];
+            lap_u=d_wf_laplace[     iwf*NX+ixyz];            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
+
             lap_v=d_wf_laplace[n*NX+iwf*NX+ixyz];
 
 #ifdef SPINSYMMETRY_MODE
             // do not compute U_loc_a - will taken from taub and U_loc_b 
             // compute only contributions for j_b comming from derivatives of u (as derivatives for v don't add up ....?) --- complete formula ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt; 
-            U_loc_b += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;              
+            U_loc_b += ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt;              
 #else
 
             // TODO: EA: use kernel_calculate_densities for reference
@@ -444,10 +445,11 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
             U_loc_b -= (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
             D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
+#endif            
         }
 
 #ifdef SPINSYMMETRY_MODE
-          U_loc_a = U_loc_b
+          U_loc_a = U_loc_b;
 #endif
     // send to global memory
         d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
