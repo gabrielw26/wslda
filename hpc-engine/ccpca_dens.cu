@@ -428,8 +428,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             v=wf[n*NX+iwf*NX+ixyz];
 
             // read laplaces of u and v (from global memory)
-            lap_u=d_wf_laplace[     iwf*NX+ixyz];            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
-
+            lap_u=d_wf_laplace[     iwf*NX+ixyz];    
             lap_v=d_wf_laplace[n*NX+iwf*NX+ixyz];
 
 #ifdef SPINSYMMETRY_MODE
@@ -444,7 +443,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             // ...
             U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
             U_loc_b -= (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
-            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
+            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*(fbmEn-fbEn)*wcnt;    //ojooooooooooooo D_loc doesn't include thermal factors        
 #endif            
         }
 

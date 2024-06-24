@@ -520,9 +520,9 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     if(ixyz<NXYZ)
     {
         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
-        V_a[ixyz]   +=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        V_b[ixyz]   +=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] +=d_qf_density_for_D[ixyz]*qfbeta;       //UWAGAAAAAAA NOT FINAL FORM
+        V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        delta[ixyz] -=d_qf_density_for_D[ixyz]*qfbeta;       //UWAGAAAAAAA NOT FINAL FORM
     }
 }
 
