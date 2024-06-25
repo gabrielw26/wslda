@@ -51,6 +51,8 @@ typedef thrust::complex<double> Complex;
 #else
 #include "tdwslda_ode_integrator.h"
 #endif
+
+
 // =======================================================================================
 // ================================ compute_potentials ===================================
 // =======================================================================================
@@ -511,7 +513,7 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
                  
 
  //       NEW METHOD OF LAPLACIAN OF WF
- __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, 
+ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, //add difference of particle number and desired particle number
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D, 
                                              double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)
 {
@@ -520,9 +522,11 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     if(ixyz<NXYZ)
     {
         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
+
         V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] -=d_qf_density_for_D[ixyz]*qfbeta;       //UWAGAAAAAAA NOT FINAL FORM
+        delta[ixyz] -= qfbeta*thrust::norm(delta[ixyz]) * sinf(thrust::abs(d_qf_density_for_D[ixyz]) - thrust::abs(delta[ixyz]));//*thrust::exp(thrust::complex<float>(0.0f, delta[ixyz]));;//* expf(thrust::complex(0.0f, thrust::abs(delta[ixyz]))); //UWAGA NOT FINAL FORM
+
     }
 }
 

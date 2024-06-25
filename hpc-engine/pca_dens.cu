@@ -404,8 +404,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 
 #ifdef SPINSYMMETRY_MODE
             // do not compute U_loc_a - will taken from taub and U_loc_b 
-            // compute only contributions for j_b comming from derivatives of u (as derivatives for v don't add up ....?) --- complete formula ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt; 
-            U_loc_b += ((thrust::conj(u)*lap_u-u).imag()*fbEn-(thrust::conj(v)*lap_v).imag()*fbmEn)*wcnt;              
+             U_loc_b += ((thrust::conj(u)*lap_u-u).imag()*fbEn-(thrust::conj(v)*lap_v).imag()*fbmEn);              
 #else
 
 
@@ -413,17 +412,18 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
-                U_loc_a += (thrust::conj(lap_u)*u).imag()*fbEn;
-                U_loc_b -= (thrust::conj(lap_v)*v).imag()*fbmEn;
-                D_loc   += lap_u*thrust::conj(v)+u*thrust::conj(lap_v)*(fbmEn-fbEn)*wcnt;    //UWAGAAAAAAAAA D_loc doesn't include thermal factors
+            U_loc_a += (thrust::conj(lap_u)*u).imag()*fbEn;
+            U_loc_b -= (thrust::conj(lap_v)*v).imag()*fbmEn;
+            D_loc   += lap_u*thrust::conj(v)+u*thrust::conj(lap_v)*(fbmEn-fbEn);     //this is the quantity B_ab
 
 #endif
 
 #ifdef SPINSYMMETRY_MODE
           U_loc_a = U_loc_b;
-#endif
+#endif  
       
         }
+
     // send to global memory
         d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M;   // TODO
         d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M;   // TODO
