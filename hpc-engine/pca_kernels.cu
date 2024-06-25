@@ -517,15 +517,19 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D, 
                                              double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)
 {
- 
+
+    double PhDel,PhDen;
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     if(ixyz<NXYZ)
     {
         // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
+        PhDel         = thrust::arg(delta[ixyz]);
+        PhDen         = thrust::arg(d_qf_density_for_D[ixyz]);
 
+        
         V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] -= qfbeta*thrust::norm(delta[ixyz]) * sinf(thrust::abs(d_qf_density_for_D[ixyz]) - thrust::abs(delta[ixyz]));//*thrust::exp(thrust::complex<float>(0.0f, delta[ixyz]));;//* expf(thrust::complex(0.0f, thrust::abs(delta[ixyz]))); //UWAGA NOT FINAL FORM
+        delta[ixyz] -=qfbeta*thrust::abs(delta[ixyz])*sinf(PhDel - PhDen)*Complex(cosf(PhDel),sinf(PhDel)); //UWAGA NOT FINAL FORM as its missing teh Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
 
     }
 }
