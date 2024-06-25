@@ -527,9 +527,10 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
         PhDen         = thrust::arg(d_qf_density_for_D[ixyz]);
 
         
+
         V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] -=qfbeta*thrust::abs(delta[ixyz])*sinf(PhDel - PhDen)*Complex(cosf(PhDel),sinf(PhDel)); //UWAGA NOT FINAL FORM as its missing teh Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
+        delta[ixyz] -=qfbeta*thrust::abs(delta[ixyz])*sinf(PhDel - PhDen)*Complex(cosf(PhDel),sinf(PhDel)); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
 
     }
 }
