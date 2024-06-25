@@ -513,7 +513,7 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
                  
 
  //       NEW METHOD OF LAPLACIAN OF WF
- __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, //add difference of particle number and desired particle number
+ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, //add difference of particle number and desired particle number//add difference of particle number and desired particle number
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D, 
                                              double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)
 {
