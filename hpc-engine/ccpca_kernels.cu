@@ -454,10 +454,10 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
 /* __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,  //---------GW VERSION
                                             double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
                                             double *V_a, double *V_b, double qfalpha)
- */    {
+ */    
+{
+    double PhDel,PhDen;
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    int ix;
-    double coeff=0.0, r;
     if(ixyz<NX)
     {
         // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891 //---------GW VERSION
@@ -465,9 +465,12 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
             //V_b[ixyz]-=qfalpha*(djbx_dx[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
 
         // // see Eq.(3) in paper https://arxiv.org/abs/1305.6891 //---------EA VERSION
+        PhDel         = thrust::arg(delta[ixyz]);
+        PhDen         = thrust::arg(d_qf_density_for_D[ixyz]);
+
         V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        delta[ixyz] -=d_qf_density_for_D[ixyz]*qfbeta;  
+        delta[ixyz] -=qfbeta*thrust::abs(delta[ixyz])*sinf(PhDel - PhDen)*Complex(cosf(PhDel),sinf(PhDel)); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
     }
 }
 

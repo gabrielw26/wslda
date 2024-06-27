@@ -427,7 +427,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
     // send to global memory
         d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M;   // TODO
         d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M;   // TODO
-        d_qf_density_for_D[ixyz] =   0.5*D_loc/DENS_FACTOR_M; // TODO
+        d_qf_density_for_D[ixyz] =   -0.5*D_loc/DENS_FACTOR_M; // TODO
     }
 
 }
