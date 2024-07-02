@@ -449,8 +449,9 @@ extern "C" int calculate_quantum_friction_densities(int n, Complex *wf,
     int nblocks = (int)ceil((float)NXY/nthreads);
 
     // pointers algebra
-    double * d_qf_density_for_U = (double *)  d_qf_densities;        // density for diagonal part (U) of quantum friction force
-    Complex *d_qf_density_for_D = (Complex *) d_qf_densities + NXY; // density for off-diagonal part (Delta) of quantum friction force
+    double * d_qf_density_for_Ua = (double *) (d_qf_densities        );        // density for diagonal part (U) of quantum friction force
+    double * d_qf_density_for_Ub = (double *) (d_qf_densities +   NXY);        // density for diagonal part (U) of quantum friction force
+    Complex *d_qf_density_for_D = (Complex *) (d_qf_densities + 2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
     kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_U, d_qf_density_for_D);
 

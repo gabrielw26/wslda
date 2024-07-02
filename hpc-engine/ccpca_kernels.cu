@@ -676,9 +676,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         double qfbeta = md.qfbeta*qfswitch;
         double qfgamma = md.qfgamma*qfswitch;
 
-        double * d_qf_density_for_Ua = (double *)  d_densities+12*NX;  // density for diagonal part (U) of quantum friction force
-        double * d_qf_density_for_Ub = (double *)  d_densities+13*NX;  // density for diagonal part (U) of quantum friction force
-        Complex *d_qf_density_for_D = (Complex *)  d_densities+14*NX; // density for off-diagonal part (Delta) of quantum friction force
+        double * d_qf_density_for_Ua = (double *) (d_densities+12*NX);  // density for diagonal part (U) of quantum friction force
+        double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NX);
+        Complex *d_qf_density_for_D = (Complex *) (d_qf_density_for_Ua+2*NX); // density for off-diagonal part (Delta) of quantum friction forceforce
 
         // TODO: EA: Update this section
         // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
@@ -817,9 +817,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     // if quantum friction was active, remove contributions to mean-fields
     if(qfswitch>0.0)
     {
-        double * d_qf_density_for_Ua = (double *)  d_densities+12*NX;
-        double * d_qf_density_for_Ub = (double *)  d_densities+13*NX;
-        Complex *d_qf_density_for_D = (Complex *)  d_densities+14*NX;
+        double * d_qf_density_for_Ua = (double *) (d_densities+12*NX);  // density for diagonal part (U) of quantum friction force
+        double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NX);
+        Complex *d_qf_density_for_D = (Complex *) (d_qf_density_for_Ua+2*NX); // density for off-diagonal part (Delta) of quantum
 
         nblocks = (int)ceil((float)NX/nthreads);
         kernel_remove_quantum_friction<<<nblocks, nthreads>>>(d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,

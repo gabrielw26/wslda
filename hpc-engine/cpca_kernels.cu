@@ -684,8 +684,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         double qfbeta = md.qfbeta*qfswitch;
         double qfgamma = md.qfgamma*qfswitch;
 
-        double * d_qf_density_for_U = (double *)  d_densities+12*NXYZ;;  // density for diagonal part (U) of quantum friction force
-        Complex *d_qf_density_for_D = (Complex *) d_qf_density_for_U + NXYZ; // density for off-diagonal part (Delta) of quantum friction force
+        double * d_qf_density_for_Ua = (double *) (d_densities+12*NXY);  // density for diagonal part (U) of quantum friction force
+        double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NXY);
+        Complex *d_qf_density_for_D = (Complex *) (d_qf_density_for_Ua+2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
         // TODO: EA: Update this section
         // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
