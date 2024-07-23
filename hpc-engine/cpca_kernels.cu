@@ -224,6 +224,9 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
 extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double *dfx_dx, double *dfy_dy, double *dfz_dz,int nthreads);
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *fz, double *divf, int nthreads);
+extern "C" int high_frequency_filter_d(double *in, double *out, double fd_mu, double fd_T, int nthreads);
+extern "C" int high_frequency_filter_c(Complex *in, Complex *out, double fd_mu, double fd_T, int nthreads);
+extern "C" int high_frequency_filter_massive_d(int n, double *in, double *out, double fd_mu, double fd_T, int nthreads);
 
 __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
                                          double * laplace_alpha_a, double *laplace_alpha_b,
@@ -691,6 +694,13 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                                     V_a, V_b, qfalpha);
     }
 
+    // filtering of mean-fields
+    if(md.hkf_mode>=1)
+    {
+        ierr = high_frequency_filter_massive_d(2, V_a, V_a, md.hkf_mu, md.hkf_T, nthreads);
+        if(ierr!=0) return ierr;
+    }
+
     double *vecvext_a    = NULL;
     double *divvext_a    = NULL;
     double *vecvext_b    = NULL;
@@ -712,6 +722,12 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     if(ierr!=0) return ierr+400;
 #endif
 
+    if(md.hkf_mode>=2)
+    {
+        ierr = high_frequency_filter_c(potsall.delta, potsall.delta, md.hkf_mu, md.hkf_T, nthreads);
+        if(ierr!=0) return ierr;
+    }
+
 #ifdef BDG_MODE
     // Step 3: apply hamiltonian
     kernel_apply_hamiltonian_bdg<<<nblocks, nthreads>>>(it,
@@ -731,6 +747,12 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
 #endif
 
 #ifdef CURRENT_CORRECTIONS
+    // filtering of vector potentials
+    if(md.hkf_mode>=1)
+    {
+        ierr = high_frequency_filter_massive_d(6, potsall.A_a_x, potsall.A_a_x, md.hkf_mu, md.hkf_T, nthreads);
+        if(ierr!=0) return ierr;
+    }
     ierr=compute_derivative_real_vector_f(potsall.A_a_x, potsall.A_a_y, NULL, grad_j_corr_a, grad_j_corr_a+NXY, NULL, nthreads);
     if(ierr!=0) return ierr;
     ierr=compute_derivative_real_vector_f(potsall.A_b_x, potsall.A_b_y, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL, nthreads);

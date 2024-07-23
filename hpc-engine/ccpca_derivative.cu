@@ -648,3 +648,172 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
     
     return 0;
 }
+// ================================================================================================
+// ====================================== high_frequency_filter ===================================
+// ================================================================================================
+__global__ void kernel_high_frequency_filter_d(cufftDoubleComplex *wf_d, double fd_mu, double fd_T)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix;
+    double kx, ek;
+    cufftDoubleComplex z, zz;
+
+    if(ixyz<(NX/2+1))
+    {
+        ix = ixyz; // decode cartesian coordinates
+
+        // extract momentum
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
+
+        ek = 0.5*(kx*kx);
+        ek = 1.0/(exp((ek-fd_mu)/fd_T)+1.0) /NX; // note: normalization factor is included
+
+        // laplace
+        z=wf_d[ixyz];
+        zz.x=ek*z.x;
+        zz.y=ek*z.y;
+        wf_d[ixyz]=zz;
+    }
+}
+
+/**
+ * The function removes high frequencies from the signal represented by in array.
+ * The method uses the spectral method:
+ *     in ->fft->multiply by FD(mu,T)->ifft->out,
+ * where FD(mu,T)=1.0/(exp((ek-mu)/T)+1.0) is the Fermi-Dirac function and ek=k^2/2.
+ * @param in signal to be cleaned (INPUT)
+ * @param out can be the same as input (OUTPUT)
+ * @param mu parameter of FD function (INPUT)
+ * @param T parameter of FD function (INPUT)
+ * @return 0-OK, otherwise PROBLEM
+ * */
+extern "C" int high_frequency_filter_d(double *in, double *out,
+                                     double fd_mu, double fd_T,
+                                     int nthreads)
+{
+    cufftResult cufft_result;
+
+    // number of blocks
+    int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
+
+    // get pointer to workspace
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
+    p_fx+=PCA_WORKSPACE_SHIFT*NX;
+
+    // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    double * p_tmp = (double *)(p_fx+(NX/2+1));
+    if( cudaMemcpy( p_tmp , in , NX*sizeof(double), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], p_tmp, p_fx);
+#else
+    cufft_result=cufftExecD2Z(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], in, p_fx);
+#endif
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
+
+    // Step 2: Multiply by filter function
+    kernel_high_frequency_filter_d<<<nblocks, nthreads>>>(p_fx, fd_mu, fd_T);
+
+    // Step 3: go back to coordinate space
+    cufft_result=cufftExecZ2D(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], p_fx, out);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
+
+    return 0;
+}
+
+__global__ void kernel_high_frequency_filter_c(cufftDoubleComplex *wf_d, double fd_mu, double fd_T)
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    int ix;
+    double kx, ek;
+    cufftDoubleComplex z, zz;
+
+    if(ixyz<NX)
+    {
+        ix = ixyz; // decode cartesian coordinates
+
+        // extract momentum
+        if(ix<NX/2) kx=2.*M_PI/( double )LX * ( double )(ix   );
+        else        kx=2.*M_PI/( double )LX * ( double )(ix-NX);
+
+        ek = 0.5*(kx*kx);
+        ek = 1.0/(exp((ek-fd_mu)/fd_T)+1.0) /NX; // note: normalization factor is included
+
+        // laplace
+        z=wf_d[ixyz];
+        zz.x=ek*z.x;
+        zz.y=ek*z.y;
+        wf_d[ixyz]=zz;
+    }
+}
+
+/**
+ * The function removes high frequencies from the signal represented by in array.
+ * The method uses the spectral method:
+ *     in ->fft->multiply by FD(mu,T)->ifft->out,
+ * where FD(mu,T)=1.0/(exp((ek-mu)/T)+1.0) is the Fermi-Dirac function and ek=k^2/2.
+ * @param in signal to be cleaned (INPUT)
+ * @param out can be the same as input (OUTPUT)
+ * @param mu parameter of FD function (INPUT)
+ * @param T parameter of FD function (INPUT)
+ * @return 0-OK, otherwise PROBLEM
+ * */
+extern "C" int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComplex *out,
+                                     double fd_mu, double fd_T,
+                                     int nthreads)
+{
+    cufftResult cufft_result;
+
+    // number of blocks
+    int nblocks = (int)ceil((float)(NX)/nthreads);
+
+    // get pointer to workspace
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
+    p_fx+=PCA_WORKSPACE_SHIFT*NX;
+
+    // Step 1: go to momentum space
+#ifdef DERIVATIVE_COPY_DATA_MODE
+    cufftDoubleComplex * p_tmp = (cufftDoubleComplex *)(p_fx+NX);
+    if( cudaMemcpy( p_tmp , in , NX*sizeof(cufftDoubleComplex), cudaMemcpyDeviceToDevice )!= cudaSuccess ) return -333;
+    cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], p_tmp, p_fx, CUFFT_FORWARD);
+#else
+    cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], in, p_fx, CUFFT_FORWARD);
+#endif
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
+
+    // Step 2: Multiply by filter function
+    kernel_high_frequency_filter_c<<<nblocks, nthreads>>>(p_fx, fd_mu, fd_T);
+
+    // Step 3: go back to coordinate space
+    cufft_result=cufftExecZ2Z(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], p_fx, out, CUFFT_INVERSE);
+    if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
+
+    return 0;
+}
+
+/**
+ * The function removes high frequencies from the signal represented by in array.
+ * The method uses the spectral method:
+ *     in ->fft->multiply by FD(mu,T)->ifft->out,
+ * where FD(mu,T)=1.0/(exp((ek-mu)/T)+1.0) is the Fermi-Dirac function and ek=k^2/2.
+ * @param n number of arrays (MASSIVE MODE)
+ * @param in signal to be cleaned (INPUT)
+ * @param out can be the same as input (OUTPUT)
+ * @param mu parameter of FD function (INPUT)
+ * @param T parameter of FD function (INPUT)
+ * @return 0-OK, otherwise PROBLEM
+ * */
+extern "C" int high_frequency_filter_massive_d(int n, double *in, double *out,
+                                     double fd_mu, double fd_T,
+                                     int nthreads)
+{
+    // FIXME: it can be improved by executing FFT Many
+    int i, ierr;
+    for(i=0; i<n; i++)
+    {
+        ierr = high_frequency_filter_d(in+i*NX, out+i*NX, fd_mu,fd_T,nthreads);
+        if(ierr!=0) return ierr;
+    }
+
+    return 0;
+}
