@@ -475,7 +475,7 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
         _V_b = V_b[ixyz]; // keep the original value
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         _delta = delta[ixyz]; // keep the original value
-        delta[ixyz] -=qfbeta*thrust::abs(delta[ixyz])*sinf(PhDel - PhDen)*Complex(cosf(PhDel),sinf(PhDel)); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
+        delta[ixyz] -= qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta 
 
         // Save original values - it will be used by kernel_remove_quantum_friction(...)
         d_qf_density_for_Ua[ixyz]=_V_a;

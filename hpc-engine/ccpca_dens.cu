@@ -432,9 +432,10 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             lap_v=d_wf_laplace[n*NX+iwf*NX+ixyz];
 
 #ifdef SPINSYMMETRY_MODE
-            // do not compute U_loc_a - will taken from taub and U_loc_b 
-            // compute only contributions for j_b comming from derivatives of u (as derivatives for v don't add up ....?) --- complete formula ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt; 
+            // do not compute U_loc_a - will taken from taub and U_loc_b  
             U_loc_b += ((thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn)*wcnt;              
+            D_loc   += (thrust::conj(v)*(lap_u-u*kyz2)+thrust::conj(lap_v-v*kyz2)*u)*(fbmEn-fbEn)*wcnt;   //uwaga!!!!!! this is a placeholder, not the actual spin symmetric case
+
 #else
 
             // TODO: EA: use kernel_calculate_densities for reference
@@ -443,7 +444,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             // ...
             U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
             U_loc_b -= (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
-            D_loc   += ((lap_u-u*kyz2)*thrust::conj(v)+u*thrust::conj(lap_v-v*kyz2))*(fbmEn-fbEn)*wcnt;   
+            D_loc   += (thrust::conj(v)*(lap_u-u*kyz2)+thrust::conj(lap_v-v*kyz2)*u)*(fbmEn-fbEn)*wcnt;   
 #endif            
         }
 
@@ -451,9 +452,9 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
           U_loc_a = U_loc_b;
 #endif
     // send to global memory
-        d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
-        d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
-        d_qf_density_for_D[ixyz] =   -0.5*D_loc/DENS_FACTOR_M/(double)(LY*LZ); // TODO
+        d_qf_density_for_Ua[ixyz] =      U_loc_a/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
+        d_qf_density_for_Ub[ixyz] =      U_loc_b/DENS_FACTOR_M/(double)(LY*LZ);   // TODO
+        d_qf_density_for_D[ixyz]  =   -0.5*D_loc/DENS_FACTOR_M/(double)(LY*LZ); // TODO
     }
 }
 
