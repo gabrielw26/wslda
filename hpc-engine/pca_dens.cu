@@ -371,7 +371,6 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex u, v, lap_v, lap_u;
     double fbEn, fbmEn;
-    #define DENS_FACTOR_M 10000.
 
     size_t iwf;
     
@@ -389,8 +388,8 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
         for(iwf=0; iwf<n; iwf++)
         {
             // weight
-            fbEn=fbetaEn[iwf]*DENS_FACTOR_M;
-            fbmEn = DENS_FACTOR_M - fbEn;
+            fbEn=fbetaEn[iwf];
+            fbmEn = 1.0 - fbEn;
             if(d_weights!=NULL) wght=d_weights[iwf];
             fbEn*=wght; fbmEn*=wght; 
 
@@ -425,9 +424,9 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
         }
 
     // send to global memory
-        d_qf_density_for_Ua[ixyz] =  U_loc_a/DENS_FACTOR_M;   // TODO
-        d_qf_density_for_Ub[ixyz] =  U_loc_b/DENS_FACTOR_M;   // TODO
-        d_qf_density_for_D[ixyz] =   -0.5*D_loc/DENS_FACTOR_M; // TODO
+        d_qf_density_for_Ua[ixyz] =  U_loc_a;   // TODO
+        d_qf_density_for_Ub[ixyz] =  U_loc_b;   // TODO
+        d_qf_density_for_D[ixyz] =   -0.5*D_loc; // TODO
     }
 
 }

@@ -384,7 +384,7 @@ extern "C" int symmetrize_densities_device(double *d_densities)
 // ================================================================================================
 __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *wf, Complex *d_wf_laplace, double *kkz,
                                          double *fbetaEn, double *d_weights,
-                                         double *d_qf_density_for_U, Complex *d_qf_density_for_D
+                                         double *d_qf_density_for_Ua, double *d_qf_density_for_Ub, Complex *d_qf_density_for_D
                                         )
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
@@ -417,7 +417,8 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
     }
 
     // send to global memory
-    d_qf_density_for_U[ixyz] = 0.0; // TODO
+    d_qf_density_for_Ua[ixyz] = 0.0; // TODO
+    d_qf_density_for_Ub[ixyz] = 0.0; // TODO
     d_qf_density_for_D[ixyz] = Complex(0.0,0.); // TODO
 }
 
@@ -453,7 +454,7 @@ extern "C" int calculate_quantum_friction_densities(int n, Complex *wf,
     double * d_qf_density_for_Ub = (double *) (d_qf_densities +   NXY);        // density for diagonal part (U) of quantum friction force
     Complex *d_qf_density_for_D = (Complex *) (d_qf_densities + 2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
-    kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_U, d_qf_density_for_D);
+    kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
 
     return 0;
 }
