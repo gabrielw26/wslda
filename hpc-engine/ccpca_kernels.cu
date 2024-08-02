@@ -211,7 +211,6 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
                                          double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
                                          size_t n, Complex *wf_in, Complex *wf_out,
                                          Complex *wf_d_dx, double *d_kky, double *d_kkz, Complex *wf_laplace, Complex *alphawf_laplace,
-                                         double cccoeff,
                                          double *vx_a, double *divv_a, double *vx_b, double *divv_b
                                         )
 {
@@ -450,11 +449,8 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
 
 __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D,
-                                             double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta)   //---------EA VERSION
-/* __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,  //---------GW VERSION
-                                            double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
-                                            double *V_a, double *V_b, double qfalpha)
- */    
+                                             double *V_a, double *V_b, Complex *delta,
+                                            double qfalpha, double qfbeta, double qfgamma)
 {
     double PhDel,PhDen;
     double _V_a, _V_b;
@@ -476,6 +472,8 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         _delta = delta[ixyz]; // keep the original value
         delta[ixyz] += qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta
+        // particle control part
+        delta[ixyz] += Complex(0.0,qfgamma)*_delta;
 
         // Save original values - it will be used by kernel_remove_quantum_friction(...)
         d_qf_density_for_Ua[ixyz]=_V_a;
@@ -624,13 +622,13 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx)
  * @param useqpe array of size [n]
  *               if NULL then quasiparticle energies will be computed from wf_in,
  *               otherwise given array will be used,
- * @param cccoeff the current corrections coefficient
+ * @param pccoeff the particle control coefficient: N(t) - N_req
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out,
                             cufftDoubleComplex *wf_d_dx, double *d_kkyz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double cccoeff,
+                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double pccoeff,
                             int nthreads)
 {
     // number of blocks
@@ -674,7 +672,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     {
         double qfalpha = md.qfalpha*qfswitch;
         double qfbeta = md.qfbeta*qfswitch;
-        double qfgamma = md.qfgamma*qfswitch;
+        double qfgamma = md.qfgamma*qfswitch*pccoeff;
 
         double * d_qf_density_for_Ua = (double *) (d_densities+12*NX);  // density for diagonal part (U) of quantum friction force
         double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NX);
@@ -704,7 +702,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
             // update mean field potential by friction terms
            kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
-                                                    V_a, V_b, delta, qfalpha, qfbeta);            
+                                                    V_a, V_b, delta, qfalpha, qfbeta, qfgamma);
 
      }
 
@@ -780,7 +778,6 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                             grad_j_corr_a, NULL, NULL, grad_j_corr_b, NULL, NULL,
                                             n, (Complex *)wf_in, (Complex *)wf_out,
                                             (Complex *)wf_d_dx, d_kky, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
-                                            cccoeff,
                                             vecvext_a, divvext_a, vecvext_b, divvext_b
                                                    );
 #endif
