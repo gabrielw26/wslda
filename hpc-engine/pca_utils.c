@@ -1049,7 +1049,7 @@ double quantum_friction_switch(double t, double eF)
     return h_smooth_step(t, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
 }
 
-// extern int wsldapid;
+
 double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element)
 {
     double N=0.0;

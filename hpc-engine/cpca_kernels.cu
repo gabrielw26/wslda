@@ -233,7 +233,6 @@ __global__ void kernel_apply_hamiltonian(int it, wslda_potential h_potentials,
                                          double *j_corr_a_x, double *j_corr_a_y, double *j_corr_a_z, double *j_corr_b_x, double *j_corr_b_y, double *j_corr_b_z,
                                          size_t n, Complex *wf_in, Complex *wf_out,
                                          Complex *wf_d_dx, Complex *wf_d_dy, double *d_kkz, Complex *wf_laplace, Complex *alphawf_laplace,
-                                         double cccoeff,
                                          double *vx_a, double *vy_a, double *divv_a, double *vx_b, double *vy_b, double *divv_b
                                         )
 {
@@ -634,13 +633,13 @@ __global__ void kernel_get_vector_vext(int it, int spin, double *vx, double *vy)
  * @param useqpe array of size [n]
  *               if NULL then quasiparticle energies will be computed from wf_in,
  *               otherwise given array will be used,
- * @param cccoeff the current corrections coefficient
+ * @param pccoeff the particle control coefficient: N(t) - N_req
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  * */
 extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out,
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double cccoeff,
+                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double pccoeff,
                             int nthreads)
 {
     // number of blocks
@@ -682,7 +681,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     {
         double qfalpha = md.qfalpha*qfswitch;
         double qfbeta = md.qfbeta*qfswitch;
-        double qfgamma = md.qfgamma*qfswitch;
+        double qfgamma = md.qfgamma*qfswitch*pccoeff;
 
         double * d_qf_density_for_Ua = (double *) (d_densities+12*NXY);  // density for diagonal part (U) of quantum friction force
         double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NXY);
@@ -775,7 +774,6 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
                                             grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL,
                                             n, (Complex *)wf_in, (Complex *)wf_out,
                                             (Complex *)wf_d_dx, (Complex *)wf_d_dy, d_kkz, (Complex *)wf_laplace, (Complex *)alphawf_laplace,
-                                            cccoeff,
                                             vecvext_a, vecvext_a+NXY, divvext_a, vecvext_b, vecvext_b+NXY, divvext_b
                                                    );
 #endif
