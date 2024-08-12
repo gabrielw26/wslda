@@ -8,7 +8,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL # notifications for job started, done & fail
 #SBATCH --mail-user=your@email # <-- SET: send-to address
 #SBATCH -p plgrid-gpu-a100
-#SBATCH -A plginhsf-gpu-a100
+#SBATCH -A plginhsf2-gpu-a100
 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:

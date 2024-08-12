@@ -1049,6 +1049,9 @@ int main( int argc , char ** argv )
 #else
     elpa_set(handle, "nvidia-gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #endif
+#if ELPA_API>=20241103
+    if(telpa_gpu==1) elpa_setup_gpu(handle);
+#endif
 #else
     elpa_set(handle, "gpu", telpa_gpu, &info); if(info!=ELPA_OK) error_msg_mpi_abort(iam, info!=ELPA_OK);
 #endif

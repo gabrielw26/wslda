@@ -103,8 +103,9 @@ GPUS_PER_NODE, // gpuspernode
 -10.0, // ccstart
 99999.0, // ccstop
 10.0, // ccswitch
-9.99, // hkf_mu
-0.01, // hkf_T
+0, // hkf_mode
+0.90, // hkf_mu
+0.02, // hkf_T
 0.0, // subsetMinEn
 0.0, // subsetMaxEn
 0, // subsetShiftDmu
@@ -409,7 +410,9 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.ccstop);
         else if (strcmp (tag,"ccswitch") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.ccswitch);
-        // high frequency filter
+        // high k filter
+        else if (strcmp (tag,"hkf_mode") == 0)
+            sscanf (s,"%s %d %*s",tag,&md.hkf_mode);
         else if (strcmp (tag,"hkf_mu") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.hkf_mu);
         else if (strcmp (tag,"hkf_T") == 0)

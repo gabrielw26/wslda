@@ -182,10 +182,9 @@ int main( int argc , char ** argv )
     
     // variables
     dt= md.dt ;
-#ifndef TDWSLDA
-    double Emax =  M_PI*M_PI/2.; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI (if lattice spacing is 1.0)
-    dt/=Emax; // time step
-#endif
+    double Emax =  0.5*M_PI*M_PI/DX/DX; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI/dx
+    md.hkf_mu*=Emax;
+    md.hkf_T *=Emax;
 
 #ifdef SPINSYMMETRY_MODE
 //     if(ip==0 && md.spinsymmetry==0) print_warning(WSLDA_WRN_SPINSYMMETRY0);
@@ -780,14 +779,14 @@ int main( int argc , char ** argv )
     if(ip==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd , it, densall, potsall, kF, mu, md.params, extra_data_size, extra_data) );
     if(ip==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "td-wslda-1d") );
 
-    MPI_Gatherv(h_qpe_nwfip,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Gatherv(h_fbetaEn,nwfip,MPI_DOUBLE,h_qpe_nwf,wf_tbl,wf_idx_tbl,MPI_DOUBLE,0,MPI_COMM_WORLD);
     if(ip==0)
     {  
 #ifdef STORE_QPE
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
         file_operation( create_measurement_file_with_header(file_name, NX, 1, 1, 1.0, 1.0, 1.0, eF, t0, md.timesteps*dt) ); 
         sprintf(file_name, "%s_qpe.dpca", md.outprefix);
-        file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );  
+        file_operation( add_measurement_entry(file_name, h_qpe_nwf, sizeof(double)*nwf) );
 #endif
     }
     
@@ -876,6 +875,11 @@ int main( int argc , char ** argv )
             // potentials - NOTE: it=0!
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // filtering of effective masses
+            if(md.hkf_mode>=1)
+            {
+                gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
+            }
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
@@ -966,7 +970,13 @@ int main( int argc , char ** argv )
             gpu_exec( compute_potentials(0, d_densities, d_potentials, cccoeff, md.nthreads) );
             // NOTE - densities and potentials are computed for midpoint 
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // filtering of effective masses
+            if(md.hkf_mode>=1)
+            {
+                gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
+            }
             // effective mass correction
+            // FIXME
             gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
 #endif
@@ -1163,6 +1173,12 @@ int main( int argc , char ** argv )
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // filtering of effective masses
+            if(md.hkf_mode>=1)
+            {
+                gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
+            }
+
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
@@ -1236,6 +1252,11 @@ int main( int argc , char ** argv )
             // potentials
             gpu_exec( compute_potentials(it+1, d_densities, d_potentials, cccoeff, md.nthreads) );  
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            // filtering of effective masses
+            if(md.hkf_mode>=1)
+            {
+                gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
+            }
             // effective mass correction
             gpu_exec( multiply_wf_by_alpha(nwfip, d_wf, d_alphawf_laplace, d_potentials, md.nthreads) );
             gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );

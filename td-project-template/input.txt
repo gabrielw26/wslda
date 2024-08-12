@@ -61,6 +61,14 @@ selfstart               0        # use Taylor expansion for first 5 steps?
 # batch                   1000000  # maximal number of wave-functions process in parallel by each card, default=1000000
 # gpuspernode             1        # number of GPUs per node (resource set), default=GPUS_PER_NODE (in machine.h)
 
+# -------------- HIGH K-WAVES FILTER ----------------
+# See: Wiki -> Stabilization of the time-dependent code
+# hkf_mode                1          # 0 - no noise filtering (default)
+                                     # 1 - noise filtering for mean-fields only
+                                     # 2 - noise filtering of mean-fields and pairing field
+# hkf_mu                  0.9        # mu parameter of the Fermi-Dirac (filtering) function, in Ec units, default=0.9
+# hkf_T                   0.02       # T  parameter of the Fermi-Dirac (filtering) function, in Ec units, default=0.02
+
 # ---------------- CONSERVATION LAWS -----------------
 # See: Wiki -> Monitoring of conservation laws
 # # -> Energy conservation monitoring
