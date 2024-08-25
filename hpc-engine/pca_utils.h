@@ -41,6 +41,7 @@ typedef struct
     double qfalpha;                     // alpha parameter for quantum friction term
     double qfbeta;                      // beta parameter for quantum friction - parring channel
     double qfgamma;                     // gamma parameter for particle number control
+    double qfNreq;                      // requested number of particles for particle control
     double qfstart;                     // start time for evolving with quantum friction, in units of eF
     double qfstop;                      // stop time for evolving with quantum friction, in units of eF
     double qfswitch;                    // time for switch function
@@ -255,5 +256,6 @@ void print_conservation_of_quantity(int quantity_id, double value, double tolera
 void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
 
 double quantum_friction_switch(double t, double eF);
+double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element);
 
 #endif

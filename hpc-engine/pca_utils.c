@@ -37,6 +37,7 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, //qfalpha;
 0.0, // qfbeta;
 0.0, //qfgamma;
+0.0, // qfNreq
 0.0, // qfstart;
 0.0, // qfstop;
 0.0, // qfswitch;
@@ -247,6 +248,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.qfbeta);
         else if (strcmp (tag,"qfgamma") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfgamma);
+        else if (strcmp (tag,"qfNreq") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.qfNreq);
         else if (strcmp (tag,"qfstart") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfstart);
         else if (strcmp (tag,"qfstop") == 0)
@@ -1046,3 +1049,14 @@ double quantum_friction_switch(double t, double eF)
     return h_smooth_step(t, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
 }
 
+
+double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element)
+{
+    double N=0.0;
+    int ixyz;
+    for(ixyz=0; ixyz<nxyz; ixyz++) N+=na[ixyz];
+    for(ixyz=0; ixyz<nxyz; ixyz++) N+=nb[ixyz];
+    N*=volume_element;
+    // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
+    return (N-md.qfNreq);
+}
