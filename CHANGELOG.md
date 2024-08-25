@@ -1,5 +1,7 @@
-# 2024.xx.xx
+# 2024.08.11
 * Improved stability of td codes (filtering of noise from mean-fields).
+* Update for new API version of ELPA library.
+* Minor bug fixes and improvements.
 
 # 2024.03.01
 * Minor improvements of inittype=0 mode.
