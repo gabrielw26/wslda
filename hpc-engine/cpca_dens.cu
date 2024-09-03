@@ -394,10 +394,23 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 
     if(ixyz<NXY)
     {
+        // Initialize variables for accumulating densities
+        double  U_loc_a = 0.0;
+        double  U_loc_b = 0.0;
+        Complex D_loc = Complex(0.0, 0.0);
+
+
         // reduce over each wave-function
         for(iwf=0; iwf<n; iwf++)
         {
+            // weight
+            fbEn=fbetaEn[iwf];
+            fbmEn = 1.0 - fbEn;
+            if(d_weights!=NULL) wght=d_weights[iwf];
+            fbEn*=wght; fbmEn*=wght; 
             kz = kkz[iwf];
+            kz2= kz*kz ; 
+
             wcnt = 2.0; // take into account +kz and -kz
             if(fabs(kz)<1.0e-12) wcnt = 1.0; // except for kz=0.0
 
@@ -409,17 +422,28 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             lap_u=d_wf_laplace[      iwf*NXY+ixyz];
             lap_v=d_wf_laplace[n*NXY+iwf*NXY+ixyz];
 
-            // TODO: EA: use kernel_calculate_densities for reference
+#ifdef SPINSYMMETRY_MODE
+            // do not compute U_loc_a - will taken from taub and U_loc_b  
+            U_loc_b += ((thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn-(thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn)*wcnt;              
+            D_loc   += (thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt*2.0; // coefficient 2 accounts of the spin-symmetric case
+
+#else
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
+            U_loc_a += (thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn*wcnt;
+            U_loc_b -= (thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn*wcnt;
+            D_loc   += (thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt;   
+#endif            
         }
-    }
 
+#ifdef SPINSYMMETRY_MODE
+          U_loc_a = U_loc_b;
+#endif
     // send to global memory
-    d_qf_density_for_Ua[ixyz] = 0.0; // TODO
-    d_qf_density_for_Ub[ixyz] = 0.0; // TODO
-    d_qf_density_for_D[ixyz] = Complex(0.0,0.); // TODO
+        d_qf_density_for_Ua[ixyz] =      U_loc_a/(double)(LZ);
+        d_qf_density_for_Ub[ixyz] =      U_loc_b/(double)(LZ);
+        d_qf_density_for_D[ixyz]  =   -0.5*D_loc/(double)(LZ);
 }
 
 

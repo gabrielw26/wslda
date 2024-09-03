@@ -690,7 +690,8 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         // TODO: EA: Update this section
         // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
         // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
-
+//**************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS**************************************  //---------Gw VERSION
+/* 
         // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
         ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, NULL, grad_j_corr_a, grad_j_corr_a+NXY, NULL, nthreads);
         if(ierr!=0) return ierr;
@@ -701,6 +702,16 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL,
                                                     V_a, V_b, qfalpha);
+ */
+       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************   //---------EA VERSION
+   
+            // update mean field potential by friction terms
+
+           kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
+                                                    d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
+                                                    V_a, V_b, delta, qfalpha, qfbeta, qfgamma);
+
+
     }
 
     // filtering of mean-fields
