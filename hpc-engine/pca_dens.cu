@@ -403,7 +403,8 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 
 #ifdef SPINSYMMETRY_MODE
             // do not compute U_loc_a - will taken from taub and U_loc_b 
-             U_loc_b += ((thrust::conj(u)*lap_u-u).imag()*fbEn-(thrust::conj(v)*lap_v).imag()*fbmEn);              
+            U_loc_b += ((thrust::conj(u)*(lap_u)).imag()*fbEn-(thrust::conj(v)*(lap_v)).imag()*fbmEn);              
+            D_loc   += (thrust::conj(v)*(lap_u)+thrust::conj(lap_v)*u)*(fbmEn-fbEn)*2.0; // coefficient 2 accounts of the spin-symmetric case
 #else
 
 
@@ -411,9 +412,9 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
-            U_loc_a += (thrust::conj(lap_u)*u).imag()*fbEn;
-            U_loc_b -= (thrust::conj(lap_v)*v).imag()*fbmEn;
-            D_loc   += lap_u*thrust::conj(v)+u*thrust::conj(lap_v)*(fbmEn-fbEn);     //this is the quantity B_ab
+            U_loc_a += (thrust::conj(u)*(lap_u)).imag()*fbEn;
+            U_loc_b -= (thrust::conj(v)*(lap_v)).imag()*fbmEn;
+            D_loc   += (thrust::conj(v)*lap_u+thrust::conj(lap_v)*u)*(fbmEn-fbEn);   //this is the quantity B_ab
 
 #endif
 
