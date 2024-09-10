@@ -1,6 +1,5 @@
 {
     "files.associations": {
-        "wslda_functionals.h": "c",
         "complex": "cpp"
     }
 }

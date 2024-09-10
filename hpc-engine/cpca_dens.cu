@@ -389,8 +389,13 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 {
     size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
     Complex u, v, lap_v, lap_u;
+    double fbEn, fbmEn;
+
+
     size_t iwf;
-    double kz, wcnt;
+    double kz,kz2, wcnt;
+    double wght=1.0;
+
 
     if(ixyz<NXY)
     {
@@ -431,9 +436,9 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             //  which implements computatoin of densities as presented
             //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
             // ...
-            U_loc_a += (thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn*wcnt;
-            U_loc_b -= (thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn*wcnt;
-            D_loc   += (thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt;   
+            U_loc_a += 0.0;//(thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn*wcnt;
+            U_loc_b -= 0.0;//(thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn*wcnt;
+            D_loc   += 0.0;//(thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt;   
 #endif            
         }
 
@@ -444,7 +449,10 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
         d_qf_density_for_Ua[ixyz] =      U_loc_a/(double)(LZ);
         d_qf_density_for_Ub[ixyz] =      U_loc_b/(double)(LZ);
         d_qf_density_for_D[ixyz]  =   -0.5*D_loc/(double)(LZ);
+
 }
+}
+
 
 
 // TODO: EA: Update of descriptions accordingly
@@ -478,7 +486,7 @@ extern "C" int calculate_quantum_friction_densities(int n, Complex *wf,
     double * d_qf_density_for_Ub = (double *) (d_qf_densities +   NXY);        // density for diagonal part (U) of quantum friction force
     Complex *d_qf_density_for_D = (Complex *) (d_qf_densities + 2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
-    kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
+    //kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
 
     return 0;
 }
