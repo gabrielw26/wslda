@@ -510,13 +510,13 @@ __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
         PhDen         = thrust::arg(d_qf_density_for_D[ixyz]);
 
         _V_a = V_a[ixyz]; // keep the original value
-        V_a[ixyz]   -=0.0//d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_a[ixyz]   -=d_qf_density_for_Ua[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         _V_b = V_b[ixyz]; // keep the original value
-        V_b[ixyz]   -=0.0//d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
+        V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         _delta = delta[ixyz]; // keep the original value
-        delta[ixyz] += 0.0//qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta
+        delta[ixyz] +=qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta
         // particle control part
-        delta[ixyz] += 0.0//Complex(0.0,qfgamma)*_delta;
+        delta[ixyz] +=Complex(0.0,qfgamma)*_delta;
 
         // Save original values - it will be used by kernel_remove_quantum_friction(...)
         d_qf_density_for_Ua[ixyz]=_V_a;
@@ -743,9 +743,9 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
    
             // update mean field potential by friction terms
 
-           //kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
-            //                                        d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
-            //                                        V_a, V_b, delta, qfalpha, qfbeta, qfgamma);
+           kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
+                                                    d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
+                                                    V_a, V_b, delta, qfalpha, qfbeta, qfgamma);
 
 
     }

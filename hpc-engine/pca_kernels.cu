@@ -532,7 +532,7 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
         _V_b = V_b[ixyz]; // keep the original value
         V_b[ixyz]   -=d_qf_density_for_Ub[ixyz]*qfalpha/dc_nF; // here I divide be reference density, to avoid problems of division by zero
         _delta = delta[ixyz]; // keep the original value
-        delta[ixyz] += qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //UWAGA NOT FINAL FORM as its missing the Non particle conserving term - \gamma *[N(t)-N_req] \Delta
+        delta[ixyz] += qfbeta*thrust::abs(delta[ixyz])*Complex(cos(PhDel),sin(PhDel))*sin(PhDel - PhDen); //particle conserving part
         // particle control part
         delta[ixyz] += Complex(0.0,qfgamma)*_delta;
 
@@ -738,29 +738,8 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         double * d_qf_density_for_Ua = (double *) (d_densities+12*NXYZ);  // density for diagonal part (U) of quantum friction force
         double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NXYZ);
         Complex *d_qf_density_for_D = (Complex *) (d_qf_density_for_Ua+2*NXYZ); // density for off-diagonal part (Delta) of quantum friction force
-
-        // TODO: EA: Update this section
-        // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
-        // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
-
-    //    //******************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS***********************************************************  
-    // // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
-
-     
-    //     ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, j_a_z, grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, nthreads);
-    //     if(ierr!=0) return ierr;
-    //     ierr=compute_derivative_real_vector_f(j_b_x, j_b_y, j_b_z, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2, nthreads);
-    //     if(ierr!=0) return ierr;
-
-    //     // update mean field potential by friction term
-    //     kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
-    //                                                 grad_j_corr_a, grad_j_corr_a+NXYZ, grad_j_corr_a+NXYZ*2, grad_j_corr_b, grad_j_corr_b+NXYZ, grad_j_corr_b+NXYZ*2,
-    //                                                 V_a, V_b, qfalpha);
     
-
-       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************  
         
-
         // update mean field potential by friction terms
         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,

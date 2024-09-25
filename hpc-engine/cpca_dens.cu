@@ -433,12 +433,10 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             D_loc   += (thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt*2.0; // coefficient 2 accounts of the spin-symmetric case
 
 #else
-            //  which implements computatoin of densities as presented
-            //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
-            // ...
-            U_loc_a += 0.0;//(thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn*wcnt;
-            U_loc_b -= 0.0;//(thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn*wcnt;
-            D_loc   += 0.0;//(thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt;   
+            // formulas taken from Gabriel's notes
+            U_loc_a += (thrust::conj(u)*(lap_u-u*kz2)).imag()*fbEn*wcnt;
+            U_loc_b -= (thrust::conj(v)*(lap_v-v*kz2)).imag()*fbmEn*wcnt;
+            D_loc   += (thrust::conj(v)*(lap_u-u*kz2)+thrust::conj(lap_v-v*kz2)*u)*(fbmEn-fbEn)*wcnt;   
 #endif            
         }
 
@@ -455,16 +453,16 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 
 
 
-// TODO: EA: Update of descriptions accordingly
-/**
+ /**
  * Function computes densities (generalzied) densities for quantum friction force.
- * U:     sum_n Im [v_n^* Laplace v_n]
- * Delta: sum_n [v_n^* Laplace u_n + u_n Laplace v_n^*]
+ * U_a: -sum_n Im [u_n^* Laplace v_n] the cooling potencial for the current terms in species (a)
+ * U_b:  sum_n Im [v_n^* Laplace v_n] the cooling potencial for the current terms in species (b)
+ * D: sum_n [v_n^* Laplace u_n + u_n Laplace v_n^*] the cooling potential in pairing sector
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf array with wave-functions (INPUT)
  * @param d_wf_laplace laplacian of wave-functions (INPUT)
  * @param kkz value of kz (INPUT)
- * @param fbetaEn weight of wave-function (INPUT)
+ * @param d_fbetaEn weight of wave-function (INPUT)
  * @param weights  extra weights, for computing subset densities, NULL - no weights (INPUT)
  * @param d_qf_densities storage buffer for output densities (OUTPUT)
  * @param nthreads number of threads per block
@@ -486,7 +484,7 @@ extern "C" int calculate_quantum_friction_densities(int n, Complex *wf,
     double * d_qf_density_for_Ub = (double *) (d_qf_densities +   NXY);        // density for diagonal part (U) of quantum friction force
     Complex *d_qf_density_for_D = (Complex *) (d_qf_densities + 2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
-    //kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
+    kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, wf, d_wf_laplace, kkz, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
 
     return 0;
 }

@@ -406,35 +406,27 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             U_loc_b += ((thrust::conj(u)*(lap_u)).imag()*fbEn-(thrust::conj(v)*(lap_v)).imag()*fbmEn);              
             D_loc   += (thrust::conj(v)*(lap_u)+thrust::conj(lap_v)*u)*(fbmEn-fbEn)*2.0; // coefficient 2 accounts of the spin-symmetric case
 #else
-
-
-            // TODO: EA: use kernel_calculate_densities for reference
-            //  which implements computatoin of densities as presented
-            //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
-            // ...
+            // formulas taken from Gabriel's notes
             U_loc_a += (thrust::conj(u)*(lap_u)).imag()*fbEn;
             U_loc_b -= (thrust::conj(v)*(lap_v)).imag()*fbmEn;
             D_loc   += (thrust::conj(v)*lap_u+thrust::conj(lap_v)*u)*(fbmEn-fbEn);   //this is the quantity B_ab
 
 #endif
+        }
 
 #ifdef SPINSYMMETRY_MODE
           U_loc_a = U_loc_b;
 #endif  
       
-        }
-
     // send to global memory
-        d_qf_density_for_Ua[ixyz] =  U_loc_a;   // TODO
-        d_qf_density_for_Ub[ixyz] =  U_loc_b;   // TODO
-        d_qf_density_for_D[ixyz] =   -0.5*D_loc; // TODO
+        d_qf_density_for_Ua[ixyz] =  U_loc_a;    
+        d_qf_density_for_Ub[ixyz] =  U_loc_b;   
+        d_qf_density_for_D[ixyz] =   -0.5*D_loc;  
     }
-
 }
 
 
-// TODO: EA: Update of descriptions accordingly
- /**
+/**
  * Function computes (generalzied) densities for quantum friction force.
  * U_a: -sum_n Im [u_n^* Laplace v_n] the cooling potencial for the current terms in species (a)
  * U_b:  sum_n Im [v_n^* Laplace v_n] the cooling potencial for the current terms in species (b)
