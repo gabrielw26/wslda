@@ -30,7 +30,6 @@
 #include <fftw3.h>
 #include <math.h>
 #include <stdbool.h>
-#include <tgmath.h>
 
 // ERROR CODES
 #define WINTERP_OK 0
