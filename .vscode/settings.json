@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "cmath": "cpp",
+        "pca_kernels.h": "c",
+        "wslda_potdens.h": "c"
+    }
+}
