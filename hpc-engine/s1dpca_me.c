@@ -305,7 +305,7 @@ int compute_matrix_elements_of_momentum_operator(int nx, double dx, double compl
     for(ci=0; ci<nx; ci++) // column-major iteration fashion, for each column do:
     {
         for(ix=0; ix<nx; ix++) fft1[ix]=0.0+I*0.0;
-        fft1[ci] = 1.0/(dx*nx); // normalization factor already included 
+        fft1[ci] = 1.0/(nx); // normalization factor already included
         fftw_execute(plan_f_1d); // to momentum space
         
         // multiply by momentum
