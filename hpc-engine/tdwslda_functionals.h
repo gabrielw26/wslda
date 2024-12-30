@@ -363,7 +363,8 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         Va=u_ext(ix,iy,iz,it,SPINA);
         Vb=u_ext(ix,iy,iz,it,SPINB);
 
-        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data));
+        t7 = 0.5*(h_potentials.alpha_a[ixyz]+h_potentials.alpha_b[ixyz]);
+        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data)*t7);
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
