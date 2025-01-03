@@ -9,7 +9,7 @@ exec: cp predefines.h.1 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix a0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
@@ -21,7 +21,7 @@ exec: cp predefines.h.1 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix a2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
@@ -36,7 +36,7 @@ exec: cp predefines.h.2 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix b0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
@@ -48,7 +48,7 @@ exec: cp predefines.h.2 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix b2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
@@ -63,7 +63,7 @@ exec: cp predefines.h.3 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix c0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
@@ -75,7 +75,7 @@ exec: cp predefines.h.3 predefines.h
 exec: make -f ../st-templates-full/Makefile.c clean
 exec: make -f ../st-templates-full/Makefile.c 1d
 test: st-wslda-1d
-exec: cp input.txt input.txt.run
+exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix c2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run

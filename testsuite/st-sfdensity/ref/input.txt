@@ -21,7 +21,7 @@ inittype                0       #  0 - create uniform solution and start from it
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
 
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               tdinit    # all output file with start with this prefix
+outprefix               setit    # all output file with start with this prefix
 inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
 overwrite               1       # allow for overwriting results
 checkpoint              1       # do checkpoints after each iteration
