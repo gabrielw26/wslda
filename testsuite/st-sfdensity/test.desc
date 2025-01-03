@@ -1,0 +1,83 @@
+# The code tests the sensitivity of the results with respect to the DX.
+# Only 1D code is tested here.
+
+# --------------------------------------------------------------------------
+# --------> 128x32x32
+# --------------------------------------------------------------------------
+tag: a0
+exec: cp predefines.h.1 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix a0" >> input.txt.run
+exec: echo "temperature 0.0" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: a0.cmp ref/c0.ref
+
+tag: a2
+exec: cp predefines.h.1 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix a2" >> input.txt.run
+exec: echo "temperature 0.2" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: a2.cmp ref/c2.ref
+
+# --------------------------------------------------------------------------
+# --------> 196x48x48
+# --------------------------------------------------------------------------
+tag: b0
+exec: cp predefines.h.2 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix b0" >> input.txt.run
+exec: echo "temperature 0.0" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: b0.cmp ref/c0.ref
+
+tag: b2
+exec: cp predefines.h.2 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix b2" >> input.txt.run
+exec: echo "temperature 0.2" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: b2.cmp ref/c2.ref
+
+# --------------------------------------------------------------------------
+# --------> 256x64x64
+# --------------------------------------------------------------------------
+tag: c0
+exec: cp predefines.h.3 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix c0" >> input.txt.run
+exec: echo "temperature 0.0" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: c0.cmp ref/c0.ref
+
+tag: c2
+exec: cp predefines.h.3 predefines.h
+exec: make -f ../st-templates-full/Makefile.c clean
+exec: make -f ../st-templates-full/Makefile.c 1d
+test: st-wslda-1d
+exec: cp input.txt input.txt.run
+exec: echo "outprefix c2" >> input.txt.run
+exec: echo "temperature 0.2" >> input.txt.run
+exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
+test: test_testsuite.ok
+diff: c2.cmp ref/c2.ref
