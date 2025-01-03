@@ -13,7 +13,7 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix a0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: a0_testsuite.ok
 diff: a0.cmp ref/c0.ref
 
 tag: a2
@@ -25,7 +25,7 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix a2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: a2_testsuite.ok
 diff: a2.cmp ref/c2.ref
 
 # --------------------------------------------------------------------------
@@ -40,7 +40,7 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix b0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: b0_testsuite.ok
 diff: b0.cmp ref/c0.ref
 
 tag: b2
@@ -52,7 +52,7 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix b2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: b2_testsuite.ok
 diff: b2.cmp ref/c2.ref
 
 # --------------------------------------------------------------------------
@@ -67,7 +67,7 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix c0" >> input.txt.run
 exec: echo "temperature 0.0" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: c0_testsuite.ok
 diff: c0.cmp ref/c0.ref
 
 tag: c2
@@ -79,5 +79,5 @@ exec: cp ref/input.txt input.txt.run
 exec: echo "outprefix c2" >> input.txt.run
 exec: echo "temperature 0.2" >> input.txt.run
 exec: timeout 600 mpirun -np 20 ./st-wslda-1d input.txt.run
-test: test_testsuite.ok
+test: c2_testsuite.ok
 diff: c2.cmp ref/c2.ref
