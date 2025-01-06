@@ -236,7 +236,7 @@ int main( int argc , char ** argv )
     // ====================================================================================
     // quantum friction buffers
     mpipackagesize=12;
-    if(md.qfalpha>0.0 || md.qfbeta>0.0 || md.qfgamma>0.0) mpipackagesize += 3;// quantum friction is expected to be used
+    if(md.qfalpha>0.0 || md.qfbeta>0.0 || md.qfgamma>0.0) mpipackagesize += 4;// quantum friction is expected to be used
 
     gpu_exec( host_malloc_pl((size_t)mpipackagesize*NXY*sizeof(double), (void **)&h_densities) );
     gpu_exec(     gpu_malloc((size_t)mpipackagesize*NXY*sizeof(double), (void **)&d_densities) );

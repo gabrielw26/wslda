@@ -381,10 +381,6 @@ extern "C" int symmetrize_densities_device(double *d_densities)
     return 0;
 }
 
-// ================================================================================================
-// ============================ calculate_quantum_friction_densities ==============================
-// ================================================================================================
-//---------EA VERSION
 __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *wf, Complex *d_wf_laplace, double *kky, double *kkz,
                                          double *fbetaEn, double *d_weights,
                                          double *d_qf_density_for_Ua,double *d_qf_density_for_Ub, Complex *d_qf_density_for_D,
@@ -436,9 +432,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
             D_loc   += (thrust::conj(v)*(lap_u-u*kyz2)+thrust::conj(lap_v-v*kyz2)*u)*(fbmEn-fbEn)*wcnt*2.0; // coefficient 2 accounts of the spin-symmetric case
 
 #else
-            //  which implements computatoin of densities as presented
-            //  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Physical%20quantities#densities
-            // ...
+            // formulas taken from Gabriel's notes
             U_loc_a += (thrust::conj(u)*(lap_u-u*kyz2)).imag()*fbEn*wcnt;
             U_loc_b -= (thrust::conj(v)*(lap_v-v*kyz2)).imag()*fbmEn*wcnt;
             D_loc   += (thrust::conj(v)*(lap_u-u*kyz2)+thrust::conj(lap_v-v*kyz2)*u)*(fbmEn-fbEn)*wcnt;   
@@ -448,6 +442,7 @@ __global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *w
 #ifdef SPINSYMMETRY_MODE
           U_loc_a = U_loc_b;
 #endif
+
     // send to global memory
         d_qf_density_for_Ua[ixyz] =      U_loc_a/(double)(LY*LZ);
         d_qf_density_for_Ub[ixyz] =      U_loc_b/(double)(LY*LZ);
