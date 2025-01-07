@@ -1,5 +1,5 @@
 # SETTING UP CALCULATIONS AND COMPILATION 
-(see also: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Setting%20up%20calculations)
+(see also: http://git2.if.pw.edu.pl/gabrielw/cold-atoms/wikis/setting-up-calculations-and-compilation)
 
 The steps below assume that you have set system variable `WSLDA`.  
 You can check if it is set by executing
@@ -10,7 +10,7 @@ echo $WSLDA
 ## STEP 1: Creating your project folder
 
 ```bash
-cp -r $WSLDA/td-project-template/ name-of-your-project
+cp -r /home2/archive/wslda/st-project-template/ name-of-your-project
 cd name-of-your-project
 ```
 
@@ -36,7 +36,6 @@ You need to modify:
     predefines.h
     problem-definition.h
     logger.h (optionally)
-    machine.h (optionally)
     input.txt
 ```        
 NOTE: You MUST recompile code after each modification of `*.h` files

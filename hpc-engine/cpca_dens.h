@@ -11,6 +11,13 @@ int calculate_densities(int n, cufftDoubleComplex *wf,
                             int nthreads);
 int density_caculate_tau(double *d_densities, int nthreads);
 int symmetrize_densities_device(double *d_densities);
+int calculate_quantum_friction_densities(int n, Complex *wf,
+                            Complex *d_wf_laplace,
+                            double *kkz,
+                            double *d_fbetaEn,
+                            double *weights,
+                            double *d_qf_densities,
+                            int nthreads);
 
 #ifdef TDWSLDA_MAIN
 #undef cufftDoubleComplex

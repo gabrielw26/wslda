@@ -1,13 +1,9 @@
-# 
-# W-SLDA Toolkit
-# Warsaw University of Technology
-#  
+# source env.sh
 
-# List here modules that need to be loaded before the compilation,
-# or update system variables, examples
-#  
-# module load ...
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path
-#
-# Path to WSLDA Toolkit
-# export WSLDA=...
+source scl_source enable devtoolset-7 python27
+module load cuda/9.0
+module load openmpi-gcc721-Cuda90/3.1.1
+module list
+
+export WSLDA_MACHINE=$WSLDA/templates/dwarf
+cat $WSLDA/VERSION.h
