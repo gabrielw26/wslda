@@ -1,9 +1,9 @@
-npart[SPINA]              45.00017669	 1.0e-4
-npart[SPINB]              45.00017669	 1.0e-4
-energy[EKIN]              51.31355987	 1.0e-4
-energy[EPOT]             -14.43720188	 1.0e-4
-energy[EPAIR]            -25.79891597	 1.0e-4
-energy[ECURRENT]        0.03443581855	 1.0e-4
+npart[SPINA]              45.00000002	 1.0e-4
+npart[SPINB]              45.00000002	 1.0e-4
+energy[EKIN]              51.30861686	 1.0e-4
+energy[EPOT]             -14.40489833	 1.0e-4
+energy[EPAIR]            -25.90821373	 1.0e-4
+energy[ECURRENT]        0.01154297918	 1.0e-4
 energy[EPOTEXT]                     0	 1.0e-4
 energy[EPAIREXT]                    0	 1.0e-4
 energy[EVELEXT]                     0	 1.0e-4
