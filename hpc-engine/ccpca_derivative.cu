@@ -399,7 +399,7 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
     int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_df_dx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_df_dx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
     
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -471,7 +471,7 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
     int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
     
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -535,7 +535,7 @@ extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads
     int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
     
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -610,7 +610,7 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
     int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
     cufftDoubleComplex * p_fy = p_fx+(NX/2+1);
     cufftDoubleComplex * p_fz = p_fy+(NX/2+1);
     
@@ -684,7 +684,7 @@ extern "C" int high_frequency_filter_d(double *in, double *out,
     int nblocks = (int)ceil((float)((NX/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
 
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -753,7 +753,7 @@ extern "C" int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComple
     int nblocks = (int)ceil((float)(NX)/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NX);
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NX);
 
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
