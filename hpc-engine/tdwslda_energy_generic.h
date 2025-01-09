@@ -13,7 +13,7 @@
  * @param d_potentials (INPUT)
  *                     collective array with potentials
  * @param d_workarea (INPUT/OUTPUT)
- *                   working buffer of size PCA_WORKSPACE_SHIFT*NUMBER_ELEMENT*sizeof(double complex),
+ *                   working buffer
  *                   On OUTPUT first TDWSLDAITEMS elements contain energies and particle number, as specifie in pca_settings.h
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR

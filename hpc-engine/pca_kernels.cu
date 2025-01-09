@@ -22,6 +22,7 @@ typedef thrust::complex<double> Complex;
 #include "wslda_potdens.h"
 #include "reduce_many.h"
 #include "pca_utils.h" // access to input (md) structure
+#include "tdwslda_memory_management.h"
 
 
 #ifdef TDWSLDA
@@ -221,7 +222,6 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 // =======================================================================================
 // ================================== apply_hamiltonian ==================================
 // =======================================================================================
-extern "C" void *pca_cufft_work_area;
 extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, double *df_dz, int nthreads);
 extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double *dfx_dx, double *dfy_dy, double *dfz_dz,int nthreads);
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
@@ -494,24 +494,6 @@ __global__ void kernel_apply_hamiltonian_bdg(int it,
     }
 }
 
-
-/* //       OLD METHOD OF GRADIENT OF CURRENTS
-  __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b,
-                                            double *djax_dx, double *djay_dy, double *djaz_dz, double *djbx_dx, double *djby_dy, double *djbz_dz,
-                                            double *V_a, double *V_b, double qfalpha)
-{
-    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
-    if(ixyz<NXYZ)
-    {
-        // see Eq.(3) in paper https://arxiv.org/abs/1305.6891
-        V_a[ixyz]-=qfalpha*(djax_dx[ixyz]+djay_dy[ixyz]+djaz_dz[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-        V_b[ixyz]-=qfalpha*(djbx_dx[ixyz]+djby_dy[ixyz]+djbz_dz[ixyz])/dc_nF; // here I divide be reference density, to avoid problems of division by zero
-    }
-} 
- */ 
-                 
-
- //       NEW METHOD OF LAPLACIAN OF WF
  __global__ void kernel_add_quantum_friction(double *rho_a, double *rho_b, //add difference of particle number and desired particle number//add difference of particle number and desired particle number
                                              double* d_qf_density_for_Ua, double* d_qf_density_for_Ub, Complex*d_qf_density_for_D, 
                                              double *V_a, double *V_b, Complex *delta, double qfalpha, double qfbeta,double qfgamma)
@@ -721,7 +703,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     Complex *delta = (Complex *)(d_potentials +  2*NXYZ);
 
     // DERIVATIVES
-    double * grad_alpha_a  = (double *)pca_cufft_work_area; // Use here work area of cuFFT
+    double * grad_alpha_a  = (double *)mm_get_pointer_to_kernels_workspace(NXYZ); // Use here work area of cuFFT
     double * grad_alpha_b  = grad_alpha_a + NXYZ*3;
     double * grad_j_corr_a = grad_alpha_a + NXYZ*6; // (j+/n+ - alpha_a*ja/na), see GW notes
     double * grad_j_corr_b = grad_alpha_a + NXYZ*9; // (j+/n+ - alpha_b*jb/nb), see GW notes
@@ -823,12 +805,11 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
 #endif
     // Step 4: to increas stability - subtruct <H>*wf, where <H> is quasi particle energy
     // and normalize
-    // use grad_alpha_a as working buffer
     double *gpe;
 
     if(useqpe==NULL) // compute quasiparticle energies
     {
-        gpe=grad_alpha_a; // for easier notation
+        gpe=(double *)mm_get_pointer_to_total_workspace(NXYZ); // for easier notation
 
         // compute quasi-particle energy for each wave-function
         int noAllElements = n*NXYZ;
@@ -976,7 +957,7 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
     // number of blocks
     int ierr;
     int noAllElements = NXYZ*n; 
-    double * norm  = (double *)pca_cufft_work_area; // Use here work area of cuFFT as working buffer
+    double * norm  = (double *)mm_get_pointer_to_total_workspace(NXYZ); // Use here work area of cuFFT as working buffer
     
     // compute norm for each wave-function
     int nblocks = (int)ceil((float)noAllElements/nthreads);
@@ -1128,7 +1109,7 @@ extern "C" int get_v_ext(int datadim, int spin, int it, double *data)
     int nblocks = (int)ceil((float)NXYZ/nthreads);
 
     // allocate cuda memory
-    double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
+    double *wrkspace = (double *)mm_get_pointer_to_kernels_workspace(NXYZ); // reuse workspace
     kernel_get_v_ext<<<nblocks, nthreads>>>(it, spin, wrkspace);
 
     if( cudaMemcpy( data , wrkspace, sizeof(double)*NXYZ, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
@@ -1157,7 +1138,7 @@ extern "C" int get_delta_ext(int datadim, int it, void *deltain, void *data)
     int nblocks = (int)ceil((float)NXYZ/nthreads);
 
     // allocate cuda memory
-    Complex *wrkspace = (Complex *)pca_cufft_work_area; // reuse workspace
+    Complex *wrkspace = (Complex *)mm_get_pointer_to_kernels_workspace(NXYZ); // reuse workspace
     kernel_get_delta_ext<<<nblocks, nthreads>>>(it, (Complex *)deltain, (Complex *)wrkspace);
 
     if( cudaMemcpy( data , wrkspace, sizeof(Complex)*NXYZ, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
@@ -1187,7 +1168,7 @@ extern "C" int get_velocity_ext(int datadim, int spin, int it, double *data)
     int nthreads = 256;
     int nblocks = (int)ceil((float)NXYZ/nthreads);
 
-    double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
+    double *wrkspace = (double *)mm_get_pointer_to_kernels_workspace(NXYZ); // reuse workspace
     double *vx = wrkspace + 0*NXYZ;
     double *vy = wrkspace + 1*NXYZ;
     double *vz = wrkspace + 2*NXYZ;

@@ -11,6 +11,8 @@
 
 #include "pca_settings.h"
 #include "pca_macro.h"
+#define __externc
+#include "tdwslda_memory_management.h"
 
 // structure that contains info needed to fast reconstruct the solution
 typedef struct
@@ -74,7 +76,7 @@ extern "C" int create_cufftPlans(int batch_size,  int nwfip, size_t *workSize)
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
     if(max_work_Size>*workSize) *workSize=max_work_Size;
     
-   
+    // Plans of type ONE reserve extra space for working area
     cufft_result=cufftMakePlanMany(__md_pca_cufftplans.plans[PLAN_Z2Z_ONE], 3, fftwn,
                             inembed,
                             istride, idist,
@@ -82,24 +84,17 @@ extern "C" int create_cufftPlans(int batch_size,  int nwfip, size_t *workSize)
                             ostride, odist,
                             CUFFT_Z2Z, 1, &max_work_Size);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
+    max_work_Size+=mm_get_size_of_total_workspace(NXYZ);
     if(max_work_Size>*workSize) *workSize=max_work_Size; 
     
     cufft_result=cufftMakePlan3d(__md_pca_cufftplans.plans[PLAN_D2Z_ONE], NX, NY, NZ, CUFFT_D2Z, &max_work_Size);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
-    max_work_Size+=sizeof(cufftDoubleComplex)*NX*NY*(NZ/2+1)*3; // extra 3 arrays - see implementation of compute_gradient_real_f
-#ifdef DERIVATIVE_COPY_DATA_MODE
-    max_work_Size+=sizeof(double)*NXYZ;
-#endif
-    max_work_Size+=sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT; // add extra PCA_WORKSPACE_SHIFT buffers as temporary data for hamiltonian execution (2*PCA_WORKSPACE_SHIFT buffers in double precision)
+    max_work_Size+=mm_get_size_of_total_workspace(NXYZ);
     if(max_work_Size>*workSize) *workSize=max_work_Size;
     
     cufft_result=cufftMakePlan3d(__md_pca_cufftplans.plans[PLAN_Z2D_ONE], NX, NY, NZ, CUFFT_Z2D, &max_work_Size);
     if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;
-    max_work_Size+=sizeof(cufftDoubleComplex)*NX*NY*(NZ/2+1)*3; // extra 3 arrays - see implementation of compute_gradient_real_f
-#ifdef DERIVATIVE_COPY_DATA_MODE
-    max_work_Size+=sizeof(double)*NXYZ;
-#endif
-    max_work_Size+=sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT; // add extra PCA_WORKSPACE_SHIFT buffers as temporary data for hamiltonian execution (2*PCA_WORKSPACE_SHIFT buffers in double precision)
+    max_work_Size+=mm_get_size_of_total_workspace(NXYZ);
     if(max_work_Size>*workSize) *workSize=max_work_Size;
         
     return 0;
@@ -118,16 +113,11 @@ extern "C" int set_workspace_for_cufftPlan(void *workArea)
     
     __md_pca_cufftplans.work_area = workArea; // save pointer to global structure
     pca_cufft_work_area = workArea; // save pointer to global structure
-    cufftDoubleComplex *prt = (cufftDoubleComplex *)workArea;
-    prt+=NX*NY*(NZ/2+1)*3;
-#ifdef DERIVATIVE_COPY_DATA_MODE
-    prt+=sizeof(double)*NXYZ;
-#endif
-    prt+=NXYZ*PCA_WORKSPACE_SHIFT;
+    cufftDoubleComplex *prt = (cufftDoubleComplex *)mm_get_pointer_to_fftONE_workspace(NXYZ);
     
     for(i=0; i<CUFFT_NUMBER_OF_PLANS; i++)
     {
-        if(i==PLAN_D2Z_ONE || i==PLAN_Z2D_ONE)
+        if(i==PLAN_D2Z_ONE || i==PLAN_Z2D_ONE || i==PLAN_Z2Z_ONE)
         {
             cufft_result=cufftSetWorkArea(__md_pca_cufftplans.plans[i], (void *)prt);
             if(cufft_result!= CUFFT_SUCCESS) return (int)cufft_result;            
@@ -466,8 +456,7 @@ extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, 
     int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_df_dx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_df_dx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_df_dx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
     cufftDoubleComplex * p_df_dy = p_df_dx+NX*NY*(NZ/2+1);
     cufftDoubleComplex * p_df_dz = p_df_dy+NX*NY*(NZ/2+1);
     
@@ -567,8 +556,7 @@ extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *
     int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
     cufftDoubleComplex * p_fy = p_fx+NX*NY*(NZ/2+1);
     cufftDoubleComplex * p_fz = p_fy+NX*NY*(NZ/2+1);
     
@@ -657,8 +645,7 @@ extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads
     int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
     
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -755,8 +742,7 @@ extern "C" int compute_divergence_real_vector_f(double *fx, double *fy, double *
     int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
     cufftDoubleComplex * p_fy = p_fx+NX*NY*(NZ/2+1);
     cufftDoubleComplex * p_fz = p_fy+NX*NY*(NZ/2+1);
     
@@ -850,8 +836,7 @@ extern "C" int high_frequency_filter_d(double *in, double *out,
     int nblocks = (int)ceil((float)(NX*NY*(NZ/2+1))/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
     
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE
@@ -928,8 +913,7 @@ extern "C" int high_frequency_filter_c(cufftDoubleComplex *in, cufftDoubleComple
     int nblocks = (int)ceil((float)(NXYZ)/nthreads);
 
     // get pointer to workspace
-    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)__md_pca_cufftplans.work_area;
-    p_fx+=PCA_WORKSPACE_SHIFT*NXYZ;
+    cufftDoubleComplex * p_fx = (cufftDoubleComplex *)mm_get_pointer_to_derivatives_workspace(NXYZ);
 
     // Step 1: go to momentum space
 #ifdef DERIVATIVE_COPY_DATA_MODE

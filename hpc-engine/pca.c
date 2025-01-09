@@ -32,6 +32,7 @@
 #include "tdwslda_checkpoint.h"
 #include "wslda_writevars.h"
 #include "wslda_reproducibility.h"
+#include "tdwslda_memory_management.h"
 
 int wsldapid; // process id - global variable
 int wsldapnp; // total number of processes - global variable
@@ -95,7 +96,7 @@ int main( int argc , char ** argv )
 
     // other technical variables
     int *wf_tbl, *wf_idx_tbl; // table of size np, keeps number of managed wf by each process
-    size_t  workarea_size=(size_t)PCA_WORKSPACE_SHIFT*NXYZ*sizeof(double)*2; // minimal size of workarea
+    size_t  workarea_size=(size_t)mm_get_size_of_total_workspace(NXYZ); // minimal size of workarea
     int mpipackagesize;
     
     void *extra_data = NULL, *d_extra_data = NULL;

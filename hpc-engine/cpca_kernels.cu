@@ -22,6 +22,7 @@ typedef thrust::complex<double> Complex;
 #include "wslda_potdens.h"
 #include "reduce_many.h"
 #include "pca_utils.h" // access to input (md) structure
+#include "tdwslda_memory_management.h"
 
 
 #ifdef TDWSLDA
@@ -219,7 +220,6 @@ extern "C" int compute_energy(int it, double *d_densities, double *d_potentials,
 // =======================================================================================
 // ================================== apply_hamiltonian ==================================
 // =======================================================================================
-extern "C" void *pca_cufft_work_area;
 extern "C" int compute_gradient_real_f(double *f, double *df_dx, double *df_dy, double *df_dz, int nthreads);
 extern "C" int compute_derivative_real_vector_f(double *fx, double *fy, double *fz, double *dfx_dx, double *dfy_dy, double *dfz_dz,int nthreads);
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
@@ -705,7 +705,7 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
     Complex *delta = (Complex *)(d_potentials +  2*NXY);
 
 
-    double * grad_alpha_a  = (double *)pca_cufft_work_area; // Use here work area of cuFFT
+    double * grad_alpha_a  = (double *)mm_get_pointer_to_kernels_workspace(NXY); // Use here work area of cuFFT
     double * grad_alpha_b  = grad_alpha_a + NXY*3;
     double * grad_j_corr_a = grad_alpha_a + NXY*6; // (j+/n+ - alpha_a*ja/na), see GW notes
     double * grad_j_corr_b = grad_alpha_a + NXY*9; // (j+/n+ - alpha_b*jb/nb), see GW notes
@@ -723,27 +723,8 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
         double * d_qf_density_for_Ub = (double *) (d_qf_density_for_Ua+1*NXY);
         Complex *d_qf_density_for_D = (Complex *) (d_qf_density_for_Ua+2*NXY); // density for off-diagonal part (Delta) of quantum friction force
 
-        // TODO: EA: Update this section
-        // TODO: For now I leave the old method, but you should replace it with computation via second derivatives
-        // TODO: Here you need to update mean-field potentials (V_a,V_b) and pairing potential (Delta)
-//**************************************OLD METHOD OF USING THE GRADIENT OF THE CURRENTS**************************************  //---------Gw VERSION
-/* 
-        // compute nabla*j, use grad_j_corr_a and grad_j_corr_b as temporary buffers
-        ierr=compute_derivative_real_vector_f(j_a_x, j_a_y, NULL, grad_j_corr_a, grad_j_corr_a+NXY, NULL, nthreads);
-        if(ierr!=0) return ierr;
-        ierr=compute_derivative_real_vector_f(j_b_x, j_b_y, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL, nthreads);
-        if(ierr!=0) return ierr;
-
-        // update mean field potential by friction term
+        // update mean field potential by friction terms
         kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
-                                                    grad_j_corr_a, grad_j_corr_a+NXY, NULL, grad_j_corr_b, grad_j_corr_b+NXY, NULL,
-                                                    V_a, V_b, qfalpha);
- */
-       //******************************************NEW METHOD OF LAPLACIAN OF WF******************************************   //---------EA VERSION
-   
-            // update mean field potential by friction terms
-
-           kernel_add_quantum_friction<<<nblocks, nthreads>>>(rho_a, rho_b,
                                                     d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D,
                                                     V_a, V_b, delta, qfalpha, qfbeta, qfgamma);
 
@@ -827,12 +808,11 @@ extern "C" int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufft
 
     // Step 4: to increas stability - subtruct <H>*wf, where <H> is quasi particle energy
     // and normalize
-    // use grad_alpha_a as working buffer
     double *gpe;
 
     if(useqpe==NULL) // compute quasiparticle energies
     {
-        gpe=grad_alpha_a; // for easier notation
+        gpe=(double *)mm_get_pointer_to_total_workspace(NXY); // for easier notation
         
         // compute quasi-particle energy for each wave-function
         int noAllElements = n*NXY;
@@ -981,7 +961,7 @@ extern "C" int normalize_wf(int n, cufftDoubleComplex *wf, int nthreads)
 {
     int ierr;
     int noAllElements = NXY*n;
-    double * norm  = (double *)pca_cufft_work_area; // Use here work area of cuFFT as working buffer
+    double * norm  = (double *)mm_get_pointer_to_total_workspace(NXY); // Use here work area of cuFFT as working buffer
 
     // compute norm for each wave-function
     int nblocks = (int)ceil((float)noAllElements/nthreads);
@@ -1133,7 +1113,7 @@ extern "C" int get_v_ext(int datadim, int spin, int it, double *data)
     int nblocks = (int)ceil((float)NXY/nthreads);
 
     // allocate cuda memory
-    double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
+    double *wrkspace = (double *)mm_get_pointer_to_kernels_workspace(NXY); // reuse workspace
     kernel_get_v_ext<<<nblocks, nthreads>>>(it, spin, wrkspace);
 
     if( cudaMemcpy( data , wrkspace, sizeof(double)*NXY, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
@@ -1162,7 +1142,7 @@ extern "C" int get_delta_ext(int datadim, int it, void *deltain, void *data)
     int nblocks = (int)ceil((float)NXY/nthreads);
 
     // allocate cuda memory
-    Complex *wrkspace = (Complex *)pca_cufft_work_area; // reuse workspace
+    Complex *wrkspace = (Complex *)mm_get_pointer_to_kernels_workspace(NXY); // reuse workspace
     kernel_get_delta_ext<<<nblocks, nthreads>>>(it, (Complex *)deltain, (Complex *)wrkspace);
 
     if( cudaMemcpy( data , wrkspace, sizeof(Complex)*NXY, cudaMemcpyDeviceToHost )!= cudaSuccess ) return 1;
@@ -1192,7 +1172,7 @@ extern "C" int get_velocity_ext(int datadim, int spin, int it, double *data)
     int nthreads = 256;
     int nblocks = (int)ceil((float)NXY/nthreads);
 
-    double *wrkspace = (double *)pca_cufft_work_area; // reuse workspace
+    double *wrkspace = (double *)mm_get_pointer_to_kernels_workspace(NXY); // reuse workspace
     double *vx = wrkspace + 0*NXY;
     double *vy = wrkspace + 1*NXY;
     double *vz = wrkspace + 2*NXY;
