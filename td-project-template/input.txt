@@ -43,9 +43,12 @@ walltime                11.9    # after this time force the checkpoint [hr]
 writevar           default
 
 # ----------------- SCATTERING LENGTH ---------------
-sclgth    -1.0 # scattering length in units of lattice spacing
-               # meaningful only for FUNCTIONAL=BDG,SLDAE
-               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+sclgth    -1.0                  # scattering length in units of lattice spacing
+                                # meaningful only for FUNCTIONAL=BDG,SLDAE
+                                # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+#akF       -1.0                 # scattering length times Fermi wave vector
+                                # this tag modifies the value of tag sclgth via process_params(...) function
+                                # by default is inactive (akF=0)
 
 # ------------------- TIME EVOLUTION ----------------
 dt                      0.0035   # integration time step, in units of eF^-1

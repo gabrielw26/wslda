@@ -659,7 +659,6 @@ extern int wsldapnp; // total number of processes - global variable
 #include "sldae_functional.h"
 //#include "sldae_functional.c"
 
-// md.aSLDAe == s-wave scattering length
 /**
  * This function computes potentials defining Hamiltonian in case is SLDAE functional is selected.
  * Otherwise the function is ignored.

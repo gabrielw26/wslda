@@ -909,7 +909,7 @@ int main( int argc , char ** argv )
     md.ec=ec;
     TDWSLDA_SET_STATIC_VARS;
     gpu_exec( memcopy_const_params(md.params) );
-    gpu_exec( memcopy_const_BdG(md.sclgth) );
+    gpu_exec( memcopy_const_sclgth(md.sclgth) );
 
     if(ip==0) wprintf("# DONE.\n");
     

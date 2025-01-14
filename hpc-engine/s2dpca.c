@@ -148,9 +148,6 @@ double dc_mu_a_old;		// for Broyden
 double dc_mu_b_old;		// for Broyden
 double dc_ec;
 
-// BdG mode
-double aBdG;
-
 #define printf wprintf
 #include "logger.h"
 #define API_LOGGER
@@ -279,33 +276,6 @@ int main( int argc , char ** argv )
 
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
-
-#if FUNCTIONAL==BDG
-    aBdG = md.aBdG; // copy to global momeory
-    if ( fabs(aBdG)<1.0e-12 )
-    {
-        ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
-        something_to_cheer_you_up_pid0(stdout);
-        fflush(stdout);
-        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
-        return( EXIT_FAILURE ) ;
-    }
-#else
-    aBdG = 0.0; // deactivate BdG functional
-#endif
-
-#if FUNCTIONAL==SLDAE
-    if ( fabs(md.aSLDAe)<1.0e-12 )
-    {
-        ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
-        something_to_cheer_you_up_pid0(stdout);
-        fflush(stdout);
-        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
-        return( EXIT_FAILURE ) ;
-    }
-#endif
 
 #if CODEDIM==1
     if(iam==0) print_version("-1D");

@@ -72,7 +72,7 @@
 #define CUSTOMEDF 114
 #define SLDAE 115
 
-// if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
+// if BDG_MODE then BdG functional is activated
 #if FUNCTIONAL==BDG
 #define BDG_MODE
 #define SLDA_FORCE_A1

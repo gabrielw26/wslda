@@ -28,9 +28,12 @@ iogroups                8       # number of IO groups used for parallel wf writi
 writevar           default all
 
 # ----------------- SCATTERING LENGTH -----------------
-sclgth    -10.0 # scattering length in units of lattice spacing
-               # meaningful only for FUNCTIONAL=BDG,SLDAE
-               # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+sclgth    -1.0                 # scattering length in units of lattice spacing
+                                # meaningful only for FUNCTIONAL=BDG,SLDAE
+                                # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+#akF       -1.0                 # scattering length times Fermi wave vector
+                                # this tag modifies the value of tag sclgth via process_params(...) function
+                                # by default is inactive (akF=0)
 #referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
 
 # ----------------- PARTICLE NUMBERS -----------------
