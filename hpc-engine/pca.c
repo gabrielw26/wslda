@@ -204,7 +204,7 @@ int main( int argc , char ** argv )
     
     if(ip==0) wprintf("# MPI EXCHANGE PACKAGE SIZE=%.3f MB [%d]\n", 1.0*EXCHANGE_SIZE*NXYZ*sizeof(double)/pow(2,20), EXCHANGE_SIZE);
     
-    cpu_exec( wslda_check_settings() );
+    cpu_exec( wslda_check_settings(ip, CODEDIM, 't') );
     
     // ====================================================================================
     // ============================= INITIALIZE GPU =======================================

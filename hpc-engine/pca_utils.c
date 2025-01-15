@@ -819,8 +819,13 @@ int copy_input_file(char * input_file, char * file_name)
     return 0;
 }
 
-int wslda_check_settings()
+int wslda_check_settings(int ip, int codedim, char codetype)
 {
+    // Print warning if lattice spacings are different
+    int printwarn=0;
+    if(codedim==2) if(fabs(DX-DY)>1.0e-9) printwarn=1;
+    if(codedim==3) if(fabs(DX-DY)>1.0e-9 || fabs(DX-DZ)>1.0e-9 || fabs(DY-DZ)>1.0e-9) printwarn=1;
+    if(ip==0 && printwarn==1) report_warning(WSLDA_WRN_DIFFERENT_DXDYDZ, stdout);
 
     return 0;
 }
@@ -1052,5 +1057,5 @@ double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_
     for(ixyz=0; ixyz<nxyz; ixyz++) N+=nb[ixyz];
     N*=volume_element;
     // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
-    return (N-md.qfNreq);
+    return (N-md.qfNreq)/md.qfNreq;
 }

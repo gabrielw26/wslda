@@ -16,7 +16,7 @@ BINDIR=./
 # C compiler flags
 CFLAGS= -std=gnu99 -O3 -I/usr/local/cuda/include/
 # CUDA compiler flags, make sure you select the correct compute capability for your gpus (-arch flag)
-NVCCFLAGS = -arch sm_35 -O3 -std=c++03
+NVCCFLAGS = -O3 -allow-unsupported-compiler
 # prescription how to link with: CUDA, FFTW
 LIBS=-L/usr/local/cuda/lib64 -lcudart -lcufft -lfftw3 -lstdc++ -lm
 

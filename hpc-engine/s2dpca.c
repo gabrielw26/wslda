@@ -297,7 +297,9 @@ int main( int argc , char ** argv )
     md.init0Nb = md.Nb;
     if(iam==0) wprintf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
-// #undef UNIFORM_TEST_MODE
+
+    // check settings and print suitable comments or terminate the code.
+    cpu_exec( wslda_check_settings(iam, CODEDIM, 's') );
 
     // ====================================================================================
     // ================================ ALLOCATE CPU BUFFERS ==============================

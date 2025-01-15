@@ -231,7 +231,12 @@ void symmetrize_densities(double *h_densities);
 
 int copy_input_file(char * input_file, char * file_name);
 
-int wslda_check_settings();
+/**
+ * @param ip process ip
+ * @param codedim 1,2 or 3
+ * @param codetype s for st, t for td
+ * */
+int wslda_check_settings(int ip, int codedim, char codetype);
 
 int wslda_check_array_against_naninf(int n, double *array);
 unsigned long wslda_control_sum(int n, double *array);

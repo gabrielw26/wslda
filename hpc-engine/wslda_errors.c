@@ -242,6 +242,12 @@ void report_warning(int errcode, FILE *stream)
             wfprintf(stream, "#\t The code will upload the data however the result of this operation may be unpredictable!\n");
             wfprintf(stream, "#\t Make sure you understand what you are doing!\n");
             break;
+
+        case WSLDA_WRN_DIFFERENT_DXDYDZ:
+            wfprintf(stream, "#\t You are using code with different lattice spacing (DX,DY,DZ).\n");
+            wfprintf(stream, "#\t This type of usage is not recommended for non-expert users,\n");
+            wfprintf(stream, "#\t as it requires deep knowledge of the regularization procedure.\n");
+            break;
             
         default: 
             wfprintf(stream, "#\tThis warning does not have description.\n");
