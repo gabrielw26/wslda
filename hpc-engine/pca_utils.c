@@ -1056,6 +1056,8 @@ double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_
     for(ixyz=0; ixyz<nxyz; ixyz++) N+=na[ixyz];
     for(ixyz=0; ixyz<nxyz; ixyz++) N+=nb[ixyz];
     N*=volume_element;
+    double _qfNreq;
+    if(_qfNreq<1.0) _qfNreq=1.0; // to avoid division by zero
     // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
-    return (N-md.qfNreq)/md.qfNreq;
+    return (N-md.qfNreq)/_qfNreq;
 }
