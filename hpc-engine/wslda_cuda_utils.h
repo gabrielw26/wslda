@@ -91,13 +91,13 @@ extern "C" int memcopy_const_params(double *params)
 }
 
 /**
- * This function copies BdG functional data
+ * This function copies scattering lenght
  * */
-extern "C" int memcopy_const_BdG(double aBdG)
+extern "C" int memcopy_const_sclgth(double a)
 {
-    double gBdG = aBdG;
-    if( cudaMemcpyToSymbol(dc_sclgth, &gBdG, sizeof(double))!= cudaSuccess ) return 1;
-    hc_sclgth = gBdG; // and static variable
+    double g = a;
+    if( cudaMemcpyToSymbol(dc_sclgth, &g, sizeof(double))!= cudaSuccess ) return 1;
+    hc_sclgth = g; // and static variable
 
     return 0;
 }

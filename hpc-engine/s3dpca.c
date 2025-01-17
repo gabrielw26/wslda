@@ -146,9 +146,6 @@ double dc_mu_a_old;		// for Broyden
 double dc_mu_b_old;		// for Broyden
 double dc_ec;
 
-// BdG mode
-double aBdG;
-
 int wsldapid; // process id - global variable
 int wsldapnp; // total number of processes - global variable
 
@@ -274,33 +271,6 @@ int main( int argc , char ** argv )
     // Broadcast input parameter
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
 
-#if FUNCTIONAL==BDG
-    aBdG = md.aBdG; // copy to global momeory
-    if ( fabs(aBdG)<1.0e-12 )
-    {
-        ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
-        something_to_cheer_you_up_pid0(stdout);
-        fflush(stdout);
-        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
-        return( EXIT_FAILURE ) ;
-    }
-#else
-    aBdG = 0.0; // deactivate BdG functional
-#endif
-
-#if FUNCTIONAL==SLDAE
-    if ( fabs(md.aSLDAe)<1.0e-12 )
-    {
-        ierr = -1 ;
-        if(iam==0) wprintf("ERROR: SET sclgth IN INPUT FILE!\n");
-        something_to_cheer_you_up_pid0(stdout);
-        fflush(stdout);
-        MPI_Abort( MPI_COMM_WORLD , ierr ) ;
-        return( EXIT_FAILURE ) ;
-    }
-#endif
-
     if(iam==0) print_version("-3D");
     
 #ifdef SPINSYMMETRY_MODE
@@ -317,6 +287,9 @@ int main( int argc , char ** argv )
     md.init0Nb = md.Nb;
     if(iam==0) wprintf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
+
+    // check settings and print suitable comments or terminate the code.
+    cpu_exec( wslda_check_settings(iam, CODEDIM, 's') );
 
     // ====================================================================================
     // ==================================== BLACS GRID ====================================

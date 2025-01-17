@@ -1,7 +1,8 @@
 # 2025.xx.xx
 * Implementation of improved quantum friction functionality.
-* Added new tests.
-* Minor bug fixes and improvements.
+* Added new tag to input file `akF`.
+* The database of internal tests has been extended.
+* Minor bug fixes and improvements of memory management.
 
 # 2024.08.11
 * Improved stability of td codes (filtering of noise from mean-fields).

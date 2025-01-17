@@ -72,7 +72,7 @@
 #define CUSTOMEDF 114
 #define SLDAE 115
 
-// if BDG_MODE then BdG functional is activated and aBdG parameter is active in dynamical codes
+// if BDG_MODE then BdG functional is activated
 #if FUNCTIONAL==BDG
 #define BDG_MODE
 #define SLDA_FORCE_A1
@@ -176,8 +176,14 @@
 #define PLAN_Z2D_ONE 3
 
 // Technical variable - amount of memory that is locked for axiliary array used in apply_hamiltonian
-// i.e: sizeof(cufftDoubleComplex)*NXYZ*PCA_WORKSPACE_SHIFT
-#define PCA_WORKSPACE_SHIFT 11
+// i.e: sizeof(double)*NXYZ*PCA_WORKSPACE_SHIFT
+// see tdwslda_memory_management.* for usage of this variable
+#define PCA_WORKSPACE_SHIFT 24
+
+// // Technical variable - amount of memory that is locked for internal usage of derivatives.cu
+// i.e: sizeof(double)*NXYZ*PCA_DERVATIVE_SHIFT
+// see tdwslda_memory_management.* for usage of this variable
+#define PCA_DERIVATIVE_SHIFT 8
 
 // Target machine
 // #define TARGET_MACHINE TITAN

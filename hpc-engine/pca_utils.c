@@ -113,6 +113,7 @@ GPUS_PER_NODE, // gpuspernode
 0.0, // aSLDAe
 0, // pccrSLDAe
 0.0, // sclgth
+0.0, // akF
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -436,11 +437,9 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"pccrSLDAe") == 0)
             sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
         else if (strcmp (tag,"sclgth") == 0)
-        {
             sscanf (s,"%s %lf %*s",tag,&md.sclgth);
-            md.aSLDAe=md.sclgth;
-            md.aBdG=md.sclgth;
-        }
+        else if (strcmp (tag,"akF") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.akF);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -597,10 +596,12 @@ int parse_input_file(char * file_name)
 #if FUNCTIONAL==SLDA || FUNCTIONAL==ASLDA
     md.sclgth=-1.0e16; // infinity
 #elif FUNCTIONAL==SLDAE || FUNCTIONAL==BDG
-    if(md.sclgth!=0.0) // provided in the input file, 
+    if(md.sclgth==0.0 && md.akF==0.0)
     {
-        md.aSLDAe= md.sclgth;
-        md.aBdG  = md.sclgth;
+        printf("==========================================================================\n");
+        printf("WSLDA ERROR DESCRIPTION:\n");
+        printf("\tYou need to set either `sclgth` or `akF` to make the computation with the selected functional!\n");
+        return 0;
     }
 #endif
 
@@ -818,16 +819,14 @@ int copy_input_file(char * input_file, char * file_name)
     return 0;
 }
 
-int wslda_check_settings()
+int wslda_check_settings(int ip, int codedim, char codetype)
 {
-#if FUNCTIONAL==BDG
-    if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
-    md.sclgth=md.aBdG;
-#endif
-#if FUNCTIONAL==SLDAE
-    if(md.aSLDAe==0.0) return WSLDA_ERR_ABDG_NOT_SET;
-    md.sclgth=md.aSLDAe;
-#endif
+    // Print warning if lattice spacings are different
+    int printwarn=0;
+    if(codedim==2) if(fabs(DX-DY)>1.0e-9) printwarn=1;
+    if(codedim==3) if(fabs(DX-DY)>1.0e-9 || fabs(DX-DZ)>1.0e-9 || fabs(DY-DZ)>1.0e-9) printwarn=1;
+    if(ip==0 && printwarn==1) report_warning(WSLDA_WRN_DIFFERENT_DXDYDZ, stdout);
+
     return 0;
 }
 
@@ -1057,6 +1056,8 @@ double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_
     for(ixyz=0; ixyz<nxyz; ixyz++) N+=na[ixyz];
     for(ixyz=0; ixyz<nxyz; ixyz++) N+=nb[ixyz];
     N*=volume_element;
+    double _qfNreq;
+    if(_qfNreq<1.0) _qfNreq=1.0; // to avoid division by zero
     // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
-    return (N-md.qfNreq);
+    return (N-md.qfNreq)/_qfNreq;
 }

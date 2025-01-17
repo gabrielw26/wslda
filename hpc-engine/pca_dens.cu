@@ -4,7 +4,8 @@
 #include <thrust/complex.h>
 typedef thrust::complex<double> Complex;
 #include "pca_settings.h"
-
+#define __externc
+#include "tdwslda_memory_management.h"
 
 // ================================================================================================
 // ========================================= calculate_densities ==================================
@@ -269,7 +270,6 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
 // ----------------------------------------------------------------------------------------
 // ----------------------------------density_caculate_tau ---------------------------------
 // ----------------------------------------------------------------------------------------
-extern "C" void *pca_cufft_work_area;
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 
 __global__ void kernel_density_caculate_tau(double *laplace_rho, double *tau)
@@ -317,8 +317,8 @@ extern "C" int density_caculate_tau(double *d_densities, int nthreads)
 //     double *j_b_y = (double *)(d_densities + 10*NXYZ);
 //     double *j_b_z = (double *)(d_densities + 11*NXYZ);
     
-    // I can use pca_cufft_work_area as working buffer for computation 
-    double *laplace_rho=(double *)pca_cufft_work_area;
+    // get workspace
+    double *laplace_rho=(double *)mm_get_pointer_to_kernels_workspace(NXYZ);
     
     // ------------- for b component -------------
     ierr = compute_laplace_real_f(rho_b, laplace_rho, nthreads);
