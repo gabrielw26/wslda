@@ -303,7 +303,7 @@
 #endif
 
 #ifndef GPUS_PER_NODE
-#define GPUS_PER_NODE 1
+#define GPUS_PER_NODE 0
 #endif
 
 // ----- for TESTSUITE -----
