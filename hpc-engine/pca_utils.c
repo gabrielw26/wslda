@@ -39,8 +39,8 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, //qfgamma;
 0.0, // qfNreq
 0.0, // qfstart;
-0.0, // qfstop;
-0.0, // qfswitch;
+1.0e12, // qfstop;
+1.0, // qfswitch;
 100.0, // Na;
 100.0, // Nb;
 200.0, // npart;

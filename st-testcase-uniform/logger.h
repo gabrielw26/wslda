@@ -160,7 +160,7 @@ int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
 
 /**
  * Use this routine write custom variable to wdata set.
- * This function is executed once at the beginning of the code.
+ * This function is executed for each writing event of the observables.
  * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
  * @param it iteration number.
  * @param h_densities structure with densities, see (wiki) documentation for the list of fields.
