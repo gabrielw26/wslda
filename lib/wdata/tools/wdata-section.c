@@ -1,6 +1,6 @@
 /**
  * W-DATA format
- * @author Gabriel Wlazlowski, Warsaw University of Technology, 2020
+ * @author Gabriel Wlazlowski, Warsaw University of Technology, 2023
  *
  * Tool for generating section along line for selected variable
  *
@@ -57,17 +57,22 @@ void print_help(char *pname)
     printf("\t -j, --y2: y-coordinate for final point, default=ny*dy, Ignore for 1D data\n");
     printf("\t -k, --z2: z-coordinate for final point, default=nz*dz, Ignore for 1D and 2D data\n");
     printf("\t -p, --points: number of sampling points along line (x1,y1,z1)-(x2,y2,z2), default=100\n");
-    printf("\t -c, --cycle: cycle id, default=0\n");
+    printf("\t -c, --cycle: cycle id, default=0. Negative means take form the end, -1 is the last one.\n");
+    printf("\t -s, --silent: do not print on screen the cross-section values\n");
     printf("\t -h, --help: print help\n");
 }
 
 char output[256];
+int silent_mode;
 void wprintf( const char * format, ... )
 {
-  va_list args;
-  va_start (args, format);
-  vprintf (format, args);
-  va_end (args);
+    va_list args;
+    if(silent_mode==0)
+    {
+        va_start (args, format);
+        vprintf (format, args);
+        va_end (args);
+    }
 
     FILE * f = fopen(output, "a");
     if(f==NULL) { printf("PROBLEM!\n"); fflush(stdout);}
@@ -91,6 +96,7 @@ int main( int argc , char ** argv )
     double x2=-1.0, y2=-1.0, z2=-1.0;
     int points=100;
     int idx = 0;
+    silent_mode=0;
 
     while (1)
     {
@@ -110,12 +116,13 @@ int main( int argc , char ** argv )
             {"points",   required_argument,      0, 'p'},
             {"var",      required_argument,      0, 'v'},
             {"help",     no_argument,       0, 'h'},
+            {"silent",     no_argument,       0, 's'},
             {0, 0, 0, 0}
         };
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "w:o:c:x:y:z:i:j:k:p:v:h",
+        c = getopt_long (argc, argv, "w:o:c:x:y:z:i:j:k:p:v:hs",
                         long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -137,6 +144,10 @@ int main( int argc , char ** argv )
             case 'h':
                 print_help(argv[0]);
                 exit(1);
+                break;
+
+            case 's':
+                silent_mode=1;
                 break;
 
             case 'w':
@@ -221,6 +232,7 @@ int main( int argc , char ** argv )
     double inLX=inDX*inNX, inLY=inDY*inNY, inLZ=inDZ*inNZ;
     double eF = wdata_getconst_value(&wdmd, "eF");
     double kF = wdata_getconst_value(&wdmd, "kF");
+    if(idx<0) idx=wdmd.cycles+idx; // take from the end
 
     if(wdata_has_variable(&wdmd, var)==0)
     {
@@ -511,7 +523,7 @@ int main( int argc , char ** argv )
             }
         }
     }
-
+    printf("# OUPUT WRITTEN TO `%s`.\n", output);
     printf("# DONE.\n");
 
     /* Arrays will be cleared automatically */
