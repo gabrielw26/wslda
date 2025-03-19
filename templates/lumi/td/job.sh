@@ -10,7 +10,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=your@mail   # <--- SET: if you want to get e-mail notification
 #SBATCH --partition=standard-g
-#SBATCH --account=project_465000708 
+#SBATCH --account=project_465001656
 #SBATCH --cpus-per-task=1        # Do not modify
 #SBATCH --ntasks-per-node=8      # Do not modify
 #SBATCH --exclude=nid005917
@@ -25,13 +25,13 @@
 ##       
 ## ------ COMPUTATION -------     
 ## For computation you must use SCRATCH folder
-##      cd /scratch/project_465000708
+##      cd /scratch/project_465001656
 ## or project FAST SCRATCH
-##      cd /flash/project_465000708
+##      cd /flash/project_465001656
 ## For more info see: https://docs.lumi-supercomputer.eu/storage/
 ## 
 ## For storing results use location:
-##      cd /project/project_465000708/
+##      cd /project/project_465001656/
 
 # Set environment
 export MPICH_GPU_SUPPORT_ENABLED=1 

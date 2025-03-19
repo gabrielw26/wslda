@@ -122,6 +122,9 @@ S&=&-k_B\sum_{|E_n|<E_c}\left( f_{\beta}(E_n)\ln\ f_{\beta}(E_n) + f_{\beta}(-E_
 \end{eqnarray}
 
 \section{Case where $h_{\uparrow \uparrow}=h_{\downarrow \downarrow}=h$}
+
+\subsection{For any temperature $T \ge 0$}
+
 If $h_{\uparrow \uparrow}=h_{\downarrow \downarrow}=h$ (typically it corresponds to the spin-balanced case) then Eq.~(\ref{eq:hfbspin1}) takes form, as typically cited in papers (spin indices are dropped):
 \begin{align}\label{eq:hfbspin3}
 \begin{gathered}
@@ -154,6 +157,31 @@ n_{\uparrow}(\bm{r})=n_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\left( \abs{v_{n
 S&=&-2k_B\sum_{0<E_n<E_c}\left( f_{\beta}(E_n)\ln\ f_{\beta}(E_n)\right. \nonumber \\
 && \quad\quad\quad\quad\quad\quad + \left. f_{\beta}(-E_n)\ln f_{\beta}(-E_n)\right).
 \label{eqn:densities2}
+\end{eqnarray}
+
+\subsection{For $T=0$}
+
+For $T = 0$ (and therefore $\beta \to \infty$) the value of $f_\beta (\pm E)$ sets to fixed values:
+
+\begin{eqnarray}
+f_{\beta}(+E) \xrightarrow[\beta \to \infty]{} \frac{1}{e^{+E * \infty}+1} = 0, \\
+f_{\beta}(-E) \xrightarrow[\beta \to \infty]{} \frac{1}{e^{-E * \infty}+1} = 1.
+\label{eqn:distributions}
+\end{eqnarray}
+$f_{\beta}(+E)$ converges to $0$ from the positive numbers' side, resulting in 
+\begin{equation}
+    f_{\beta}(+E)\ln {f_{\beta}(+E)} \xrightarrow[f_{\beta}(+E) \to 0^+]{} 0.
+\end{equation}
+
+The equations of densities change to:
+
+\begin{eqnarray}
+n_{\uparrow}(\bm{r})=n_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\abs{v_{n}(\bm{r})}^2\\
+\tau_{\uparrow}(\bm{r})=\tau_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\abs{\nabla v_{n}(\bm{r})}^2,\\
+\nu(\bm{r}) &=& \sum_{0<E_n<E_c} u_{n}(\bm{r})v_{n}^{*}(\bm{r}),\\
+\bm{j}_{\uparrow}(\bm{r})=\bm{j}_{\downarrow}(\bm{r}) &=& \sum_{0<E_n<E_c}\textrm{Im}[v_{n}(\bm{r})\nabla v_{n}^*(\bm{r})],\\
+S&=&0.
+\label{eqn:densities3}
 \end{eqnarray}
 
 \end{document}

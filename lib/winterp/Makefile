@@ -24,7 +24,7 @@ libwinterp.a: ./c/winterp.c ./c/winterp.h
 	ar crf libwinterp.a winterp.o 
 	
 libwinterp.so: ./c/winterp.c ./c/winterp.h
-	$(CC) -O3 -c ./c/winterp.c -fPIC -shared -o libwinterp.so
+	$(CC) -O3 -fPIC -shared ./c/winterp.c -o libwinterp.so -lfftw3
 
 examples: lib
 	$(CC) -O3 ./c-examples/lattice2d-simple.c -o ./c-examples/lattice2d-simple -I./c/ -L. -lwinterp $(FFTW) -lm

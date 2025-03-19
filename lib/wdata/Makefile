@@ -27,6 +27,7 @@ libwdata.so: ./c/wdata.c ./c/wdata.h
 	$(CC) -O3 -c ./c/wdata.c -fPIC -shared -o libwdata.so
 	
 examples: lib
+	$(CC) ./c-examples/example-write-low-level.c -o ./c-examples/example-write-low-level -lm
 	$(CC) ./c-examples/example-write.c -o ./c-examples/example-write -I./c/ -L. -lwdata -lm 
 	$(CC) ./c-examples/example-write-many.c -o ./c-examples/example-write-many -I./c/ -L. -lwdata -lm 
 	$(CC) ./c-examples/example-write-many-t_varying.c -o ./c-examples/example-write-many-t_varying -I./c/ -L. -lwdata -lm 

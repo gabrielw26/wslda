@@ -4,7 +4,8 @@
 #include <thrust/complex.h>
 typedef thrust::complex<double> Complex;
 #include "pca_settings.h"
-
+#define __externc
+#include "tdwslda_memory_management.h"
 
 // ================================================================================================
 // ========================================= calculate_densities ==================================
@@ -197,13 +198,13 @@ __global__ void kernel_calculate_densities_limited(size_t n, Complex *wf,
 }
     
 /**
- * Function computes energy.
+ * Function computes densities.
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf array with wave-functions (INPUT)
  * @param wf_d_dx derivative with respect to dx (INPUT)
  * @param wf_d_dy derivative with respect to dy (INPUT)
  * @param wf_d_dz derivative with respect to dz (INPUT)
- * @param wf_d_dz laplacian (INPUT)
+ * @param d_wf_laplace laplacian of wave-functions (INPUT)
  * @param fbetaEn weight of wave-function (INPUT)
  * @param weights  extra weights, for computing subset densities, NULL - no weights (INPUT)
  * @param d_densites (OUTPUT)
@@ -269,7 +270,6 @@ extern "C" int calculate_densities(int n, cufftDoubleComplex *wf,
 // ----------------------------------------------------------------------------------------
 // ----------------------------------density_caculate_tau ---------------------------------
 // ----------------------------------------------------------------------------------------
-extern "C" void *pca_cufft_work_area;
 extern "C" int compute_laplace_real_f(double *f, double *laplace_f, int nthreads);
 
 __global__ void kernel_density_caculate_tau(double *laplace_rho, double *tau)
@@ -317,8 +317,8 @@ extern "C" int density_caculate_tau(double *d_densities, int nthreads)
 //     double *j_b_y = (double *)(d_densities + 10*NXYZ);
 //     double *j_b_z = (double *)(d_densities + 11*NXYZ);
     
-    // I can use pca_cufft_work_area as working buffer for computation 
-    double *laplace_rho=(double *)pca_cufft_work_area;
+    // get workspace
+    double *laplace_rho=(double *)mm_get_pointer_to_kernels_workspace(NXYZ);
     
     // ------------- for b component -------------
     ierr = compute_laplace_real_f(rho_b, laplace_rho, nthreads);
@@ -356,5 +356,106 @@ extern "C" int symmetrize_densities_device(double *d_densities)
 //     double *j_b_y = (double *)(d_densities + 10*NXYZ);
 //     double *j_b_z = (double *)(d_densities + 11*NXYZ);
     if( cudaMemcpy( rho_b , rho_a, sizeof(double)*NXYZ*5, cudaMemcpyDeviceToDevice )!= cudaSuccess ) return 100;
+    return 0;
+}
+
+// ================================================================================================
+// ============================ calculate_quantum_friction_densities ==============================
+// ================================================================================================
+__global__ void kernel_calculate_quantum_friction_densities(size_t n, Complex *wf, Complex *d_wf_laplace,
+                                         double *fbetaEn, double *d_weights,
+                                         double *d_qf_density_for_Ua, double *d_qf_density_for_Ub, 
+                                         Complex *d_qf_density_for_D
+                                        )
+{
+    size_t ixyz= threadIdx.x + blockIdx.x * blockDim.x; // compute for this point
+    Complex u, v, lap_v, lap_u;
+    double fbEn, fbmEn;
+
+    size_t iwf;
+    
+    double wght=1.0;
+
+
+    if(ixyz<NXYZ)
+    {
+        // Initialize variables for accumulating densities
+        double  U_loc_a = 0.0;
+        double  U_loc_b = 0.0;
+        Complex D_loc = Complex(0.0, 0.0);
+
+        // reduce over each wave-function
+        for(iwf=0; iwf<n; iwf++)
+        {
+            // weight
+            fbEn=fbetaEn[iwf];
+            fbmEn = 1.0 - fbEn;
+            if(d_weights!=NULL) wght=d_weights[iwf];
+            fbEn*=wght; fbmEn*=wght; 
+
+            // read u and v (from global memory)
+            u=wf[       iwf*NXYZ+ixyz];
+            v=wf[n*NXYZ+iwf*NXYZ+ixyz];
+
+            // read laplaces of u and v (from global memory)
+            lap_u=d_wf_laplace[       iwf*NXYZ+ixyz];
+            lap_v=d_wf_laplace[n*NXYZ+iwf*NXYZ+ixyz];
+
+#ifdef SPINSYMMETRY_MODE
+            // do not compute U_loc_a - will taken from taub and U_loc_b 
+            U_loc_b += ((thrust::conj(u)*(lap_u)).imag()*fbEn-(thrust::conj(v)*(lap_v)).imag()*fbmEn);              
+            D_loc   += (thrust::conj(v)*(lap_u)+thrust::conj(lap_v)*u)*(fbmEn-fbEn)*2.0; // coefficient 2 accounts of the spin-symmetric case
+#else
+            // formulas taken from Gabriel's notes
+            U_loc_a += (thrust::conj(u)*(lap_u)).imag()*fbEn;
+            U_loc_b -= (thrust::conj(v)*(lap_v)).imag()*fbmEn;
+            D_loc   += (thrust::conj(v)*lap_u+thrust::conj(lap_v)*u)*(fbmEn-fbEn);   //this is the quantity B_ab
+
+#endif
+        }
+
+#ifdef SPINSYMMETRY_MODE
+          U_loc_a = U_loc_b;
+#endif  
+      
+    // send to global memory
+        d_qf_density_for_Ua[ixyz] =  U_loc_a;    
+        d_qf_density_for_Ub[ixyz] =  U_loc_b;   
+        d_qf_density_for_D[ixyz] =   -0.5*D_loc;  
+    }
+}
+
+
+/**
+ * Function computes (generalzied) densities for quantum friction force.
+ * U_a: -sum_n Im [u_n^* Laplace v_n] the cooling potencial for the current terms in species (a)
+ * U_b:  sum_n Im [v_n^* Laplace v_n] the cooling potencial for the current terms in species (b)
+ * D: sum_n [v_n^* Laplace u_n + u_n Laplace v_n^*] the cooling potential in pairing sector
+ * @param n  number of wave-functions (u,v pairs) to process
+ * @param wf array with wave-functions (INPUT)
+ * @param d_wf_laplace laplacian of wave-functions (INPUT)
+ * @param fbetaEn weight of wave-function (INPUT)
+ * @param weights  extra weights, for computing subset densities, NULL - no weights (INPUT)
+ * @param d_qf_densities storage buffer for output densities (OUTPUT) +3 NXYZ
+ * @param nthreads number of threads per block
+ * @return 0 - OK, otherwise ERROR
+ * */
+extern "C" int calculate_quantum_friction_densities(int n, cufftDoubleComplex *wf,
+                            cufftDoubleComplex *d_wf_laplace,
+                            double *d_fbetaEn,
+                            double *weights,
+                            double *d_qf_densities,
+                            int nthreads)
+{
+    // number of blocks
+    int nblocks = (int)ceil((float)NXYZ/nthreads);
+
+    // pointers algebra
+    double * d_qf_density_for_Ua = (double *)(d_qf_densities + 0*NXYZ);        // density for diagonal part (U) of quantum friction force
+    double * d_qf_density_for_Ub = (double *)(d_qf_densities + 1*NXYZ);        // density for diagonal part (U) of quantum friction force
+    Complex *d_qf_density_for_D   = (Complex *)(d_qf_densities + 2*NXYZ); // density for off-diagonal part (Delta) of quantum friction force
+        
+    kernel_calculate_quantum_friction_densities<<<nblocks, nthreads>>>(n, (Complex *)wf, (Complex *)d_wf_laplace, d_fbetaEn, weights, d_qf_density_for_Ua, d_qf_density_for_Ub, d_qf_density_for_D);
+
     return 0;
 }

@@ -41,6 +41,7 @@ typedef struct
     double qfalpha;                     // alpha parameter for quantum friction term
     double qfbeta;                      // beta parameter for quantum friction - parring channel
     double qfgamma;                     // gamma parameter for particle number control
+    double qfNreq;                      // requested number of particles for particle control
     double qfstart;                     // start time for evolving with quantum friction, in units of eF
     double qfstop;                      // stop time for evolving with quantum friction, in units of eF
     double qfswitch;                    // time for switch function
@@ -145,6 +146,7 @@ typedef struct
     double sclgth; // scattering length in units of lattice spacing
                    // meaningful only for FUNCTIONAL=BDG,SLDAE
                    // in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+    double akF;    // scattering length times Fermi wave vector
     // IO
     int iogroups;                       // number of IO groups used for wf writing, default=1
     char dataformat[8];                 // format of produced files: wdat or npy, default=wdat
@@ -229,9 +231,15 @@ void symmetrize_densities(double *h_densities);
 
 int copy_input_file(char * input_file, char * file_name);
 
-int wslda_check_settings();
+/**
+ * @param ip process ip
+ * @param codedim 1,2 or 3
+ * @param codetype s for st, t for td
+ * */
+int wslda_check_settings(int ip, int codedim, char codetype);
 
 int wslda_check_array_against_naninf(int n, double *array);
+unsigned long wslda_control_sum(int n, double *array);
 
 void wprintf( const char * format, ... );
 void wfprintf(FILE *stream,  const char * format, ... );
@@ -252,5 +260,8 @@ int monitor_conservation_of_quantity(int quantity_id, double time, double value,
 void print_conservation_of_quantity(int quantity_id, double value, double tolerance);
 
 void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, void *U_d_v);
+
+double quantum_friction_switch(double t, double eF);
+double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element);
 
 #endif

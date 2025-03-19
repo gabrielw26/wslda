@@ -79,8 +79,9 @@ all: 1d 2d 3d
 
 3d: dirs d3d
 
+0d: dirs d0d
+
 ext: dirs \
-     (BINDIR)solve-uniform \
      (BINDIR)test-external-potentials-1d \
      (BINDIR)test-external-potentials-2d \
      (BINDIR)test-external-potentials-3d \
@@ -98,8 +99,9 @@ d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
 	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) -DWSLDA $^ $(LIBS)
 
-(BINDIR)solve-uniform: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
-	$(CXX) -o $(BINDIR)solve-uniform $(CFLAGS) $(WSLDADIR)extensions/solve-uniform.c -lm -lfftw3
+d0d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
+	cat $(WSLDADIR)VERSION.h
+	$(CXX) -o $(BINDIR)st-wslda-0d $(CFLAGS) $(WSLDADIR)hpc-engine/s0dpca.c $(CFLAGS) $(LIBS)
 
 (BINDIR)test-external-potentials-1d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)test-external-potentials-1d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=1 -lm -lfftw3
@@ -153,13 +155,13 @@ dirs:
 clean:
 	rm -f $(OBJDIR)*.o
 	rm -f $(OBJDIR)reproducibility.h
+	rm -f $(BINDIR)st-wslda-0d
 	rm -f $(BINDIR)st-wslda-1d
 	rm -f $(BINDIR)st-wslda-2d
 	rm -f $(BINDIR)st-wslda-3d
 	rm -f $(BINDIR)test-external-potentials-1d
 	rm -f $(BINDIR)test-external-potentials-2d
 	rm -f $(BINDIR)test-external-potentials-3d
-	rm -f $(BINDIR)solve-uniform
 	rm -f $(BINDIR)interpolate-dataset
 
 ver:

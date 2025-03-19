@@ -9,7 +9,6 @@
 #include <cufft.h>
 #endif
 
-extern void *pca_cufft_work_area;
 int create_cufftPlans(int batch_size,  int nwfip, size_t *workSize);
 int set_workspace_for_cufftPlan(void *workArea);
 int compute_derivatives(int n, cufftDoubleComplex *wf, cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, cufftDoubleComplex *wf_d_dz, cufftDoubleComplex *wf_laplace, int nthreads);

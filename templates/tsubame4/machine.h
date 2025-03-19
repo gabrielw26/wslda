@@ -22,7 +22,8 @@
  * but you can overwrite using options below
  * */
 
-#define ELPA_API 20210430
+#define ELPA_API 20241105
+#define GPUS_PER_NODE 4
 
 /**
  * uncomment it if you want to activate GPUs for diagonalizations 

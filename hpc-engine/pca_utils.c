@@ -37,9 +37,10 @@ M_PI*M_PI/(2.*DX*DX), //ec;
 0.0, //qfalpha;
 0.0, // qfbeta;
 0.0, //qfgamma;
+0.0, // qfNreq
 0.0, // qfstart;
-0.0, // qfstop;
-0.0, // qfswitch;
+1.0e12, // qfstop;
+1.0, // qfswitch;
 100.0, // Na;
 100.0, // Nb;
 200.0, // npart;
@@ -112,6 +113,7 @@ GPUS_PER_NODE, // gpuspernode
 0.0, // aSLDAe
 0, // pccrSLDAe
 0.0, // sclgth
+0.0, // akF
 1, // iogroups
 "wdat", // dataformat
 0, // initialized
@@ -247,6 +249,8 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.qfbeta);
         else if (strcmp (tag,"qfgamma") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfgamma);
+        else if (strcmp (tag,"qfNreq") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.qfNreq);
         else if (strcmp (tag,"qfstart") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.qfstart);
         else if (strcmp (tag,"qfstop") == 0)
@@ -433,11 +437,9 @@ int parse_input_file(char * file_name)
         else if (strcmp (tag,"pccrSLDAe") == 0)
             sscanf (s,"%s %d %*s",tag,&md.pccrSLDAe);
         else if (strcmp (tag,"sclgth") == 0)
-        {
             sscanf (s,"%s %lf %*s",tag,&md.sclgth);
-            md.aSLDAe=md.sclgth;
-            md.aBdG=md.sclgth;
-        }
+        else if (strcmp (tag,"akF") == 0)
+            sscanf (s,"%s %lf %*s",tag,&md.akF);
         // IO
         else if (strcmp (tag,"iogroups") == 0)
             sscanf (s,"%s %d %*s",tag,&md.iogroups);
@@ -594,10 +596,12 @@ int parse_input_file(char * file_name)
 #if FUNCTIONAL==SLDA || FUNCTIONAL==ASLDA
     md.sclgth=-1.0e16; // infinity
 #elif FUNCTIONAL==SLDAE || FUNCTIONAL==BDG
-    if(md.sclgth!=0.0) // provided in the input file, 
+    if(md.sclgth==0.0 && md.akF==0.0)
     {
-        md.aSLDAe= md.sclgth;
-        md.aBdG  = md.sclgth;
+        printf("==========================================================================\n");
+        printf("WSLDA ERROR DESCRIPTION:\n");
+        printf("\tYou need to set either `sclgth` or `akF` to make the computation with the selected functional!\n");
+        return 0;
     }
 #endif
 
@@ -815,16 +819,14 @@ int copy_input_file(char * input_file, char * file_name)
     return 0;
 }
 
-int wslda_check_settings()
+int wslda_check_settings(int ip, int codedim, char codetype)
 {
-#if FUNCTIONAL==BDG
-    if(md.aBdG==0.0) return WSLDA_ERR_ABDG_NOT_SET;
-    md.sclgth=md.aBdG;
-#endif
-#if FUNCTIONAL==SLDAE
-    if(md.aSLDAe==0.0) return WSLDA_ERR_ABDG_NOT_SET;
-    md.sclgth=md.aSLDAe;
-#endif
+    // Print warning if lattice spacings are different
+    int printwarn=0;
+    if(codedim==2) if(fabs(DX-DY)>1.0e-9) printwarn=1;
+    if(codedim==3) if(fabs(DX-DY)>1.0e-9 || fabs(DX-DZ)>1.0e-9 || fabs(DY-DZ)>1.0e-9) printwarn=1;
+    if(ip==0 && printwarn==1) report_warning(WSLDA_WRN_DIFFERENT_DXDYDZ, stdout);
+
     return 0;
 }
 
@@ -841,6 +843,22 @@ int wslda_check_array_against_naninf(int n, double *array)
         if(isinf(array[i])) return WSLDA_ERR_INF_DETECTED;
     }
     return WSLDA_OK;
+}
+
+unsigned long wslda_control_sum(int n, double *array)
+{
+    if( sizeof(unsigned long)!=sizeof(double))
+    {
+        // printf("ERRROR: wslda_control_sum!\n");
+        return 0;
+    }
+
+    unsigned long * carray = (unsigned long *)array;
+    unsigned long csum=0;
+    int i;
+    for(i=0; i<n; i++) csum+=carray[i];
+
+    return csum;
 }
 
 void wprintf( const char * format, ... )
@@ -1021,4 +1039,25 @@ void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, voi
         
         shift+=2*nxyz;
     }
+}
+
+double quantum_friction_switch(double t, double eF)
+{
+    if(md.qfalpha==0.0 && md.qfbeta==0.0 && md.qfgamma==0.0) return 0.0; // quantum friction disabled
+
+    return h_smooth_step(t, md.qfstart/eF,  md.qfstop/eF,  md.qfswitch/eF, 1.0);
+}
+
+
+double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element)
+{
+    double N=0.0;
+    int ixyz;
+    for(ixyz=0; ixyz<nxyz; ixyz++) N+=na[ixyz];
+    for(ixyz=0; ixyz<nxyz; ixyz++) N+=nb[ixyz];
+    N*=volume_element;
+    double _qfNreq;
+    if(_qfNreq<1.0) _qfNreq=1.0; // to avoid division by zero
+    // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
+    return (N-md.qfNreq)/_qfNreq;
 }

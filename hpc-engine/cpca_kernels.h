@@ -39,7 +39,7 @@ int memcopy_extra_data(size_t extra_data_size, void *extra_data);
 void process_params(double *params, double kF, double *mu);
 #endif
 int memcopy_const_params(double *params);
-int memcopy_const_BdG(double aBdG);
+int memcopy_const_sclgth(double a);
 
 // Utility functions
 int set_gpu(int device); 
@@ -73,7 +73,7 @@ int compute_potentials(int it, double *d_densities, double *d_potentials, double
 int compute_energy(int it, double *d_densities, double *d_potentials, double *d_workarea, int nthreads);
 int apply_hamiltonian(int it, int n, cufftDoubleComplex *wf_in, cufftDoubleComplex *wf_out, 
                             cufftDoubleComplex *wf_d_dx, cufftDoubleComplex *wf_d_dy, double *d_kkz, cufftDoubleComplex *wf_laplace, cufftDoubleComplex *alphawf_laplace,
-                            double *d_densities, double *d_potentials, double qfalpha, double *useqpe, double cccoeff, 
+                            double *d_densities, double *d_potentials, double qfswitch, double *useqpe, double pccoeff,
                             int nthreads);
 int compute_ovelap(int n, cufftDoubleComplex *wf1, cufftDoubleComplex *wf2, double *overlap_re, double *overlap_im, 
                               double *workarea, int nthreads);
