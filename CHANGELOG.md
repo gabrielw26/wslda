@@ -1,7 +1,9 @@
-# 2025.xx.xx
+# 2025.03.19
 * Implementation of improved quantum friction functionality.
 * Added new tag to input file `akF`.
 * The database of internal tests has been extended.
+* Added new code: `st-wslda-0d` (static solver for uniform problems problems)
+* Update of libraries (folder `lib`) to the latest version.
 * Minor bug fixes and improvements of memory management.
 
 # 2024.08.11

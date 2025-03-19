@@ -169,11 +169,11 @@ int wbox_insert(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_insert, w
 {
     int wbox_insert_return;
     if (wbmd_small->dim == 1)
-        wbox_insert_return = wbox_insert_1d(&wbmd_small, &wbox_insert, &wbmd_big);
+        wbox_insert_return = wbox_insert_1d(wbmd_small, wbox_insert, wbmd_big);
     else if (wbmd_small->dim == 2)
-        wbox_insert_return = wbox_insert_2d(&wbmd_small, &wbox_insert, &wbmd_big);
+        wbox_insert_return = wbox_insert_2d(wbmd_small, wbox_insert, wbmd_big);
     else if (wbmd_small->dim == 3)
-        wbox_insert_return = wbox_insert_3d(&wbmd_small, &wbox_insert, &wbmd_big);
+        wbox_insert_return = wbox_insert_3d(wbmd_small, wbox_insert, wbmd_big);
 
     return wbox_insert_return;
 }
@@ -188,7 +188,7 @@ int wbox_insert_check(const wbox_md_t *wbmd_small, const wbox_insert_t *wbox_ins
     else
     {
         fprintf(stdout, "\t# !!!ERROR!!! \n");
-        fprintf(stdout, "\t     SMALL BOX DIM: %1d, BIG BOX DIM: %1d\n", wbmd_small->dim, wbmd_big->dim);
+        fprintf(stdout, "\t     SMALL BOX DIM: %d, BIG BOX DIM: %d\n", wbmd_small->dim, wbmd_big->dim);
         fprintf(stdout, "\t     FIX: Match number of positive values of lattice size (NX, NY, NZ)\n");
         fprintf(stdout, "\t          in SMALL and BIG box.");
 

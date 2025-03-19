@@ -18,3 +18,9 @@ c-examples/interp3d_simple
 c-examples/interp2d_simple
 
 c-examples/interp1d_simple
+
+
+*.so 
+*.a 
+*.o
+python/__*

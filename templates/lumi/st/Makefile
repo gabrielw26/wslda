@@ -13,9 +13,9 @@ BINDIR=./
 
 # COMPILER FLAGS
 # C compiler flags
-CFLAGS= -std=gnu99 -O3 -I/project/project_465000995/share/libs/elpa-IX2024/elpa_git/include/elpa-2024.05.001/
+CFLAGS= -std=gnu99 -O3 -I$(ELPAINCLUDE)
 # prescription how to link with: FFTW, Lapack, ScaLapack, ELPA (optionally)
-LIBS=-lfftw3 -lm -L/project/project_465000995/share/libs/elpa-IX2024/elpa_git/lib -lelpa 
+LIBS=-lfftw3 -lm -L$(ELPALIB) -lelpa
 
 # ----- DO NOT MODIFY -----
 include $(WSLDADIR)/hpc-engine/mk.st
