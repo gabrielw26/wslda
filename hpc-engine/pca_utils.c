@@ -684,9 +684,11 @@ void print_version(char *suffix)
     strftime (buffer,24,"%b %d %Y, %H:%M:%S",timeinfo);
     wprintf("# BUILD TIME: %s, %s\n",__DATE__,__TIME__);
     wprintf("# RUN TIME  : %s\n", buffer);
-    
+
     wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
     wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+
+    something_to_cheer_you_up(stdout);
    
 #if FUNCTIONAL==BDG
     wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
@@ -726,6 +728,7 @@ void print_version(char *suffix)
     wprintf("# INTEGRATION SCHEME: AB5AM5\n");
 #endif
 #endif
+
 }
 
 /**
