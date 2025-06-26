@@ -4,8 +4,6 @@
  *
  * Tool for generating section along line for selected variable
  *
- * Compilation example:
- * gcc wdata-section.c -o wdata-section -lfftw3 -lm -I/home/gabrielw/MyProjects/winterp/c -L/home/gabrielw/MyProjects/winterp -lwinterp -I$WSLDA/lib/wdata/c -L$WSLDA/lib/wdata -lwdata
  * */
 
 // winterp lib
@@ -58,7 +56,7 @@ void print_help(char *pname)
     printf("\t -k, --z2: z-coordinate for final point, default=nz*dz, Ignore for 1D and 2D data\n");
     printf("\t -p, --points: number of sampling points along line (x1,y1,z1)-(x2,y2,z2), default=100\n");
     printf("\t -c, --cycle: cycle id, default=0. Negative means take form the end, -1 is the last one.\n");
-    printf("\t -s, --silent: do not print on screen the cross-section values\n");
+    printf("\t -s, --screen: print on screen the cross-section values\n");
     printf("\t -h, --help: print help\n");
 }
 
@@ -96,7 +94,7 @@ int main( int argc , char ** argv )
     double x2=-1.0, y2=-1.0, z2=-1.0;
     int points=100;
     int idx = 0;
-    silent_mode=0;
+    silent_mode=1;
 
     while (1)
     {
@@ -116,7 +114,7 @@ int main( int argc , char ** argv )
             {"points",   required_argument,      0, 'p'},
             {"var",      required_argument,      0, 'v'},
             {"help",     no_argument,       0, 'h'},
-            {"silent",     no_argument,       0, 's'},
+            {"screen",     no_argument,       0, 's'},
             {0, 0, 0, 0}
         };
         /* getopt_long stores the option index here. */
@@ -147,7 +145,7 @@ int main( int argc , char ** argv )
                 break;
 
             case 's':
-                silent_mode=1;
+                silent_mode=0;
                 break;
 
             case 'w':
