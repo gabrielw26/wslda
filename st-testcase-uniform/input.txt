@@ -10,7 +10,7 @@ inittype                0       #  0 - create uniform solution and start from it
                                 # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
 
 # ------------------- INPUT/OUTPUT ------------------
-outprefix               test
+outprefix               test2
 inprefix                none
 overwrite               1       # allow for overwriting results
 checkpoint              1       # do checkpoints after each iteration
@@ -26,6 +26,7 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
 # default = rho delta j
 writevar           default all
+writeprec          d            # precision for data writing: d-double(default), f-float.
 
 # ----------------- SCATTERING LENGTH -----------------
 sclgth    -1.0                 # scattering length in units of lattice spacing

@@ -7,7 +7,7 @@
 #include <time.h>
 void jdb_message(FILE *stream)
 {
-    int maxid = 92;
+    int maxid = 94;
     srand (time(NULL));
     int r = rand() % maxid;
     switch(r)
@@ -301,126 +301,134 @@ void jdb_message(FILE *stream)
 			wfprintf(stream, "#   -- Neil deGrasse Tyson --\n");
 			break;
 		case 60:
+			wfprintf(stream, "#   It doesn\'t matter whether a cat is black or white, as long as it catches mice.\n");
+			wfprintf(stream, "#   -- Deng Xiaoping --\n");
+			break;
+		case 61:
 			wfprintf(stream, "#   Why can’t you trust an atom?\n");
 			wfprintf(stream, "#   Because they make up everything.\n");
 			break;
-		case 61:
+		case 62:
 			wfprintf(stream, "#   Schrödinger\'s cat walks into a bar.\n");
 			wfprintf(stream, "#   ...and doesn’t.\n");
 			break;
-		case 62:
+		case 63:
 			wfprintf(stream, "#   What’s a physicist’s favorite food?\n");
 			wfprintf(stream, "#   Fission chips.\n");
 			break;
-		case 63:
+		case 64:
 			wfprintf(stream, "#   Why did the tachyon leave the party early?\n");
 			wfprintf(stream, "#   Because it was already there.\n");
 			break;
-		case 64:
+		case 65:
 			wfprintf(stream, "#   Did you hear oxygen went on a date with potassium?\n");
 			wfprintf(stream, "#   It went OK.\n");
 			break;
-		case 65:
+		case 66:
 			wfprintf(stream, "#   I told a chemistry joke, but I got no reaction.\n");
 			break;
-		case 66:
+		case 67:
 			wfprintf(stream, "#   Gold walks into a bar. The bartender says, \"Au, get outta here!\"\n");
 			break;
-		case 67:
+		case 68:
 			wfprintf(stream, "#   What do you do with a sick chemist?\n");
 			wfprintf(stream, "#   If you can’t helium, and you can’t curium, then you might as well barium.\n");
 			break;
-		case 68:
+		case 69:
 			wfprintf(stream, "#   I lost my left hemisphere...\n");
 			wfprintf(stream, "#   But I’m all right now.\n");
 			break;
-		case 69:
+		case 70:
 			wfprintf(stream, "#   Neuroscientists love brain teasers—it\'s a no-brainer.\n");
 			break;
-		case 70:
+		case 71:
 			wfprintf(stream, "#   Why did the synapse break up with the neuron?\n");
 			wfprintf(stream, "#   It just wasn’t firing anymore.\n");
 			break;
-		case 71:
+		case 72:
 			wfprintf(stream, "#   What did one cell say to his sister cell when she stepped on his toe?\n");
 			wfprintf(stream, "#   \"Mitosis!\"\n");
 			break;
-		case 72:
+		case 73:
 			wfprintf(stream, "#   How do biologists like to communicate?\n");
 			wfprintf(stream, "#   Cell phones.\n");
 			break;
-		case 73:
+		case 74:
 			wfprintf(stream, "#   Why was the biologist so upbeat?\n");
 			wfprintf(stream, "#   Because every day is a mitosis opportunity.\n");
 			break;
-		case 74:
+		case 75:
 			wfprintf(stream, "#   Why did the mathematician name his dog Cauchy?\n");
 			wfprintf(stream, "#   Because it left a residue at every pole.\n");
 			break;
-		case 75:
+		case 76:
 			wfprintf(stream, "#   I have a joke about topology...\n");
 			wfprintf(stream, "#   But it’s a bit twisted.\n");
 			break;
-		case 76:
+		case 77:
 			wfprintf(stream, "#   A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out. The physicist says, “Must be a measurement error.” The biologist says, “They must have reproduced.” The mathematician says, “If one person goes in now, the house will be empty again.”\n");
 			break;
-		case 77:
+		case 78:
 			wfprintf(stream, "#   What’s a scientist’s favorite type of dog?\n");
 			wfprintf(stream, "#   A lab.\n");
 			break;
-		case 78:
+		case 79:
 			wfprintf(stream, "#   Never trust a scientist who doesn’t wear glasses…\n");
 			wfprintf(stream, "#   They may not have peer-reviewed vision.\n");
 			break;
-		case 79:
+		case 80:
 			wfprintf(stream, "#   How do scientists freshen their breath?\n");
 			wfprintf(stream, "#   With experi-mints.\n");
 			break;
-		case 80:
+		case 81:
 			wfprintf(stream, "#   Why don\'t scientists trust atoms anymore?\n");
 			wfprintf(stream, "#   Because they found out atoms make up fake news too.\n");
 			break;
-		case 81:
+		case 82:
 			wfprintf(stream, "#   Why did the biologist go on a diet?\n");
 			wfprintf(stream, "#   Because he had too much cell-u-lite.\n");
 			break;
-		case 82:
+		case 83:
 			wfprintf(stream, "#   Why did Heisenberg hate driving?\n");
 			wfprintf(stream, "#   Because every time he looked at the speedometer, he got lost.\n");
 			break;
-		case 83:
+		case 84:
 			wfprintf(stream, "#   What do theoretical physicists use to freshen up?\n");
 			wfprintf(stream, "#   Quantum mints.\n");
 			break;
-		case 84:
+		case 85:
 			wfprintf(stream, "#   Why do biologists look forward to casual Fridays?\n");
 			wfprintf(stream, "#   Because they\'re allowed to wear genes.\n");
 			break;
-		case 85:
+		case 86:
 			wfprintf(stream, "#   How do chemists clean their clothes?\n");
 			wfprintf(stream, "#   With bleach, of course—it\'s the solution!\n");
 			break;
-		case 86:
+		case 87:
 			wfprintf(stream, "#   Why did the physicist bring a ladder to the bar?\n");
 			wfprintf(stream, "#   He heard the drinks were on the house.\n");
 			break;
-		case 87:
+		case 88:
 			wfprintf(stream, "#   Why are geologists the life of the party?\n");
 			wfprintf(stream, "#   Because they really know how to rock.\n");
 			break;
-		case 88:
+		case 89:
 			wfprintf(stream, "#   What did the nuclear physicist have for lunch?\n");
 			wfprintf(stream, "#   Fission chips and isotopes.\n");
 			break;
-		case 89:
+		case 90:
 			wfprintf(stream, "#   How did the computer scientist fix the printer?\n");
 			wfprintf(stream, "#   He turned it off and on again. Classic debugging.\n");
 			break;
-		case 90:
+		case 91:
 			wfprintf(stream, "#   Why did the astronomer break up with the astrophysicist?\n");
 			wfprintf(stream, "#   Because he needed space.\n");
 			break;
-		case 91:
+		case 92:
+			wfprintf(stream, "#   Never be afraid to try something new.\n");
+			wfprintf(stream, "#   Remember, amateurs built the Ark, professionals built the Titanic\n");
+			break;
+		case 93:
 			wfprintf(stream, "#   How do you know a scientist is extroverted?\n");
 			wfprintf(stream, "#   They look at *your* shoes when they talk to you.\n");
 
