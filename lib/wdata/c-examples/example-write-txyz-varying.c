@@ -35,9 +35,24 @@ double function_xyz(double x, double y, double z, double time)
     return val;
 }
 
-double function_time(const wdata_metadata *md, const int icycle)
+double function_time(double t0, const int icycle)
 {
-    return md->t0 + md->dt * icycle;
+    return t0 + 0.1 * pow(icycle, 2);
+}
+
+// Generates a random double in the range (a, b)
+double random_in_range(double a, double b)
+{
+    // Ensure a < b
+    if (a >= b) {
+        fprintf(stderr, "Invalid range: a must be less than b\n");
+        exit(EXIT_FAILURE);
+    }
+    double r = ((double) rand() / (double) RAND_MAX); // [0, 1]
+    // To strictly exclude endpoints, add a small epsilon
+    double epsilon = 1e-9;
+    r = r * (1.0 - 2.0 * epsilon) + epsilon; // (0, 1)
+    return a + r * (b - a); // (a, b)
 }
 
 #define cppmallocl(pointer, size, type)                                     \
@@ -58,21 +73,27 @@ int main()
     md.nx = 24;
     md.ny = 28;
     md.nz = 32;
-    md.dx = 1.0;
-    md.dy = 1.0;
-    md.dz = 1.0;
+    md.dx = -1.0; // varying x
+    md.dy = -1.0; // varying y
+    md.dz = -1.0; // varying z
+    md.x0 = 0.0;
+    md.y0 = 0.0;
+    md.z0 = 0.0;
 
     strcpy(md.prefix, "test");
     md.t0 = 0.0;
-    md.dt = 1.0;
+    md.dt = -1.0; // varying t
 
     // add variables to data set
-    // for each variable binary file of name `prefix_`varname`.wdat` will be created
-    wdata_variable_many vars_many = {{"density_a", "delta", "current_a"},
-                                     {"real", "complex", "vector"},
-                                     {"none", "none", "none"},
-                                     {"wdat", "wdat", "wdat"}};
-    wdata_add_variable_many(&md, &vars_many);
+    // for each variable binary file of name `prefix_`varname`.wdat will be created
+    wdata_variable vdensity_a = {"density_a", "real", "none", "wdat"};
+    wdata_add_variable(&md, &vdensity_a);
+
+    wdata_variable vdelta = {"delta", "complex", "none", "wdat"};
+    wdata_add_variable(&md, &vdelta);
+
+    wdata_variable vcurrent_a = {"current_a", "vector", "none", "wdat"};
+    wdata_add_variable(&md, &vcurrent_a);
 
     // add links to data sets
     // links are alternative names of the same variable
@@ -95,7 +116,7 @@ int main()
 
     // generate some artifical data
     int bdim = wdata_get_blocklength(&md); // get block size
-    double time;
+    double time, x, y, z;
 
     double *dataR;  // real data
     Complex *dataC; // complex data
@@ -105,6 +126,34 @@ int main()
     cppmallocl(dataV, bdim * 3, double); // factor 3 accounts for three compoments of vector variable
 
     int ncycles = 10; // number of cycles to be generated
+
+    // varying time
+    for (int icycle = 0; icycle < ncycles; icycle++)
+    {
+        time=function_time(md.t0,icycle);
+        wdata_add_time(&md, icycle, &time);
+    }
+
+    // varying x
+    for (int ix = 0; ix < md.nx; ix++)
+    {
+        x =  (ix - md.nx / 2) + md.dx*random_in_range(-0.49,0.49);
+        wdata_add_x(&md, &x);
+    }
+
+    // varying y
+    for (int iy = 0; iy < md.ny; iy++)
+    {
+        y = (iy - md.ny / 2) + md.dy*random_in_range(-0.49,0.49);
+        wdata_add_y(&md, &y);
+    }
+
+    // varying z
+    for (int iz = 0; iz < md.nz; iz++)
+    {
+        z = (iz - md.nz / 2) + md.dz*random_in_range(-0.49,0.49);
+        wdata_add_z(&md, &z);
+    }
 
     for (int icycle = 0; icycle < ncycles; icycle++)
     {
@@ -118,9 +167,9 @@ int main()
                 for (int iz = 0; iz < md.nz; iz++)
                 {
                     // coordinate decomposition
-                    double x = md.dx * (ix - md.nx / 2);
-                    double y = md.dy * (iy - md.ny / 2);
-                    double z = md.dz * (iz - md.nz / 2);
+                    wdata_get_x(&md, ix, &x);
+                    wdata_get_y(&md, iy, &y);
+                    wdata_get_z(&md, iz, &z);
 
                     // add data to array
                     dataR[ixyz] = function_xyz(x, y, z, time);
@@ -140,11 +189,26 @@ int main()
         wdata_add_cycle(&md);
 
         // and add cycle to binary sets
-        void *pointers[] = {dataR, dataC, dataV}; // IMPORTANT: ordering matter. See your `wdata_variable_many.names`
-        ierr = wdata_write_cycle_many(&md, &vars_many, pointers);
+        ierr = wdata_write_cycle(&md, "density_a", dataR);
+        // alternatively you can use:
+        // ierr=wdata_add_datablock(&md, &vdensity_a, dataR);
         if (ierr != 0)
         {
-            printf("ERROR: Cannot add many!\n");
+            printf("ERROR: Cannot add density_a!\n");
+            return 1;
+        }
+
+        ierr = wdata_write_cycle(&md, "delta", dataC);
+        if (ierr != 0)
+        {
+            printf("ERROR: Cannot add delta!\n");
+            return 1;
+        }
+
+        ierr = wdata_write_cycle(&md, "current_a", dataV);
+        if (ierr != 0)
+        {
+            printf("ERROR: Cannot add delta!\n");
             return 1;
         }
     }

@@ -3,7 +3,7 @@
 W-data format is designed to store and manipulate data defined on a spatial lattice.  
 This format was originally derived from the [W-SLDA](https://gitlab.fizyka.pw.edu.pl/wtools/wslda) project.
 The format is designed to be conceptually easy to understand, which turns out to be an important issue for academic applications where students are typically involved.  
-Presently the format support lattices in 1D, 2D, and 3D. Real, complex, and vector variables can be stored. To learn more, see [Wiki pages](https://gitlab.fizyka.pw.edu.pl/wtools/wdata/-/wikis/home).
+Presently the format support lattices in 1D, 2D, and 3D. Real, complex, and vector variables can be stored. To learn more, see [Documenation](./doc/REDADME.md) in doc folder.
 
 # C library compilation
 The package contains C (standard C99) library and tools supporting data manipulation.  

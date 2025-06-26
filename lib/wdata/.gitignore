@@ -2,6 +2,7 @@
 *.o
 *.so
 *.a
+test*
 
 c-examples/example-write
 
@@ -31,3 +32,7 @@ c-examples/example-write-many-t_varying
 
 
 tools/wdata-section
+
+c-examples/example-write-low-level
+
+c-examples/example-write-txyz-varying
