@@ -38,6 +38,8 @@ tools: lib
 	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-section.c -o ./bin/wdata-section -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-append.c -o ./bin/wdata-append -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-d2f.c -o ./bin/wdata-d2f -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-d2f.c -o ./bin/wdata-f2d -I./c/ -L. -lwdata -lm -DMODE_FD
 
 clean:
 	rm *.o
