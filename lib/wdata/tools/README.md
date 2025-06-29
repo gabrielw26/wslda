@@ -71,3 +71,19 @@ Usage: ../bin//wdata-interpolate -w wtxt -o outprefix ...
 	           dz will be ajusted such that to keep length along z fixed. Default=input.nz
 	 -h, --help: print help
 ```
+# wdata-d2f
+```
+A TOOL FOR DOWNGRADING THE STORAGE PRECISION FROM DOUBLE TO FLOAT OF GIVEN WDATA SET.
+Usage: ../bin//wdata-d2f -w wtxt -o outprefix ...
+	 -w, --wtxt: wdata descriptor file if input dataset [REQUIRED]
+	 -o, --outprefix: prefix for output dataset [REQUIRED]
+	 -h, --help: print help
+```
+# wdata-f2d
+```
+A TOOL FOR UPGRADING THE STORAGE PRECISION FROM FLOAT TO DOUBLE OF GIVEN WDATA SET.
+Usage: ../bin//wdata-f2d -w wtxt -o outprefix ...
+	 -w, --wtxt: wdata descriptor file if input dataset [REQUIRED]
+	 -o, --outprefix: prefix for output dataset [REQUIRED]
+	 -h, --help: print help
+```

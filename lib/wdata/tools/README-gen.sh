@@ -31,3 +31,13 @@ echo '# wdata-interpolate' >> README.md
 echo '```' >> README.md
 $BINDIR/wdata-interpolate -h >> README.md
 echo '```' >> README.md
+
+echo '# wdata-d2f' >> README.md
+echo '```' >> README.md
+$BINDIR/wdata-d2f -h >> README.md
+echo '```' >> README.md
+
+echo '# wdata-f2d' >> README.md
+echo '```' >> README.md
+$BINDIR/wdata-f2d -h >> README.md
+echo '```' >> README.md
