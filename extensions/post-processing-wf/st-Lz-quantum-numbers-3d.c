@@ -28,15 +28,16 @@ int compute_derivative(int nx, int ny, double dx, double dy, double complex *f, 
 int main( int argc , char ** argv ) 
 { 
     // command line
-    if(argc!=3)
+    if(argc!=4)
     {
-        printf("Usage: %s prefix iogroups\n", argv[0]);
+        printf("Usage: %s prefix iogroups ecut[eF]\n", argv[0]);
         return( EXIT_FAILURE ) ;        
     }
     
     char *prefix = argv[1];
     int iogrp= atoi(argv[2]);
-    printf("# PREFIX FOR FILES: %s\n, IOGRP=%d", prefix, iogrp);
+    double ecut=atof(argv[3]);
+    printf("# PREFIX FOR FILES: %s, IOGRP=%d, ECUT/eF=%f\n", prefix, iogrp);
     
     // lattice settings
     int nx, ny, nz;
@@ -55,6 +56,7 @@ int main( int argc , char ** argv )
     printf("# READING INFO FILE: %s\n", file_name);
     file_operationl(read_checkpoint_info_pca(file_name, &nwf, &nx, &ny, &nz, &dx, &dy, &dz, &kF, mu, &ec, &beta));
     double eF = kF * kF / 2.0;
+    ecut*=eF;
 
     printf("# LATTICE: %d x %d x %d\n", nx, ny, nz);
     printf("# SPACING: %.2f x %.2f x %.2f\n", dx, dy, dz);
@@ -116,6 +118,11 @@ int main( int argc , char ** argv )
         for (iwf = 0; iwf < nwf; iwf++)
         {
             fread(&ei, sizeof(double), 1, pFile_en);  // eigen energy
+            if(ei>ecut) continue;
+
+            size_t shift = sizeof(double complex) * nx * ny * nz * iwf;
+            fseek(pFile_wfu, shift, SEEK_SET);
+            fseek(pFile_wfv, shift, SEEK_SET);
             fread(u, sizeof(double complex) * nx * ny * nz, 1, pFile_wfu); // u-component
             fread(v, sizeof(double complex) * nx * ny * nz, 1, pFile_wfv); // v-compoment
 
