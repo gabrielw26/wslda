@@ -7,230 +7,430 @@
 #include <time.h>
 void jdb_message(FILE *stream)
 {
-    int maxid = 43;
+    int maxid = 94;
     srand (time(NULL));
     int r = rand() % maxid;
     switch(r)
     {
 		case 0:
-			wfprintf(stream, "  A chemist walks into a pharmacy and asks the pharmacist,\n");
-			wfprintf(stream, "  “Do you have any acetylsalicylic acid?”\n");
-			wfprintf(stream, "  “You mean aspirin?” asked the pharmacist.\n");
-			wfprintf(stream, "  “That’s it! I can never remember that word.”\n");
+			wfprintf(stream, "#   A chemist walks into a pharmacy and asks the pharmacist,\n");
+			wfprintf(stream, "#   “Do you have any acetylsalicylic acid?”\n");
+			wfprintf(stream, "#   “You mean aspirin?” asked the pharmacist.\n");
+			wfprintf(stream, "#   “That’s it! I can never remember that word.”\n");
 			break;
 		case 1:
-			wfprintf(stream, "  A physicist, a biologist, and a chemist were going to the ocean for the first time.\n");
-			wfprintf(stream, "  The physicist saw the ocean and was fascinated by the waves.\n");
-			wfprintf(stream, "  He said he wanted to do some research on the fluid dynamics of the waves and walked into the ocean.\n");
-			wfprintf(stream, "  Obviously he was drowned and never returned.\n");
-			wfprintf(stream, "  The biologist said he wanted to do research on the flora and fauna inside the ocean and walked inside the ocean.\n");
-			wfprintf(stream, "  He, too, never returned.\n");
-			wfprintf(stream, "  The chemist waited for a long time and afterwards, wrote the observation,\n");
-			wfprintf(stream, "  “The physicist and the biologist are soluble in ocean water.”\n");
+			wfprintf(stream, "#   A physicist, a biologist, and a chemist were going to the ocean for the first time.\n");
+			wfprintf(stream, "#   The physicist saw the ocean and was fascinated by the waves.\n");
+			wfprintf(stream, "#   He said he wanted to do some research on the fluid dynamics of the waves and walked into the ocean.\n");
+			wfprintf(stream, "#   Obviously he was drowned and never returned.\n");
+			wfprintf(stream, "#   The biologist said he wanted to do research on the flora and fauna inside the ocean and walked inside the ocean.\n");
+			wfprintf(stream, "#   He, too, never returned.\n");
+			wfprintf(stream, "#   The chemist waited for a long time and afterwards, wrote the observation,\n");
+			wfprintf(stream, "#   “The physicist and the biologist are soluble in ocean water.”\n");
 			break;
 		case 2:
-			wfprintf(stream, "  A frog telephones the Psychic Hotline.\n");
-			wfprintf(stream, "  His Personal Psychic Advisor tells him,\n");
-			wfprintf(stream, "  “You are going to meet a beautiful young girl who will want to know everything about you.”\n");
-			wfprintf(stream, "  The frog is thrilled!\n");
-			wfprintf(stream, "  “This is great! Will I meet her at a party?”\n");
-			wfprintf(stream, "  “No,” says his advisor, “in her biology class.”\n");
+			wfprintf(stream, "#   A frog telephones the Psychic Hotline.\n");
+			wfprintf(stream, "#   His Personal Psychic Advisor tells him,\n");
+			wfprintf(stream, "#   “You are going to meet a beautiful young girl who will want to know everything about you.”\n");
+			wfprintf(stream, "#   The frog is thrilled!\n");
+			wfprintf(stream, "#   “This is great! Will I meet her at a party?”\n");
+			wfprintf(stream, "#   “No,” says his advisor, “in her biology class.”\n");
 			break;
 		case 3:
-			wfprintf(stream, "  A neutron walks into a bar and asks how much for a beer.\n");
-			wfprintf(stream, "  The bartender replies, “For you, no charge.”\n");
+			wfprintf(stream, "#   A neutron walks into a bar and asks how much for a beer.\n");
+			wfprintf(stream, "#   The bartender replies, “For you, no charge.”\n");
 			break;
 		case 4:
-			wfprintf(stream, "  Three statisticians go hunting for deer.\n");
-			wfprintf(stream, "  They spot one off in the distance.\n");
-			wfprintf(stream, "  The first one shoots about a meter too high.\n");
-			wfprintf(stream, "  The second one, about a meter too low.\n");
-			wfprintf(stream, "  The third one yells, “We got it!”\n");
+			wfprintf(stream, "#   Three statisticians go hunting for deer.\n");
+			wfprintf(stream, "#   They spot one off in the distance.\n");
+			wfprintf(stream, "#   The first one shoots about a meter too high.\n");
+			wfprintf(stream, "#   The second one, about a meter too low.\n");
+			wfprintf(stream, "#   The third one yells, “We got it!”\n");
 			break;
 		case 5:
-			wfprintf(stream, "  “Did you hear oxygen and magnesium got together??”\n");
-			wfprintf(stream, "  “OMg!”\n");
+			wfprintf(stream, "#   “Did you hear oxygen and magnesium got together??”\n");
+			wfprintf(stream, "#   “OMg!”\n");
 			break;
 		case 6:
-			wfprintf(stream, "  Famous last words from chemists:\n");
-			wfprintf(stream, "  1) “And now the taste test…”\n");
-			wfprintf(stream, "  2) “And now shake it a bit…”\n");
-			wfprintf(stream, "  3) “In which glass was my mineral water?”\n");
-			wfprintf(stream, "  4) “This is a completely safe experimental setup.”\n");
-			wfprintf(stream, "  5) “Now you can take the protection window away…”\n");
+			wfprintf(stream, "#   Famous last words from chemists:\n");
+			wfprintf(stream, "#   1) “And now the taste test…”\n");
+			wfprintf(stream, "#   2) “And now shake it a bit…”\n");
+			wfprintf(stream, "#   3) “In which glass was my mineral water?”\n");
+			wfprintf(stream, "#   4) “This is a completely safe experimental setup.”\n");
+			wfprintf(stream, "#   5) “Now you can take the protection window away…”\n");
 			break;
 		case 7:
-			wfprintf(stream, "  The doctor tells a woman that she has only six months to live.\n");
-			wfprintf(stream, "  He advises her to marry a chemist and move to Toledo.\n");
-			wfprintf(stream, "  The woman asks, “Will this cure my illness?”\n");
-			wfprintf(stream, "  “No,” replies the doctor, “but it will make six months seem like a very long time.”\n");
+			wfprintf(stream, "#   The doctor tells a woman that she has only six months to live.\n");
+			wfprintf(stream, "#   He advises her to marry a chemist and move to Toledo.\n");
+			wfprintf(stream, "#   The woman asks, “Will this cure my illness?”\n");
+			wfprintf(stream, "#   “No,” replies the doctor, “but it will make six months seem like a very long time.”\n");
 			break;
 		case 8:
-			wfprintf(stream, "  A psychoanalyst shows a patient an inkblot and asks him what he sees.\n");
-			wfprintf(stream, "  The patient says: “A man and woman making love.”\n");
-			wfprintf(stream, "  The psychoanalyst shows him a second inkblot, and the patient says:\n");
-			wfprintf(stream, "  “That’s also a man and woman making love.”\n");
-			wfprintf(stream, "  The psychoanalyst says: “You are obsessed with sex.”\n");
-			wfprintf(stream, "  The patient says: “What do you mean I’m obsessed? You’re the one with all the dirty pictures.”\n");
+			wfprintf(stream, "#   A psychoanalyst shows a patient an inkblot and asks him what he sees.\n");
+			wfprintf(stream, "#   The patient says: “A man and woman making love.”\n");
+			wfprintf(stream, "#   The psychoanalyst shows him a second inkblot, and the patient says:\n");
+			wfprintf(stream, "#   “That’s also a man and woman making love.”\n");
+			wfprintf(stream, "#   The psychoanalyst says: “You are obsessed with sex.”\n");
+			wfprintf(stream, "#   The patient says: “What do you mean I’m obsessed? You’re the one with all the dirty pictures.”\n");
 			break;
 		case 9:
-			wfprintf(stream, "  Q: Why can you never trust atoms?\n");
-			wfprintf(stream, "  A: They make up everything!\n");
+			wfprintf(stream, "#   Q: Why can you never trust atoms?\n");
+			wfprintf(stream, "#   A: They make up everything!\n");
 			break;
 		case 10:
-			wfprintf(stream, "  Q: What was the name of the first Electricity Detective?\n");
-			wfprintf(stream, "  A: Sherlock Ohms.\n");
+			wfprintf(stream, "#   Q: What was the name of the first Electricity Detective?\n");
+			wfprintf(stream, "#   A: Sherlock Ohms.\n");
 			break;
 		case 11:
-			wfprintf(stream, "  One tectonic plate bumped into another and said:\n");
-			wfprintf(stream, "  “Sorry, my fault.”\n");
+			wfprintf(stream, "#   One tectonic plate bumped into another and said:\n");
+			wfprintf(stream, "#   “Sorry, my fault.”\n");
 			break;
 		case 12:
-			wfprintf(stream, "  A biologist, an engineer, and a mathematician were observing an empty building.\n");
-			wfprintf(stream, "  They noted two people entering the building and sometime later observed three coming out.\n");
-			wfprintf(stream, "  The biologist remarked, “Oh, they must have reproduced.”\n");
-			wfprintf(stream, "  The engineer said, “Our initial count must have been incorrect.”\n");
-			wfprintf(stream, "  The mathematician stated, “Now if one more person goes into the building, it will be completely empty.”\n");
+			wfprintf(stream, "#   A biologist, an engineer, and a mathematician were observing an empty building.\n");
+			wfprintf(stream, "#   They noted two people entering the building and sometime later observed three coming out.\n");
+			wfprintf(stream, "#   The biologist remarked, “Oh, they must have reproduced.”\n");
+			wfprintf(stream, "#   The engineer said, “Our initial count must have been incorrect.”\n");
+			wfprintf(stream, "#   The mathematician stated, “Now if one more person goes into the building, it will be completely empty.”\n");
 			break;
 		case 13:
-			wfprintf(stream, "  They have just found the gene for shyness.\n");
-			wfprintf(stream, "  They would have found it earlier, but it was hiding behind two other genes.\n");
+			wfprintf(stream, "#   They have just found the gene for shyness.\n");
+			wfprintf(stream, "#   They would have found it earlier, but it was hiding behind two other genes.\n");
 			break;
 		case 14:
-			wfprintf(stream, "  Science is a wonderful thing if one does not have to earn one\'s living at it.\n");
-			wfprintf(stream, "  -- Albert Einstein --\n");
+			wfprintf(stream, "#   Science is a wonderful thing if one does not have to earn one\'s living at it.\n");
+			wfprintf(stream, "#   -- Albert Einstein --\n");
 			break;
 		case 15:
-			wfprintf(stream, "  Only two things are infinite, the universe and human stupidity, and I\'m not sure about the former.\n");
-			wfprintf(stream, "  -- Albert Einstein --\n");
+			wfprintf(stream, "#   Only two things are infinite, the universe and human stupidity, and I\'m not sure about the former.\n");
+			wfprintf(stream, "#   -- Albert Einstein --\n");
 			break;
 		case 16:
-			wfprintf(stream, "  Science is the great antidote to the poison of enthusiasm and superstition.\n");
-			wfprintf(stream, "  -- Adam Smith --\n");
+			wfprintf(stream, "#   Science is the great antidote to the poison of enthusiasm and superstition.\n");
+			wfprintf(stream, "#   -- Adam Smith --\n");
 			break;
 		case 17:
-			wfprintf(stream, "  To steal ideas from one person is plagiarism; to steal from many is research.\n");
-			wfprintf(stream, "  -- Steven Wright --\n");
+			wfprintf(stream, "#   To steal ideas from one person is plagiarism; to steal from many is research.\n");
+			wfprintf(stream, "#   -- Steven Wright --\n");
 			break;
 		case 18:
 			break;
 		case 19:
-			wfprintf(stream, "  If we knew what it was we were doing, it would not be called research, would it?\n");
-			wfprintf(stream, "  -- Albert Einstein --\n");
+			wfprintf(stream, "#   If we knew what it was we were doing, it would not be called research, would it?\n");
+			wfprintf(stream, "#   -- Albert Einstein --\n");
 			break;
 		case 20:
-			wfprintf(stream, "  In the beginning the Universe was created.\n");
-			wfprintf(stream, "  This has made a lot of people very angry and been widely regarded as a bad move.\n");
-			wfprintf(stream, "  -- Douglas Adams --\n");
+			wfprintf(stream, "#   In the beginning the Universe was created.\n");
+			wfprintf(stream, "#   This has made a lot of people very angry and been widely regarded as a bad move.\n");
+			wfprintf(stream, "#   -- Douglas Adams --\n");
 			break;
 		case 21:
-			wfprintf(stream, "  If you torture the data long enough, it will confess.\n");
-			wfprintf(stream, "  -- Ronald Coase --\n");
+			wfprintf(stream, "#   If you torture the data long enough, it will confess.\n");
+			wfprintf(stream, "#   -- Ronald Coase --\n");
 			break;
 		case 22:
-			wfprintf(stream, "  Science can never solve one problem without raising ten more problems.\n");
-			wfprintf(stream, "  -- George Bernard Shaw --\n");
+			wfprintf(stream, "#   Science can never solve one problem without raising ten more problems.\n");
+			wfprintf(stream, "#   -- George Bernard Shaw --\n");
 			break;
 		case 23:
-			wfprintf(stream, "  Science does not know its debt to imagination.\n");
-			wfprintf(stream, "  -- Ralph Waldo Emerson --\n");
+			wfprintf(stream, "#   Science does not know its debt to imagination.\n");
+			wfprintf(stream, "#   -- Ralph Waldo Emerson --\n");
 			break;
 		case 24:
-			wfprintf(stream, "  The most exciting phrase to hear in science, the one that heralds new discoveries,\n");
-			wfprintf(stream, "  is not \'Eureka!\' but \'That\'s funny...\'\n");
-			wfprintf(stream, "  -- Isaac Asimov --\n");
+			wfprintf(stream, "#   The most exciting phrase to hear in science, the one that heralds new discoveries,\n");
+			wfprintf(stream, "#   is not \'Eureka!\' but \'That\'s funny...\'\n");
+			wfprintf(stream, "#   -- Isaac Asimov --\n");
 			break;
 		case 25:
-			wfprintf(stream, "  The great tragedy of science - the slaying of a beautiful hypothesis by an ugly fact.\n");
-			wfprintf(stream, "  -- Thomas Huxley --\n");
+			wfprintf(stream, "#   The great tragedy of science - the slaying of a beautiful hypothesis by an ugly fact.\n");
+			wfprintf(stream, "#   -- Thomas Huxley --\n");
 			break;
 		case 26:
-			wfprintf(stream, "  I have had my results for a long time: but I do not yet know how I am to arrive at them.\n");
-			wfprintf(stream, "  -- Carl Friedrich Gauss --\n");
+			wfprintf(stream, "#   I have had my results for a long time: but I do not yet know how I am to arrive at them.\n");
+			wfprintf(stream, "#   -- Carl Friedrich Gauss --\n");
 			break;
 		case 27:
-			wfprintf(stream, "  I\'m sure the universe is full of intelligent life. It\'s just been too intelligent to come here.\n");
-			wfprintf(stream, "  -- Arthur C. Clarke --\n");
+			wfprintf(stream, "#   I\'m sure the universe is full of intelligent life. It\'s just been too intelligent to come here.\n");
+			wfprintf(stream, "#   -- Arthur C. Clarke --\n");
 			break;
 		case 28:
-			wfprintf(stream, "  In physics, you don\'t have to go around making trouble for yourself - nature does it for you.\n");
-			wfprintf(stream, "  -- Frank Wilczek --\n");
+			wfprintf(stream, "#   In physics, you don\'t have to go around making trouble for yourself - nature does it for you.\n");
+			wfprintf(stream, "#   -- Frank Wilczek --\n");
 			break;
 		case 29:
-			wfprintf(stream, "  Computers are useless. They can only give you answers.\n");
-			wfprintf(stream, "  -- Pablo Picasso --\n");
+			wfprintf(stream, "#   Computers are useless. They can only give you answers.\n");
+			wfprintf(stream, "#   -- Pablo Picasso --\n");
 			break;
 		case 30:
-			wfprintf(stream, "  Once you can accept the universe as matter expanding into nothing that is something,\n");
-			wfprintf(stream, "  wearing stripes with plaid comes easy.\n");
-			wfprintf(stream, "  -- Albert Einstein --\n");
+			wfprintf(stream, "#   Once you can accept the universe as matter expanding into nothing that is something,\n");
+			wfprintf(stream, "#   wearing stripes with plaid comes easy.\n");
+			wfprintf(stream, "#   -- Albert Einstein --\n");
 			break;
 		case 31:
-			wfprintf(stream, "  Molecular biology is essentially the practice of biochemistry without a license.\n");
-			wfprintf(stream, "  -- Erwin Chargaff --\n");
+			wfprintf(stream, "#   Molecular biology is essentially the practice of biochemistry without a license.\n");
+			wfprintf(stream, "#   -- Erwin Chargaff --\n");
 			break;
 		case 32:
-			wfprintf(stream, "  There is a theory which states that if ever anyone discovers exactly\n");
-			wfprintf(stream, "  what the Universe is for and why it is here, it will instantly disappear\n");
-			wfprintf(stream, "  and be replaced by something even more bizarre and inexplicable.\n");
-			wfprintf(stream, "  There is another theory which states that this has already happened.\n");
-			wfprintf(stream, "  -- Douglas Adams --\n");
+			wfprintf(stream, "#   There is a theory which states that if ever anyone discovers exactly\n");
+			wfprintf(stream, "#   what the Universe is for and why it is here, it will instantly disappear\n");
+			wfprintf(stream, "#   and be replaced by something even more bizarre and inexplicable.\n");
+			wfprintf(stream, "#   There is another theory which states that this has already happened.\n");
+			wfprintf(stream, "#   -- Douglas Adams --\n");
 			break;
 		case 33:
-			wfprintf(stream, "  Programming today is a race between software engineers striving\n");
-			wfprintf(stream, "  to build bigger and better idiot-proof programs, and the Universe trying\n");
-			wfprintf(stream, "  to produce bigger and better idiots. So far, the Universe is winning.\n");
-			wfprintf(stream, "  -- Rick Cook --\n");
+			wfprintf(stream, "#   Programming today is a race between software engineers striving\n");
+			wfprintf(stream, "#   to build bigger and better idiot-proof programs, and the Universe trying\n");
+			wfprintf(stream, "#   to produce bigger and better idiots. So far, the Universe is winning.\n");
+			wfprintf(stream, "#   -- Rick Cook --\n");
 			break;
 		case 34:
-			wfprintf(stream, "  Physics is like sex:\n");
-			wfprintf(stream, "  sure, it may give some practical results, but that’s not why we do it.\n");
-			wfprintf(stream, "  -- Richard P. Feynman --\n");
+			wfprintf(stream, "#   Physics is like sex:\n");
+			wfprintf(stream, "#   sure, it may give some practical results, but that’s not why we do it.\n");
+			wfprintf(stream, "#   -- Richard P. Feynman --\n");
 			break;
 		case 35:
-			wfprintf(stream, "  I have not failed. I’ve just found 10,000 ways that won’t work.\n");
-			wfprintf(stream, "  -- Thomas Alva Edison --\n");
+			wfprintf(stream, "#   I have not failed. I’ve just found 10,000 ways that won’t work.\n");
+			wfprintf(stream, "#   -- Thomas Alva Edison --\n");
 			break;
 		case 36:
-			wfprintf(stream, "  If you try and take a cat apart to see how it works,\n");
-			wfprintf(stream, "  the first thing you have on your hands is a non-working cat.\n");
-			wfprintf(stream, "  -- Douglas Adams --\n");
+			wfprintf(stream, "#   If you try and take a cat apart to see how it works,\n");
+			wfprintf(stream, "#   the first thing you have on your hands is a non-working cat.\n");
+			wfprintf(stream, "#   -- Douglas Adams --\n");
 			break;
 		case 37:
-			wfprintf(stream, "  Philosophy of science is about as useful to scientists as ornithology is to birds.\n");
-			wfprintf(stream, "  -- Richard P. Feynman --\n");
+			wfprintf(stream, "#   Philosophy of science is about as useful to scientists as ornithology is to birds.\n");
+			wfprintf(stream, "#   -- Richard P. Feynman --\n");
 			break;
 		case 38:
-			wfprintf(stream, "  If you’re too open-minded, your brains will fall out.\n");
-			wfprintf(stream, "  -- Lawrence Ferlinghetti --\n");
+			wfprintf(stream, "#   If you’re too open-minded, your brains will fall out.\n");
+			wfprintf(stream, "#   -- Lawrence Ferlinghetti --\n");
 			break;
 		case 39:
-			wfprintf(stream, "  The answer to the problem was \'log(1+x)\'.\n");
-			wfprintf(stream, "  A student copied the answer from the good student next to him,\n");
-			wfprintf(stream, "  but didn\'t want to make it obvious that he was cheating,\n");
-			wfprintf(stream, "  so he changed the answer slightly, to \'timber(1+x)\'\n");
+			wfprintf(stream, "#   The answer to the problem was \'log(1+x)\'.\n");
+			wfprintf(stream, "#   A student copied the answer from the good student next to him,\n");
+			wfprintf(stream, "#   but didn\'t want to make it obvious that he was cheating,\n");
+			wfprintf(stream, "#   so he changed the answer slightly, to \'timber(1+x)\'\n");
 			break;
 		case 40:
-			wfprintf(stream, "  The experimentalist comes running excitedly into the theorist\'s office,\n");
-			wfprintf(stream, "  waving a graph taken off his latest experiment.\n");
-			wfprintf(stream, "  \'Hmmm,\' says the theorist, \'That\'s exactly where you\'d expect to see that peak. Here\'s the reason (long logical explanation follows).\'\n");
-			wfprintf(stream, "  In the middle of it, the experimentalist says \'Wait a minute\', studies the chart for a second, and says,\n");
-			wfprintf(stream, "  \'Oops, this is upside down.\' He fixes it.\n");
-			wfprintf(stream, "  \'Hmmm,\' says the theorist, \'you\'d expect to see a dip in exactly that position. Here\'s the reason...\'.\n");
+			wfprintf(stream, "#   The experimentalist comes running excitedly into the theorist\'s office,\n");
+			wfprintf(stream, "#   waving a graph taken off his latest experiment.\n");
+			wfprintf(stream, "#   \'Hmmm,\' says the theorist, \'That\'s exactly where you\'d expect to see that peak. Here\'s the reason (long logical explanation follows).\'\n");
+			wfprintf(stream, "#   In the middle of it, the experimentalist says \'Wait a minute\', studies the chart for a second, and says,\n");
+			wfprintf(stream, "#   \'Oops, this is upside down.\' He fixes it.\n");
+			wfprintf(stream, "#   \'Hmmm,\' says the theorist, \'you\'d expect to see a dip in exactly that position. Here\'s the reason...\'.\n");
 			break;
 		case 41:
-			wfprintf(stream, "  What is the difference between a physicist, an engineer, and a mathematician?\n");
-			wfprintf(stream, "  - If an engineer walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
-			wfprintf(stream, "  he takes the bucket of water and pours it on the fire and puts it out.\n");
-			wfprintf(stream, "  - If a physicist walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
-			wfprintf(stream, "  he takes the bucket of water and pours it eloquently around the fire and lets the fire put itself out.\n");
-			wfprintf(stream, "  - If a mathematician walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
-			wfprintf(stream, "  he convinces himself there is a solution and leaves. (credit: Jeremiah Jazdzewski)\n");
+			wfprintf(stream, "#   What is the difference between a physicist, an engineer, and a mathematician?\n");
+			wfprintf(stream, "#   - If an engineer walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "#   he takes the bucket of water and pours it on the fire and puts it out.\n");
+			wfprintf(stream, "#   - If a physicist walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "#   he takes the bucket of water and pours it eloquently around the fire and lets the fire put itself out.\n");
+			wfprintf(stream, "#   - If a mathematician walks into a room and sees a fire in the middle and a bucket of water in the corner,\n");
+			wfprintf(stream, "#   he convinces himself there is a solution and leaves. (credit: Jeremiah Jazdzewski)\n");
 			break;
 		case 42:
-			wfprintf(stream, "  Heisenberg is out for a drive when he\'s stopped by a traffic cop.\n");
-			wfprintf(stream, "  The cop says \'Do you know how fast you were going?\'\n");
-			wfprintf(stream, "  Heisenberg says \'No, but I know where I am.\'\n");
+			wfprintf(stream, "#   Heisenberg is out for a drive when he\'s stopped by a traffic cop.\n");
+			wfprintf(stream, "#   The cop says \'Do you know how fast you were going?\'\n");
+			wfprintf(stream, "#   Heisenberg says \'No, but I know where I am.\'\n");
+			break;
+		case 43:
+			wfprintf(stream, "#   Physics is like sex: sure, it may give some practical results, but that\'s not why we do it.\n");
+			wfprintf(stream, "#   -- Richard Feynman --\n");
+			break;
+		case 44:
+			wfprintf(stream, "#   Two things are infinite: the universe and human stupidity; and I\'m not sure about the universe.\n");
+			wfprintf(stream, "#   -- Albert Einstein --\n");
+			break;
+		case 45:
+			wfprintf(stream, "#   Prediction is very difficult, especially if it\'s about the future.\n");
+			wfprintf(stream, "#   -- Niels Bohr --\n");
+			break;
+		case 46:
+			wfprintf(stream, "#   When I meet God, I’m going to ask him two questions: why relativity? And why turbulence? I really believe he’ll have an answer for the first.\n");
+			wfprintf(stream, "#   -- Werner Heisenberg --\n");
+			break;
+		case 47:
+			wfprintf(stream, "#   If your experiment needs statistics, you ought to have done a better experiment.\n");
+			wfprintf(stream, "#   -- Ernest Rutherford --\n");
+			break;
+		case 48:
+			wfprintf(stream, "#   Life would be tragic if it weren’t funny.\n");
+			wfprintf(stream, "#   -- Stephen Hawking --\n");
+			break;
+		case 49:
+			wfprintf(stream, "#   I understand everything I say. The others just don’t understand me.\n");
+			wfprintf(stream, "#   -- Paul Dirac --\n");
+			break;
+		case 50:
+			wfprintf(stream, "#   Somewhere, something incredible is waiting to be known.\n");
+			wfprintf(stream, "#   -- Carl Sagan --\n");
+			break;
+		case 51:
+			wfprintf(stream, "#   The best way to have a good idea is to have a lot of ideas.\n");
+			wfprintf(stream, "#   -- Linus Pauling --\n");
+			break;
+		case 52:
+			wfprintf(stream, "#   There is nothing new to be discovered in physics now. All that remains is more and more precise measurement.\n");
+			wfprintf(stream, "#   -- Lord Kelvin --\n");
+			break;
+		case 53:
+			wfprintf(stream, "#   Science is a way of trying not to fool yourself. The first principle is that you must not fool yourself -- and you are the easiest person to fool.\n");
+			wfprintf(stream, "#   -- Richard Feynman --\n");
+			break;
+		case 54:
+			wfprintf(stream, "#   I have not failed. I\'ve just found 10,000 ways that won\'t work.\n");
+			wfprintf(stream, "#   -- Thomas Edison --\n");
+			break;
+		case 55:
+			wfprintf(stream, "#   In science there are no shortcuts to truth.\n");
+			wfprintf(stream, "#   -- Karl Popper --\n");
+			break;
+		case 56:
+			wfprintf(stream, "#   Basic research is what I am doing when I don’t know what I am doing.\n");
+			wfprintf(stream, "#   -- Wernher von Braun --\n");
+			break;
+		case 57:
+			wfprintf(stream, "#   Equipped with his five senses, man explores the universe around him and calls the adventure science.\n");
+			wfprintf(stream, "#   -- Edwin Hubble --\n");
+			break;
+		case 58:
+			wfprintf(stream, "#   Science is the belief in the ignorance of experts.\n");
+			wfprintf(stream, "#   -- Richard Feynman --\n");
+			break;
+		case 59:
+			wfprintf(stream, "#   The good thing about science is that it\'s true whether or not you believe in it.\n");
+			wfprintf(stream, "#   -- Neil deGrasse Tyson --\n");
+			break;
+		case 60:
+			wfprintf(stream, "#   It doesn\'t matter whether a cat is black or white, as long as it catches mice.\n");
+			wfprintf(stream, "#   -- Deng Xiaoping --\n");
+			break;
+		case 61:
+			wfprintf(stream, "#   Why can’t you trust an atom?\n");
+			wfprintf(stream, "#   Because they make up everything.\n");
+			break;
+		case 62:
+			wfprintf(stream, "#   Schrödinger\'s cat walks into a bar.\n");
+			wfprintf(stream, "#   ...and doesn’t.\n");
+			break;
+		case 63:
+			wfprintf(stream, "#   What’s a physicist’s favorite food?\n");
+			wfprintf(stream, "#   Fission chips.\n");
+			break;
+		case 64:
+			wfprintf(stream, "#   Why did the tachyon leave the party early?\n");
+			wfprintf(stream, "#   Because it was already there.\n");
+			break;
+		case 65:
+			wfprintf(stream, "#   Did you hear oxygen went on a date with potassium?\n");
+			wfprintf(stream, "#   It went OK.\n");
+			break;
+		case 66:
+			wfprintf(stream, "#   I told a chemistry joke, but I got no reaction.\n");
+			break;
+		case 67:
+			wfprintf(stream, "#   Gold walks into a bar. The bartender says, \"Au, get outta here!\"\n");
+			break;
+		case 68:
+			wfprintf(stream, "#   What do you do with a sick chemist?\n");
+			wfprintf(stream, "#   If you can’t helium, and you can’t curium, then you might as well barium.\n");
+			break;
+		case 69:
+			wfprintf(stream, "#   I lost my left hemisphere...\n");
+			wfprintf(stream, "#   But I’m all right now.\n");
+			break;
+		case 70:
+			wfprintf(stream, "#   Neuroscientists love brain teasers—it\'s a no-brainer.\n");
+			break;
+		case 71:
+			wfprintf(stream, "#   Why did the synapse break up with the neuron?\n");
+			wfprintf(stream, "#   It just wasn’t firing anymore.\n");
+			break;
+		case 72:
+			wfprintf(stream, "#   What did one cell say to his sister cell when she stepped on his toe?\n");
+			wfprintf(stream, "#   \"Mitosis!\"\n");
+			break;
+		case 73:
+			wfprintf(stream, "#   How do biologists like to communicate?\n");
+			wfprintf(stream, "#   Cell phones.\n");
+			break;
+		case 74:
+			wfprintf(stream, "#   Why was the biologist so upbeat?\n");
+			wfprintf(stream, "#   Because every day is a mitosis opportunity.\n");
+			break;
+		case 75:
+			wfprintf(stream, "#   Why did the mathematician name his dog Cauchy?\n");
+			wfprintf(stream, "#   Because it left a residue at every pole.\n");
+			break;
+		case 76:
+			wfprintf(stream, "#   I have a joke about topology...\n");
+			wfprintf(stream, "#   But it’s a bit twisted.\n");
+			break;
+		case 77:
+			wfprintf(stream, "#   A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out. The physicist says, “Must be a measurement error.” The biologist says, “They must have reproduced.” The mathematician says, “If one person goes in now, the house will be empty again.”\n");
+			break;
+		case 78:
+			wfprintf(stream, "#   What’s a scientist’s favorite type of dog?\n");
+			wfprintf(stream, "#   A lab.\n");
+			break;
+		case 79:
+			wfprintf(stream, "#   Never trust a scientist who doesn’t wear glasses…\n");
+			wfprintf(stream, "#   They may not have peer-reviewed vision.\n");
+			break;
+		case 80:
+			wfprintf(stream, "#   How do scientists freshen their breath?\n");
+			wfprintf(stream, "#   With experi-mints.\n");
+			break;
+		case 81:
+			wfprintf(stream, "#   Why don\'t scientists trust atoms anymore?\n");
+			wfprintf(stream, "#   Because they found out atoms make up fake news too.\n");
+			break;
+		case 82:
+			wfprintf(stream, "#   Why did the biologist go on a diet?\n");
+			wfprintf(stream, "#   Because he had too much cell-u-lite.\n");
+			break;
+		case 83:
+			wfprintf(stream, "#   Why did Heisenberg hate driving?\n");
+			wfprintf(stream, "#   Because every time he looked at the speedometer, he got lost.\n");
+			break;
+		case 84:
+			wfprintf(stream, "#   What do theoretical physicists use to freshen up?\n");
+			wfprintf(stream, "#   Quantum mints.\n");
+			break;
+		case 85:
+			wfprintf(stream, "#   Why do biologists look forward to casual Fridays?\n");
+			wfprintf(stream, "#   Because they\'re allowed to wear genes.\n");
+			break;
+		case 86:
+			wfprintf(stream, "#   How do chemists clean their clothes?\n");
+			wfprintf(stream, "#   With bleach, of course—it\'s the solution!\n");
+			break;
+		case 87:
+			wfprintf(stream, "#   Why did the physicist bring a ladder to the bar?\n");
+			wfprintf(stream, "#   He heard the drinks were on the house.\n");
+			break;
+		case 88:
+			wfprintf(stream, "#   Why are geologists the life of the party?\n");
+			wfprintf(stream, "#   Because they really know how to rock.\n");
+			break;
+		case 89:
+			wfprintf(stream, "#   What did the nuclear physicist have for lunch?\n");
+			wfprintf(stream, "#   Fission chips and isotopes.\n");
+			break;
+		case 90:
+			wfprintf(stream, "#   How did the computer scientist fix the printer?\n");
+			wfprintf(stream, "#   He turned it off and on again. Classic debugging.\n");
+			break;
+		case 91:
+			wfprintf(stream, "#   Why did the astronomer break up with the astrophysicist?\n");
+			wfprintf(stream, "#   Because he needed space.\n");
+			break;
+		case 92:
+			wfprintf(stream, "#   Never be afraid to try something new.\n");
+			wfprintf(stream, "#   Remember, amateurs built the Ark, professionals built the Titanic\n");
+			break;
+		case 93:
+			wfprintf(stream, "#   How do you know a scientist is extroverted?\n");
+			wfprintf(stream, "#   They look at *your* shoes when they talk to you.\n");
 
         default: break;
     }

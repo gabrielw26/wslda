@@ -29,6 +29,7 @@ libwdata.so: ./c/wdata.c ./c/wdata.h
 examples: lib
 	$(CC) ./c-examples/example-write-low-level.c -o ./c-examples/example-write-low-level -lm
 	$(CC) ./c-examples/example-write.c -o ./c-examples/example-write -I./c/ -L. -lwdata -lm 
+	$(CC) ./c-examples/example-write-txyz-varying.c -o ./c-examples/example-write-txyz-varying -I./c/ -L. -lwdata -lm
 	$(CC) ./c-examples/example-write-many.c -o ./c-examples/example-write-many -I./c/ -L. -lwdata -lm 
 	$(CC) ./c-examples/example-write-many-t_varying.c -o ./c-examples/example-write-many-t_varying -I./c/ -L. -lwdata -lm 
 	$(CC) ./c-examples/example-read.c -o ./c-examples/example-read -I./c/ -L. -lwdata -lm 
@@ -36,12 +37,14 @@ examples: lib
 	
 tools: lib
 	mkdir -p ./bin/
-	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-cut -I./c/ -L. -lwdata -lm
-	$(CC) ./tools/wdata-cut.c -o ./bin/wdata-stride -I./c/ -L. -lwdata -lm -DWDATA_STRIDE
+	$(CC) ./tools/wdata-subset.c -o ./bin/wdata-subset -I./c/ -L. -lwdata -lm -DWDATA_SUBSET_MODE
+	$(CC) ./tools/wdata-subset.c -o ./bin/wdata-copy -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-datadim-up.c -o ./bin/wdata-datadim-up -I./c/ -L. -lwdata -lm
-	$(CC) ./tools/wdata-merge.c -o ./bin/wdata-merge -I./c/ -L. -lwdata -lm
 	$(CC) ./tools/wdata-interpolate.c -o ./bin/wdata-interpolate -I./c/ -L. -lwdata $(WINTERP) -lm
 	$(CC) ./tools/wdata-section.c -o ./bin/wdata-section -I./c/ -L. -lwdata $(WINTERP) -lm
+	$(CC) ./tools/wdata-append.c -o ./bin/wdata-append -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-d2f.c -o ./bin/wdata-d2f -I./c/ -L. -lwdata -lm
+	$(CC) ./tools/wdata-d2f.c -o ./bin/wdata-f2d -I./c/ -L. -lwdata -lm -DMODE_FD
 
 clean:
 	rm *.o
@@ -52,9 +55,7 @@ clean:
 	rm ./c-examples/example-addvar
 	rm ./c-examples/example-write-many
 	rm ./c-examples/example-write-many-t_varying
-	rm ./bin/wdata-cut
-	rm ./bin/wdata-stride
-	rm ./bin/wdata-interpolate
-	rm ./bin/wdata-datadim-up
-	rm ./bin/wdata-merge
-	rm ./bin/wdata-section
+	rm ./c-examples/example-write-txyz-varying
+	rm ./c-examples/example-write-low-level
+	rm ./bin/*
+

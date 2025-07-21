@@ -238,13 +238,13 @@ extern "C" size_t get_extra_data_size(double *params)
 /**
  * This function loads data into extra_data array.
  * This function is thread-safe.
- * @param size size of array computed using function get_extra_data_size()
+ * @param extra_data_size size of array computed using function get_extra_data_size()
  * @param extra_data pointer to array that should be filled with data
  * @param params with input file parameters. 
  *               NOTE: the array contains bare input file values, not processed by process_params()!
  * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
  * */
-extern "C" int load_extra_data(size_t size, void *extra_data, double *params)
+extern "C" int load_extra_data(size_t extra_data_size, void *extra_data, double *params)
 {
     return 0;
 }

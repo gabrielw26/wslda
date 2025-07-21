@@ -63,7 +63,7 @@ int main( int argc , char ** argv )
         i = readcmd( argc , argv ) ;
         if( i == -1 )
         {
-            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ; something_to_cheer_you_up(stdout);
+            wprintf( "TERMINATING! NO INPUT FILE.\n" ) ;
             ierr = -1 ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
@@ -75,7 +75,7 @@ int main( int argc , char ** argv )
         if ( j == 0 )
         {
             ierr = -1 ;
-            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ; something_to_cheer_you_up(stdout);
+            wprintf("PROBLEM WITH INPUT FILE: `%s`.\n" , argv[ i ] ) ;
             MPI_Abort( MPI_COMM_WORLD , ierr ) ;
             return( EXIT_FAILURE ) ;
         }

@@ -40,6 +40,7 @@ iogroups                8       # number of IO groups used for parallel wf writi
 # all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
 # default = rho delta j
 writevar           default
+writeprec          d            # precision for data writing: d-double(default), f-float.
 
 # ----------------- PARTICLE NUMBERS -----------------
 Na                      28.     # Requested number of particles a-type
