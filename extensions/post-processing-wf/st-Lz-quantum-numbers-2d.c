@@ -91,13 +91,13 @@ int main( int argc , char ** argv )
         if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
         sprintf(file_name, "%s/s2dpca.%04d.kkz", prefix, ikz);
         pFile_kkz = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        if(pFile_kkz==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
         sprintf(file_name, "%s/s2dpca.%04d.wfu", prefix, ikz);
         pFile_wfu = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        if(pFile_wfu==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
         sprintf(file_name, "%s/s2dpca.%04d.wfv", prefix, ikz);
         pFile_wfv = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        if(pFile_wfv==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
         
         sprintf(file_name, "%s_Lz.%04d.txt", prefix, ikz);
         printf("# CREATING FILE `%s`\n", file_name);      

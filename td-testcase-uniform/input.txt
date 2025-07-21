@@ -23,6 +23,7 @@ walltime                11.9    # after this time force checkpoint [hr]
 # all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
 # default = rho delta j
 writevar           all
+writeprec          d            # precision for data writing: d-double(default), f-float.
 
 # ----------------- SCATTERING LENGTH ---------------
 sclgth    -1.0                  # scattering length in units of lattice spacing

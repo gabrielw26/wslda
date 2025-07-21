@@ -18,7 +18,7 @@ for line in src:
     if line=="": entries=entries+1
 src.close()
 
-print "Number of entries in jdb.txt: ", entries
+print("Number of entries in jdb.txt: ", entries)
 
 
 header = """
@@ -69,7 +69,7 @@ for line in src:
         addbreak=True
         continue
         
-    f.write('\t\t\twfprintf(stream, "  %s\\n");\n' % line)
+    f.write('\t\t\twfprintf(stream, "#   %s\\n");\n' % line)
 src.close()
 
 f.write(footer)

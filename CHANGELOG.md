@@ -1,3 +1,8 @@
+# 2025.07.21
+* Update of WData files to format 0.3.0.
+* Added `writeprec` tag in the input file for changing the precision of writing data between double and float.
+* Added new extensions.
+
 # 2025.03.19
 * Implementation of improved quantum friction functionality.
 * Added new tag to input file `akF`.

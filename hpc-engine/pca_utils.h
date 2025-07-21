@@ -160,6 +160,7 @@ typedef struct
     double Nconservation_start; // # Start to monitor total particle number conservation from this time*eF, default Nconservation_start=0 (infinity)
     double Nconservation_stop;  // # Stop to monitor total particle number conservation at this time*eF, default Nconservation_stop=1e12 (infinity)
     double Nconservation_tol;  // # if |[N(t)-N(start_t)]/N(start_t)|>tol then the code will terminate
+    char writeprec; // precision of variables to write, d-double, f-float
 
     // POTENTIAL PARAMETERS
     double params[MAX_USER_PARAMS]; // double parameters

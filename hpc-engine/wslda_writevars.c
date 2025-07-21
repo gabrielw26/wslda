@@ -96,6 +96,25 @@ int get_velocity_ext(int datadim, int spin, int it, double *data); // implemente
 
 #endif
 
+void wdata_variable_process_var(metadata_t *input, wdata_variable *va)
+{
+    strcpy(va->format, input->dataformat); // set format of output results
+
+    if(input->writeprec=='d') // double precision
+    {
+        if     (va->type[0]=='r') strcpy(va->type, "real");   // FIXME: change to real8 when setting default writeprec=f
+        else if(va->type[0]=='c') strcpy(va->type, "complex");// FIXME: change to complex16 when setting default writeprec=f
+        else if(va->type[0]=='v') strcpy(va->type, "vector"); // FIXME: change to vector8(3) when setting default writeprec=f
+    }
+
+    if(input->writeprec=='f') // float precision
+    {
+        if     (va->type[0]=='r') strcpy(va->type, "real4");
+        else if(va->type[0]=='c') strcpy(va->type, "complex8");
+        else if(va->type[0]=='v') strcpy(va->type, "vector4"); // FIXME: change to vector4(3) when setting default writeprec=f
+    }
+}
+
 /**
  * @param input input structure (INPUT)
  * @param datadim data dimensonality (INPUT)
@@ -108,7 +127,7 @@ int get_velocity_ext(int datadim, int spin, int it, double *data); // implemente
 int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, int spinsymmetry, wdata_metadata *wdmd)
 {
     // create artificial data for visulisation in visit
-    wdata_metadata tmd = {NX, NY, NZ, DX, DY, DZ, 0, "none", 0, 0.0, 0.0, 0, 0};
+    wdata_metadata tmd = {NX, NY, NZ, DX, DY, DZ, 0, 0.0, 0.0, 0.0, "none", 0, 0.0, 0.0, 0, 0, 0, 0};
     tmd.datadim=datadim;
     sprintf(tmd.prefix, "%s", md.outprefix);
     tmd.t0=t0;
@@ -127,8 +146,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
     {        
         if(strcmp (lvars[i],"density") == 0 || strcmp (lvars[i],"rho") == 0)
         {
-            wdata_variable va = {"rho_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"rho_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"rho_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"rho_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"rho_b", "rho_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -137,8 +156,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             // subset densities
             if(input->subsetMinEn!=input->subsetMaxEn)
             {
-                wdata_variable sva = {"subset_rho_a", "real", "none", "wdat"}; strcpy(sva.format, md.dataformat); // set format of output results
-                wdata_variable svb = {"subset_rho_b", "real", "none", "wdat"}; strcpy(svb.format, md.dataformat); // set format of output results
+                wdata_variable sva = {"subset_rho_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&sva);
+                wdata_variable svb = {"subset_rho_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&svb);
                 wdata_link sl = {"subset_rho_b", "subset_rho_a"};
                 wdata_add_variable(&tmd, &sva);
                 if(spinsymmetry==0) wdata_add_variable(&tmd, &svb);
@@ -148,8 +167,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"current") == 0 || strcmp (lvars[i],"j") == 0)
         {
-            wdata_variable va = {"j_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"j_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"j_a", "vector", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"j_b", "vector", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"j_b", "j_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -158,8 +177,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
             // subset densities
             if(input->subsetMinEn!=input->subsetMaxEn)
             {
-                wdata_variable sva = {"subset_j_a", "vector", "none", "wdat"}; strcpy(sva.format, md.dataformat); // set format of output results
-                wdata_variable svb = {"subset_j_b", "vector", "none", "wdat"}; strcpy(svb.format, md.dataformat); // set format of output results
+                wdata_variable sva = {"subset_j_a", "vector", "none", "wdat"}; wdata_variable_process_var(input,&sva);
+                wdata_variable svb = {"subset_j_b", "vector", "none", "wdat"}; wdata_variable_process_var(input,&svb);
                 wdata_link sl = {"subset_j_b", "subset_j_a"};
                 wdata_add_variable(&tmd, &sva);
                 if(spinsymmetry==0) wdata_add_variable(&tmd, &svb);
@@ -169,8 +188,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"tau") == 0)
         {
-            wdata_variable va = {"tau_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"tau_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"tau_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"tau_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"tau_b", "tau_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -178,8 +197,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"V") == 0)
         {
-            wdata_variable va = {"V_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"V_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"V_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"V_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"V_b", "V_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -187,8 +206,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"V_ext") == 0)
         {
-            wdata_variable va = {"V_ext_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"V_ext_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"V_ext_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"V_ext_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"V_ext_b", "V_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -196,8 +215,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"velocity_ext") == 0)
         {
-            wdata_variable va = {"velocity_ext_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"velocity_ext_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"velocity_ext_a", "vector", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"velocity_ext_b", "vector", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"velocity_ext_b", "velocity_ext_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -205,23 +224,23 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"delta") == 0)
         {
-            wdata_variable va = {"delta", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable va = {"delta", "complex", "none", "wdat"}; wdata_variable_process_var(input,&va);
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"delta_ext") == 0)
         {
-            wdata_variable va = {"delta_ext", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable va = {"delta_ext", "complex", "none", "wdat"}; wdata_variable_process_var(input,&va);
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"nu") == 0)
         {
-            wdata_variable va = {"nu", "complex", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
+            wdata_variable va = {"nu", "complex", "none", "wdat"}; wdata_variable_process_var(input,&va);
             wdata_add_variable(&tmd, &va);
         }
         else if(strcmp (lvars[i],"alpha") == 0)
         {
-            wdata_variable va = {"alpha_a", "real", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"alpha_b", "real", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"alpha_a", "real", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"alpha_b", "real", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"alpha_b", "alpha_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -229,8 +248,8 @@ int create_wdata_metadata(metadata_t *input, int datadim, double t0, double dt, 
         }
         else if(strcmp (lvars[i],"A") == 0)
         {
-            wdata_variable va = {"A_a", "vector", "none", "wdat"}; strcpy(va.format, md.dataformat); // set format of output results
-            wdata_variable vb = {"A_b", "vector", "none", "wdat"}; strcpy(vb.format, md.dataformat); // set format of output results
+            wdata_variable va = {"A_a", "vector", "none", "wdat"}; wdata_variable_process_var(input,&va);
+            wdata_variable vb = {"A_b", "vector", "none", "wdat"}; wdata_variable_process_var(input,&vb);
             wdata_link l = {"A_b", "A_a"};
             wdata_add_variable(&tmd, &va);
             if(spinsymmetry==0) wdata_add_variable(&tmd, &vb);
@@ -323,39 +342,39 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
     {
 
         ierr=0;
-        if      (strcmp (wdmd->var[ivar].name,"rho_a") == 0) ierr = wdata_write_cycle(wdmd, "rho_a", rho_a);
-        else if (strcmp (wdmd->var[ivar].name,"rho_b") == 0) ierr = wdata_write_cycle(wdmd, "rho_b", rho_b);
-        else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
-        else if (strcmp (wdmd->var[ivar].name,"j_a") == 0) ierr = wdata_write_cycle(wdmd, "j_a", j_a_x);
-        else if (strcmp (wdmd->var[ivar].name,"j_b") == 0) ierr = wdata_write_cycle(wdmd, "j_b", j_b_x);
-        else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
-        else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
-        else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
+        if      (strcmp (wdmd->var[ivar].name,"rho_a") == 0) ierr = wdata_write_cycle_d(wdmd, "rho_a", rho_a);
+        else if (strcmp (wdmd->var[ivar].name,"rho_b") == 0) ierr = wdata_write_cycle_d(wdmd, "rho_b", rho_b);
+        else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle_d(wdmd, "delta", (double *)delta);
+        else if (strcmp (wdmd->var[ivar].name,"j_a") == 0) ierr = wdata_write_cycle_d(wdmd, "j_a", j_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"j_b") == 0) ierr = wdata_write_cycle_d(wdmd, "j_b", j_b_x);
+        else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle_d(wdmd, "nu", (double *)nu);
+        else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle_d(wdmd, "tau_a", tau_a);
+        else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle_d(wdmd, "tau_b", tau_b);
         else if (strcmp (wdmd->var[ivar].name,"V_a") == 0) 
         {
 #ifdef WSLDA
-            ierr = wdata_write_cycle(wdmd, "V_a", V_a);
+            ierr = wdata_write_cycle_d(wdmd, "V_a", V_a);
 #else
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
             int ixyz=0;
             for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
-            ierr = wdata_write_cycle(wdmd, "V_a", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "V_a", towrt);
             free(towrt);
 #endif
         }
         else if (strcmp (wdmd->var[ivar].name,"V_b") == 0)
         {
 #ifdef WSLDA
-            ierr = wdata_write_cycle(wdmd, "V_b", V_b);
+            ierr = wdata_write_cycle_d(wdmd, "V_b", V_b);
 #else
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
             int ixyz=0;
             for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
-            ierr = wdata_write_cycle(wdmd, "V_b", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "V_b", towrt);
             free(towrt);
 #endif
         }
@@ -364,7 +383,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "V_ext_a", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "V_ext_a", towrt);
             free(towrt);
         }
         else if (strcmp (wdmd->var[ivar].name,"V_ext_b") == 0) 
@@ -372,7 +391,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             double *towrt;
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "V_ext_b", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "V_ext_b", towrt);
             free(towrt);
         }
         else if (strcmp (wdmd->var[ivar].name,"delta_ext") == 0) 
@@ -384,7 +403,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
 #else
             get_delta_ext(wdmd->datadim, it, delta, towrt);
 #endif
-            ierr = wdata_write_cycle(wdmd, "delta_ext", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "delta_ext", towrt);
             free(towrt);
         }
         else if (strcmp (wdmd->var[ivar].name,"velocity_ext_a") == 0) 
@@ -392,7 +411,7 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             double *towrt;
             cppmallocl(towrt,bs*3,double);  
             get_velocity_ext(wdmd->datadim, SPINA, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "velocity_ext_a", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "velocity_ext_a", towrt);
             free(towrt);
         }
         else if (strcmp (wdmd->var[ivar].name,"velocity_ext_b") == 0) 
@@ -400,13 +419,13 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             double *towrt;
             cppmallocl(towrt,bs*3,double);  
             get_velocity_ext(wdmd->datadim, SPINB, it, towrt);
-            ierr = wdata_write_cycle(wdmd, "velocity_ext_b", towrt);
+            ierr = wdata_write_cycle_d(wdmd, "velocity_ext_b", towrt);
             free(towrt);
         }
-        else if (strcmp (wdmd->var[ivar].name,"alpha_a") == 0) ierr = wdata_write_cycle(wdmd, "alpha_a", h_potentials.alpha_a);
-        else if (strcmp (wdmd->var[ivar].name,"alpha_b") == 0) ierr = wdata_write_cycle(wdmd, "alpha_b", h_potentials.alpha_b);
-        else if (strcmp (wdmd->var[ivar].name,"A_a") == 0) ierr = wdata_write_cycle(wdmd, "A_a", h_potentials.A_a_x);
-        else if (strcmp (wdmd->var[ivar].name,"A_b") == 0) ierr = wdata_write_cycle(wdmd, "A_b", h_potentials.A_b_x);
+        else if (strcmp (wdmd->var[ivar].name,"alpha_a") == 0) ierr = wdata_write_cycle_d(wdmd, "alpha_a", h_potentials.alpha_a);
+        else if (strcmp (wdmd->var[ivar].name,"alpha_b") == 0) ierr = wdata_write_cycle_d(wdmd, "alpha_b", h_potentials.alpha_b);
+        else if (strcmp (wdmd->var[ivar].name,"A_a") == 0) ierr = wdata_write_cycle_d(wdmd, "A_a", h_potentials.A_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"A_b") == 0) ierr = wdata_write_cycle_d(wdmd, "A_b", h_potentials.A_b_x);
         
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }
@@ -454,14 +473,14 @@ int write_measurments_subset(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *code
     {
 
         ierr=0;
-        if      (strcmp (wdmd->var[ivar].name,"subset_rho_a") == 0) ierr = wdata_write_cycle(wdmd, "subset_rho_a", rho_a);
-        else if (strcmp (wdmd->var[ivar].name,"subset_rho_b") == 0) ierr = wdata_write_cycle(wdmd, "subset_rho_b", rho_b);
-//         else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle(wdmd, "delta", delta);
-        else if (strcmp (wdmd->var[ivar].name,"subset_j_a") == 0) ierr = wdata_write_cycle(wdmd, "subset_j_a", j_a_x);
-        else if (strcmp (wdmd->var[ivar].name,"subset_j_b") == 0) ierr = wdata_write_cycle(wdmd, "subset_j_b", j_b_x);
-//         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle(wdmd, "nu", nu);
-//         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle(wdmd, "tau_a", tau_a);
-//         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle(wdmd, "tau_b", tau_b);
+        if      (strcmp (wdmd->var[ivar].name,"subset_rho_a") == 0) ierr = wdata_write_cycle_d(wdmd, "subset_rho_a", rho_a);
+        else if (strcmp (wdmd->var[ivar].name,"subset_rho_b") == 0) ierr = wdata_write_cycle_d(wdmd, "subset_rho_b", rho_b);
+//         else if (strcmp (wdmd->var[ivar].name,"delta") == 0) ierr = wdata_write_cycle_d(wdmd, "delta", delta);
+        else if (strcmp (wdmd->var[ivar].name,"subset_j_a") == 0) ierr = wdata_write_cycle_d(wdmd, "subset_j_a", j_a_x);
+        else if (strcmp (wdmd->var[ivar].name,"subset_j_b") == 0) ierr = wdata_write_cycle_d(wdmd, "subset_j_b", j_b_x);
+//         else if (strcmp (wdmd->var[ivar].name,"nu") == 0) ierr = wdata_write_cycle_d(wdmd, "nu", nu);
+//         else if (strcmp (wdmd->var[ivar].name,"tau_a") == 0) ierr = wdata_write_cycle_d(wdmd, "tau_a", tau_a);
+//         else if (strcmp (wdmd->var[ivar].name,"tau_b") == 0) ierr = wdata_write_cycle_d(wdmd, "tau_b", tau_b);
 
         if(ierr>0) return 100*iam+10*ivar+ierr;
     }

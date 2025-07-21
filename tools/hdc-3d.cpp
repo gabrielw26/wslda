@@ -289,8 +289,11 @@ int main(int argc, char *argv[])
 	comp *wix = (comp*) tempvx;
 	comp *wiy = (comp*) tempvy;
 	comp *wiz = (comp*) tempvz;
-	double Ec=0, Ei=0, Eck=0, Eik=0, Ek=0, U=0, ecv=0, eiv=0, EcSpec=0, EiSpec=0, OmegaVolume=0;	
-	double ecvprint[24], eivprint[24];			
+	double Ec=0, Ei=0, Eck=0, Eik=0, Ek=0, U=0, ecv=0, eiv=0, EcSpec=0, EiSpec=0, OmegaVolume=0;
+	double *ecvprint, *eivprint;
+	int print_lght=(int)(M_PI/(md.dx*dk));
+	cppmallocl(ecvprint, print_lght, double);
+	cppmallocl(eivprint, print_lght, double);
 	
 	double *wixr, *wiyr, *wizr, *wcxr, *wcyr, *wczr;
 	cppmallocl(wixr, nxyz, double);
@@ -325,6 +328,7 @@ int main(int argc, char *argv[])
 	//MPI_File es, spec;
 	FILE *es, *spec;
 	char buf[512];	
+	int tint, min;
     
 	sprintf(file_name, "%s_hh_%c.txt", md.prefix, u);
 	sprintf(file_name2, "%s_hhspec_%c.txt", md.prefix, u);
@@ -341,23 +345,21 @@ int main(int argc, char *argv[])
         fclose(es);
 	}
 
- 	int slice = md.cycles/np, p = slice/10, tint, min;
-	// for(inom=ip*slice; inom<ip*slice+slice; inom++)	Alternative MPIzation
-    
-            
 	for(inom=0; inom<md.cycles; inom++)												
 	{
         if(inom%np != ip) continue; 
+
+		// printf("HERE: ip=%d, np=%d, line=%d, frame=%d\n", ip, np, __LINE__, inom);
       
 		Ec=0, Ei=0, Eck=0, Eik=0, Ek=0, U=0, q=0;
-		wdata_get_time(&md, inom, &time);		
+		wdata_get_time(&md, inom, &time);
 
 		// Read binary files
 		if(ip==0)
 // 			if(inom%p==0)
 			{
 				printf("\t Reading frame [%d], currently at ", inom);
-				cout<<setprecision(4)<<double(inom)*2./double(slice)<<"%"<<endl;
+				cout<<setprecision(2)<<double(inom)*100./double(md.cycles)<<"%"<<endl;
 			}
 
 		ierr = wdata_read_cycle(&md, "rho_a", inom, rho_a);
@@ -369,37 +371,37 @@ int main(int argc, char *argv[])
 		// Choose spin component(s) to investigate
 		if(c==0)									// Only for "a" component
 		{
-			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				waxr[ixyz] = j_a_x[ixyz]/sqrt(rho_a[ixyz]+EPS);
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wayr[ixyz] = j_a_y[ixyz]/sqrt(rho_a[ixyz]+EPS);
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wazr[ixyz] = j_a_z[ixyz]/sqrt(rho_a[ixyz]+EPS);
-		}	
+		}
 
 		if(c==1)									// Only for "b" component
 		{
-			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				waxr[ixyz] = j_b_x[ixyz]/sqrt(rho_b[ixyz]+EPS);
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wayr[ixyz] = j_b_y[ixyz]/sqrt(rho_b[ixyz]+EPS);
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wazr[ixyz] = j_b_z[ixyz]/sqrt(rho_b[ixyz]+EPS);
 		}
 
 		if(c==2)									// "a+b" components
 		{
-			for(int ixyz=0; ixyz<nxyz; ixyz++)                             
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				waxr[ixyz] = (j_a_x[ixyz]+ j_b_x[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // + sqrt(rho_b[ixyz]));
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wayr[ixyz] = (j_a_y[ixyz]+ j_b_y[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
 
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 				wazr[ixyz] = (j_a_z[ixyz]+ j_b_z[ixyz]) / (sqrt(rho_a[ixyz] + rho_b[ixyz] + EPS)); // (sqrt(rho_a[ixyz]) + sqrt(rho_b[ixyz]));
 		}
 
@@ -417,18 +419,18 @@ int main(int argc, char *argv[])
 			lzr[ixyz] = wazr[ixyz];
 			lzi[ixyz] = 0.;
 			lz[ixyz] = comp(lzr[ixyz], lzi[ixyz]);
-		}	
+		}
 
 		// Obtain w(k) in momentum space
-		fftw_plan Q1x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, wax, temppx, FFTW_FORWARD, FFTW_ESTIMATE);		
-		fftw_execute(Q1x);									
-		fftw_destroy_plan(Q1x);	
-		fftw_plan Q1y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, way, temppy, FFTW_FORWARD, FFTW_ESTIMATE);		
-		fftw_execute(Q1y);									
-		fftw_destroy_plan(Q1y);	
-		fftw_plan Q1z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, waz, temppz, FFTW_FORWARD, FFTW_ESTIMATE);		
-		fftw_execute(Q1z);									
-		fftw_destroy_plan(Q1z);		
+		fftw_plan Q1x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, wax, temppx, FFTW_FORWARD, FFTW_ESTIMATE);
+		fftw_execute(Q1x);
+		fftw_destroy_plan(Q1x);
+		fftw_plan Q1y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, way, temppy, FFTW_FORWARD, FFTW_ESTIMATE);
+		fftw_execute(Q1y);
+		fftw_destroy_plan(Q1y);
+		fftw_plan Q1z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, waz, temppz, FFTW_FORWARD, FFTW_ESTIMATE);
+		fftw_execute(Q1z);
+		fftw_destroy_plan(Q1z);
 
 		// Make f(k) = (k*tA(k)/k^2)*k = w_c(k)
 		for(int ixyz=0; ixyz<nxyz; ixyz++)
@@ -444,58 +446,58 @@ int main(int argc, char *argv[])
 				fx[ixyz] = (kx[ixyz] * px[ixyz] + ky[ixyz] * py[ixyz] + kz[ixyz] * pz[ixyz]) / (abs(kp[ixyz])*abs(kp[ixyz])*md.ny*md.nx*md.nz) * kx[ixyz];		// component fx and fy
 				fy[ixyz] = (kx[ixyz] * px[ixyz] + ky[ixyz] * py[ixyz] + kz[ixyz] * pz[ixyz]) / (abs(kp[ixyz])*abs(kp[ixyz])*md.ny*md.nx*md.nz) * ky[ixyz];
 				fz[ixyz] = (kx[ixyz] * px[ixyz] + ky[ixyz] * py[ixyz] + kz[ixyz] * pz[ixyz]) / (abs(kp[ixyz])*abs(kp[ixyz])*md.ny*md.nx*md.nz) * kz[ixyz];
-			}	
+			}
 		}
 
 		// Copy f(k)
 		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
-			gx[ixyz] = fx[ixyz];	
+			gx[ixyz] = fx[ixyz];
 			gy[ixyz] = fy[ixyz];
 			gz[ixyz] = fz[ixyz];
-		}	
-		
+		}
+
 		// Anti-FT => Return w_c(r) in coordinate space
-		fftw_plan L1x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfx, tempcx, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L1x);									
-		fftw_destroy_plan(L1x);		
-		fftw_plan L1y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfy, tempcy, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L1y);									
-		fftw_destroy_plan(L1y);		
-		fftw_plan L1z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfz, tempcz, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L1z);									
-		fftw_destroy_plan(L1z);															
+		fftw_plan L1x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfx, tempcx, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L1x);
+		fftw_destroy_plan(L1x);
+		fftw_plan L1y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfy, tempcy, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L1y);
+		fftw_destroy_plan(L1y);
+		fftw_plan L1z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempfz, tempcz, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L1z);
+		fftw_destroy_plan(L1z);
 
 		// w(k) - f(k) = w_i(k)
 		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
-			hx[ixyz] = (px[ixyz]/double(md.nx*md.ny*md.nz) - gx[ixyz]); 	
+			hx[ixyz] = (px[ixyz]/double(md.nx*md.ny*md.nz) - gx[ixyz]);
 			hy[ixyz] = (py[ixyz]/double(md.nx*md.ny*md.nz) - gy[ixyz]);
 			hz[ixyz] = (pz[ixyz]/double(md.nx*md.ny*md.nz) - gz[ixyz]);
-		}	
+		}
 
 		// Anti-FT => Return w_i(r) in coordinate space
-		fftw_plan L2x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempix, tempvx, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L2x);									
-		fftw_destroy_plan(L2x);	
-		fftw_plan L2y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempiy, tempvy, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L2y);									
+		fftw_plan L2x = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempix, tempvx, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L2x);
+		fftw_destroy_plan(L2x);
+		fftw_plan L2y = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempiy, tempvy, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L2y);
 		fftw_destroy_plan(L2y);
-		fftw_plan L2z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempiz, tempvz, FFTW_BACKWARD, FFTW_ESTIMATE);		
-		fftw_execute(L2z);									
-		fftw_destroy_plan(L2z);		
+		fftw_plan L2z = fftw_plan_dft_3d(md.nx, md.ny, md.nz, tempiz, tempvz, FFTW_BACKWARD, FFTW_ESTIMATE);
+		fftw_execute(L2z);
+		fftw_destroy_plan(L2z);
 
 		// Real part of w_i & w_c components
-		for(int ixyz=0; ixyz<nxyz; ixyz++)							
+		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
 			wixr[ixyz] = real(wix[ixyz]);		wcxr[ixyz] = real(wcx[ixyz]);
 			wiyr[ixyz] = real(wiy[ixyz]);		wcyr[ixyz] = real(wcy[ixyz]);
 			wizr[ixyz] = real(wiz[ixyz]);		wczr[ixyz] = real(wcz[ixyz]);
-		}	
+		}
 
 		// Integrals to get energies (coordinate space) => Ei & Ec
 		// Integrals to get energies (Fourier space) => Eik & Eck
-		for(int ixyz=0; ixyz<nxyz; ixyz++)			
+		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
 			// Ek = Ek + (abs(px[ixyz])*abs(px[ixyz]) + abs(py[ixyz])*abs(py[ixyz]) + abs(pz[ixyz])*abs(pz[ixyz])) /(2.*md.nx*md.ny*md.nz);
 			Ek = Ek + (abs(waxr[ixyz])*abs(waxr[ixyz]) + abs(wayr[ixyz])*abs(wayr[ixyz]) + abs(wazr[ixyz])*abs(wazr[ixyz])) /2.;
@@ -505,71 +507,75 @@ int main(int argc, char *argv[])
 
 			Eck = Eck + (abs(gx[ixyz])*abs(gx[ixyz]) + abs(gy[ixyz])*abs(gy[ixyz]) + abs(gz[ixyz])*abs(gz[ixyz]))*md.nx*md.ny*md.nz /2.;
 			Ec = Ec + (abs(wcx[ixyz])*abs(wcx[ixyz]) + abs(wcy[ixyz])*abs(wcy[ixyz]) + abs(wcz[ixyz])*abs(wcz[ixyz])) /2.;
-		}	
+		}
 
 		// Vectors for irrotational and compressive components
-		for(int ixyz=0; ixyz<nxyz; ixyz++)	
+		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
 			wi[ixyz+0*nxyz] = wixr[ixyz];
             	wi[ixyz+1*nxyz] = wiyr[ixyz];
             	wi[ixyz+2*nxyz] = wizr[ixyz];
-            
+
 			wc[ixyz+0*nxyz] = wcxr[ixyz];
             	wc[ixyz+1*nxyz] = wcyr[ixyz];
-            	wc[ixyz+2*nxyz] = wczr[ixyz]; 
+            	wc[ixyz+2*nxyz] = wczr[ixyz];
 		}
 
 		// Copy w_i & w_c in Fourier space for spectral analysis
-		for(int ixyz=0; ixyz<nxyz; ixyz++)	
+		for(int ixyz=0; ixyz<nxyz; ixyz++)
 		{
 			wki[ixyz+0*nxyz] = hx[ixyz];
             	wki[ixyz+1*nxyz] = hy[ixyz];
             	wki[ixyz+2*nxyz] = hz[ixyz];
-            
+
 			wkc[ixyz+0*nxyz] = gx[ixyz];
             	wkc[ixyz+1*nxyz] = gy[ixyz];
-            	wkc[ixyz+2*nxyz] = gz[ixyz]; 
+            	wkc[ixyz+2*nxyz] = gz[ixyz];
 		}		// Good so far
 
-		// Set up MPI ordering 
-		
+		// Set up MPI ordering
+
 		// Spectral analysis => eiv & ecv
 		k=0, eiv=0, ecv=0, EiSpec=0, EcSpec=0;
 		for(int l=1; l<=M_PI/(md.dx*dk); l++)	// From 0 to pi/dx for each k
 		{
 			k = dk*l;	eiv=0.;	ecv=0.; 	OmegaVolume=0.;
-			for(int ixyz=0; ixyz<nxyz; ixyz++) 
+			for(int ixyz=0; ixyz<nxyz; ixyz++)
 			{
 				double k1[3] = {kx[ixyz], ky[ixyz], kz[ixyz]};
 				eiv += (abs(hx[ixyz])*abs(hx[ixyz]) + abs(hy[ixyz])*abs(hy[ixyz]) + abs(hz[ixyz])*abs(hz[ixyz])) * Omega(k1, k, dk) * (1./2.) *md.nx*md.ny*md.nz;		// Spectra
 				ecv += (abs(gx[ixyz])*abs(gx[ixyz]) + abs(gy[ixyz])*abs(gy[ixyz]) + abs(gz[ixyz])*abs(gz[ixyz])) * Omega(k1, k, dk) * (1./2.) *md.nx*md.ny*md.nz;
-				// Omega_volume stands for integral over angles 
+				// Omega_volume stands for integral over angles
 				OmegaVolume += Omega(k1, k, dk);
 			}
-			
+
 			// Rescale integral to match 4pi
 			eiv *= 4.*M_PI/OmegaVolume;
 			ecv *= 4.*M_PI/OmegaVolume;
-			// Linearization of the integral 
+			// Linearization of the integral
 			eiv *= k*k;
 			ecv *= k*k;
 			// Additional missing coefficient
 			eiv /= 2.*M_PI/(md.nx*md.dx) * 2.*M_PI/(md.ny*md.dy) * 2.*M_PI/(md.nz*md.dz);
-			ecv /= 2.*M_PI/(md.nx*md.dx) * 2.*M_PI/(md.ny*md.dy) * 2.*M_PI/(md.nz*md.dz); 
+			ecv /= 2.*M_PI/(md.nx*md.dx) * 2.*M_PI/(md.ny*md.dy) * 2.*M_PI/(md.nz*md.dz);
 			// Integration over dk => Energies from spectra EiSpec & EcSpec
 			EiSpec += eiv*2.*M_PI/md.nx;											// Energies from spectra
 			EcSpec += ecv*2.*M_PI/md.nx;
 
-			// Print spectra data to .txt 
+			// Print spectra data to .txt
 			ecvprint[l-1] = ecv;
 			eivprint[l-1] = eiv;
-		}		
+		}
+		// printf("HERE: ip=%d, np=%d, line=%d, frame=%d\n", ip, np, __LINE__,inom);
 
 		// Print energies data to .txt
 		int mpiflag=1, j;
-        	MPI_Status MPIStat;
-        	if(ip!=0) 	// Wait until ip-1 process finishes his job
-            	j = MPI_Recv(&mpiflag, 1, MPI_INT, ip-1, 99, MPI_COMM_WORLD, &MPIStat); 
+		MPI_Status MPIStat;
+		if(ip!=0) 	// Wait until ip-1 process finishes his job
+		{
+			// printf("Recv: ip=%d, np=%d, line=%d, frame\n", ip, np, __LINE__, inom);
+			j = MPI_Recv(&mpiflag, 1, MPI_INT, ip-1, 99, MPI_COMM_WORLD, &MPIStat);
+		}
 
 		FILE *f = fopen(file_name, "a");
 		fprintf(f, "%12.3f %12.4f %12.4f %12.4f %12.4f \n", time, Ec, Ei, EcSpec, EiSpec);
@@ -584,17 +590,21 @@ int main(int argc, char *argv[])
 
 		int ierr2, ierr3; 		// Something weird happens here, didn't find a fix other than removing the security check
 		ierr2 = wdata_write_cycle(&md, sc, wc);
-			if(ierr2!=0) { printf("ierr=%d, ERROR: Cannot add w_c!\n", ierr2); return 1;}
+		if(ierr2!=0) { printf("ierr=%d, ERROR: Cannot add w_c!\n", ierr2); return 1;}
 		ierr3 = wdata_write_cycle(&md, si, wi);
-			if(ierr3!=0) { printf("ierr=%d, ERROR: Cannot add w_i!\n", ierr3); return 1;}
+		if(ierr3!=0) { printf("ierr=%d, ERROR: Cannot add w_i!\n", ierr3); return 1;}
 
-		if(inom==md.cycles-1) 
+		if(inom==md.cycles-1)
             	break; 	//MPI_Abort(MPI_COMM_WORLD,0);
 
-		if(ip!=np-1) 				
-            	j = MPI_Send(&mpiflag, 1, MPI_INT, ip+1, 99, MPI_COMM_WORLD);
+		if(ip!=np-1)
+		{
+			// printf("Send: ip=%d, np=%d, line=%d, frame\n", ip, np, __LINE__, inom);
+			j = MPI_Send(&mpiflag, 1, MPI_INT, ip+1, 99, MPI_COMM_WORLD);
+		}
 
 		//if(inom>50)	break;
+		// printf("HERE: ip=%d, np=%d, line=%d, frame\n", ip, np, __LINE__, inom);
 	}
 
 	double t1 = e_t();

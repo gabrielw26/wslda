@@ -35,9 +35,9 @@ double function_xyz(double x, double y, double z, double time)
     return val;
 }
 
-double function_time(const wdata_metadata *md, const int icycle)
+double function_time(double t0, const int icycle)
 {
-    return md->t0 + 0.1 * pow(icycle, 2);
+    return t0 + 0.1 * pow(icycle, 2);
 }
 
 #define cppmallocl(pointer, size, type)                                     \
@@ -110,10 +110,10 @@ int main()
     for (int icycle = 0; icycle < ncycles; icycle++)
     {
         // time decomposition
-        time = function_time(&md, icycle); // save time to `time` variable
+        time = function_time(md.t0, icycle); // save time to `time` variable
         printf("CURRENT TIME: %lf\n", time);
 
-        ierr = wdata_set_time(&md, icycle, &time); // due `md.dt` is negative, we save `time` to `prefix__t.wdata` binary file
+        ierr = wdata_add_time(&md, icycle, &time); // due `md.dt` is negative, we save `time` to `prefix__t.wdata` binary file
         if (ierr != 0)
         {
             printf("ERROR: Cannot set time!\n");

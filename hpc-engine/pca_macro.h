@@ -21,7 +21,6 @@
     {                                                                           \
         fprintf( stderr , "ERROR: cannot malloc()! Exiting!\n") ;               \
         fprintf( stderr , "ERROR: file=`%s`, line=%d\n", __FILE__, __LINE__ ) ; \
-        something_to_cheer_you_up_pid0(stdout);                                 \
         return -1 ;                                                             \
     } 
 
@@ -29,7 +28,6 @@
     {                                                                           \
         MPI_Barrier( MPI_COMM_WORLD );                                          \
         fprintf( stderr , "ABORT!!! [ip=%d, file=`%s`, line=%d]\n", ip, __FILE__, __LINE__) ; \
-        something_to_cheer_you_up_pid0(stdout);                                 \
         ierr = -1 ;                                                             \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \
@@ -39,7 +37,6 @@
     {                                                                           \
         MPI_Barrier( MPI_COMM_WORLD );                                          \
         fprintf( stderr , "ABORT!!! [ip=%d, file=`%s`, line=%d]\n", ip, __FILE__, __LINE__) ; \
-        something_to_cheer_you_up_pid0(stdout);                                 \
         ierr = -1 ;                                                             \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \
@@ -48,7 +45,6 @@
 #define ABORT_NOBARRIER \
     {                                                                           \
         fprintf( stderr , "ABORT!!! [ip=%d, file=`%s`, line=%d]\n", ip, __FILE__, __LINE__) ; \
-        something_to_cheer_you_up_pid0(stdout);                                 \
         ierr = -1 ;                                                             \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \
@@ -98,7 +94,6 @@
             fprintf(stderr, "FILE ERROR:: cannot execute: %s\n", #cmd);  \
             fprintf(stderr, "file=`%s`, line=%d\n", __FILE__, __LINE__); \
             fprintf(stderr, "Error=%d\nExiting!\n", ierr);               \
-            something_to_cheer_you_up_pid0(stdout);                      \
             return (EXIT_FAILURE);                                       \
         }                                                                \
     }
@@ -131,7 +126,6 @@
 #define error_msg_mpi_abort(ip,msg)                                             \
     {                                                                           \
         fprintf( stderr , "ERROR [%d]: file=`%s`, line=%d: %s\n" ,ip, __FILE__,__LINE__, #msg) ;   \
-        something_to_cheer_you_up_pid0(stdout);                                 \
         ierr=-1;                                                                \
         MPI_Abort( MPI_COMM_WORLD , ierr ) ;                                    \
         return( EXIT_FAILURE ) ;                                                \

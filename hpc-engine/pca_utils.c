@@ -124,6 +124,7 @@ GPUS_PER_NODE, // gpuspernode
 0.0,    // Nconservation_start
 1.0e12, // Nconservation_stop
 0.05,   // Nconservation_tol
+'d' // writeprec
 };
 
 metadata_t *input = &md; // additional handler;
@@ -458,6 +459,13 @@ int parse_input_file(char * file_name)
             sscanf (s,"%s %lf %*s",tag,&md.Nconservation_stop);
         else if (strcmp (tag,"Nconservation_tol") == 0)
             sscanf (s,"%s %lf %*s",tag,&md.Nconservation_tol);
+        else if (strcmp (tag,"writeprec") == 0)
+        {
+            char __str[32];
+            sscanf (s,"%s %s %*s",tag,__str);
+            if      (__str[0]=='d' || __str[0]=='D')  md.writeprec='d'; // double
+            else if (__str[0]=='f' || __str[0]=='F')  md.writeprec='f'; // float
+        }
         else
         {
             // POTENTIAL PARAMETERS
@@ -684,9 +692,11 @@ void print_version(char *suffix)
     strftime (buffer,24,"%b %d %Y, %H:%M:%S",timeinfo);
     wprintf("# BUILD TIME: %s, %s\n",__DATE__,__TIME__);
     wprintf("# RUN TIME  : %s\n", buffer);
-    
+
     wprintf("# LATTICE: %d x %d x %d\n", NX, NY, NZ);
     wprintf("# SPACING: %f x %f x %f\n", DX, DY, DZ);
+
+    something_to_cheer_you_up(stdout);
    
 #if FUNCTIONAL==BDG
     wprintf("# ENERGY DENSITY FUNCTIONAL: BDG\n");
@@ -726,6 +736,7 @@ void print_version(char *suffix)
     wprintf("# INTEGRATION SCHEME: AB5AM5\n");
 #endif
 #endif
+
 }
 
 /**

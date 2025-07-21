@@ -47,6 +47,7 @@ int main()
 {
     // create metadata handler
     wdata_metadata md;
+    wdata_reset_metadata(&md);
 
     // Lattice
     md.datadim = 3; // 3D data
@@ -56,6 +57,9 @@ int main()
     md.dx = 1.0;
     md.dy = 1.0;
     md.dz = 1.0;
+    md.x0 = -md.nx/2;
+    md.y0 = -md.ny/2;
+    md.z0 = -md.nz/2;
 
     strcpy(md.prefix, "test");
     md.t0 = 0.0;
@@ -66,11 +70,23 @@ int main()
     wdata_variable vdensity_a = {"density_a", "real", "none", "wdat"};
     wdata_add_variable(&md, &vdensity_a);
 
+    wdata_variable vdensity_f = {"density_f", "real4", "none", "wdat"}; // density_a but in float precision
+    wdata_add_variable(&md, &vdensity_f);
+
     wdata_variable vdelta = {"delta", "complex", "none", "wdat"};
     wdata_add_variable(&md, &vdelta);
 
+    wdata_variable vdelta_f = {"delta_f", "complex8", "none", "wdat"}; // delta but in float precision
+    wdata_add_variable(&md, &vdelta_f);
+
     wdata_variable vcurrent_a = {"current_a", "vector", "none", "wdat"};
     wdata_add_variable(&md, &vcurrent_a);
+
+    wdata_variable vcurrent_f = {"current_f", "vector4", "none", "wdat"}; // current_a but in float precision
+    wdata_add_variable(&md, &vcurrent_f);
+
+    wdata_variable vcurrent_2 = {"current_2", "vector(2)", "none", "wdat"}; // current_a but in 2d, since third compoment is always zero
+    wdata_add_variable(&md, &vcurrent_2);
 
     // add links to data sets
     // links are alternative names of the same variable
@@ -107,7 +123,7 @@ int main()
     for (int icycle = 0; icycle < ncycles; icycle++)
     {
         // time decomposition
-        wdata_set_time(&md, icycle, &time);
+        wdata_get_time(&md, icycle, &time);
         printf("CURRENT TIME: %lf\n", time);
 
         int ixyz = 0;
@@ -138,28 +154,19 @@ int main()
         wdata_add_cycle(&md);
 
         // and add cycle to binary sets
-        ierr = wdata_write_cycle(&md, "density_a", dataR);
-        // alternatively you can use:
-        // ierr=wdata_add_datablock(&md, &vdensity_a, dataR);
-        if (ierr != 0)
-        {
-            printf("ERROR: Cannot add density_a!\n");
-            return 1;
-        }
 
-        ierr = wdata_write_cycle(&md, "delta", dataC);
-        if (ierr != 0)
-        {
-            printf("ERROR: Cannot add delta!\n");
-            return 1;
-        }
+        // use native function, it assumes that the user provides binary data in a format consistent with the variable type
+        wdata_write_cycle(&md, "density_a", dataR);
+        wdata_write_cycle(&md, "delta", dataC);
+        wdata_write_cycle(&md, "current_a", dataV);
 
-        ierr = wdata_write_cycle(&md, "current_a", dataV);
-        if (ierr != 0)
-        {
-            printf("ERROR: Cannot add delta!\n");
-            return 1;
-        }
+        // input array is provided in double precision, it will be downgraded to a float precision variable if type requests this
+        wdata_write_cycle_d(&md, "density_f", dataR);
+        wdata_write_cycle_d(&md, "delta_f", (double *)dataC);
+        wdata_write_cycle_d(&md, "current_f", dataV);
+
+        // write vector in 2d
+        wdata_write_cycle_d(&md, "current_2", dataV); // saves only x and y coordinates
     }
 
     // write metadata file (with default name)
