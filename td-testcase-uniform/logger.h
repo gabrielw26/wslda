@@ -66,6 +66,8 @@ int logger(FILE *log,
     double Effg = energy_unit(kF, mu, npart, params, extra_data_size, extra_data);
     double E_tot = observable[EKIN]+observable[EPOT]+observable[EPAIR]+observable[ECURRENT]+observable[EPOTEXT]+observable[EPAIREXT]+observable[EVELEXT];     
     double Emax =  M_PI*M_PI/(2.*DX*DX);
+
+    double Time=dc_t0+it*md.dt/eF*md.timesteps; // time (in absolute units)
     
     if(lineid==0) // HEADER
     {
@@ -116,7 +118,7 @@ int logger(FILE *log,
     // add entry
     fprintf(log, "%6d %12.4f %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %18.10g %10.2f %20s\n",
         lineid, // 1
-        (dc_t0+it*md.dt/eF*md.timesteps) * eF, // 2
+        Time * eF, // 2
         npart[SPINA], // 3
         npart[SPINB], // 4
         npart[SPINA]+npart[SPINB], // 5

@@ -1518,6 +1518,9 @@ int main( int argc , char ** argv )
         if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
 
+        // Broadcast input parameter (in case they were modified by logger functions)
+        MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+
         // Complete writing wave-functions
         if(saving_iteration==1)
         {

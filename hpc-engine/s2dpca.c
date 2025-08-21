@@ -1643,6 +1643,8 @@ int main( int argc , char ** argv )
 #else
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-2d") );
 #endif
+        // Broadcast input parameter (in case they were modified by logger functions)
+        MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
 
         // Complete writing wave-functions
         if(saving_iteration==1)

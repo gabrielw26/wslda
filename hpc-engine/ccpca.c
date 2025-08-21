@@ -814,6 +814,9 @@ int main( int argc , char ** argv )
                                     h_wavefun, h_fbetaEn, h_kkyz, h_kkyz+nwfip, h_cnt, d_wf,
                                     md.params, extra_data_size, extra_data) );
     
+    // Broadcast input parameter (in case they were modified by logger functions)
+    MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
     // ====================================================================================
@@ -1367,6 +1370,9 @@ int main( int argc , char ** argv )
         cpu_exec ( write_wave_functions(it, NX, nwfip, nwf, beta, MPI_COMM_WORLD,
                                         h_wavefun, h_qpe_nwfip, h_kkyz, h_kkyz+nwfip, h_cnt, d_wf,
                                         md.params, extra_data_size, extra_data) );
+
+        // Broadcast input parameter (in case they were modified by logger functions)
+        MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
         
         forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
         if(ip==0) 
