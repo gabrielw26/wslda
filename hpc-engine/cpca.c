@@ -940,6 +940,7 @@ int main( int argc , char ** argv )
 
     // Broadcast input parameter (in case they were modified by logger functions)
     MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+    gpu_exec( memcopy_const_params(md.params) );
     
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
@@ -1496,6 +1497,7 @@ int main( int argc , char ** argv )
 
         // Broadcast input parameter (in case they were modified by logger functions)
         MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+        gpu_exec( memcopy_const_params(md.params) );
                 
         forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
         if(ip==0) 
