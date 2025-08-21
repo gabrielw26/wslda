@@ -930,7 +930,7 @@ int wdata_get_blocklength(wdata_metadata *md)
         return md->nx * md->ny;
     if (md->datadim == 1)
         return md->nx;
-    return -1; // error!!!
+    return 0; // empty
 }
 
 int wdata_get_blocklength_full(wdata_metadata *md, wdata_variable *var)
@@ -949,7 +949,7 @@ int wdata_get_blocklength_full(wdata_metadata *md, wdata_variable *var)
         return wdata_get_blocklength(md)*vdim;
     }
 
-    return 0;
+    return 0; // empty
 }
 
 char wdata_get_var_precision(wdata_variable *var)
