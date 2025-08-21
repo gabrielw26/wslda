@@ -23,6 +23,7 @@ test_current_a.wdat # binary file with data
 ```  
 The content of test.wtxt may look like this:
 ```bash
+# W-DATA 0.3.0
 # Comments with additional  info about the data set
 # Comments are ignored when reading by the parser  
 
