@@ -232,8 +232,8 @@ void report_warning(int errcode, FILE *stream)
             break;
             
         case WSLDA_WRN_CHECKPOINT_DORESIZE:
-            wfprintf(stream, "#\t Dimensonality of the lattice has changed!\n");
-            wfprintf(stream, "#\t The code will change dimensionality of given checkpoint data to the new lattice.\n");
+            wfprintf(stream, "#\t Dimensionality of the lattice has changed!\n");
+            wfprintf(stream, "#\t The code will change the dimensionality of the given checkpoint data to the new lattice.\n");
             break;
             
         case WSLDA_WRN_CHECKPOINT_UNPREDICTED:

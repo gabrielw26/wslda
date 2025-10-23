@@ -45,11 +45,11 @@ Nb                      28.  # Requested number of particles b-type
 # ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
 energyconveps           1.0e-6   # energy convergence epsilon
 npartconveps            1.0e-6   # number of particles convergence epsilon (for both components)
-                                 # or you can control convergence for each component separately using tags with `a` `b` suffixes. 
+                                 # or you can control convergence for each component separately using tags with `a` `b` suffixes.
 # npartconveps_a          1.0e-6   # number of particles convergence epsilon (for component a only)
 # npartconveps_b          1.0e-6   # number of particles convergence epsilon (for component b only)
 linearmixing            0.5      # mixing parameter for linear mixing scheme, default=0.5
-                                 # Limiting cases: 0.0=self-consistency is disabled, 
+                                 # Limiting cases: 0.0=self-consistency is disabled,
                                  #                 1.0=fixed point iterations (solution from present iteration becomes input for next)
 muchange                0.5      # coefficient for changing chemical potential, default=0.5 (for both components)
 # muchange_a              0.5      # coefficient for changing chemical potential, default=0.5 (for component a only)
@@ -60,7 +60,7 @@ spinsymmetry            1       # set to 1 if you want to impose Na=Nb
 killcurrents              0       # set to 1 if you want to impose ja=jb=0 (solution has no currents)
 nomixstart              0       # do not do mixing for starting iteration
 mumaxchange             0.05  # maximal amount that chemical potential can change between iterations, in units of Fermi energy
-                              # or you can control mumaxchange for each component separately using tags with `a` `b` suffixes. 
+                              # or you can control mumaxchange for each component separately using tags with `a` `b` suffixes.
 # mumaxchange_a           0.05  # maximal amount that chemical potential can change between iterations, in units of Fermi energy
 # mumaxchange_b           0.05  # maximal amount that chemical potential can change between iterations, in units of Fermi energy
 
@@ -72,7 +72,7 @@ broydenmixing           0.75
 # startbroyden            5
 # stopbroyden             10
 # broydenautores          1      # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
-# broydenEmaxchg          0.1    # if the total energy between iteration change be more than broydenEmaxchg
+# broydenEmaxchg          0.1    # if the total energy between iterations changes by more than broydenEmaxchg
                                # then Broyden is restarted, (default=0.1)
 # broydenEdelay           5      # scan energy changes only after broydenEdelay with Broyden has been executed
                                # typically, just after starting the Broyden energy fluctuations are observed
@@ -81,20 +81,20 @@ broydenmixing           0.75
 
 # -------------- PARALLELIZATION SETTINGS --------------
 # NOTE: all matrices are processed collectively by p*q processes
-# Following condition must be satisfied:
+# The following condition must be satisfied:
 #   for 3D code: p*q=np
 #   for 2D code: np/(p*q)=i where i is INTEGER number from range set {1,2,...,NZ/2}
-# where np is total number of processes utilized for computation
+# where np is the total number of processes utilized for computation
 # p                       2
 # q                       2
 
 # data block size
-# if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
+# if you are not familiar with block-cyclic distribution value from the set {16,32,64} is recommended
 mb                      8
 nb                      8
 
 # ----------- IN CASE OF: inittype=0 ----------------
-# For more info see wiki pages: Initialization of the st wslda solvers
+# For more info, see wiki pages: Initialization of the st-wslda solvers
 # init0Na                 28.0   # requested number of particles of type a, default=Na
 # init0Nb                 28.0   # requested number of particles of type b, default=Nb
 # init0na                 0.01689   # ...alternatively, you can request the desired density for particles of type a

@@ -40,9 +40,9 @@
 // #define FUNCTIONAL CUSTOMEDF
 
 /**
- * Sets effective mass to be equal.
- * Speeds-up computation (approximately by a factor of two), but it also decreases accuracy of the functional.
- * If functional is SLDA or BDG this option is activated automatically.
+ * Sets the effective mass to be equal 1.
+ * Computation converges faster, but it also decreases the accuracy of the functional.
+ * If functional is SLDA or BDG, this option is activated automatically.
  * */
 // #define SLDA_FORCE_A1
 
