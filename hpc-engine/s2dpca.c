@@ -214,11 +214,6 @@ int main( int argc , char ** argv )
     double **dens_out;		// 		---//---
 
     char file_name[256];
-#if CODEDIM==1
-    char suffix[8]="s1dpca";
-#else
-    char suffix[8]="s2dpca";
-#endif
 
     void *extra_data = NULL;
     size_t extra_data_size;
@@ -687,7 +682,11 @@ int main( int argc , char ** argv )
             {
                 // NOTE: It wll be removed in future
                 // here I keep it only to be compatible with our past caculations
-                            sprintf(file_name, "%s/checkpoint.%s", md.inprefix,suffix);
+#if CODEDIM==1
+                sprintf(file_name, "%s/checkpoint.%s", md.inprefix,"s1dpca");
+#else
+                sprintf(file_name, "%s/checkpoint.%s", md.inprefix,"s2dpca");
+#endif
                 wprintf("# READING CHECKPOINT FILE `%s`\n", file_name);
                 wprintf("# !!! !!! YOU ARE USING OLD CHECKPOINT FORMAT !!! !!! SUPPORT OF THIS FORMAT WILL BE REMOVED IN FUTURE!\n");
                 FILE * pFile = fopen(file_name, "rb");
@@ -1220,26 +1219,29 @@ int main( int argc , char ** argv )
                 //handle special case - no states - create empty files only
                 if(saving_iteration==1 && gr_iam==0)
                 {
-                    sprintf(file_name, "%s/%s.%04d.info", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d.info", md.outprefix, md.outprefix, ikz);
                     mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                     file_operation( create_checkpoint_info_pca(file_name, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+                    file_operation( create_wtxt_file(md.outprefix, ikz, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
 
                     // Create empty files
-                    sprintf(file_name, "%s/%s.%04d.wfu", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_wfu.wdat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s/%s.%04d.wfv", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_wfv.wdat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
 #if CODEDIM==1
-                    sprintf(file_name, "%s/%s.%04d.kkyz", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_kkyz.dat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 #else
-                    sprintf(file_name, "%s/%s.%04d.kkz", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_kkz.dat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 #endif
 
-                    sprintf(file_name, "%s/%s.%04d.en", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_en.dat", md.outprefix, md.outprefix, ikz);
+                    file_operation( touch_file(file_name) );
+                    sprintf(file_name, "%s/%s.%04d_en.txt", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
                 }
 
@@ -1313,22 +1315,24 @@ int main( int argc , char ** argv )
                 if(gr_iam==0)
                 {
                     // Create empty files
-                    sprintf(file_name, "%s/%s.%04d.wfu", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_wfu.wdat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
-                    sprintf(file_name, "%s/%s.%04d.wfv", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_wfv.wdat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 
 #if CODEDIM==1
-                    sprintf(file_name, "%s/%s.%04d.kkyz", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_kkyz.dat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 #else
-                    sprintf(file_name, "%s/%s.%04d.kkz", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_kkz.dat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 #endif
 
-                    sprintf(file_name, "%s/%s.%04d.en", md.outprefix, suffix, ikz);
+                    sprintf(file_name, "%s/%s.%04d_en.dat", md.outprefix, md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
+                    sprintf(file_name, "%s/%s.%04d_en.txt", md.outprefix, md.outprefix, ikz);
+                    file_operation( touch_file(file_name) );                    
                 }
 
                 // !!!!! I/O can be written better with MPI I/O - maybe it will be improved in future !!!!!
@@ -1342,7 +1346,7 @@ int main( int argc , char ** argv )
 
                 // save my wave-functions if generated
                 j=0;
-                file_operation( append_wf_from_kzpcaSL_part1(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kvecs[ikz].ky, kvecs[ikz].kz, ikz, niq_d, &j) );
+                file_operation( append_wf_from_kzpcaSL_part1(md.outprefix, En_d_local, U_d, md.writeecut*eF, beta, kvecs[ikz].ky, kvecs[ikz].kz, ikz, niq_d, &j, kvecs[ikz].weight) );
                 lastwf+=j;
 
                 if(gr_iam!=(gr_np-1)) // File is free, send info to next process
@@ -1373,9 +1377,10 @@ int main( int argc , char ** argv )
                 // finilize I/O
                 MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
 
-                sprintf(file_name, "%s/%s.%04d.info", md.outprefix, suffix, ikz);
+                sprintf(file_name, "%s/%s.%04d.info", md.outprefix, md.outprefix, ikz);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
-                if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
+                if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+                if(gr_iam==0) file_operation( create_wtxt_file(md.outprefix, ikz, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
 
                 double rt = e_t(0);
                 if(gr_iam==0) wprintf("# DATA WRITING FOR ikz=%d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", ikz, rt, 1.*lastwf*BLOCKLENGTH*2*16/1024./1024., lastwf); fflush(stdout);
@@ -1654,12 +1659,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s/%s.info", md.outprefix, suffix);
+                sprintf(file_name, "%s/%s.info", md.outprefix, md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
 
                 // write potentials
-                sprintf(file_name, "%s/%s.pud", md.outprefix, suffix);
+                sprintf(file_name, "%s/%s.pud", md.outprefix, md.outprefix);
                 file_operation( write_binary_file(file_name, sizeof(double)*BLOCKLENGTH*POTCNT, h_potentials) );
             }
 

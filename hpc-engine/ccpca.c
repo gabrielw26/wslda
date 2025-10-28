@@ -111,7 +111,7 @@ int main( int argc , char ** argv )
     double energy_kin, energy_pot, energy_pair, energy_current, energy_uext, energy_dext, energy_vext, energy_tot;   
     double Na, Nb;
     double Laz, Lbz; // angular momentum
-    char file_name[256];
+    char file_name[512], file_suffix[512];
     
     // timing
     double rt;    
@@ -363,7 +363,8 @@ int main( int argc , char ** argv )
         create_k_modes(kkx, kky, kkz, 1, kvecs);
         cppmallocl(nwf_per_kyz, kvecs_to_consder,int);
         time=0.0;
-        sprintf(file_name, "%s/s1dpca.info", md.inprefix);
+        file_operation( check_comptibility(md.inprefix, 1, file_suffix) );
+        sprintf(file_name, "%s/%s.info", md.inprefix, file_suffix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
@@ -432,7 +433,7 @@ int main( int argc , char ** argv )
         // load u and delta
         if(ip==0)
         {
-            sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
+            sprintf(file_name, "%s/%s.pud", md.inprefix, file_suffix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
             file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, h_potentials) );
         }

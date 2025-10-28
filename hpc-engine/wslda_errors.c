@@ -181,6 +181,27 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\t\t or\n");
             wfprintf(stream, "\t Recompile td code with selected SPINSYMMETRY_MODE, and rerun it again.\n");
             break;
+
+        case WSLDA_ERR_INITSTATE_FILE_NOT_FOUND:
+            wfprintf(stream, "\t The specified initial state file cannot be found!\n");
+            wfprintf(stream, "\t Check if the path to the file is correct.\n");
+            wfprintf(stream, "\t Execute command: `ls inprefix` to check if the file exists.\n");
+            break;
+
+        case WSLDA_ERR_INITSTATE_FOR_1D:
+            wfprintf(stream, "#\t The selected initial state is for 1D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break;
+        
+        case WSLDA_ERR_INITSTATE_FOR_2D:
+            wfprintf(stream, "#\t The selected initial state is for 2D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break; 
+
+        case WSLDA_ERR_INITSTATE_FOR_3D:
+            wfprintf(stream, "#\t The selected initial state is for 3D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break; 
             
         default: 
             wfprintf(stream, "\tThis error does not have description.\n");
@@ -246,7 +267,7 @@ void report_warning(int errcode, FILE *stream)
             wfprintf(stream, "#\t You are using code with different lattice spacing (DX,DY,DZ).\n");
             wfprintf(stream, "#\t This type of usage is not recommended for non-expert users,\n");
             wfprintf(stream, "#\t as it requires deep knowledge of the regularization procedure.\n");
-            break;
+            break; 
             
         default: 
             wfprintf(stream, "#\tThis warning does not have description.\n");
