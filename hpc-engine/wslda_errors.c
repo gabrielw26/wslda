@@ -202,6 +202,19 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "#\t The selected initial state is for 3D calculations!\n");
             wfprintf(stream, "#\t It is not compatible with your code!\n");
             break; 
+
+        case WSLDA_ERR_MISSING_FILE_FOR_INITSTATE:
+            wfprintf(stream, "#\t Some files required for the selected initial state are missing!\n");
+            wfprintf(stream, "#\t Make sure that all required files are present in the specified directory.\n");
+            wfprintf(stream, "#\t Execute command: `ls inprefix` to check available files.\n");
+            break;
+
+        case WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD:
+            wfprintf(stream, "#\t Some files required for the selected initial state are missing!\n");
+            wfprintf(stream, "#\t Make sure that all required files are present in the specified directory.\n");
+            wfprintf(stream, "#\t Execute command: `ls inprefix` to check available files.\n");
+            wfprintf(stream, "#\t This error can also appear if there is mismatch of regularization schemes between static and time-dependent codes.\n");
+            break;
             
         default: 
             wfprintf(stream, "\tThis error does not have description.\n");
