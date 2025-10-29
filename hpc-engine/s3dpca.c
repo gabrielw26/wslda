@@ -1224,16 +1224,16 @@ int main( int argc , char ** argv )
             if(gr_iam==0)
             {
                 // Create empty files
-                sprintf(file_name, "%s/%s.%04d_wfu.wdat", md.outprefix, md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_un.wdat", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s/%s.%04d_wfv.wdat", md.outprefix, md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_vn.wdat", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s/%s.%04d_en.dat", md.outprefix, md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_en.dat", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s/%s.%04d_en.txt", md.outprefix, md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_en.txt", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
             }
 
@@ -1276,7 +1276,7 @@ int main( int argc , char ** argv )
             MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
 
             // create info file by each group
-            sprintf(file_name, "%s/%s.%04d.info", md.outprefix, md.outprefix, idgroup);
+            sprintf(file_name, "%s/wf.%04d.info", md.outprefix, idgroup);
             mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
             if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
             if(gr_iam==0) file_operation( create_wtxt_file(md.outprefix, idgroup, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
@@ -1533,12 +1533,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s/%s.info", md.outprefix, md.outprefix);
+                sprintf(file_name, "%s/wf.info", md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
 
                 // write potentials
-                sprintf(file_name, "%s/%s.pud", md.outprefix, md.outprefix);
+                sprintf(file_name, "%s/wf.pud", md.outprefix);
                 file_operation( write_binary_file(file_name, sizeof(double)*NX*NY*NZ*POTCNT, h_potentials) );
             }
 

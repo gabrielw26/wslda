@@ -305,7 +305,7 @@ int create_wtxt_file(const char * prefix, int iogroup,
                           )
 { 
     char file_name[512];
-    sprintf(file_name, "%s/%s.%04d.wtxt", prefix, prefix, iogroup);
+    sprintf(file_name, "%s/wf.%04d.wtxt", prefix, iogroup);
 
     if(exists(file_name))
     {
@@ -326,17 +326,17 @@ int create_wtxt_file(const char * prefix, int iogroup,
     md.dy = dy;
     md.dz = dz;
 
-    sprintf(md.prefix, "%s.%04d", prefix, iogroup);
+    sprintf(md.prefix, "wf.%04d", iogroup);
     md.t0 = 0.0;
     md.dt = 1.0;
     md.cycles = nwf; // number of measurements
 
     // add variables to data set
     // for each variable binary file of name `prefix_`varname`.wdat will be created
-    wdata_variable wfu = {"wfu", "complex", "none", "wdat"};
+    wdata_variable wfu = {"un", "complex", "none", "wdat"};
     wdata_add_variable(&md, &wfu);
 
-    wdata_variable wfv = {"wfv", "complex", "none", "wdat"};
+    wdata_variable wfv = {"vn", "complex", "none", "wdat"};
     wdata_add_variable(&md, &wfv);
 
     wdata_setconst(&md, "kF", kF);
@@ -444,12 +444,12 @@ int check_comptibility(char *prefix, int requested_dim, char *suffix)
     char file_name[256];
     // new format
     int format_type=-1; // 1 - new, 0 - old
-    sprintf(file_name, "%s/%s.info", prefix, prefix);
+    sprintf(file_name, "%s/wf.info", prefix);
 
     if(exists(file_name))
     {
         format_type=1;
-        sprintf(suffix, "%s", prefix);
+        sprintf(suffix, "%s", "wf");
     }
     else 
     {
@@ -617,17 +617,17 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
     char file_name_fbetat[512];   
 
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkyz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     
     // open files
@@ -704,17 +704,17 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
     char file_name_fbetat[512];   
 
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkyz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -758,17 +758,17 @@ int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi,
     char file_name_fbetat[512];   
 
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkyz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-    sprintf(file_name_kkz, "%s/%s.%04d_kkz.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     
     // open files
@@ -849,7 +849,7 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
-        sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
         if(exists(file_name)==0)
         {
             // try with old format
@@ -908,7 +908,7 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
     for(ikz=0; ikz<kvecs_to_consder; ikz++)
     {
         // new format
-        sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
         if(exists(file_name)==0)
         {
             // try with old format
@@ -989,7 +989,7 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     // check format type
     // new format
     int format_type=1; // 1 - new, 0 - old
-    sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
     if(exists(file_name)) format_type=1;
     else format_type=0;
     
@@ -1017,10 +1017,10 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
 //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                     if(format_type==1)
                     {
-                        sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-                        sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-                        sprintf(file_name_kkz, "%s/%s.%04d_kkz.dat", prefix, prefix, ikz);
-                        sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
+                        sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                        sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                        sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
                     }
                     else
                     {
@@ -1093,7 +1093,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     // check format type
     // new format
     int format_type=1; // 1 - new, 0 - old 
-    sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
     if(exists(file_name)) format_type=1;
     else format_type=0;
     
@@ -1137,10 +1137,10 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                         if(format_type==1)
                         {
-                            sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-                            sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-                            sprintf(file_name_kkz, "%s/%s.%04d_kkz.dat", prefix, prefix, ikz);
-                            sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
+                            sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                            sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
                         }
                         else
                         {
@@ -1230,7 +1230,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
     // check format type
     // new format
     int format_type=1; // 1 - new, 0 - old
-    sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
     if(exists(file_name)) format_type=1;
     else format_type=0; 
     
@@ -1291,10 +1291,10 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                         }
                         else // new format
                         {
-                            sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-                            sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-                            sprintf(file_name_kkz, "%s/%s.%04d_kkyz.dat", prefix, prefix, ikz);
-                            sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
+                            sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                            sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
                         }
 
                         fu = fopen(file_name_u, "rb");
@@ -1402,10 +1402,10 @@ int append_wf_from_s3dpca_part1(char * prefix, double *En, double complex *psi, 
     char file_name_fbeta[512];
     char file_name_fbetat[512];
     
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, idgroup);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, idgroup);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
 
     // open files
     FILE *ffbeta = fopen(file_name_fbeta, "ab");
@@ -1451,12 +1451,12 @@ int append_wf_from_s3dpca_part2(char * prefix, double *En, double complex *psi, 
     char file_name_v[512];
     char file_name_fbeta[512];
     char file_name_fbetat[512];
-    
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, idgroup);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, idgroup);
-    
+
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
+
     // open files
     FILE *fu = fopen(file_name_u, "ab");
     
@@ -1496,12 +1496,12 @@ int append_wf_from_s3dpca_part3(char * prefix, double *En, double complex *psi, 
     char file_name_v[512];
     char file_name_fbeta[512];
     char file_name_fbetat[512];
-    
-    sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, idgroup);
-    sprintf(file_name_fbetat, "%s/%s.%04d_en.txt", prefix, prefix, idgroup);
-    
+
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
+
     // open files
     FILE *fv = fopen(file_name_v, "ab");
     
@@ -1549,7 +1549,7 @@ int scan_s3dpca_info_files(const char * prefix, int number_of_files, int *nwf, i
     
     for(ikz=0; ikz<number_of_files; ikz++)
     {
-        sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
         // old format
         if(!exists(file_name)) // try old format
             sprintf(file_name, "%s/s3dpca.%04d.info", prefix, ikz);
@@ -1602,7 +1602,7 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
     // check format type
     // new format
     int format_type=1; // 1 - new, 0 - old
-    sprintf(file_name, "%s/%s.%04d.info", prefix, prefix, ikz);
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
     if(exists(file_name)) format_type=1;
     else format_type=0;
     
@@ -1622,9 +1622,9 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
 //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
                     if(format_type==1)
                     {
-                        sprintf(file_name_u, "%s/%s.%04d_wfu.wdat", prefix, prefix, ikz);
-                        sprintf(file_name_v, "%s/%s.%04d_wfv.wdat", prefix, prefix, ikz);
-                        sprintf(file_name_fbeta, "%s/%s.%04d_en.dat", prefix, prefix, ikz);
+                        sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                        sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
                     }
                     else
                     {
