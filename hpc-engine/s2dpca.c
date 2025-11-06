@@ -1222,7 +1222,7 @@ int main( int argc , char ** argv )
                     sprintf(file_name, "%s/wf.%04d.info", md.outprefix, ikz);
                     mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                     file_operation( create_checkpoint_info_pca(file_name, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
-                    file_operation( create_wtxt_file(md.outprefix, ikz, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+                    file_operation( create_wtxt_file_for_wf(md.outprefix, ikz, pzheevr_m, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta, CODEDIM) );
 
                     // Create empty files
                     sprintf(file_name, "%s/wf.%04d_un.wdat", md.outprefix, ikz);
@@ -1232,7 +1232,7 @@ int main( int argc , char ** argv )
                     file_operation( touch_file(file_name) );
 
 #if CODEDIM==1
-                    sprintf(file_name, "%s/wf.%04d_kkyz.dat", md.outprefix, md.outprefix, ikz);
+                    sprintf(file_name, "%s/wf.%04d_kkyz.dat", md.outprefix, ikz);
                     file_operation( touch_file(file_name) );
 #else
                     sprintf(file_name, "%s/wf.%04d_kkz.dat", md.outprefix, ikz);
@@ -1380,7 +1380,7 @@ int main( int argc , char ** argv )
                 sprintf(file_name, "%s/wf.%04d.info", md.outprefix, ikz);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
-                if(gr_iam==0) file_operation( create_wtxt_file(md.outprefix, ikz, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+                if(gr_iam==0) file_operation( create_wtxt_file_for_wf(md.outprefix, ikz, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta, CODEDIM) );
 
                 double rt = e_t(0);
                 if(gr_iam==0) wprintf("# DATA WRITING FOR ikz=%d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", ikz, rt, 1.*lastwf*BLOCKLENGTH*2*16/1024./1024., lastwf); fflush(stdout);

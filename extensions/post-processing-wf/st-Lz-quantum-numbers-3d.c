@@ -18,6 +18,7 @@
 #include <complex.h>
 
 // W-SLDA Toolkit API
+#define CODEDIM 3
 #include "wslda_toolkit.h"
 
 #include "wderiv.h"
@@ -52,7 +53,7 @@ int main( int argc , char ** argv )
     int nwf;
     double testNu=0.0, testNv=0.0;
     
-    sprintf(file_name, "%s/s3dpca.info", prefix);
+    sprintf(file_name, "%s/wf.info", prefix);
     printf("# READING INFO FILE: %s\n", file_name);
     file_operationl(read_checkpoint_info_pca(file_name, &nwf, &nx, &ny, &nz, &dx, &dy, &dz, &kF, mu, &ec, &beta));
     double eF = kF * kF / 2.0;
@@ -76,7 +77,7 @@ int main( int argc , char ** argv )
     cppmallocl(dv_dy, nx * ny * nz, double complex);
     
     // file pointers 
-    FILE *pFile_en, *pFile_kkz, *pFile_wfu, *pFile_wfv;
+    FILE *pFile_en, *pFile_wfu, *pFile_wfv;
 
     sprintf(file_name, "%s_Lz.txt", prefix);
     printf("# CREATING FILE `%s`\n", file_name);
@@ -98,18 +99,18 @@ int main( int argc , char ** argv )
     for (igrp = 0; igrp < iogrp; igrp++)
     {
         // read file header
-        sprintf(file_name, "%s/s3dpca.%04d.info", prefix, igrp);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, igrp);
         printf("# OPENING: %s\n", file_name);
         file_operationl(read_checkpoint_info_pca(file_name, &nwf, &nx, &ny, &nz, &dx, &dy, &dz, &kF, mu, &ec, &beta));
 
         // open files
-        sprintf(file_name, "%s/s3dpca.%04d.en", prefix, igrp);
+        sprintf(file_name, "%s/wf.%04d_en.dat", prefix, igrp);
         pFile_en = fopen(file_name, "rb");
         if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
-        sprintf(file_name, "%s/s3dpca.%04d.wfu", prefix, igrp);
+        sprintf(file_name, "%s/wf.%04d_un.wdat", prefix, igrp);
         pFile_wfu = fopen(file_name, "rb");
         if(pFile_wfu==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
-        sprintf(file_name, "%s/s3dpca.%04d.wfv", prefix, igrp);
+        sprintf(file_name, "%s/wf.%04d_vn.wdat", prefix, igrp);
         pFile_wfv = fopen(file_name, "rb");
         if(pFile_wfv==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
 

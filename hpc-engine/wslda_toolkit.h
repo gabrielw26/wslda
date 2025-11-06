@@ -19,6 +19,10 @@
 #include <math.h>
 #include <complex.h>
 
+#ifndef CODEDIM
+#define CODEDIM 3
+#endif
+
 static int wsldapid;
 #include "pca_settings.h"
 #include "wslda_errors.h"

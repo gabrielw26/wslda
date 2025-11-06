@@ -1279,7 +1279,7 @@ int main( int argc , char ** argv )
             sprintf(file_name, "%s/wf.%04d.info", md.outprefix, idgroup);
             mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
             if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
-            if(gr_iam==0) file_operation( create_wtxt_file(md.outprefix, idgroup, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+            if(gr_iam==0) file_operation( create_wtxt_file_for_wf(md.outprefix, idgroup, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta, CODEDIM) );
 
             double rt = e_t(0);
             if(gr_iam==0) wprintf("# DATA WRITING BY I/O GROUP %d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", idgroup, rt, (double)1.*lastwf*NX*NY*NZ*2*16/1024./1024., lastwf); fflush(stdout);
