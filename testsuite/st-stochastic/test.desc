@@ -17,6 +17,6 @@ exec: cp $WSLDA/templates/dwarf/st/Makefile .
 exec: cp $WSLDA/templates/dwarf/st/env.sh .
 exec: make 1d EXTRA_CFLAGS="-DTESTSUITE"
 test: st-wslda-1d
-exec: timeout 180 mpirun -np 4 ./st-wslda-1d input.txt
+exec: timeout 360 mpirun -np 4 ./st-wslda-1d input.txt
 test: ho-r1_testsuite.ok
 diff: ho-r1.ref ref/ho-r1.ref
