@@ -1,3 +1,10 @@
+# 2025.xx.xx
+* Wave functions are written in WData format by static codes.
+* New extension: for computation of superfluid velocity field (addvar-vs.c). 
+* Improvements that increase the flexibility of the API.
+* New automatic tests: checking stability of integration with respect to random external potentials. 
+* Improvements of makefiles: now make accepts extra options like `make EXTRA_CFLAGS="flags" EXTRA_NVCCFLAGS="flags"`
+
 # 2025.07.21
 * Update of WData files to format 0.3.0.
 * Added `writeprec` tag in the input file for changing the precision of writing data between double and float.
