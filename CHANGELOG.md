@@ -1,6 +1,7 @@
 # 2025.xx.xx
 * Wave functions are written in WData format by static codes.
 * New extension: for computation of superfluid velocity field (addvar-vs.c). 
+* New extension: for extracting nodal lines for spin-imbalanced systems (nodal-lines/extract-nodal-lines-2d.py). 
 * Improvements that increase the flexibility of the API.
 * New automatic tests: checking stability of integration with respect to random external potentials. 
 * Improvements of makefiles: now make accepts extra options like `make EXTRA_CFLAGS="flags" EXTRA_NVCCFLAGS="flags"`
