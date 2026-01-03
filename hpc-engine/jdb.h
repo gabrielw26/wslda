@@ -366,7 +366,10 @@ void jdb_message(FILE *stream)
 			wfprintf(stream, "#   But it’s a bit twisted.\n");
 			break;
 		case 77:
-			wfprintf(stream, "#   A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out. The physicist says, “Must be a measurement error.” The biologist says, “They must have reproduced.” The mathematician says, “If one person goes in now, the house will be empty again.”\n");
+			wfprintf(stream, "#   A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out.\n");
+			wfprintf(stream, "#   The physicist says, “Must be a measurement error.”\n");
+			wfprintf(stream, "#   The biologist says, “They must have reproduced.”\n");
+			wfprintf(stream, "#   The mathematician says, “If one person goes in now, the house will be empty again.”\n");
 			break;
 		case 78:
 			wfprintf(stream, "#   What’s a scientist’s favorite type of dog?\n");

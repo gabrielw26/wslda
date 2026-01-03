@@ -280,7 +280,10 @@ Because it left a residue at every pole.
 I have a joke about topology...
 But it’s a bit twisted.
 
-A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out. The physicist says, “Must be a measurement error.” The biologist says, “They must have reproduced.” The mathematician says, “If one person goes in now, the house will be empty again.”
+A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out.
+The physicist says, “Must be a measurement error.”
+The biologist says, “They must have reproduced.”
+The mathematician says, “If one person goes in now, the house will be empty again.”
 
 What’s a scientist’s favorite type of dog?
 A lab.
