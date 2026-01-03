@@ -1028,9 +1028,11 @@ int main( int argc , char ** argv )
                                     md.nthreads) );
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
-            
+
+            // shift history of H*Psi
+            for(i_meas=0; i_meas<selfstart_steps-1; i_meas++) memcpy(h_fkm+(i_meas+1)*2*nwfip*NXY, h_fkm+i_meas*2*nwfip*NXY, (size_t)2*nwfip*NXY*sizeof(double complex));
             // Store H*Psi
-            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm+i_step*2*nwfip*NXY,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
                         
             // Add contribution from Taylor expansion
             gpu_exec( taylor_expansion_contribution(1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
@@ -1109,10 +1111,8 @@ int main( int argc , char ** argv )
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }
-            // effective mass correction
-            // FIXME
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_potentials, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+            // now all potentials are computed for midpoint
+            // they will be used for application of Hamiltonian in the corrector step
 #endif
             
             // recompute derivatives for d_wf
@@ -1178,20 +1178,20 @@ int main( int argc , char ** argv )
         
         // Copy fkm1, ..., fkm4 back to gpu
 #if INTEGRATION_SCHEME==AB3AM4
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXY, d_fkm3,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXY, d_fkm2,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm3,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
 #elif INTEGRATION_SCHEME==AB4AM5
-        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXY, d_fkm2,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXY, d_fkm3,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm4,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NXY, d_fkm4,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXY, d_fkm3,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXY, d_fkm2,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) ); 
 #elif INTEGRATION_SCHEME==AB5AM5
-        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NXY, d_fkm2,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NXY, d_fkm5,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NXY, d_fkm4,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
         gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NXY, d_fkm3,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXY, d_fkm4,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm5,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NXY, d_fkm2,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NXY, d_fkm1,  (size_t)2*nwfip*NXY*sizeof(double complex)) );
 #endif        
         
         // clear memory
@@ -1249,7 +1249,7 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            wprintf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); fflush(stdout);
+            // wprintf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg); fflush(stdout);
              
             wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg, Laz/Na, Lbz/Nb); fflush(stdout);                
         }    
