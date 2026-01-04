@@ -359,7 +359,16 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
             int ixyz=0;
-            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            if(it==0 && input->inittype>=1 && input->inittype<=3) // special case to maintain integrity with st codes
+            {
+                // the subtraction was already done in st code
+                // there is no need to subtract again just after loading data from file
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]; 
+            }
+            else
+            {
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            }
             ierr = wdata_write_cycle_d(wdmd, "V_a", towrt);
             free(towrt);
 #endif
@@ -373,7 +382,16 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
             int ixyz=0;
-            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            if(it==0 && input->inittype>=1 && input->inittype<=3) // special case to maintain integrity with st codes
+            {
+                // the subtraction was already done in st code
+                // there is no need to subtract again just after loading data from file
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]; 
+            }
+            else
+            {
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            }
             ierr = wdata_write_cycle_d(wdmd, "V_b", towrt);
             free(towrt);
 #endif
