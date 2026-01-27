@@ -1,4 +1,4 @@
-# 2025.xx.xx
+# 2026.01.27
 * Wave functions are written in WData format by static codes.
 * New extension: for computation of superfluid velocity field (addvar-vs.c). 
 * New extension: for extracting nodal lines for spin-imbalanced systems (nodal-lines/extract-nodal-lines-2d.py). 

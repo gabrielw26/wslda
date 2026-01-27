@@ -21,8 +21,6 @@ The toolkit enables simulations of fermionic superfluids, with a primary focus o
 * **Results reproducibility**: built-in mechanisms for reproducible simulations
 * **Data format**: support for the [W-data format](https://gitlab.fizyka.pw.edu.pl/wtools/wdata) for storing simulation results
 
-
-## Codes
 ## Codes
 
 * **td-wslda-3d** – solver for time-dependent density functional equations on a full 3D Cartesian mesh
