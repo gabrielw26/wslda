@@ -1,0 +1,22 @@
+# This test generates a 1D solution by the BdG equations.
+# The solution provided in the ref folder was benchmarked against
+#  independent calculations by Piotr Magierski and Dimitri Lazarou, 
+#  with their own code. 
+# We got overlap between these two independent runs up to very high precision. 
+# Thus, this solution can be trusted.   
+
+tag: td-stoch-1d
+exec: pwd
+# restore from reproducibility pack
+exec: cp ref/ho-r7_input.txt input.txt
+exec: cp ref/ho-r7_logger.h logger.h
+exec: cp ref/ho-r7_problem-definition.h problem-definition.h
+exec: cp ref/ho-r7_predefines.h predefines.h
+exec: cp ref/ho-r7_machine.h machine.h
+exec: cp $WSLDA/templates/dwarf/td/Makefile .
+exec: cp $WSLDA/templates/dwarf/td/env.sh .
+exec: make 1d EXTRA_CFLAGS="-DTESTSUITE" EXTRA_NVCCFLAGS="-DTESTSUITE"
+test: td-wslda-1d
+exec: timeout 1800 mpirun -np 8 ./td-wslda-1d input.txt
+test: ho-r7_testsuite.ok
+diff: ho-r7.ref ref/ho-r7.ref

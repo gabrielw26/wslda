@@ -1,6 +1,12 @@
 # =====================================================================
 # =================== DO NOT MODIFY THIS PART =========================
 # =====================================================================
+
+# sets it to empty by default (the ?= means "assign only if not already set")
+# and now you can use: 
+#   make EXTRA_CFLAGS="-DTESTSUITE"
+EXTRA_CFLAGS ?= 
+
 WSLDADIR:=$(WSLDADIR)/
 OBJDIR:=$(OBJDIR)/
 BINDIR:=$(BINDIR)/
@@ -33,7 +39,7 @@ WDATALIB = wdata.o
 WDERIVLIB = wderiv.o
 WINTERPLIB = winterp.o
 
-CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./
+CFLAGS := $(CFLAGS) -I$(INCLUDEDIR) -I$(WDATAINC) -I$(WDERIVINC) -I$(WINTERPINC) -I./ $(EXTRA_CFLAGS)
 
 OBJS := $(addprefix $(OBJDIR),$(SRCS:.c=.o))
 SRCS := $(addprefix $(SRCDIR),$(SRCS))

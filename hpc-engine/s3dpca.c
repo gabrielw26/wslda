@@ -1224,13 +1224,16 @@ int main( int argc , char ** argv )
             if(gr_iam==0)
             {
                 // Create empty files
-                sprintf(file_name, "%s/s3dpca.%04d.wfu", md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_un.wdat", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s/s3dpca.%04d.wfv", md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_vn.wdat", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
 
-                sprintf(file_name, "%s/s3dpca.%04d.en", md.outprefix, idgroup);
+                sprintf(file_name, "%s/wf.%04d_en.dat", md.outprefix, idgroup);
+                file_operation( touch_file(file_name) );
+
+                sprintf(file_name, "%s/wf.%04d_en.txt", md.outprefix, idgroup);
                 file_operation( touch_file(file_name) );
             }
 
@@ -1273,9 +1276,10 @@ int main( int argc , char ** argv )
             MPI_Bcast( &lastwf , 1, MPI_INT , gr_np-1 , mpi_comm_group ) ;
 
             // create info file by each group
-            sprintf(file_name, "%s/s3dpca.%04d.info", md.outprefix, idgroup);
+            sprintf(file_name, "%s/wf.%04d.info", md.outprefix, idgroup);
             mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
-            if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, md.writeecut*eF, beta) );
+            if(gr_iam==0) file_operation( create_checkpoint_info_pca(file_name, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
+            if(gr_iam==0) file_operation( create_wtxt_file_for_wf(md.outprefix, idgroup, lastwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta, CODEDIM) );
 
             double rt = e_t(0);
             if(gr_iam==0) wprintf("# DATA WRITING BY I/O GROUP %d TOOK %.1f SEC. WRITTEN %.2fMB. WRITTEN STATES=%d\n", idgroup, rt, (double)1.*lastwf*NX*NY*NZ*2*16/1024./1024., lastwf); fflush(stdout);
@@ -1518,6 +1522,9 @@ int main( int argc , char ** argv )
         if(iam==0) cpu_exec( write_custom_variable_to_wdata_set(&wdmd, it, densall, potsall, kF, mu, dc_params, dc_extra_data_size, dc_extra_data) );
         if(iam==0) file_operation( write_wdata_metadata_file(&md, &wdmd, "st-wslda-3d") );
 
+        // Broadcast input parameter (in case they were modified by logger functions)
+        MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+
         // Complete writing wave-functions
         if(saving_iteration==1)
         {
@@ -1526,12 +1533,12 @@ int main( int argc , char ** argv )
             if(iam==0)
             {
                 // write info file
-                sprintf(file_name, "%s/s3dpca.info", md.outprefix);
+                sprintf(file_name, "%s/wf.info", md.outprefix);
                 mu[SPINA] = dc_mu_a; mu[SPINB] = dc_mu_b;
                 file_operation( create_checkpoint_info_pca(file_name, nwf, NX, NY, NZ, DX, DY, DZ, kF, mu, dc_ec, beta) );
 
                 // write potentials
-                sprintf(file_name, "%s/s3dpca.pud", md.outprefix);
+                sprintf(file_name, "%s/wf.pud", md.outprefix);
                 file_operation( write_binary_file(file_name, sizeof(double)*NX*NY*NZ*POTCNT, h_potentials) );
             }
 

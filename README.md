@@ -1,46 +1,58 @@
 # W-SLDA Toolkit
-Self-consistent solver of mathematical problems which have structure formally equivalent to Bogoliubov-de Gennes equations.  
+The **W-SLDA Toolkit** is a self-consistent solver for mathematical problems whose structure is formally equivalent to the Bogoliubov–de Gennes equations.
 
-The toolkit allows for simulating fermionic superfluids like ultracold atomic gases. Both static and time-depend phenomena can be investigated by means of W-SLDA. The software is optimized towards simulations of large systems, consisting of thousands of particles.   
+The toolkit enables simulations of fermionic superfluids, with a primary focus on ultracold atomic gases. In addition, it can be used to model superconducting systems by solving static and time-dependent Bogoliubov–de Gennes equations within a unified numerical framework. Both static (ground-state) and time-dependent phenomena can be studied. The software is designed and optimized for large-scale simulations involving systems with thousands of particles and is suitable for execution on modern high-performance computing platforms.
 
 ## [Official webpage](https://wslda.fizyka.pw.edu.pl/)
 
 ## Implemented functionalities
-* Solvers: static equations and time-dependent equations
-* Dimensionality: 3D and 2D and 1D
-* Functionals: BdG, (A)SLDA, SLDAE, custom functionals
-* Zero temperature and finite temperature
-* Spin balanced and spin imbalanced systems
-* Mass imbalanced systems
-* User-defined external potential, external pairing potential, external velocity field, time and position dependent scattering length
-* Integration with visualization tool (VisIt)
-* Extensions: templates for codes supporting data analysis, python lib for working with and manipulating data
-* Speeding up of convergence: Broyden mixing, automatic interpolations, quantum friction
-* Templates-based usage model.
-* Results reporoducibility
-* [W-data format](https://gitlab.fizyka.pw.edu.pl/wtools/wdata) for storing the results
+
+* **Solvers**: static and time-dependent equations
+* **Dimensionality**: 1D, 2D, and 3D geometries
+* **Energy density functionals**: BdG, (A)SLDA, SLDAE, and user-defined custom functionals
+* **Temperature regimes**: zero-temperature and finite-temperature calculations
+* **Spin configurations**: spin-balanced and spin-imbalanced systems
+* **Mass imbalance**: support for unequal particle masses
+* **External fields**: user-defined external potentials, external pairing fields, external velocity fields, and time- and space-dependent scattering lengths
+* **Visualization**: integration with the VisIt visualization tool
+* **Extensions**: templates for data analysis workflows and a Python library for post-processing and data manipulation
+* **Accelerated convergence**: Broyden mixing, automatic interpolations, and quantum friction techniques
+* **Templates-based usage model**
+* **Results reproducibility**: built-in mechanisms for reproducible simulations
+* **Data format**: support for the [W-data format](https://gitlab.fizyka.pw.edu.pl/wtools/wdata) for storing simulation results
 
 ## Codes
-* **td-wslda-3d** - code for solving time-dependent density functional equations on 3D Cartesian mesh.
-* **td-wslda-2d** - code for solving time-dependent density functional equations on 3D Cartesian mesh, with the imposed constraint that the system is uniform in _z_ direction
-* **td-wslda-1d** - code for solving time-dependent density functional equations on 3D Cartesian mesh, with the imposed constraint that the system is uniform in _z_  and _y_ directions.
-* **st-wslda-3d** - code for solving static density functional equations in 3D Cartesian mesh, generator of initial states for _td-wslda-3d_ code. 
-* **st-wslda-2d** - code for solving static density functional equations in 3D Cartesian mesh, with the imposed constraint that system is uniform in _z_ direction, generator of initial states for _td-wslda-3d_ and _td-wslda-2d_ codes. 
-* **st-wslda-1d** - code for solving static density functional equations in 3D Cartesian mesh, with imposed constraint that system is uniform in _z_ and _y_ directions, generator of initial states for _td-wslda-3d_ and _td-wslda-2d_ and _td-wslda-1d_ codes. 
 
-For more info about the code types see [here](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Types%20of%20codes).
+* **td-wslda-3d** – solver for time-dependent density functional equations on a full 3D Cartesian mesh
+* **td-wslda-2d** – solver for time-dependent density functional equations on a 3D Cartesian mesh with translational invariance imposed along the _z_ direction
+* **td-wslda-1d** – solver for time-dependent density functional equations on a 3D Cartesian mesh with translational invariance imposed along the _y_ and _z_ directions
+* **st-wslda-3d** – solver for static density functional equations on a full 3D Cartesian mesh; generates initial states for `td-wslda-3d`
+* **st-wslda-2d** – solver for static density functional equations with translational invariance along the _z_ direction; generates initial states for `td-wslda-3d` and `td-wslda-2d`
+* **st-wslda-1d** – solver for static density functional equations with translational invariance along the _y_ and _z_ directions; generates initial states for `td-wslda-3d`, `td-wslda-2d`, and `td-wslda-1d`
+
+For a detailed description of the available code types, see
+[Types of codes](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Types%20of%20codes).
 
 ## Setting up and building
-See instructions provided [here](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Installing%20the%20toolkit).
+
+Installation and build instructions are provided
+[here](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Installing%20the%20toolkit).
 
 ## Documentation
-For documenation see [Wiki Pages](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home)
+
+For full documentation, usage examples, and tutorials, see the
+[Wiki Pages](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home).
 
 ## Developers
-For complete list of developers and contributors see [here](https://wslda.fizyka.pw.edu.pl/index.php/Info2/Contributors).
+
+For the complete list of developers and contributors, see
+[Contributors](https://wslda.fizyka.pw.edu.pl/index.php/Info2/Contributors).
 
 ## Bug reporting
-To report bug:  
-* use [Issues reporting system](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues)
-* write email to wslda@fizyka.pw.edu.pl
 
+To report bugs or issues:
+* use the [Issue tracking system](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues)
+* or contact the development team via email: **wslda@fizyka.pw.edu.pl**
+
+## Contributing
+If you would like to contribute to the W-SLDA Toolkit, please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines and further information.

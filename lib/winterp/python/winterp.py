@@ -22,7 +22,9 @@ class winterp_interpolator(Structure):
 
 
 # Load the C library
-libpath = f"{os.getcwd()+os.sep+os.pardir+os.sep}libwinterp.so"
+libpath = os.path.join(os.path.dirname(__file__), os.pardir, "libwinterp.so")
+libpath = os.path.abspath(libpath)
+print(f"Loading winterp library from: {libpath}")
 libWInterp = CDLL(libpath)
 libWInterp.connect()
 
@@ -99,6 +101,253 @@ winterp_create_interpolator_3d_c.argtypes = [c_int, c_int, c_int, c_double, c_do
 winterp_destroy_interpolator = libWInterp.winterp_destroy_interpolator
 winterp_destroy_interpolator.restype = c_int
 winterp_destroy_interpolator.argtypes = [POINTER(winterp_interpolator)]
+
+# Bulk interpolation C function bindings
+winterp_interpolation_1dr = libWInterp.winterp_interpolation_1dr
+winterp_interpolation_1dr.restype = c_int
+winterp_interpolation_1dr.argtypes = [c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_1dv = libWInterp.winterp_interpolation_1dv
+winterp_interpolation_1dv.restype = c_int
+winterp_interpolation_1dv.argtypes = [c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_1dc = libWInterp.winterp_interpolation_1dc
+winterp_interpolation_1dc.restype = c_int
+winterp_interpolation_1dc.argtypes = [c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)]),
+                                      c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)])]
+
+winterp_interpolation_1d = libWInterp.winterp_interpolation_1d
+winterp_interpolation_1d.restype = c_int
+winterp_interpolation_1d.argtypes = [c_char,
+                                     c_int,
+                                     c_void_p,
+                                     c_int,
+                                     c_void_p]
+
+winterp_interpolation_2dr = libWInterp.winterp_interpolation_2dr
+winterp_interpolation_2dr.restype = c_int
+winterp_interpolation_2dr.argtypes = [c_int, c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int, c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_2dv = libWInterp.winterp_interpolation_2dv
+winterp_interpolation_2dv.restype = c_int
+winterp_interpolation_2dv.argtypes = [c_int, c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int, c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_2dc = libWInterp.winterp_interpolation_2dc
+winterp_interpolation_2dc.restype = c_int
+winterp_interpolation_2dc.argtypes = [c_int, c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)]),
+                                      c_int, c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)])]
+
+winterp_interpolation_2d = libWInterp.winterp_interpolation_2d
+winterp_interpolation_2d.restype = c_int
+winterp_interpolation_2d.argtypes = [c_char,
+                                     c_int, c_int,
+                                     c_void_p,
+                                     c_int, c_int,
+                                     c_void_p]
+
+winterp_interpolation_3dr = libWInterp.winterp_interpolation_3dr
+winterp_interpolation_3dr.restype = c_int
+winterp_interpolation_3dr.argtypes = [c_int, c_int, c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int, c_int, c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_3dv = libWInterp.winterp_interpolation_3dv
+winterp_interpolation_3dv.restype = c_int
+winterp_interpolation_3dv.argtypes = [c_int, c_int, c_int,
+                                      ndpointer(dtype=np.float64),
+                                      c_int, c_int, c_int,
+                                      ndpointer(dtype=np.float64)]
+
+winterp_interpolation_3dc = libWInterp.winterp_interpolation_3dc
+winterp_interpolation_3dc.restype = c_int
+winterp_interpolation_3dc.argtypes = [c_int, c_int, c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)]),
+                                      c_int, c_int, c_int,
+                                      ndpointer(dtype=[('real', np.float64),
+                                                       ('imag', np.float64)])]
+
+winterp_interpolation_3d = libWInterp.winterp_interpolation_3d
+winterp_interpolation_3d.restype = c_int
+winterp_interpolation_3d.argtypes = [c_char,
+                                     c_int, c_int, c_int,
+                                     c_void_p,
+                                     c_int, c_int, c_int,
+                                     c_void_p]
+
+_complex_dtype = [('real', np.float64), ('imag', np.float64)]
+
+
+# Python convenience wrappers
+
+def interpolation_1d_r(values_in, n_out):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    arr_out = np.empty(n_out, dtype=np.float64)
+    winterp_interpolation_1dr(arr_in.shape[0], arr_in, n_out, arr_out)
+    return arr_out
+
+
+def interpolation_1d_v(values_in, n_out):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    arr_out = np.empty(n_out, dtype=np.float64)
+    winterp_interpolation_1dv(arr_in.shape[0], arr_in, n_out, arr_out)
+    return arr_out
+
+
+def interpolation_1d_c(values_in, n_out):
+    vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+    n_in = vin.shape[0]
+    cin = np.empty(n_in, dtype=_complex_dtype)
+    cin['real'] = vin.real
+    cin['imag'] = vin.imag
+    cout = np.empty(n_out, dtype=_complex_dtype)
+    winterp_interpolation_1dc(n_in, cin, n_out, cout)
+    return cout['real'] + 1j * cout['imag']
+
+
+def interpolation_1d_generic(kind, values_in, n_out):
+    if kind == 'c':
+        vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+        n_in = vin.shape[0]
+        cin = np.empty(n_in, dtype=_complex_dtype)
+        cin['real'], cin['imag'] = vin.real, vin.imag
+        cout = np.empty(n_out, dtype=_complex_dtype)
+        winterp_interpolation_1d(kind.encode(), n_in,
+                                 cin.ctypes.data_as(c_void_p),
+                                 n_out,
+                                 cout.ctypes.data_as(c_void_p))
+        return cout['real'] + 1j * cout['imag']
+    else:
+        arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+        arr_out = np.empty(n_out, dtype=np.float64)
+        winterp_interpolation_1d(kind.encode(), arr_in.shape[0],
+                                 arr_in.ctypes.data_as(c_void_p),
+                                 n_out,
+                                 arr_out.ctypes.data_as(c_void_p))
+        return arr_out
+
+
+def interpolation_2d_r(values_in, nxo, nyo):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    nxi, nyi = arr_in.shape
+    arr_out = np.empty((nxo, nyo), dtype=np.float64)
+    winterp_interpolation_2dr(nxi, nyi, arr_in, nxo, nyo, arr_out)
+    return arr_out
+
+
+def interpolation_2d_v(values_in, nxo, nyo):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    nxi, nyi = arr_in.shape
+    arr_out = np.empty((nxo, nyo), dtype=np.float64)
+    winterp_interpolation_2dv(nxi, nyi, arr_in, nxo, nyo, arr_out)
+    return arr_out
+
+
+def interpolation_2d_c(values_in, nxo, nyo):
+    vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+    nxi, nyi = vin.shape
+    cin = np.empty((nxi, nyi), dtype=_complex_dtype)
+    cin['real'], cin['imag'] = vin.real, vin.imag
+    cout = np.empty((nxo, nyo), dtype=_complex_dtype)
+    winterp_interpolation_2dc(nxi, nyi, cin, nxo, nyo, cout)
+    return cout['real'] + 1j * cout['imag']
+
+
+def interpolation_2d_generic(kind, values_in, nxo, nyo):
+    if kind == 'c':
+        vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+        nxi, nyi = vin.shape
+        cin = np.empty((nxi, nyi), dtype=_complex_dtype)
+        cin['real'], cin['imag'] = vin.real, vin.imag
+        cout = np.empty((nxo, nyo), dtype=_complex_dtype)
+        winterp_interpolation_2d(kind.encode(),
+                                 nxi, nyi,
+                                 cin.ctypes.data_as(c_void_p),
+                                 nxo, nyo,
+                                 cout.ctypes.data_as(c_void_p))
+        return cout['real'] + 1j * cout['imag']
+    else:
+        arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+        nxi, nyi = arr_in.shape
+        arr_out = np.empty((nxo, nyo), dtype=np.float64)
+        winterp_interpolation_2d(kind.encode(),
+                                 nxi, nyi,
+                                 arr_in.ctypes.data_as(c_void_p),
+                                 nxo, nyo,
+                                 arr_out.ctypes.data_as(c_void_p))
+        return arr_out
+
+
+def interpolation_3d_r(values_in, nxo, nyo, nzo):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    nxi, nyi, nzi = arr_in.shape
+    arr_out = np.empty((nxo, nyo, nzo), dtype=np.float64)
+    winterp_interpolation_3dr(nxi, nyi, nzi, arr_in, nxo, nyo, nzo, arr_out)
+    return arr_out
+
+
+def interpolation_3d_v(values_in, nxo, nyo, nzo):
+    arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+    nxi, nyi, nzi = arr_in.shape
+    arr_out = np.empty((nxo, nyo, nzo), dtype=np.float64)
+    winterp_interpolation_3dv(nxi, nyi, nzi, arr_in, nxo, nyo, nzo, arr_out)
+    return arr_out
+
+
+def interpolation_3d_c(values_in, nxo, nyo, nzo):
+    vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+    nxi, nyi, nzi = vin.shape
+    cin = np.empty((nxi, nyi, nzi), dtype=_complex_dtype)
+    cin['real'], cin['imag'] = vin.real, vin.imag
+    cout = np.empty((nxo, nyo, nzo), dtype=_complex_dtype)
+    winterp_interpolation_3dc(nxi, nyi, nzi, cin, nxo, nyo, nzo, cout)
+    return cout['real'] + 1j * cout['imag']
+
+
+def interpolation_3d_generic(kind, values_in, nxo, nyo, nzo):
+    if kind == 'c':
+        vin = np.ascontiguousarray(values_in, dtype=np.complex128)
+        nxi, nyi, nzi = vin.shape
+        cin = np.empty((nxi, nyi, nzi), dtype=_complex_dtype)
+        cin['real'], cin['imag'] = vin.real, vin.imag
+        cout = np.empty((nxo, nyo, nzo), dtype=_complex_dtype)
+        winterp_interpolation_3d(kind.encode(),
+                                 nxi, nyi, nzi,
+                                 cin.ctypes.data_as(c_void_p),
+                                 nxo, nyo, nzo,
+                                 cout.ctypes.data_as(c_void_p))
+        return cout['real'] + 1j * cout['imag']
+    else:
+        arr_in = np.ascontiguousarray(values_in, dtype=np.float64)
+        nxi, nyi, nzi = arr_in.shape
+        arr_out = np.empty((nxo, nyo, nzo), dtype=np.float64)
+        winterp_interpolation_3d(kind.encode(),
+                                 nxi, nyi, nzi,
+                                 arr_in.ctypes.data_as(c_void_p),
+                                 nxo, nyo, nzo,
+                                 arr_out.ctypes.data_as(c_void_p))
+        return arr_out
 
 
 ###########################

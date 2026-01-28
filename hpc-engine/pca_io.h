@@ -73,7 +73,8 @@ int create_measurement_file_with_header(const char * file_name,
     
     long int bytes_written ;
     int werr=0;
-    int prec=PCA_PRECISION;
+    // int prec=PCA_PRECISION; // depricated
+    int prec=CODEDIM; // the first bytes will be used to store code dimension
     int tmp=0;
     
 #define mio_hentry_wrt(var,type,werrval) \
@@ -126,7 +127,6 @@ int read_measurement_file_header(const char * file_name,
     if (werr==0 && ( bytes_read = read( fd , ( void * ) var , sizeof( type ) ) ) != sizeof( type ) ) werr=werrval;
 
     mio_hentry_read(&prec,int,-2);
-    if(werr==0 && prec!=PCA_PRECISION) werr=-3;
     mio_hentry_read(nx,int,-4);
     mio_hentry_read(ny,int,-5);
     mio_hentry_read(nz,int,-6);
@@ -225,7 +225,8 @@ int create_checkpoint_info(const char * file_name,
         
     long int bytes_written ;
     int werr=0;
-    int prec=PCA_PRECISION;
+    // int prec=PCA_PRECISION; // depricated
+    int prec=CODEDIM; // the first bytes will be used to store code dimension
     
 #define cio_info_wrt(var,type,werrval) \
     if (werr==0 && ( bytes_written = write( fd , ( const void * ) &var , sizeof( type ) ) ) != sizeof( type ) ) werr=werrval;
@@ -269,7 +270,8 @@ int create_checkpoint_info_pca(const char * file_name,
         
     long int bytes_written ;
     int werr=0;
-    int prec=PCA_PRECISION;
+    // int prec=PCA_PRECISION; // depricated
+    int prec=CODEDIM; // the first bytes will be used to store code dimension
     
 #define cio_info_wrt(var,type,werrval) \
     if (werr==0 && ( bytes_written = write( fd , ( const void * ) &var , sizeof( type ) ) ) != sizeof( type ) ) werr=werrval;
@@ -314,7 +316,6 @@ int read_checkpoint_info(const char * file_name,
     if (werr==0 && ( bytes_read = read( fd , ( void * ) var , sizeof( type ) ) ) != sizeof( type ) ) werr=werrval;
 
     cio_info_read(&prec,int,-2);
-    if(werr==0 && prec!=PCA_PRECISION) werr=-3;
     cio_info_read(nwf,int,-4);
     cio_info_read(nx,int,-5);
     cio_info_read(ny,int,-6);
@@ -353,7 +354,6 @@ int read_checkpoint_info_pca(const char * file_name,
     if (werr==0 && ( bytes_read = read( fd , ( void * ) var , sizeof( type ) ) ) != sizeof( type ) ) werr=werrval;
 
     cio_info_read(&prec,int,-2);
-    if(werr==0 && prec!=PCA_PRECISION) werr=-3;
     cio_info_read(nwf,int,-4);
     cio_info_read(nx,int,-5);
     cio_info_read(ny,int,-6);
@@ -371,6 +371,58 @@ int read_checkpoint_info_pca(const char * file_name,
     close(fd);
     
     return werr;
+}
+
+/**
+ * Checks compatibility of initstate file
+ * The function checks if the initstate file exists and if its dimension is compatible with the requested dimension
+ * It also supports both old and new formats of the initstate files
+ * The old format will be deprecated in future releases
+ */
+int check_comptibility(char *prefix, int requested_dim, char *suffix)
+{
+    char file_name[256];
+    // new format
+    int format_type=-1; // 1 - new, 0 - old
+    sprintf(file_name, "%s/wf.info", prefix);
+
+    if(exists(file_name))
+    {
+        format_type=1;
+        sprintf(suffix, "%s", "wf");
+    }
+    else 
+    {
+        // try with old format
+        sprintf(file_name, "%s/s%ddpca.info", prefix, requested_dim);
+        if(exists(file_name)) 
+        {
+            format_type=0;
+            sprintf(suffix, "s%ddpca", requested_dim);
+        }
+    }
+
+    if(format_type==-1) return WSLDA_ERR_INITSTATE_FILE_NOT_FOUND;
+
+    FILE * pFile;
+    pFile = fopen (file_name, "rb");
+    if (pFile==NULL)  return WSLDA_ERR_CANNOT_OPEN_FILE;
+    int header_dim;
+    size_t test_ele = fread (&header_dim , sizeof(int), 1, pFile);
+    fclose(pFile);
+
+    if(header_dim==PCA_PRECISION) // old format
+        return 0;
+
+    // check compatibility of dimensions
+    if(header_dim != requested_dim)
+    {
+        if(header_dim==1) return WSLDA_ERR_INITSTATE_FOR_1D;
+        else if(header_dim==2) return WSLDA_ERR_INITSTATE_FOR_2D;
+        else if(header_dim==3) return WSLDA_ERR_INITSTATE_FOR_3D;
+    }
+
+    return 0; 
 }
 
 int touch_file(const char * file_name)
@@ -496,32 +548,52 @@ double fbeta(double E, double beta);
  * Function writes data from kzSLpca solver
  * Saves only kkz and en and counts states
  * */
-int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi, double ecut, double beta, double ky, double kz, int ikz, int nwftwrt, int *nwf)
+int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi, double ecut, double beta, double ky, double kz, int ikz, int nwftwrt, int *nwf, int degeneracy)
 {
     char file_name_u[512];
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
-    
+    char file_name_fbetat[512];   
+
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     
     // open files
     FILE *fkkz = fopen(file_name_kkz, "ab");
     FILE *ffbeta = fopen(file_name_fbeta, "ab");
-    
+    FILE *ffbetat = fopen(file_name_fbetat, "a");
+
     if (fkkz==NULL)  return -3; // cannot open  
     if (ffbeta==NULL)  return -4; // cannot open  
-    
+    if (ffbetat==NULL)  return -5; // cannot open  
+
+    // header in txt files
+    if((*nwf)==0)
+    {
+        fprintf(ffbetat, "# COLUMNS:\n");
+        fprintf(ffbetat, "# 1: state id\n");
+        fprintf(ffbetat, "# 2: en (quasiparticle energy)\n");
+        fprintf(ffbetat, "# 3: degeneracy\n");
+#if CODEDIM==1
+        fprintf(ffbetat, "# 4: ky (momentum in y-direction)\n");
+        fprintf(ffbetat, "# 5: kz (momentum in z-direction)\n");
+#else
+        fprintf(ffbetat, "# 4: kz (momentum in z-direction)\n");
+#endif       
+    }
+
     int ien;
     size_t test_ele;
     double fbEn;
@@ -539,17 +611,23 @@ int append_wf_from_kzpcaSL_part1(char * prefix, double *En, double complex *psi,
 #endif
         test_ele = fwrite(&kz, sizeof(double), 1, fkkz);
         if(test_ele!=1) return -7; // data not written 
-        
+
 //         fbEn=fbeta(En[ien], beta);
         fbEn=En[ien];
         test_ele = fwrite(&fbEn, sizeof(double), 1, ffbeta);
         if(test_ele!=1) return -8; // data not written
+
+#if CODEDIM==1
+        fprintf(ffbetat, "%9d %18.10g %9d %18.10g %18.10g\n", (*nwf)-1, fbEn, degeneracy, ky, kz);
+#else
+        fprintf(ffbetat, "%9d %18.10g %9d %18.10g\n", (*nwf)-1, fbEn, degeneracy, kz);
+#endif
     }
     
     // close files
     fclose(fkkz);
     fclose(ffbeta);
-    
+    fclose(ffbetat);    
     return 0;
 }
 
@@ -563,17 +641,20 @@ int append_wf_from_kzpcaSL_part2(char * prefix, double *En, double complex *psi,
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
-    
+    char file_name_fbetat[512];   
+
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     // open files
     FILE *fu = fopen(file_name_u, "ab");
@@ -614,17 +695,20 @@ int append_wf_from_kzpcaSL_part3(char * prefix, double *En, double complex *psi,
     char file_name_v[512];
     char file_name_kkz[512];
     char file_name_fbeta[512];
-    
+    char file_name_fbetat[512];   
+
 #if CODEDIM==1
-    sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #else
-    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
-    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
-    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
-    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+    sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, ikz);
 #endif
     
     // open files
@@ -705,13 +789,27 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
     
     for(ikz=0; ikz<nz/2+ikzadd; ikz++)
     {
-        sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz);
-        
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+        if(exists(file_name)==0)
+        {
+            // try with old format
+            sprintf(file_name, "%s/s2dpca.%04d.info", prefix, ikz);
+        }
+
         pFile = fopen(file_name, "rb");
-        if(pFile==NULL) return 1000+ikz;
-        fread(&i          , sizeof(int)         , 1 , pFile); // percision
+        if(pFile==NULL) if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+        int info_dim;
+        fread(&info_dim   , sizeof(int)         , 1 , pFile); // percision(8) or codedim(1,2,3)
         fread(&i          , sizeof(int)         , 1 , pFile); // nwf
         fclose(pFile);
+
+        // check codedim
+        if(info_dim!=2)
+        {
+            if(info_dim==1) return WSLDA_ERR_INITSTATE_FOR_1D;
+            else if(info_dim==3) return WSLDA_ERR_INITSTATE_FOR_3D;
+            // else it is old format - ignore it and go further
+        }
         
         nwf_per_kz[ikz]=i;
         if(ikz==0) tnwf+=i;
@@ -749,13 +847,28 @@ int scan_stwslda1d_info_files(const char * prefix, int codedim, int kvecs_to_con
     
     for(ikz=0; ikz<kvecs_to_consder; ikz++)
     {
-        sprintf(file_name, "%s/s1dpca.%04d.info", prefix, ikz);
-        
+        // new format
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+        if(exists(file_name)==0)
+        {
+            // try with old format
+            sprintf(file_name, "%s/s1dpca.%04d.info", prefix, ikz);
+        }
+
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return WSLDA_ERR_CANNOT_OPEN_FILE;
-        fread(&i          , sizeof(int)         , 1 , pFile); // percision
+        int info_dim;
+        fread(&info_dim   , sizeof(int)         , 1 , pFile); // percision(8) or codedim(1,2,3)
         fread(&i          , sizeof(int)         , 1 , pFile); // nwf
         fclose(pFile);
+
+        // check codedim
+        if(info_dim!=1)
+        {
+            if(info_dim==2) return WSLDA_ERR_INITSTATE_FOR_2D;
+            else if(info_dim==3) return WSLDA_ERR_INITSTATE_FOR_3D;
+            // else it is old format - ignore it and go further
+        }
         
         nwf_per_kyz[ikz]=i;
         tnwf+=i*kvecs[ikz].weight;        
@@ -800,7 +913,7 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                     double complex *h_wavefun, double *h_fbetaEn, double *h_kkz)
 {
     char file_name[256];
-    int ikz, iwf=0, ii;
+    int ikz=0, iwf=0, ii;
     int nwfip = myuidx-mylidx;
 
     char file_name_u[512];
@@ -812,6 +925,13 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
     FILE *fv;
     FILE *fkkz;
     FILE *ffbeta;
+
+    // check format type
+    // new format
+    int format_type=1; // 1 - new, 0 - old
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+    if(exists(file_name)) format_type=1;
+    else format_type=0;
     
     int ikzadd=0;
 #ifdef USE_CUBIC_CUTOFF
@@ -835,21 +955,31 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                 if(fu==NULL) // open files
                 {
 //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
-                    sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
-                    sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
-                    sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+                    if(format_type==1)
+                    {
+                        sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                        sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                        sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+                    }
+                    else
+                    {
+                        sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+                        sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+                        sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+                    }
                     
                     fu = fopen(file_name_u, "rb");
                     fv = fopen(file_name_v, "rb");
                     fkkz = fopen(file_name_kkz, "rb");
                     ffbeta = fopen(file_name_fbeta, "rb");
-                    
-                    if (fu==NULL)  return -1; // cannot open  
-                    if (fv==NULL)  return -2; // cannot open  
-                    if (fkkz==NULL)  return -3; // cannot open  
-                    if (ffbeta==NULL)  return -4; // cannot open        
-                    
+
+                    if (fu==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    if (fv==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    if (fkkz==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    if (ffbeta==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+
                     // shift pointer to correct position
                     if(fseek ( fu, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
                     if(fseek ( fv, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
@@ -887,7 +1017,7 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
                     double complex *h_wavefun, double *h_fbetaEn, double *h_kkz)
 {
     char file_name[256];
-    int ikz, iwf=0, ii, dd, dcoeff;
+    int ikz=0, iwf=0, ii, dd, dcoeff;
     int nwfip = myuidx-mylidx;
 
     char file_name_u[512];
@@ -899,6 +1029,13 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
     FILE *fv;
     FILE *fkkz;
     FILE *ffbeta;
+
+    // check format type
+    // new format
+    int format_type=1; // 1 - new, 0 - old 
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+    if(exists(file_name)) format_type=1;
+    else format_type=0;
     
     int ikzadd=0;
 #ifdef USE_CUBIC_CUTOFF
@@ -938,21 +1075,31 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
                     if(fu==NULL) // open files
                     {
     //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                        sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
-                        sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
-                        sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
-                        sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+                        if(format_type==1)
+                        {
+                            sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                            sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/wf.%04d_kkz.dat", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+                        }
+                        else
+                        {
+                            sprintf(file_name_u, "%s/s2dpca.%04d.wfu", prefix, ikz);
+                            sprintf(file_name_v, "%s/s2dpca.%04d.wfv", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/s2dpca.%04d.kkz", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/s2dpca.%04d.en", prefix, ikz);
+                        }
                         
                         fu = fopen(file_name_u, "rb");
                         fv = fopen(file_name_v, "rb");
                         fkkz = fopen(file_name_kkz, "rb");
                         ffbeta = fopen(file_name_fbeta, "rb");
                         
-                        if (fu==NULL)  return -1; // cannot open  
-                        if (fv==NULL)  return -2; // cannot open  
-                        if (fkkz==NULL)  return -3; // cannot open  
-                        if (ffbeta==NULL)  return -4; // cannot open        
-                        
+                        if (fu==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;  
+                        if (fv==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        if (fkkz==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        if (ffbeta==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+
                         // shift pointer to correct position
                         if(fseek ( fu, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
                         if(fseek ( fv, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -12; // cannot seek pointer
@@ -995,7 +1142,7 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                     double complex *h_wavefun, double *h_fbetaEn, double *h_kkyz, int *h_cnt)
 {
     char file_name[256];
-    int ikz, iwf=0, ii;
+    int ikz=0, iwf=0, ii;
     int nwfip = myuidx-mylidx;
 
     char file_name_u[512];
@@ -1019,6 +1166,13 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
     
     int lNdim, dcoeff, dd;
     int ix, iy, iz, ixyz;
+
+    // check format type
+    // new format
+    int format_type=1; // 1 - new, 0 - old
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+    if(exists(file_name)) format_type=1;
+    else format_type=0; 
     
 //     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
     
@@ -1068,11 +1222,21 @@ int read_stwslda1d_wf(const char * prefix, int codedim, int kvecs_to_consder, ws
                     if(fu==NULL) // open files
                     {
 //                         wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                        sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
-                        sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
-                        sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
-                        sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
-                        
+                        if(format_type==0)
+                        {
+                            sprintf(file_name_u, "%s/s1dpca.%04d.wfu", prefix, ikz);
+                            sprintf(file_name_v, "%s/s1dpca.%04d.wfv", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/s1dpca.%04d.kkyz", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/s1dpca.%04d.en", prefix, ikz);
+                        }
+                        else // new format
+                        {
+                            sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                            sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                            sprintf(file_name_kkz, "%s/wf.%04d_kkyz.dat", prefix, ikz);
+                            sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+                        }
+
                         fu = fopen(file_name_u, "rb");
                         fv = fopen(file_name_v, "rb");
                         fkkz = fopen(file_name_kkz, "rb");
@@ -1176,15 +1340,19 @@ int append_wf_from_s3dpca_part1(char * prefix, double *En, double complex *psi, 
     char file_name_u[512];
     char file_name_v[512];
     char file_name_fbeta[512];
+    char file_name_fbetat[512];
     
-    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
-    
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
+
     // open files
     FILE *ffbeta = fopen(file_name_fbeta, "ab");
+    FILE *ffbetat = fopen(file_name_fbetat, "a");
     
     if (ffbeta==NULL)  return -4; // cannot open  
+    if (ffbetat==NULL)  return -5; // cannot open
     
     int ien;
     size_t test_ele;
@@ -1202,10 +1370,13 @@ int append_wf_from_s3dpca_part1(char * prefix, double *En, double complex *psi, 
         fbEn=En[ien];
         test_ele = fwrite(&fbEn, sizeof(double), 1, ffbeta);
         if(test_ele!=1) return -8; // data not written
+
+        fprintf(ffbetat, "%9d %18.10g\n", (*nwf)-1, fbEn);
     }
     
     // close files
     fclose(ffbeta);
+    fclose(ffbetat);
     
     return 0;
 }
@@ -1219,11 +1390,13 @@ int append_wf_from_s3dpca_part2(char * prefix, double *En, double complex *psi, 
     char file_name_u[512];
     char file_name_v[512];
     char file_name_fbeta[512];
-    
-    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
-    
+    char file_name_fbetat[512];
+
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
+
     // open files
     FILE *fu = fopen(file_name_u, "ab");
     
@@ -1262,11 +1435,13 @@ int append_wf_from_s3dpca_part3(char * prefix, double *En, double complex *psi, 
     char file_name_u[512];
     char file_name_v[512];
     char file_name_fbeta[512];
-    
-    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, idgroup);
-    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, idgroup);
-    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, idgroup);
-    
+    char file_name_fbetat[512];
+
+    sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, idgroup);
+    sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, idgroup);
+    sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, idgroup);
+    sprintf(file_name_fbetat, "%s/wf.%04d_en.txt", prefix, idgroup);
+
     // open files
     FILE *fv = fopen(file_name_v, "ab");
     
@@ -1314,14 +1489,26 @@ int scan_s3dpca_info_files(const char * prefix, int number_of_files, int *nwf, i
     
     for(ikz=0; ikz<number_of_files; ikz++)
     {
-        sprintf(file_name, "%s/s3dpca.%04d.info", prefix, ikz);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+        // old format
+        if(!exists(file_name)) // try old format
+            sprintf(file_name, "%s/s3dpca.%04d.info", prefix, ikz);
         
         pFile = fopen(file_name, "rb");
         if(pFile==NULL) return WSLDA_ERR_S3DPCA_INFO_FILES_MISSING_FILE;
-        fread(&i          , sizeof(int)         , 1 , pFile); // percision
+        int info_dim;
+        fread(&info_dim   , sizeof(int)         , 1 , pFile); // info_dim
         fread(&i          , sizeof(int)         , 1 , pFile); // nwf
         fclose(pFile);
-        
+
+        // check codedim
+        if(info_dim!=3)
+        {
+            if(info_dim==1) return WSLDA_ERR_INITSTATE_FOR_1D;
+            else if(info_dim==2) return WSLDA_ERR_INITSTATE_FOR_2D;
+            // else it is old format - ignore it and go further
+        }
+
         nwf_per_file[ikz]=i;
         tnwf+=i;
         
@@ -1340,7 +1527,7 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
                     double complex *h_wavefun, double *h_fbetaEn)
 {
     char file_name[256];
-    int ikz, iwf=0, ii;
+    int ikz=0, iwf=0, ii;
     int nwfip = myuidx-mylidx;
 
     char file_name_u[512];
@@ -1352,6 +1539,12 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
     FILE *ffbeta;
     
 //     wprintf("mylidx=%d, myuidx=%d\n", mylidx, myuidx);
+    // check format type
+    // new format
+    int format_type=1; // 1 - new, 0 - old
+    sprintf(file_name, "%s/wf.%04d.info", prefix, ikz);
+    if(exists(file_name)) format_type=1;
+    else format_type=0;
     
     for(ikz=0; ikz<number_of_files; ikz++)
     {
@@ -1367,9 +1560,18 @@ int read_s3dpca_wf(const char * prefix, int number_of_files, int *nwf_per_file, 
                 if(fu==NULL) // open files
                 {
 //                     wprintf("OPENING iwf=%d, file=%d\n", iwf, ikz);
-                    sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, ikz);
-                    sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, ikz);
-                    sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, ikz);
+                    if(format_type==1)
+                    {
+                        sprintf(file_name_u, "%s/wf.%04d_un.wdat", prefix, ikz);
+                        sprintf(file_name_v, "%s/wf.%04d_vn.wdat", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/wf.%04d_en.dat", prefix, ikz);
+                    }
+                    else
+                    {
+                        sprintf(file_name_u, "%s/s3dpca.%04d.wfu", prefix, ikz);
+                        sprintf(file_name_v, "%s/s3dpca.%04d.wfv", prefix, ikz);
+                        sprintf(file_name_fbeta, "%s/s3dpca.%04d.en", prefix, ikz);
+                    }
                     
                     fu = fopen(file_name_u, "rb");
                     fv = fopen(file_name_v, "rb");

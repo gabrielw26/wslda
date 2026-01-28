@@ -63,3 +63,7 @@ td-readwf
 # -> sensitivity of results with respect to DX
 st-sfdensity
 
+# -> checking stability of integration with respect to random external potentials
+st-stochastic
+td-stochastic
+
