@@ -80,15 +80,47 @@ Science is a wonderful thing if one does not have to earn one's living at it.
 Only two things are infinite, the universe and human stupidity, and I'm not sure about the former.
 -- Albert Einstein --
 
+If we knew what it was we were doing, it would not be called research, would it?
+-- Albert Einstein --
+
+Once you can accept the universe as matter expanding into nothing that is something, 
+wearing stripes with plaid comes easy.
+-- Albert Einstein --
+
+Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.
+-- Albert Einstein --
+
+The difference between stupidity and genius is that genius has its limits.
+-- Albert Einstein --
+
+Make everything as simple as possible, but not simpler.
+-- Albert Einstein --
+
+ As far as the laws of mathematics refer to reality, they are not certain, 
+ and as far as they are certain, they do not refer to reality.
+-- Albert Einstein --
+
+Intellectuals solve problems, geniuses prevent them.
+-- Albert Einstein --
+
+In theory, theory and practice are the same. In practice, they are not.
+-- Albert Einstein --
+
+You see, wire telegraph is a kind of a very, very long cat. 
+You pull his tail in New York and his head is meowing in Los Angeles. 
+Do you understand this? 
+And radio operates exactly the same way: you send signals here, they receive them there. 
+The only difference is that there is no cat.
+-- Albert Einstein --
+
+The equation for ego is: One over Knowledge.
+-- Albert Einstein --
+
 Science is the great antidote to the poison of enthusiasm and superstition.
 -- Adam Smith -- 
 
 To steal ideas from one person is plagiarism; to steal from many is research.
 -- Steven Wright --
-
-
-If we knew what it was we were doing, it would not be called research, would it?
--- Albert Einstein --
 
 In the beginning the Universe was created. 
 This has made a lot of people very angry and been widely regarded as a bad move.
@@ -121,10 +153,6 @@ In physics, you don't have to go around making trouble for yourself - nature doe
 
 Computers are useless. They can only give you answers.
 -- Pablo Picasso --
-
-Once you can accept the universe as matter expanding into nothing that is something, 
-wearing stripes with plaid comes easy.
--- Albert Einstein --
 
 Molecular biology is essentially the practice of biochemistry without a license.
 -- Erwin Chargaff --
@@ -183,9 +211,6 @@ Heisenberg says 'No, but I know where I am.'
 
 Physics is like sex: sure, it may give some practical results, but that's not why we do it.
 -- Richard Feynman --
-
-Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.
--- Albert Einstein --
 
 Prediction is very difficult, especially if it's about the future.
 -- Niels Bohr --
@@ -280,7 +305,10 @@ Because it left a residue at every pole.
 I have a joke about topology...
 But it’s a bit twisted.
 
-A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out. The physicist says, “Must be a measurement error.” The biologist says, “They must have reproduced.” The mathematician says, “If one person goes in now, the house will be empty again.”
+A physicist, a biologist, and a mathematician are watching an empty house. Two people go in, and three come out.
+The physicist says, “Must be a measurement error.”
+The biologist says, “They must have reproduced.”
+The mathematician says, “If one person goes in now, the house will be empty again.”
 
 What’s a scientist’s favorite type of dog?
 A lab.

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # To generate the token
-# goto github, Click your icon: Settings->Developer Settings->Personal access tokens->Classic
-# generate token with permissions: repo, write:packages
+# goto gitlab, Click your icon: Edit profile->Access tokens->Add new token
+# generate token with permissions: read_repository, write_repository
 
 # Variables
 GITLAB_USER="gabrielw26"

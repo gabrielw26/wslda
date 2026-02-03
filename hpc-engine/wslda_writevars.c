@@ -359,7 +359,16 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINA, it, towrt);
             int ixyz=0;
-            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            if(it==0 && input->inittype>=1 && input->inittype<=3) // special case to maintain integrity with st codes
+            {
+                // the subtraction was already done in st code
+                // there is no need to subtract again just after loading data from file
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]; 
+            }
+            else
+            {
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_a[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            }
             ierr = wdata_write_cycle_d(wdmd, "V_a", towrt);
             free(towrt);
 #endif
@@ -373,7 +382,16 @@ int write_measurments(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *codetype, i
             cppmallocl(towrt,bs,double);  
             get_v_ext(wdmd->datadim, SPINB, it, towrt);
             int ixyz=0;
-            for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            if(it==0 && input->inittype>=1 && input->inittype<=3) // special case to maintain integrity with st codes
+            {
+                // the subtraction was already done in st code
+                // there is no need to subtract again just after loading data from file
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]; 
+            }
+            else
+            {
+                for(ixyz=0; ixyz<bs; ixyz++) towrt[ixyz]=V_b[ixyz]-towrt[ixyz]; // subtruct from mean-field contribution the external potential
+            }
             ierr = wdata_write_cycle_d(wdmd, "V_b", towrt);
             free(towrt);
 #endif
@@ -486,4 +504,66 @@ int write_measurments_subset(wdata_metadata *wdmd, MPI_Comm mpi_comm, char *code
     }
     
     return 0;
+}
+
+int exists(const char *filename);
+int urm(const char *filename);
+/**
+ * Creates wtxt file for wavefunctions written by static codes
+ * */
+int create_wtxt_file_for_wf(const char * prefix, int iogroup,
+                           int nwf, int nx, int ny, int nz, double dx, double dy, double dz,
+                           double kF, double *mu, double ec, double beta, int codedim
+                           )
+{ 
+    char file_name[512];
+    sprintf(file_name, "%s/wf.%04d.wtxt", prefix, iogroup);
+
+    if(exists(file_name))
+    {
+        if(md.overwrite==0) return -1; // We do not overwrite!  
+        else urm(file_name);
+    }
+    
+     // create metadata handler
+    wdata_metadata md;
+    wdata_reset_metadata(&md);
+
+    // Lattice
+    md.datadim = codedim;
+    md.nx = nx;
+    md.ny = ny;
+    md.nz = nz;
+    md.dx = dx;
+    md.dy = dy;
+    md.dz = dz;
+
+    sprintf(md.prefix, "wf.%04d", iogroup);
+    md.t0 = 0.0;
+    md.dt = 1.0;
+    md.cycles = nwf; // number of measurements
+
+    // add variables to data set
+    // for each variable binary file of name `prefix_`varname`.wdat will be created
+    wdata_variable wfu = {"un", "complex", "none", "wdat"};
+    wdata_add_variable(&md, &wfu);
+
+    wdata_variable wfv = {"vn", "complex", "none", "wdat"};
+    wdata_add_variable(&md, &wfv);
+
+    wdata_setconst(&md, "kF", kF);
+    wdata_setconst(&md, "mu_a", mu[SPINA]);
+    wdata_setconst(&md, "mu_b", mu[SPINB]);
+    wdata_setconst(&md, "ec", ec);
+    wdata_setconst(&md, "beta", beta);
+
+    // add txt files to data set
+    wdata_txt wen = {"en.txt"};
+    wdata_add_txt(&md, &wen);
+
+    // write metadata file (with default name)
+    wdata_write_metadata_to_file(&md, file_name);
+
+
+    return 0;    
 }

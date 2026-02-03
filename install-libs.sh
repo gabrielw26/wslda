@@ -20,7 +20,7 @@ make -C lib/wdata
 
 # wbox
 echo "# Making lib/wbox.."
-make -C lib/wdata
+make -C lib/wbox
 
 # tools
 echo "# Making tools.."
@@ -33,7 +33,7 @@ echo "#  Add to your .bashrc"
 echo " "
 cmd=export\ WSLDA=$(pwd)
 echo $cmd
-cmd=export\ LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$(pwd)/lib/wdata:$(pwd)/lib/wderiv:$(pwd)/lib/winterp
+cmd=export\ LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$(pwd)/lib/wdata:$(pwd)/lib/wderiv:$(pwd)/lib/winterp:$(pwd)/lib/wbox
 echo $cmd
 cmd=export\ PATH=\$PATH:$(pwd)/lib/wdata/bin:$(pwd)/tools/bin
 echo $cmd

@@ -18,6 +18,7 @@
 #include <complex.h>
 
 // W-SLDA Toolkit API
+#define CODEDIM 1
 #include "wslda_toolkit.h"
 
 int main( int argc , char ** argv ) 
@@ -44,7 +45,7 @@ int main( int argc , char ** argv )
     double mu[2];
     int nwf;
     
-    sprintf(file_name, "%s/s1dpca.info", prefix);
+    sprintf(file_name, "%s/wf.info", prefix);
     printf("# READING INFO FILE: %s\n", file_name);
     file_operationl(read_checkpoint_info_pca(file_name, &nwf, &nx, &ny, &nz, &dx, &dy, &dz, &kF, mu, &ec, &beta));
 
@@ -71,24 +72,24 @@ int main( int argc , char ** argv )
         ikyz++; // take next file
         
         // read file header
-        sprintf(file_name, "%s/s1dpca.%04d.info", prefix, ikyz);
+        sprintf(file_name, "%s/wf.%04d.info", prefix, ikyz);
         if(!exists(file_name)) {break;} // no more files to process
         printf("# OPENING: %s\n", file_name);
         file_operationl(read_checkpoint_info_pca(file_name, &nwf, &nx, &ny, &nz, &dx, &dy, &dz, &kF, mu, &ec, &beta));
         
         // open files
-        sprintf(file_name, "%s/s1dpca.%04d.en", prefix, ikyz);
+        sprintf(file_name, "%s/wf.%04d_en.dat", prefix, ikyz);
         pFile_en = fopen(file_name, "rb");
         if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
-        sprintf(file_name, "%s/s1dpca.%04d.kkyz", prefix, ikyz);
+        sprintf(file_name, "%s/wf.%04d_kkyz.dat", prefix, ikyz);
         pFile_kkyz = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
-        sprintf(file_name, "%s/s1dpca.%04d.wfu", prefix, ikyz);
+        if(pFile_kkyz==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        sprintf(file_name, "%s/wf.%04d_un.wdat", prefix, ikyz);
         pFile_wfu = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
-        sprintf(file_name, "%s/s1dpca.%04d.wfv", prefix, ikyz);
+        if(pFile_wfu==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        sprintf(file_name, "%s/wf.%04d_vn.wdat", prefix, ikyz);
         pFile_wfv = fopen(file_name, "rb");
-        if(pFile_en==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
+        if(pFile_wfv==NULL) {printf("ERROR: Cannot open %s\n", file_name); return( EXIT_FAILURE ) ;}
         
         // read wave-functions
         printf("# PROCESSING WF[%d] FOR ikyz=%d\n", nwf, ikyz);

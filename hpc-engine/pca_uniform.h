@@ -187,8 +187,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     if(printout && md.init0debug>0) wprintf("# DEBUG: dtildeC_dna=%f, dtildeC_dnb=%f\n", dtildeC_dna, dtildeC_dnb);
     if(printout && md.init0debug>0) wprintf("# DEBUG: dD_dna=%f, dD_dnb=%f\n", dD_dna, dD_dnb);
     if(printout && md.init0debug>0) wprintf("# DEBUG: D=%f, tC=%f\n", D, tC);
+    if(printout && md.init0debug>0) wprintf("# DEBUG: alph_a=%f, alph_b=%f, beta=%f, gamma=%f\n", alph_a, alph_b, D*LXYZ/Effg, GAMMA0);
     if(printout && md.init0debug>0 && md.spinsymmetry>0) wprintf("# SPIN SYMMETRY MODE!\n");
-
 
     // Set quantities updated in s-c loop
     double tau_a=pow(6.0*M_PI*M_PI*n0_a, 5.0/3.0) / (10.0*M_PI*M_PI); // initial value

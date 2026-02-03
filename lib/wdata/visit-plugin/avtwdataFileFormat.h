@@ -33,6 +33,8 @@ typedef std::complex<float> Complex;
 //    Have getVariable, isScalar and isVector return false to fix compile error
 //    on Windows.  Cast numberOfVariables return to int. Remove unneeded ';'.
 //
+//    Gabriel Wlazlowski, Jul 03, 2025
+//    Update of plugin to be compatible with WData format version 0.3.0
 // ****************************************************************************
 
 class wdataVariable

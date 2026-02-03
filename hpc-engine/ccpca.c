@@ -111,7 +111,7 @@ int main( int argc , char ** argv )
     double energy_kin, energy_pot, energy_pair, energy_current, energy_uext, energy_dext, energy_vext, energy_tot;   
     double Na, Nb;
     double Laz, Lbz; // angular momentum
-    char file_name[256];
+    char file_name[512], file_suffix[512];
     
     // timing
     double rt;    
@@ -363,7 +363,8 @@ int main( int argc , char ** argv )
         create_k_modes(kkx, kky, kkz, 1, kvecs);
         cppmallocl(nwf_per_kyz, kvecs_to_consder,int);
         time=0.0;
-        sprintf(file_name, "%s/s1dpca.info", md.inprefix);
+        file_operation( check_comptibility(md.inprefix, 1, file_suffix) );
+        sprintf(file_name, "%s/%s.info", md.inprefix, file_suffix);
         if(ip==0)
         {
             file_operation( read_checkpoint_info_pca(file_name, &nwf, &_nx, &_ny, &_nz, &_dx, &_dy, &_dz, &kF, &mu[0], &ec, &beta) );
@@ -432,7 +433,7 @@ int main( int argc , char ** argv )
         // load u and delta
         if(ip==0)
         {
-            sprintf(file_name, "%s/s1dpca.pud", md.inprefix);
+            sprintf(file_name, "%s/%s.pud", md.inprefix, file_suffix);
             wprintf("# INIT1: LOADING POTENTIALS `%s`...\n", file_name);
             file_operation( read_binary_file(file_name, NX*12*sizeof(double), 0, h_potentials) );
         }
@@ -666,8 +667,8 @@ int main( int argc , char ** argv )
     
     // Allocate memory for plans
     if(workarea_size<cufft_workSize) workarea_size=cufft_workSize;
-    gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
     if(workarea_size<sizeof(double)*nwfip*NX) workarea_size=sizeof(double)*nwfip*NX; // workspace needed by reduce_many(...)
+    gpu_exec( gpu_malloc(workarea_size, (void **)&d_workarea) );
     if(ip==0) wprintf("# WORKSIZE[ip=%d]: workarea_size=%.2f times space of wf (%.2fMB)\n", ip, (double)workarea_size/(double)wf_size, (double)wf_size/pow(2.,20));
     
     // Assign work space with plans
@@ -814,6 +815,10 @@ int main( int argc , char ** argv )
                                     h_wavefun, h_fbetaEn, h_kkyz, h_kkyz+nwfip, h_cnt, d_wf,
                                     md.params, extra_data_size, extra_data) );
     
+    // Broadcast input parameter (in case they were modified by logger functions)
+    MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+    gpu_exec( memcopy_const_params(md.params) );
+
     // ====================================================================================
     // ================================ REAL TIME EVOLUTION  ==============================
     // ====================================================================================
@@ -899,8 +904,10 @@ int main( int argc , char ** argv )
             // Make copy of qpe
             gpu_exec( memcopy_gpu2gpu(d_workarea, d_qpe, (size_t)nwfip*sizeof(double)) );
             
+            // shift history of H*Psi
+            for(i_meas=0; i_meas<selfstart_steps-1; i_meas++) memcpy(h_fkm+(i_meas+1)*2*nwfip*NX, h_fkm+i_meas*2*nwfip*NX, (size_t)2*nwfip*NX*sizeof(double complex));
             // Store H*Psi
-            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm+i_step*2*nwfip*NX,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+            gpu_exec( memcopy_gpu2host(d_fkm1, h_fkm,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
                         
             // Add contribution from Taylor expansion
             gpu_exec( taylor_expansion_contribution(1, 0.5*dt, nwfip, d_fkm1, d_fkm3, d_fkm2, md.nthreads) );
@@ -979,10 +986,8 @@ int main( int argc , char ** argv )
             {
                 gpu_exec( high_frequency_filter_massive_d(2, potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, md.nthreads) );
             }
-            // effective mass correction
-            // FIXME
-            gpu_exec( multiply_wf_by_alpha(nwfip, d_fkm3, d_alphawf_laplace, d_potentials, md.nthreads) );
-            gpu_exec( compute_laplace(2*nwfip, d_alphawf_laplace, d_alphawf_laplace, md.nthreads) );
+            // now all potentials are computed for midpoint
+            // they will be used for application of Hamiltonian in the corrector step
 #endif
             
             // recompute derivatives for d_wf
@@ -1043,25 +1048,25 @@ int main( int argc , char ** argv )
             gpu_exec( normalize_wf(nwfip, d_wf, md.nthreads) );
             
             // NOTE: d_wf keeps wave-function for t+dt
-//             if(ip==0) { wprintf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
+            // if(ip==0) { wprintf("# SELFSTART: i_step=%d\n", i_step); fflush(stdout); }
         }
         
         // Copy fkm1, ..., fkm4 back to gpu
 #if INTEGRATION_SCHEME==AB3AM4
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
         gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #elif INTEGRATION_SCHEME==AB4AM5
-        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) ); 
 #elif INTEGRATION_SCHEME==AB5AM5
-        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+4*2*nwfip*NX, d_fkm5,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+3*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) );
         gpu_exec( memcopy_host2gpu(h_fkm+2*2*nwfip*NX, d_fkm3,  (size_t)2*nwfip*NX*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm4,  (size_t)2*nwfip*NX*sizeof(double complex)) );
-        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm5,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+1*2*nwfip*NX, d_fkm2,  (size_t)2*nwfip*NX*sizeof(double complex)) );
+        gpu_exec( memcopy_host2gpu(h_fkm+0*2*nwfip*NX, d_fkm1,  (size_t)2*nwfip*NX*sizeof(double complex)) );
 #endif        
         
         // clear memory
@@ -1119,7 +1124,7 @@ int main( int argc , char ** argv )
             Laz=h_energy[LZA];
             Lbz=h_energy[LZB];
             
-            wprintf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
+            // wprintf("# AFTER SELFSTART: ETOT=%12.8f, EKIN=%12.8f, EPOT=%12.8f, EPAIR=%12.8f, ECURRENT=%12.8f, EPOTEXT=%12.8f, EPAIREXT=%12.8f, EVELEXT=%12.8f\n", energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);  
              
             wprintf("%12.4f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n", time*eF, Na, Nb, Na+Nb, energy_tot/Effg, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_current/Effg, energy_uext/Effg, energy_dext/Effg, energy_vext/Effg);     
         }    
@@ -1367,6 +1372,10 @@ int main( int argc , char ** argv )
         cpu_exec ( write_wave_functions(it, NX, nwfip, nwf, beta, MPI_COMM_WORLD,
                                         h_wavefun, h_qpe_nwfip, h_kkyz, h_kkyz+nwfip, h_cnt, d_wf,
                                         md.params, extra_data_size, extra_data) );
+
+        // Broadcast input parameter (in case they were modified by logger functions)
+        MPI_Bcast( &md , sizeof(md) , MPI_BYTE , 0 , MPI_COMM_WORLD ) ;
+        gpu_exec( memcopy_const_params(md.params) );
         
         forceCP=0; // reset flag for checkpoint, 0-no checkpoint, 1-emergency checkpoint, 2-periodic checkpoint, 3-do at the end
         if(ip==0) 

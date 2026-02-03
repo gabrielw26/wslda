@@ -1067,8 +1067,8 @@ __global__ void kernel_taylor_expansion_contribution(int n, Complex *wf_hpsi, Co
  * @param dt time step
  * @param n  number of wave-functions (u,v pairs) to process
  * @param wf_hpsi result of apply_hamiltonian (INPUT)
- * @param wf_update array with wave-functions contructed by Taylor expansion (OUTPUT),
- * @param wf_contr array with wave-functions contructed by Taylor expansion (OUTPUT),
+ * @param wf_update array with wave-functions constructed by Taylor expansion (OUTPUT),
+ * @param wf_contr array with wave-functions constructed by Taylor expansion (OUTPUT),
  * @param nthreads number of threads per block
  * @return 0 - OK, otherwise ERROR
  **/

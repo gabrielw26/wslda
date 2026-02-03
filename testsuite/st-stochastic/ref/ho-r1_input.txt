@@ -1,0 +1,137 @@
+# Documentation - Wiki: 
+# https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
+
+# -------------- USER DEFINED PARAMETERS --------------
+# See: Wiki -> User defined parameters
+# Data flow: [Read params from input file] -> [execute process_params( )] -> [pass params to functions]
+params[1]  =  -0.35; # g_delta
+params[2]  =  0.001; # harmonic osciallator parameter
+params[3]  =  0.00; # shift of the harmonic osciallator
+
+
+# ------------------- INITIALIZATION ------------------
+# See: Wiki -> Initialization of the solver
+inittype                -1       #  0 - create uniform solution and start from it,
+                                # 10 - read uniform solution from file `inprefix`/uniform.solution
+                                #  
+                                #  5 - start from st-wslda checkpoint, inprefix points to folder with checkpoint binary file
+                                #  
+                                # -1 - custom initialization, see wiki pages: Initialization of the st wslda solvers
+
+# ------------------- INPUT/OUTPUT ------------------
+outprefix               ho-r1    # all output file with start with this prefix
+inprefix                none    # prefix of calculation you need to use as input (when inittype!=0) 
+overwrite               1       # allow for overwriting results
+checkpoint              1       # do checkpoints after each iteration
+resetit                 1       # reset iterations counter (it): yes=1, no=0
+                                # Hint: use resetit=1 if you want to start a new calculation from the existing checkpoint
+                                # or resetit=0 if you want to continue the existing calculation.
+writewf                 1       # write wf at the end of computation: yes=1, no=0
+                                # Hint: use writewf=1 if you plan to evolve in time the derived static solution.
+# writeecut               10.0  # only states with |E_n/eF|<writeecut will be written, default writeecut=INFINITY
+iogroups                8       # number of IO groups used for parallel wf writing, default=1
+
+# list of variables for writing
+# all = rho delta j nu tau V V_ext delta_ext velocity_ext alpha A
+# default = rho delta j
+writevar           default nu tau V_ext
+
+# ----------------- PARTICLE NUMBERS -----------------
+Na                      20.     # Requested number of particles a-type
+Nb                      20.     # Requested number of particles b-type
+
+# ----------------- SCATTERING LENGTH -----------------
+sclgth    -1.0                  # scattering length in units of lattice spacing
+                                # meaningful only for FUNCTIONAL=BDG,SLDAE
+                                # in case of FUNCTIONAL=(A)SLDA it is set automatically to infinity
+#akF       -1.0                 # scattering length times Fermi wave vector
+                                # this tag modifies the value of tag sclgth via process_params(...) function
+                                # by default is inactive (akF=0)
+referencekF             1.0    # reference kF, otherwise max density will be used to calculate it automatically as kF=(3pi^2 n)^(1/3)
+
+# ----------------- SELF-CONSISTENT LOOP -----------------
+# ec                      4.9348022 # energy cut-off for regularization scheme, default ec = 0.5*( pi/max(DX,DY,DZ) )^2
+energyconveps           1.0e-8   # energy convergence epsilon, default=1.0e-6
+npartconveps            1.0e-8   # number of particles convergence epsilon, default=1.0e-6, for both components
+# npartconveps_a          1.0e-6   # or you can control npartconveps for each component separately using tags with `a` ...
+# npartconveps_b          1.0e-6   # ... and `b` suffixes.
+linearmixing            0.5      # mixing parameter for linear mixing scheme, default=0.5
+                                 # Limiting cases: 0.0=self-consistency is disabled, 
+                                 #                 1.0=fixed point iterations (solution from present iteration becomes input for next)
+muchange                0.1      # coefficient for changing chemical potential, default=0.5, for both components
+# muchange_a              0.5      # or you can control muchange for each component separately using tags with `a` ...
+# muchange_b              0.5      # ... and `b` suffixes. 
+mumaxchange             0.05     # maximal amount that chemical potential can change between iterations, in units of Fermi energy
+# mumaxchange_a           0.05     # or you can control mumaxchange for each component separately using tags with `a` ...
+# mumaxchange_b           0.05     # ... and `b` suffixes. 
+maxiters                200     # maximum number of iterations, default=10000
+# temperature             0.1      # requested temperature in units of eF, default T=0
+spinsymmetry            1        # set to 1 if you want to impose Na=Nb, default=0
+# killcurrents              0        # set to 1 if you want to impose by hand ja=jb=0 (solution has no currents), default=0
+nomixstart              1        # do not execute mixing for the first iteration
+                                 # use this option if you expect that memory buffers representing previous iterations 
+                                 # are not completely filled. It typically happens if automatic interpolation is used. 
+                                 # For more details see: Wiki -> Convergence control -> Disabling mixing in the first iteration
+# mixingtype              p        # 'd' - mix densities, 'p' - mix potentials (default)
+
+# ----------------- Broyden algorithm ----------------------
+# See: Wiki -> Broyden algorithm
+broyden                 0        # activate broyden mixing: 0-no, 1-yes, default=0 (linear mixing)
+broydenmixing           0.75     # mixing parameter (alpha) for Broyden mixing, default=0.75
+Mbroyden                5        # number of previous iterations used by Broyden, default=5 
+
+startbroyden            100        # iteration number (it) for which Broyden should be activated,
+                                 # for it<startbroyden algorithm proceeds with linear mixing 
+                                 # and used linearmixing value for mixing
+                                 # NOTE: for it in [startbroyden, startbroyden+Mbroyden] the algorithm
+                                 #       still continue with linear mixing, and it stores only data
+                                 # Broyden starts to operate for iteration it = startbroyden+Mbroyden+1
+                                 # and used broydenmixing value for mixing
+                                 # default=0
+#stopbroyden             100      # Broyden is deactivated for iteration it=stopbroyden
+                                 # starting from iteration it = stopbroyden+1 the algorithm again proceeds
+                                 # with linear mixing and used linearmixing value for mixing
+                                 # default=999999
+#broydenautores          1        # automatic restarts of Broyden algorithm: 0-no, 1-yes (default)
+#broydenEmaxchg          0.1      # if the total energy between iteration change by more than broydenEmaxchg 
+                                 # then Broyden is restarted, (default=0.1)
+#broydenEdelay           5        # scan energy changes only after broydenEdelay with Broyden has been executed 
+                                 # typically, just after starting the Broyden energy fluctuations are observed 
+                                 # which should decay within a few iterations (default=5)
+# Recommendation: Use  startbroyden and stopbroyden only if Broyden fails to converge. 
+#                 According to our experience, there are cases (physical problems)
+#                 where activating Broyden only for some number of iteration provides the best performance 
+
+# -------------- PARALLELIZATION SETTINGS --------------
+# NOTE: all matrices are processed collectively by p*q processes
+# Following condition must be satisfied:
+#   for 3D code: p*q=np
+#   for 2D code: np/(p*q)=i where i is INTEGER number smaller or equal than NZ/2
+#   for 1D code: np/(p*q)=i where i is INTEGER number smaller or equal than NY/2 x NZ/2
+# where np is total number of processes utilized for computation
+# If p i q is not provided (commented out) code will attempt to set them automatically,
+#    in some case this procedure fails.
+# p                       2
+# q                       2
+
+# data block size 
+# if you are not familiar with block-cyclic distribution value from set {16,32,64} is recommended
+mb                      32
+nb                      32
+
+# ----------- IN CASE OF: inittype=0 ----------------
+# See: Wiki -> Initialization of the solver
+# init0Na                 28.0   # requested number of particles of type a, default=Na
+# init0Nb                 28.0   # requested number of particles of type b, default=Nb
+# init0na                 0.01689   # ...alternatively, you can request the desired density for particles of type a
+# init0nb                 0.01689   # ...alternatively, you can request the desired density for particles of type b
+# init0muchange           0.1    # change rate of chemical potentials, default muchange
+# init0Tstart             0.1    # # start temperature, in units of eF, default value is equal to init0Tstop
+# init0Tstop              0.01   # Temperature, in units of eF, default=temperature 
+# init0DeltaT             0.01   # change of temperature in units of eF, default 0.01
+# init0eps                1.0e-9 # epsilon for convergence, default 1.0e-9
+# init0scmix              0.5    # mixing parameter in self-consistent process, default=linearmixing
+# init0kc                 3.1415 # momentum cut-off used for uniform solver, default=pi/max(DX,DY,DZ)
+# init0maxiter            1000   # maximum number of iterations, default=maxiters
+# init0debug              1      # debug level, default=0 (no debug info), 1 (basic debug info), 2 (detailed debug info)
+# init0save               1      # 0 - no saving of solution to file, 1 - save solution to the file 

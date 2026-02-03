@@ -181,6 +181,40 @@ void report_error(int errcode, FILE *stream)
             wfprintf(stream, "\t\t or\n");
             wfprintf(stream, "\t Recompile td code with selected SPINSYMMETRY_MODE, and rerun it again.\n");
             break;
+
+        case WSLDA_ERR_INITSTATE_FILE_NOT_FOUND:
+            wfprintf(stream, "\t The specified initial state file cannot be found!\n");
+            wfprintf(stream, "\t Check if the path to the file is correct.\n");
+            wfprintf(stream, "\t Execute command: `ls inprefix` to check if the file exists.\n");
+            break;
+
+        case WSLDA_ERR_INITSTATE_FOR_1D:
+            wfprintf(stream, "#\t The selected initial state is for 1D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break;
+        
+        case WSLDA_ERR_INITSTATE_FOR_2D:
+            wfprintf(stream, "#\t The selected initial state is for 2D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break; 
+
+        case WSLDA_ERR_INITSTATE_FOR_3D:
+            wfprintf(stream, "#\t The selected initial state is for 3D calculations!\n");
+            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            break; 
+
+        case WSLDA_ERR_MISSING_FILE_FOR_INITSTATE:
+            wfprintf(stream, "#\t Some files required for the selected initial state are missing!\n");
+            wfprintf(stream, "#\t Make sure that all required files are present in the specified directory.\n");
+            wfprintf(stream, "#\t Execute command: `ls inprefix` to check available files.\n");
+            break;
+
+        case WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD:
+            wfprintf(stream, "#\t Some files required for the selected initial state are missing!\n");
+            wfprintf(stream, "#\t Make sure that all required files are present in the specified directory.\n");
+            wfprintf(stream, "#\t Execute command: `ls inprefix` to check available files.\n");
+            wfprintf(stream, "#\t This error can also appear if there is mismatch of regularization schemes between static and time-dependent codes.\n");
+            break;
             
         default: 
             wfprintf(stream, "\tThis error does not have description.\n");
@@ -232,8 +266,8 @@ void report_warning(int errcode, FILE *stream)
             break;
             
         case WSLDA_WRN_CHECKPOINT_DORESIZE:
-            wfprintf(stream, "#\t Dimensonality of the lattice has changed!\n");
-            wfprintf(stream, "#\t The code will change dimensionality of given checkpoint data to the new lattice.\n");
+            wfprintf(stream, "#\t Dimensionality of the lattice has changed!\n");
+            wfprintf(stream, "#\t The code will change the dimensionality of the given checkpoint data to the new lattice.\n");
             break;
             
         case WSLDA_WRN_CHECKPOINT_UNPREDICTED:
@@ -246,7 +280,7 @@ void report_warning(int errcode, FILE *stream)
             wfprintf(stream, "#\t You are using code with different lattice spacing (DX,DY,DZ).\n");
             wfprintf(stream, "#\t This type of usage is not recommended for non-expert users,\n");
             wfprintf(stream, "#\t as it requires deep knowledge of the regularization procedure.\n");
-            break;
+            break; 
             
         default: 
             wfprintf(stream, "#\tThis warning does not have description.\n");

@@ -4,7 +4,7 @@ import os
 def read_checkpoint_info_pca(file_name):
     # This function reads checkpoint info from a binary file
     with open(file_name, 'rb') as file:
-        prec = int(np.fromfile(file, dtype=np.int32, count=1)[0]) # skip
+        dim = int(np.fromfile(file, dtype=np.int32, count=1)[0]) 
         nwf = int(np.fromfile(file, dtype=np.int32, count=1)[0])
         nx = int(np.fromfile(file, dtype=np.int32, count=1)[0])
         ny = int(np.fromfile(file, dtype=np.int32, count=1)[0])
@@ -16,18 +16,22 @@ def read_checkpoint_info_pca(file_name):
         mu = np.fromfile(file, dtype=np.float64, count=2)
         ec = np.fromfile(file, dtype=np.float64, count=1)[0]
         beta = np.fromfile(file, dtype=np.float64, count=1)[0]
-    return nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta
+    return dim, nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta
 
 def process_wave_functions(prefix):
     # Read lattice settings from the info file
-    file_name = os.path.join(prefix, 's2dpca.info')
+    file_name = os.path.join(prefix, 'wf.info')
     print(f"# READING INFO FILE: {file_name}")
-    nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta = read_checkpoint_info_pca(file_name)
+    codedim, nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta = read_checkpoint_info_pca(file_name)
 
     print(f"# LATTICE: {nx} x {ny} x {nz}")
     print(f"# SPACING: {dx:.2f} x {dy:.2f} x {dz:.2f}")
     print(f"# VOLUME : {dx * nx:.2f} x {dy * ny:.2f} x {dz * nz:.2f}")
 
+    if codedim != 2:
+        print("ERROR: This script is designed for 2D wave-functions only!")
+        return
+    
     # Allocate arrays for wave-functions
     u = np.zeros((nx, ny), dtype=np.complex128)
     v = np.zeros((nx, ny), dtype=np.complex128)
@@ -36,15 +40,15 @@ def process_wave_functions(prefix):
 
     for ikz in range(nz // 2):
         # Read file header
-        file_name = os.path.join(prefix, f's2dpca.{ikz:04d}.info')
+        file_name = os.path.join(prefix, f'wf.{ikz:04d}.info')
         print(f"# OPENING: {file_name}")
-        nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta = read_checkpoint_info_pca(file_name)
+        codedim, nwf, nx, ny, nz, dx, dy, dz, kF, mu, ec, beta = read_checkpoint_info_pca(file_name)
 
         # Open files
-        file_en = os.path.join(prefix, f's2dpca.{ikz:04d}.en')
-        file_kkz = os.path.join(prefix, f's2dpca.{ikz:04d}.kkz')
-        file_wfu = os.path.join(prefix, f's2dpca.{ikz:04d}.wfu')
-        file_wfv = os.path.join(prefix, f's2dpca.{ikz:04d}.wfv')
+        file_en = os.path.join(prefix, f'wf.{ikz:04d}_en.dat')
+        file_kkz = os.path.join(prefix, f'wf.{ikz:04d}_kkz.dat')
+        file_wfu = os.path.join(prefix, f'wf.{ikz:04d}_un.wdat')
+        file_wfv = os.path.join(prefix, f'wf.{ikz:04d}_vn.wdat')
 
         # degeneracy of the state
         wght=1
