@@ -190,17 +190,23 @@ void report_error(int errcode, FILE *stream)
 
         case WSLDA_ERR_INITSTATE_FOR_1D:
             wfprintf(stream, "#\t The selected initial state is for 1D calculations!\n");
-            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            wfprintf(stream, "#\t It is not compatible with your code dimensionality or with your input file settings!\n");
+            wfprintf(stream, "#\t The error may occur when the inittype is incompatible with the provided initial state.\n");
+            wfprintf(stream, "#\t -> Check the input for compatibility between the inittype and inprefix tags.\n");
             break;
         
         case WSLDA_ERR_INITSTATE_FOR_2D:
             wfprintf(stream, "#\t The selected initial state is for 2D calculations!\n");
-            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            wfprintf(stream, "#\t It is not compatible with your code dimensionality or with your input file settings!\n");
+            wfprintf(stream, "#\t The error may occur when the inittype is incompatible with the provided initial state.\n");
+            wfprintf(stream, "#\t -> Check the input for compatibility between the inittype and inprefix tags.\n");
             break; 
 
         case WSLDA_ERR_INITSTATE_FOR_3D:
             wfprintf(stream, "#\t The selected initial state is for 3D calculations!\n");
-            wfprintf(stream, "#\t It is not compatible with your code!\n");
+            wfprintf(stream, "#\t It is not compatible with your code dimensionality or with your input file settings!\n");
+            wfprintf(stream, "#\t The error may occur when the inittype is incompatible with the provided initial state.\n");
+            wfprintf(stream, "#\t -> Check the input for compatibility between the inittype and inprefix tags.\n");
             break; 
 
         case WSLDA_ERR_MISSING_FILE_FOR_INITSTATE:

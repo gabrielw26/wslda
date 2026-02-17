@@ -1,3 +1,6 @@
+# 2026.xx.xx
+- Minor improvements, like corrections in error messages. 
+
 # 2026.01.27
 * Wave functions are written in WData format by static codes.
 * New extension: for computation of superfluid velocity field (addvar-vs.c). 
