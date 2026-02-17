@@ -1,5 +1,5 @@
 # 2026.xx.xx
-- Minor improvements, like corrections in error messages. 
+* Minor improvements, like corrections in error messages. 
 
 # 2026.01.27
 * Wave functions are written in WData format by static codes.
