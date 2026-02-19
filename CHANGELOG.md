@@ -1,4 +1,5 @@
 # 2026.xx.xx
+* Renamed `templates/` directory to `platform/` to better reflect its purpose.
 * Minor improvements, like corrections in error messages. 
 
 # 2026.01.27
