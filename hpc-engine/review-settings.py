@@ -20,7 +20,7 @@ def scan_for_define(file_name):
             if line.startswith("#define"):
                 # Remove comments
                 line = line.split('//')[0].split('/*')[0].strip()
-                parts = line.split(maxsplit=2)
+                parts = line.split(None, 2)
                 if len(parts) >= 2:
                     name = parts[1]
                     value = parts[2] if len(parts) == 3 else ""
