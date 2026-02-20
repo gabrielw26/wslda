@@ -65,35 +65,27 @@ def main(wslda_dir, binary_name):
     predefines_h =  "./predefines.h"
     d_predefines_h = scan_for_define(predefines_h)
 
-    # # for test print keys and values of d_version_h
-    # for key, value in d_version_h.items():
-    #     print(f"{key}: {value}")
-    # for key, value in d_predefines_h.items():
-    #     print(f"{key}: {value}")
-
     # printing review report 
     key_width = 8
     key="BINARY"
-    print(f"{key:<{key_width}}: {binary_name}")
+    print("%8s : %s" % (key, binary_name))
     # enetries from VERSION.h
     for key, value in d_version_h.items():
         value = strip_from_value(value, '"()')
-        print(f"{key:<{key_width}}: {value}")
+        print("%8s : %s" % (key, value))
 
     # extract lattice size
     NX=strip_from_value(d_predefines_h.get("NX", ""), '"()')
     NY=strip_from_value(d_predefines_h.get("NY", ""), '"()')
     NZ=strip_from_value(d_predefines_h.get("NZ", ""), '"()')
     key="LATTICE"
-    value=f"{NX} x {NY} x {NZ}"
-    print(f"{key:<{key_width}}: {value}")
+    print("%8s : %s x %s x %s" % (key, NX, NY, NZ))
     # extract spacings
     DX=strip_from_value(d_predefines_h.get("DX", ""), '"()')
     DY=strip_from_value(d_predefines_h.get("DY", ""), '"()')
     DZ=strip_from_value(d_predefines_h.get("DZ", ""), '"()')
     key="SPACING"
-    value=f"{DX} x {DY} x {DZ}"
-    print(f"{key:<{key_width}}: {value}")
+    print("%8s : %s x %s x %s" % (key, DX, DY, DZ))
 
     NX_int = int(NX) if NX.isdigit() else None
     NY_int = int(NY) if NY.isdigit() else None
@@ -119,8 +111,8 @@ def main(wslda_dir, binary_name):
         warn="WARNING: Check Wiki->Strict 2D or 1D mode for more details."
 
     if warn!="":
-        value+=f" [{warn}]"
-    print(f"{key:<{key_width}}: {value}")
+        value+=" ["+warn+"]"
+    print("%8s : %s" % (key, value))
 
     
 # =========================================================================
