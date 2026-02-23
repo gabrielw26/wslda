@@ -119,16 +119,8 @@ Example: 1D static calculation.
 1. Set environment variable:  
    `export WSLDA=/path/to/wslda`
 
-<<<<<<< HEAD
 2. Create a working directory from a template:   
    `cp -r $WSLDA/st-project-template my-project-name`  
-=======
-2. Create a working directory from a template:  
-   For static calculations:  
-   `cp -r $WSLDA/st-project-template my-project-name`  
-   For time-dependent calculations:  
-   `cp -r $WSLDA/td-project-template my-project-name`
->>>>>>> origin/GW-branch
 
    Then enter the project directory:  
    `cd my-project-name`
