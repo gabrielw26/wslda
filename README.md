@@ -46,6 +46,8 @@ This approach:
 - ensures scalability on HPC systems,
 - promotes reproducible workflows.
 
+The toolkit is designed as an open research platform for large-scale density functional simulations of fermionic superfluids.
+
 # Reference
 G. Wlazłowski, P. Magierski, M. M. Forbes, A. Bulgac,  
 _W-SLDA Toolkit: A simulation platform for ultracold Fermi gases_,  
@@ -117,13 +119,25 @@ Example: 1D static calculation.
 1. Set environment variable:  
    `export WSLDA=/path/to/wslda`
 
-2. Load required modules (example):  
+2. Create a working directory from a template:   
+   `cp -r $WSLDA/st-project-template my-project-name`  
+
+   Then enter the project directory:  
+   `cd my-project-name`
+
+3. Edit the problem-definition files to configure your system:  
+   - `predefines.h`  
+   - `problem-definition.h`  
+   - `logger.h`
+   - `input.txt` (edit before running the simulation)
+
+4. Load required modules (example):  
    `source env.sh`
 
-3. Compile:  
+5. Compile:  
    `make 1d`
 
-4. Run:  
+6. Run:  
    `mpirun -np 4 ./st-wslda-1d input.txt`
 
 An example demonstrating the full workflow (Josephson junction dynamics) from configuration to visualization is available [here](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Example-Josephson-junction). 
@@ -139,8 +153,6 @@ Optionally, you can use wiki pages from mirror repositories: [GitLab wikis](http
 W-SLDA supports structured output via the W-data format.
 
 Reproducibility packs and benchmark examples are provided through the repository and official webpage.
-
-The toolkit is intended to serve as a reference implementation for large-scale fermionic superfluid simulations.
 
 # License
 
