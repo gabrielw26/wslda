@@ -7,6 +7,7 @@ It enables self-consistent static and time-dependent simulations of:
 
 - ultracold atomic Fermi gases,
 - superconducting systems,
+- atomtronical devices,
 - strongly interacting fermionic matter,
 - vortex dynamics and quantum turbulence,
 - Josephson effects,
@@ -27,8 +28,8 @@ W-SLDA provides a unified numerical framework for:
 
 Both ground-state (static) and real-time (time-dependent) dynamics are supported in:
 
-- 1D geometries (with translational invariance),
-- 2D geometries (with translational invariance),
+- 1D geometries,
+- 2D geometries,
 - full 3D Cartesian grids.
 
 The code is particularly suited for studying emergent collective phenomena in strongly correlated fermionic systems.
@@ -46,22 +47,22 @@ This approach:
 - ensures scalability on HPC systems,
 - promotes reproducible workflows.
 
-The toolkit is designed as an open research platform for large-scale density functional simulations of fermionic superfluids.
+The toolkit is designed as an open, extensible research platform for large-scale density-functional simulations of fermionic superfluids.
 
-# Reference
+## Reference
 G. Wlazłowski, P. Magierski, M. M. Forbes, A. Bulgac,  
 _W-SLDA Toolkit: A simulation platform for ultracold Fermi gases_,  
 [[arXiv:2602.08982](https://arxiv.org/abs/2602.08982)].
 
 If you use the W-SLDA Toolkit in your research, please cite the above work.
 
-# [Official webpage](https://wslda.fizyka.pw.edu.pl/)
+## [Official webpage](https://wslda.fizyka.pw.edu.pl/)
 
-# Repositories:
+## Repositories:
 * Main repository (authoritative source): [GitLab @ WUT](https://gitlab.fizyka.pw.edu.pl/wtools/wslda)
 * Mirrors: [GitLab](https://gitlab.com/coldatoms/wslda), [GitHub](https://github.com/gabrielw26/wslda)  
 
-# Implemented functionalities
+## Implemented Functionalities
 
 * **Solvers**: static and time-dependent equations
 * **Dimensionality**: 1D, 2D, and 3D geometries
@@ -77,19 +78,22 @@ If you use the W-SLDA Toolkit in your research, please cite the above work.
 * **Results reproducibility**: built-in mechanisms for reproducible simulations
 * **Data format**: support for the [W-data format](https://gitlab.fizyka.pw.edu.pl/wtools/wdata) for storing simulation results
 
-# Codes
+## Main Codes
 
-* **td-wslda-3d** – solver for time-dependent density functional equations on a full 3D Cartesian mesh
-* **td-wslda-2d** – solver for time-dependent density functional equations on a 3D Cartesian mesh with translational invariance imposed along the _z_ direction
-* **td-wslda-1d** – solver for time-dependent density functional equations on a 3D Cartesian mesh with translational invariance imposed along the _y_ and _z_ directions
-* **st-wslda-3d** – solver for static density functional equations on a full 3D Cartesian mesh; generates initial states for `td-wslda-3d`
-* **st-wslda-2d** – solver for static density functional equations with translational invariance along the _z_ direction; generates initial states for `td-wslda-3d` and `td-wslda-2d`
-* **st-wslda-1d** – solver for static density functional equations with translational invariance along the _y_ and _z_ directions; generates initial states for `td-wslda-3d`, `td-wslda-2d`, and `td-wslda-1d`
+Static solvers:
+- st-wslda-1d
+- st-wslda-2d
+- st-wslda-3d
+
+Time-dependent solvers:
+- td-wslda-1d
+- td-wslda-2d
+- td-wslda-3d
 
 For a detailed description of the available code types, see
 [Types of codes](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Types-of-codes).
 
-# System Requirements
+## System Requirements
 
 W-SLDA is designed for HPC environments.
 
@@ -110,9 +114,9 @@ Recommended:
 - GPU-enabled systems (if using GPU-enabled builds)
 
 Installation and build instructions are available
-[here](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Installing-the-toolkit).
+[here](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Installing-the-toolkit).
 
-# Quick start
+## Quick Start
 
 Example: 1D static calculation.
 
@@ -125,7 +129,7 @@ Example: 1D static calculation.
    Then enter the project directory:  
    `cd my-project-name`
 
-3. Edit the problem-definition files to configure your system:  
+3. Edit the problem-definition files to configure your system:
    - `predefines.h`  
    - `problem-definition.h`  
    - `logger.h`
@@ -142,34 +146,34 @@ Example: 1D static calculation.
 
 An example demonstrating the full workflow (Josephson junction dynamics) from configuration to visualization is available [here](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Example-Josephson-junction). 
 
-# Documentation
+## Documentation
 
 For full documentation, usage examples, and tutorials, see the
-[Wiki Pages](https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/home).  
+[Wiki Pages](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home).  
 Optionally, you can use wiki pages from mirror repositories: [GitLab wikis](https://gitlab.com/coldatoms/wslda/-/wikis/home), [GitHub wikis](https://github.com/gabrielw26/wslda/wiki).
 
-# Reproducibility and Data
+## Reproducibility and Data
 
 W-SLDA supports structured output via the W-data format.
 
 Reproducibility packs and benchmark examples are provided through the repository and official webpage.
 
-# License
+## License
 
 W-SLDA Toolkit is distributed under the GNU General Public License v3 (GPLv3).
 
 See the [COPYING](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/blob/public/COPYING) file for details.
 
-# Developers
+## Developers
 
 For the complete list of developers and contributors, see
 [Contributors](https://wslda.fizyka.pw.edu.pl/index.php/Info2/Contributors).
 
-# Bug reporting
+## Bug Reporting
 
 To report bugs or issues:
 * use the [Issue tracking system](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues)
 * or contact the development team via email: **wslda@fizyka.pw.edu.pl**
 
-# Contributing
+## Contributing
 If you would like to contribute to the W-SLDA Toolkit, please see the [CONTRIBUTING.md](https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/blob/public/CONTRIBUTING.md) file for guidelines and further information.

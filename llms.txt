@@ -12,7 +12,7 @@ Primary domains: ultracold Fermi gases, superconducting BdG simulations, vortex 
   Project overview, capabilities, executables, quick start.
 
 - Installation / building (Wiki)
-  https://gitlab.fizyka.pw.edu.pl/gabrielw/wslda/-/wikis/Installing-the-toolkit
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Installing-the-toolkit
   System requirements, dependencies, build instructions.
 
 - Setting up calculations (Wiki)
