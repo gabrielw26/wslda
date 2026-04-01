@@ -25,7 +25,7 @@ extern int wsldapid; // process id - global variable
 #undef API_PROBLEM_DEFINITION
 #undef printf
 
-#define Complex(a,b) (a + I*b)
+#define Complex(a,b) ((a) + I*(b))
 #define cnorm(a) (creal(a)*creal(a) + cimag(a)*cimag(a))
 // Number of self-consistent iterations for U and delta computation
 #undef UD_SCITERS
@@ -168,6 +168,9 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
     double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
     double complex p0, kc, wz_0, Zone, lnu, ldelta;
     double v_ext_a, v_ext_b;
+#ifdef USE_CUBIC_CUTOFF
+    double lkF, bcoeff, lx;
+#endif
 
     ixyz=0;
     for(ix=0; ix<lNX; ix++) for(iy=0; iy<lNY; iy++) for(iz=0; iz<lNZ; iz++)
@@ -266,25 +269,28 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
         lnu = nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
+        #ifdef USE_CUBIC_CUTOFF
+        lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
+        #endif
         // computation of Va and Vb and delta
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
             // pairing
-#ifdef USE_CUBIC_CUTOFF
-            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
-#else
             t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
             p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
             if(cimag(p0)<0.) p0 *= -1. ;
+            #ifdef USE_CUBIC_CUTOFF
+            kc=M_PI/DX;
+            #else
             kc = csqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
             if(cimag(kc)<0.) kc *= -1. ;
+            #endif 
 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
-            wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
-            wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
+            wz_0= kc * REG_COEFF_R0*( 1. - (p0 / kc) * REG_COEFF_R1 * wz_0);
 
+            wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
             // g_eff = wz_0.real();
             ldelta = lnu*(-1.0*creal(wz_0));
 
@@ -293,6 +299,25 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
             t7=cnorm(ldelta);
             Vanew = Va_const - t1*t6 - t3*t7;
             Vbnew = Vb_const - t2*t6 - t4*t7;
+
+            // correction to the mean-field due to regularization
+            #ifdef USE_CUBIC_CUTOFF
+            bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
+            lx = bcoeff*lkF * DX / M_PI;
+            if(creal(wz_0)<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+            {
+                wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                #define Lam_0 creal(wz_0)
+                #define dLam_0_dx cimag(wz_0)
+                lx = (lkF/(3.*(na+nb)*alph_plus))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                #define dLam_dn lx
+                Vanew+= dLam_dn*t7;
+                Vbnew+= dLam_dn*t7;
+                #undef Lam_0
+                #undef dLam_0_dx
+                #undef dLam_dn
+            }
+            #endif
 
             // check convergence
             isconverged=1;
@@ -503,24 +528,49 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         lnu = nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
+        #ifdef USE_CUBIC_CUTOFF
+        double nab=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
+        double lkF = pow(3.0*M_PI*M_PI*nab, 1.0/3.0); // kF
+        #endif
+
         // pairing
-#ifdef USE_CUBIC_CUTOFF
-        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*alph_plus*M_PI*DX), 0.0);
-#else
         t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
         p0 = csqrt( Complex(2.0*t7/ alph_plus, 0.0) );
         if(cimag(p0)<0.) p0 *= -1. ;
+        #ifdef USE_CUBIC_CUTOFF
+        kc=M_PI/DX;
+        #else
         kc = csqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
         if(cimag(kc)<0.) kc *= -1. ;
+        #endif 
 
         wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
         if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
-        wz_0= kc / ( 2. * M_PI * M_PI * alph_plus) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
+        wz_0= kc *REG_COEFF_R0/alph_plus *( 1. - (p0 / kc ) * REG_COEFF_R1 * wz_0);
         wz_0 = Zone / (Zone*t5 - wz_0);
 
         // g_eff = wz_0.real();
         ldelta = lnu*(-1.0*creal(wz_0));
+
+        // correction to the mean-field due to regularization
+        #ifdef USE_CUBIC_CUTOFF
+        double bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
+        double lx = bcoeff*lkF * DX / M_PI;
+        if(creal(wz_0)<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+        {
+                wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                #define Lam_0 creal(wz_0)
+                #define dLam_0_dx cimag(wz_0)
+                lx = (lkF/(3.*nab*alph_plus))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                #define dLam_dn lx
+                t7=cnorm(ldelta);
+                Va+= dLam_dn*t7;
+                Vb+= dLam_dn*t7;
+                #undef Lam_0
+                #undef dLam_0_dx
+                #undef dLam_dn
+        }
+        #endif
 
         // save potentials
         V_a[ixyz]=0.0; // no mean-filed potential in BDG

@@ -206,6 +206,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     int iter;
     double tau_m, tau_p;
     double V_a, V_b, mu_p, g_eff, eta_a, eta_b;
+    double V_a_old, V_b_old;
     double complex p0, wz_0;
     double complex Zzero = 0.0 + I*0.0;
     double complex Zone  = 1.0 + I*0.0;
@@ -237,6 +238,8 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             tau_b_old=tau_b;
             delta_old=delta;
             nu_old=nu;
+            V_a_old=V_a;
+            V_b_old=V_b;
 
             // potential
             tau_p=tau_a + tau_b;
@@ -246,15 +249,17 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             V_b = dalphm_dnb*tau_m/2.0 + dalphp_dnb*(tau_p/2.0 - delta*nu/alph_plus) - dtildeC_dnb*delta*delta/alph_plus + dD_dnb;
 
             // pairing
-#ifdef USE_CUBIC_CUTOFF
-            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
-#else
-            mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
+            mu_p=(mu_a-V_a_old+mu_b-V_b_old)/2.0;
             p0 = csqrt( 2.0*mu_p/ alph_plus) ;
             if ( cimag(p0) < 0. ) p0 *= -1. ;
 
             //## kc is fixed, and it will be translated into ec
+            #ifdef USE_CUBIC_CUTOFF
+            // no change of ec, which is set to infinity
+            kc = M_PI/DX;
+            #else
             ec = alph_plus*kc*kc/2.0 - mu_p;
+            #endif
 
             // ec is fixed, and it will be translated into kc
             // kc = sqrt( 2.0*(ec+mu_p)/ alph_plus) ;
@@ -262,10 +267,28 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
 
-            wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
+            wz_0= kc *REG_COEFF_R0 *( 1. - ( p0 / kc ) * REG_COEFF_R1*wz_0);
+
             g_eff = creal( Zone*alph_plus / (Zone*tC - wz_0) );
             delta = -1.0*g_eff*nu;
+
+            #ifdef USE_CUBIC_CUTOFF
+            // correction to the mean-field due to regularization
+            double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
+            double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems
+            double x = bcoeff*kF * DX / M_PI;
+            if(g_eff<-1.0e-10 && x>1.0e-10) // to avoid numerical problems
+            {
+                double Lam_0 = bcoeff*REG_COEFF_R0/x *(1.0-REG_COEFF_R1*x*log((1.0+x)/(1.0-x)));
+                double dLam_0_dx = (-2.*bcoeff* REG_COEFF_R0*REG_COEFF_R1)/(1.-x*x) - bcoeff*REG_COEFF_R0/x/x; // derivative of Lam_0 with respect to x
+
+                double Lam = Lam_0*kF/alph_plus; // regularizator in codes units, with A correction
+                double dLam_dn = (kF/(3.*(n0_a+n0_b)*alph_plus))*(Lam_0+dLam_0_dx*bcoeff*DX*kF/M_PI);// derivative of Lam with respect to n
+            
+                V_a+=dLam_dn*pow(delta,2);
+                V_b+=dLam_dn*pow(delta,2);
+            }
+            #endif
 
             // contribution from states to densities
             S=0.0;
@@ -1189,6 +1212,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     int iter;
     double tau_m, tau_p;
     double V_a, V_b, mu_p, g_eff, eta_a, eta_b;
+    double V_a_old, V_b_old;
     double complex p0, wz_0;
     double complex Zzero = 0.0 + I*0.0;
     double complex Zone  = 1.0 + I*0.0;
@@ -1199,7 +1223,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     int is_conv;
     double beta, T, S;
     double energy_kin, energy_pot, energy_pair, energy_tot;
-    double ec;
+    double ec=md.ec;
 
     // iterate over temperatures range
     double md_init0Tstart=fabs(md.init0Tstart);
@@ -1220,6 +1244,8 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             tau_b_old=tau_b;
             delta_old=delta;
             nu_old=nu;
+            V_a_old=V_a; 
+            V_b_old=V_b;
 
             // potential
             tau_p=tau_a + tau_b;
@@ -1229,23 +1255,44 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             V_b = 0.0;
 
             // pairing
-#ifdef USE_CUBIC_CUTOFF
-            wz_0=REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX) + I*0.0;
-#else
-            mu_p=(mu_a-V_a+mu_b-V_b)/2.0;
+            mu_p=(mu_a-V_a_old+mu_b-V_b_old)/2.0;
             p0 = csqrt( 2.0*mu_p) ;
             if ( cimag(p0) < 0. ) p0 *= -1. ;
-            // kc is fixed, and it will be translated into ec
+
+            //## kc is fixed, and it will be translated into ec
+            #ifdef USE_CUBIC_CUTOFF
+            // no change of ec, which is set to infinity
+            kc = M_PI/DX;
+            #else
             ec = kc*kc/2.0 - mu_p;
+            #endif
 
             wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
 
-            wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
+            wz_0= kc *REG_COEFF_R0 *( 1. - ( p0 / kc ) * REG_COEFF_R1*wz_0);
+
             g_eff = creal( Zone / (Zone/gbare - wz_0) );
             delta = -1.0*g_eff*nu;
-//             wprintf("AAA: %f %f \n", delta, g_eff);
+            // printf("# T=%f iter=%d: V_a=%f V_b=%f delta=%f nu=%f g_eff=%f wz_0=(%f,%f)\n", T, iter, V_a, V_b, delta, nu, g_eff, creal(wz_0), cimag(wz_0) );
+
+            #ifdef USE_CUBIC_CUTOFF
+            // correction to the mean-field due to regularization
+            double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
+            double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems
+            double x = bcoeff*kF * DX / M_PI;
+            if(g_eff<-1.0e-10 && x>1.0e-10) // to avoid numerical problems
+            {
+                double Lam_0 = bcoeff*REG_COEFF_R0/x *(1.0-REG_COEFF_R1*x*log((1.0+x)/(1.0-x)));
+                double dLam_0_dx = (-2.*bcoeff* REG_COEFF_R0*REG_COEFF_R1)/(1.-x*x) - bcoeff*REG_COEFF_R0/x/x; // derivative of Lam_0 with respect to x
+
+                double Lam = Lam_0*kF; // regularizator in codes units, with A correction
+                double dLam_dn = (kF/(3.*(n0_a+n0_b)))*(Lam_0+dLam_0_dx*bcoeff*DX*kF/M_PI);// derivative of Lam with respect to n
+            
+                V_a+=dLam_dn*pow(delta,2);
+                V_b+=dLam_dn*pow(delta,2);
+            }
+            #endif
 
             // contribution from states to densities
             S=0.0;

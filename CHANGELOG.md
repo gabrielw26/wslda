@@ -1,4 +1,5 @@
 # 2026.xx.xx
+* The cubic regularization scheme was improved. 
 * Renamed `templates/` directory to `platform/` to better reflect its purpose.
 * The summary is printed at the end of the compilation process. 
 * Minor improvements, like corrections in error messages. 
