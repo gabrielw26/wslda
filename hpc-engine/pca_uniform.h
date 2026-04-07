@@ -205,7 +205,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
     int maxiter=md.init0maxiter;
     int iter;
     double tau_m, tau_p;
-    double V_a, V_b, mu_p, g_eff, eta_a, eta_b;
+    double V_a=0.0, V_b=0.0, mu_p, g_eff, eta_a, eta_b;
     double V_a_old, V_b_old;
     double complex p0, wz_0;
     double complex Zzero = 0.0 + I*0.0;
@@ -408,7 +408,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             }
 
             if(printout && md.init0debug>1) wprintf("D: iter=%d: V_a=%f, V_b=%f, delta=%f, n_a=%f, n_b=%f, tau_a=%f, tau_b=%f, nu=%f\n", iter, V_a, V_b, delta, n_a, n_b, tau_a, tau_b, nu);
-
+            
             // check convergence
             if(printout && md.init0debug>1) wprintf("C: iter=%d: fabs(n0_a-n_a)=%g fabs(n0_b-n_b)=%g fabs(delta-delta_old)=%g, mu_a=%f, mu_b=%f\n", iter, fabs(n0_a-n_a), fabs(n0_b-n_b), fabs(delta-delta_old), mu_a, mu_b);
             is_conv=1;
@@ -1211,7 +1211,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
     int maxiter=md.init0maxiter;
     int iter;
     double tau_m, tau_p;
-    double V_a, V_b, mu_p, g_eff, eta_a, eta_b;
+    double V_a=0.0, V_b=0.0, mu_p, g_eff, eta_a, eta_b;
     double V_a_old, V_b_old;
     double complex p0, wz_0;
     double complex Zzero = 0.0 + I*0.0;
