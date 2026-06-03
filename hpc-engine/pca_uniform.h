@@ -1598,8 +1598,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     }
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
-    double alpha_, beta_, inverse_gamma_;    // HFB paremeters
-    double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
+    double alpha_, beta_, inverse_gamma_; // HFB paremeters
+    double alpha_p; // HFB parameter derivative
     double af_, bf_, cf_;    // functional parameters
     double af_p, bf_p, cf_p; // functional parameters (fderiv)
     double nt_, nt_1o3, nt_2o3; // power of total local density
@@ -1609,8 +1609,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         // ctilde_ ~ alpha_ * nt_1o3 * inverse_gamma_
         // but depends on regularization scheme
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
-    double lambda_, lambda_p, lmu_sc; // spherical cutoff integral
-    double a_ln_a, a_ln_a_p; // log alpha correction register to ctilde_
+    double lambda_, lmu_sc; // spherical cutoff integral
     //##
 
     // register for total density
@@ -1639,8 +1638,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     beta_ = beta_parameter_d0(x_);
     inverse_gamma_ = inverse_gamma_parameter_d0(x_);
     alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
-    beta_p = dx_dnt_ * beta_parameter_d1(x_);
-    inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
     af_ = a_functional_d0(x_);
     bf_ = b_functional_d0(x_);
     cf_ = c_functional_d0(x_);
@@ -1715,11 +1712,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     // auxliary variables
     int maxiter=md.init0maxiter;
     int iter;
-    double tau_m, tau_p;
     double V_a, V_b, eta_a, eta_b;
     double complex p0, wz_0;
-    double p0_;
-    double complex Zzero = 0.0 + I*0.0;
     double complex Zone  = 1.0 + I*0.0;
     double uk, vk, ek;
     double n_a, n_b;
@@ -1764,24 +1758,58 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
 
             // effective pairing coupling constants and pairing field
             lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
-            ec = af_ * kc * kc / 2. - lmu_sc;
-            p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
-            //
-            ctilde_ = af_ * nt_1o3 / cf_;
-            inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
-            ctilde_p = inverse_gamma_eff * af_ / (3. * nt_2o3) + af_p * nt_1o3 / cf_;
+            // p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
 
-            if (lmu_sc >= 0.) {
-              lambda_ = (kc + p0_) / (kc - p0_);
-              lambda_ = 1. - p0_ / (2. * kc) * log(lambda_);
-              lambda_ *= kc / (2. * M_PI_SQ);
-            } else {
-              lambda_ = p0_ / kc;
-              lambda_ = 1. + p0_ / kc * atan(lambda_);
-              lambda_ *= kc / (2. * M_PI_SQ);
-            }
+            // if (lmu_sc >= 0.) {
+            //   lambda_ = (kc + p0_) / (kc - p0_);
+            //   lambda_ = 1. - p0_ / (2. * kc) * log(lambda_);
+            //   lambda_ *= kc / (2. * M_PI_SQ);
+            // } else {
+            //   lambda_ = p0_ / kc;
+            //   lambda_ = 1. + p0_ / kc * atan(lambda_);
+            //   lambda_ *= kc / (2. * M_PI_SQ);
+            // }
+
+            // unified expression for spherical and cubic cut-off regularization schemes
+            p0 = csqrt( 2.0*lmu_sc/ af_) ;
+            if ( cimag(p0) < 0. ) p0 *= -1. ;
+
+            //## kc is fixed, and it will be translated into ec
+            #ifdef USE_CUBIC_CUTOFF
+            // no change of ec, which is set to infinity
+            kc = M_PI/DX;
+            #else
+            ec = af_*kc*kc/2.0 - lmu_sc;
+            #endif
+
+            wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
+            if ( cimag(wz_0) < 0. ) wz_0 += I * 2. * M_PI ;
+
+            wz_0= kc *REG_COEFF_R0 *( 1. - ( p0 / kc ) * REG_COEFF_R1*wz_0);
+            lambda_=creal(wz_0);
+
+            // effective coupling constant
             g_eff = af_ / (ctilde_ - lambda_);
+            // pairing field
             delta = -nu * g_eff;
+
+            #ifdef USE_CUBIC_CUTOFF
+            // correction to the mean-field due to regularization
+            double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
+            double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems
+            double x = bcoeff*kF * DX / M_PI;
+            if(g_eff<-1.0e-10 && x>1.0e-10) // to avoid numerical problems
+            {
+                double Lam_0 = bcoeff*REG_COEFF_R0/x *(1.0-REG_COEFF_R1*x*log((1.0+x)/(1.0-x)));
+                double dLam_0_dx = (-2.*bcoeff* REG_COEFF_R0*REG_COEFF_R1)/(1.-x*x) - bcoeff*REG_COEFF_R0/x/x; // derivative of Lam_0 with respect to x
+
+                double Lam = Lam_0*kF/af_; // regularizator in codes units, with A correction
+                double dLam_dn = (kF/(3.*(n0_a+n0_b)*af_))*(Lam_0+dLam_0_dx*bcoeff*DX*kF/M_PI);// derivative of Lam with respect to n
+            
+                V_a+=dLam_dn*pow(delta,2);
+                V_b+=dLam_dn*pow(delta,2);
+            }
+            #endif
 
             // contribution from states to densities
             S=0.0;
@@ -1936,7 +1964,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
         energy_pair=-1.0*delta*nu*LXYZ;
         energy_tot=energy_kin+energy_pot+energy_pair;
         if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, energy_kin=%f, energy_pot=%f, energy_pair=%f, energy_tot=%f\n", T, energy_kin/Effg, energy_pot/Effg, energy_pair/Effg, energy_tot/Effg);
-        if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, S/NkB=%16.12f\n", T, S/((n0_a+n0_a)*LXYZ));
+        if(printout  && md.init0debug>0) wprintf("# TEMPCONV: T=%f, S/NkB=%16.12f\n", T, S/((n0_a+n0_b)*LXYZ));
         fflush(stdout);
     }
 
