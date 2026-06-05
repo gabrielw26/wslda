@@ -9,6 +9,7 @@
  * @author Gabriel Wlazlowski
  * @date 04.09.2020
  * */
+
 #include <stdio.h>
 #include "pca_settings.h"
 #include "pca_utils.h"
@@ -728,8 +729,8 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
 
     //##
     double as_, x_, kF_, eF_; // local Fermi momentum and Fermi energy
-    double alpha_, beta_, inverse_gamma_;    // HFB paremeters
-    double alpha_p, beta_p, inverse_gamma_p; // HFB paremeters (fderiv)
+    double alpha_, beta_, inverse_gamma_; // HFB paremeters
+    double alpha_p; // HFB paremeter derivative
     double af_, bf_, cf_;    // functional parameters
     double af_p, bf_p, cf_p; // functional parameters (fderiv)
     double nt_, nt_1o3, nt_2o3; // power of total local density
@@ -739,11 +740,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
         // ctilde_ ~ alpha_ * nt_1o3 * inverse_gamma_
         // but depends on regularization scheme
     double g_eff, inverse_gamma_eff; // renormalized pairing coupling constants
-    double kc, p0, lambda_, lmu_sc; // spherical cutoff integral
-    double ec_, kc_, p0_;
-    double ec = md.ec;
-    double Vkin_a,Vkin_b, Vcurr_a,Vcurr_b;
-    double a_ln_a, a_ln_a_p; // log correction to ctilde_
+    double complex p0, kc, wz_0; // spherical cutoff integral
+    double lambda_, lmu_sc;
+    double Vcurr_a, Vcurr_b;
     //##
 
     // densities - decode
@@ -763,7 +762,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     double *V_b = h_potentials.V_b;
     double complex *delta = h_potentials.delta;
     // registers
-    double na, nb, taua, taub, lmu; // lmu = averaged local chemical potential
+    double na, nb, taua, taub;
     double Va, Vb, v_ext_a, v_ext_b, Vanew, Vbnew, Va_const, Vb_const;
     double complex lnu, ldelta;
     double delta_abs_sq, delta_dag_nu;
@@ -771,6 +770,9 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int i, is_converged;   // self-consistent loop
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
     double nt_reg;
+#ifdef USE_CUBIC_CUTOFF
+    double lkF, bcoeff, lx;
+#endif
 
 
 //     // get range of points for computation
@@ -825,8 +827,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             beta_ = beta_parameter_d0(x_);
             inverse_gamma_ = inverse_gamma_parameter_d0(x_);
             alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
-            beta_p = dx_dnt_ * beta_parameter_d1(x_);
-            inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
             af_ = a_functional_d0(x_);
             bf_ = b_functional_d0(x_);
             cf_ = c_functional_d0(x_);
@@ -905,17 +905,32 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             Vb = V_b[ixyz] + v_ext_b; // initial values
 
             ldelta = delta[ixyz];
-            delta_dag_nu = creal(conj(ldelta) * lnu); // delta^+ * nu
-            delta_abs_sq = creal(ldelta) * creal(ldelta) + cimag(ldelta) * cimag(ldelta); // delta^+ * delta
 
+            #ifdef USE_CUBIC_CUTOFF
+            lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
+            #endif
             // self-consistent computation of Va and Vb and delta
             for(i = 0; i < UD_SCITERS; i++) // self-consistent loop
             {
 
               // effective pairing coupling constants and pairing field
               lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
-              kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
-              p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+
+              p0 = csqrt( Complex(2.0*lmu_sc/ af_, 0.0) );
+              if(cimag(p0)<0.) p0 *= -1. ;
+              #ifdef USE_CUBIC_CUTOFF
+              kc=M_PI/DX;
+              #else
+              kc = csqrt( Complex(2.0*(dc_ec+lmu_sc)/ af_, 0.0) );
+              if(cimag(kc)<0.) kc *= -1. ;
+              #endif               
+
+              wz_0 = clog( ( kc + p0 ) / ( kc - p0 ) ) ;
+              if ( cimag(wz_0) < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
+              wz_0= kc * REG_COEFF_R0*( 1. - (p0 / kc) * REG_COEFF_R1 * wz_0);
+
+              lambda_=creal(wz_0);
+
               //
               ctilde_ = af_ * nt_1o3 / cf_;
               inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
@@ -925,16 +940,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                 ctilde_p = 0.;
               }
               ctilde_p += af_p * nt_1o3 / cf_;
-
-              if (lmu_sc >= 0.) {
-                lambda_ = (kc_ + p0_) / (kc_ - p0_);
-                lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
-                lambda_ *= kc_ / (2. * M_PI_SQ);
-              } else {
-                lambda_ = p0_ / kc_;
-                lambda_ = 1. + p0_ / kc_ * atan(lambda_);
-                lambda_ *= kc_ / (2. * M_PI_SQ);
-              }
 
               g_eff = af_ / (ctilde_ - lambda_);
               ldelta = -lnu * g_eff; //##
@@ -950,6 +955,25 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                       ctilde_p / af_ * delta_abs_sq;
               Vbnew = Vb_const - (af_p / af_) * delta_dag_nu -
                       ctilde_p / af_ * delta_abs_sq;
+
+                // correction to the mean-field due to regularization
+                #ifdef USE_CUBIC_CUTOFF
+                bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
+                lx = bcoeff*lkF * DX / M_PI;
+                if(g_eff<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+                {
+                    wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                    #define Lam_0 creal(wz_0)
+                    #define dLam_0_dx cimag(wz_0)
+                    lx = (lkF/(3.*(na+nb)*af_))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                    #define dLam_dn lx
+                    Vanew+= dLam_dn*delta_abs_sq;
+                    Vbnew+= dLam_dn*delta_abs_sq;
+                    #undef Lam_0
+                    #undef dLam_0_dx
+                    #undef dLam_dn
+                }
+                #endif
 
               // check convergence for original renormalization scheme
               is_converged = 1;
@@ -974,7 +998,6 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
             h_potentials.alpha_b[ixyz] = af_;
             // HERE
 
-            t1 = polarization(na, nb); // = 0.;
             t7 = p_regularization(rho_a[ixyz]);
             if(t7!=0.0)
             {

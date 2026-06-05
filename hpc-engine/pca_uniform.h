@@ -1712,7 +1712,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
     // auxliary variables
     int maxiter=md.init0maxiter;
     int iter;
-    double V_a, V_b, eta_a, eta_b;
+    double V_a=0.0, V_b=0.0, eta_a, eta_b;
+    double V_a_old, V_b_old;
     double complex p0, wz_0;
     double complex Zone  = 1.0 + I*0.0;
     double uk, vk, ek;
@@ -1745,6 +1746,8 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             tau_b_old=tau_b;
             delta_old=delta;
             nu_old=nu;
+            V_a_old=V_a;
+            V_b_old=V_b;
 
             // potential (kinetic contribution)
             V_a = af_p * (tau_a+tau_b) / 2.;
@@ -1757,7 +1760,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             V_b += -ctilde_p*delta*delta/af_ - af_p*delta*nu/af_;
 
             // effective pairing coupling constants and pairing field
-            lmu_sc = (mu_a - V_a + mu_b - V_b) / 2.;
+            lmu_sc = (mu_a - V_a_old + mu_b - V_b_old) / 2.;
             // p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
 
             // if (lmu_sc >= 0.) {
@@ -1803,7 +1806,6 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
                 double Lam_0 = bcoeff*REG_COEFF_R0/x *(1.0-REG_COEFF_R1*x*log((1.0+x)/(1.0-x)));
                 double dLam_0_dx = (-2.*bcoeff* REG_COEFF_R0*REG_COEFF_R1)/(1.-x*x) - bcoeff*REG_COEFF_R0/x/x; // derivative of Lam_0 with respect to x
 
-                double Lam = Lam_0*kF/af_; // regularizator in codes units, with A correction
                 double dLam_dn = (kF/(3.*(n0_a+n0_b)*af_))*(Lam_0+dLam_0_dx*bcoeff*DX*kF/M_PI);// derivative of Lam with respect to n
             
                 V_a+=dLam_dn*pow(delta,2);
