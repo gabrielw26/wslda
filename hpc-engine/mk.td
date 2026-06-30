@@ -137,8 +137,8 @@ d3d: $(OBJS3D) $(OBJS) $(NVCCOBJS3D) $(NVCCOBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WI
 	$(CXX) -o $(BINDIR)td-wslda-3d $(CFLAGS) $^ $(LIBS)
 	$(PYTHON) $(SRCDIR)review-settings.py $(WSLDADIR) $(BINDIR)td-wslda-3d
 
-mpitimeexe: $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
-	$(CXX) -o $(BINDIR)mpitime $(CFLAGS) $(LIBS) -lm $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o
+mpitimeexe: $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o $(OBJDIR)tdwslda_memory_management.o
+	$(CXX) -o $(BINDIR)mpitime $(CFLAGS) $(LIBS) -lm $(OBJDIR)mpitime.o $(OBJDIR)pca_kernels.o $(OBJDIR)pca_derivative.o $(OBJDIR)pca_utils.o $(OBJDIR)wslda_errors.o $(OBJDIR)wslda_potdens.o $(OBJDIR)reduce_many.o $(OBJDIR)tdwslda_memory_management.o
 
 $(OBJDIR)mpitime.o: $(SRCDIR)mpitime.c $(DEPSLOCAL) $(DEPS)
 	$(CXX) $(CFLAGS) -c -o $@ $<
