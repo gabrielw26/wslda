@@ -272,7 +272,7 @@ int solve_uniform_problem(double n0_a, double n0_b, int *nwf, int printout)
             g_eff = creal( Zone*alph_plus / (Zone*tC - wz_0) );
             delta = -1.0*g_eff*nu;
 
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             // correction to the mean-field due to regularization
             double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
             double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems
@@ -1276,7 +1276,7 @@ int solve_uniform_problem_bdg(double n0_a, double n0_b, int *nwf, int printout)
             delta = -1.0*g_eff*nu;
             // printf("# T=%f iter=%d: V_a=%f V_b=%f delta=%f nu=%f g_eff=%f wz_0=(%f,%f)\n", T, iter, V_a, V_b, delta, nu, g_eff, creal(wz_0), cimag(wz_0) );
 
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             // correction to the mean-field due to regularization
             double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
             double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems
@@ -1796,7 +1796,7 @@ int solve_uniform_problem_sldae(double n0_a, double n0_b, int *nwf, int printout
             // pairing field
             delta = -nu * g_eff;
 
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             // correction to the mean-field due to regularization
             double kF=pow(3.0*M_PI*M_PI*(n0_a+n0_b), 1.0/3.0);
             double bcoeff=creal(p0)/(kF+1.0e-12); // to avoid numerical problems

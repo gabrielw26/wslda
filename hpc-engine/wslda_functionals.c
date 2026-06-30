@@ -169,7 +169,7 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
     double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
     double complex p0, kc, wz_0, Zone, lnu, ldelta;
     double v_ext_a, v_ext_b;
-#ifdef USE_CUBIC_CUTOFF
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
     double lkF, bcoeff, lx;
 #endif
 
@@ -270,7 +270,7 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
         lnu = nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
         #endif
         // computation of Va and Vb and delta
@@ -302,7 +302,7 @@ int compute_potentials_aslda(int it, wslda_density h_densities, wslda_potential 
             Vbnew = Vb_const - t2*t6 - t4*t7;
 
             // correction to the mean-field due to regularization
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
             lx = bcoeff*lkF * DX / M_PI;
             if(creal(wz_0)<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
@@ -529,7 +529,7 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         lnu = nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         double nab=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
         double lkF = pow(3.0*M_PI*M_PI*nab, 1.0/3.0); // kF
         #endif
@@ -554,7 +554,7 @@ int compute_potentials_bdg(int it, wslda_density h_densities, wslda_potential h_
         ldelta = lnu*(-1.0*creal(wz_0));
 
         // correction to the mean-field due to regularization
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         double bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
         double lx = bcoeff*lkF * DX / M_PI;
         if(creal(wz_0)<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
@@ -770,7 +770,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
     int i, is_converged;   // self-consistent loop
     double t1, t2, t3, t4, t5, t6, t7; // temporary registers for current corrections
     double nt_reg;
-#ifdef USE_CUBIC_CUTOFF
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
     double lkF, bcoeff, lx;
 #endif
 
@@ -906,7 +906,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
 
             ldelta = delta[ixyz];
 
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
             #endif
             // self-consistent computation of Va and Vb and delta
@@ -957,7 +957,7 @@ int compute_potentials_sldae(int it, wslda_density h_densities, wslda_potential 
                       ctilde_p / af_ * delta_abs_sq;
 
                 // correction to the mean-field due to regularization
-                #ifdef USE_CUBIC_CUTOFF
+                #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
                 bcoeff=creal(p0/(lkF+1.0e-12)); // to avoid numerical problems when density is very low, add small number to denominator
                 lx = bcoeff*lkF * DX / M_PI;
                 if(g_eff<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems

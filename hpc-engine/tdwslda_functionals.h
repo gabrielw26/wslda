@@ -60,7 +60,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
     double dalphm_dna, dalphm_dnb, dalphp_dna, dalphp_dnb;
     double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
     Complex p0, kc, wz_0, Zone, lnu, ldelta;
-#ifdef USE_CUBIC_CUTOFF
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
     double lkF, bcoeff, lx;
 #endif
 
@@ -242,7 +242,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
         #endif
         // computation of Va and Vb and delta
@@ -274,7 +274,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
             Vbnew = Vb_const - t2*t6 - t4*t7;
 
             // correction to the mean-field due to regularization
-            #ifdef USE_CUBIC_CUTOFF
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
             bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
             lx = bcoeff*lkF * DX / M_PI;
             if(wz_0.real()<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
@@ -380,9 +380,9 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 
     double Va, Vb, alph_plus;
     Complex p0, kc, wz_0, Zone, lnu, ldelta;
-    #ifdef USE_CUBIC_CUTOFF
-    double lkF, bcoeff, lx;
     double V_a_old, V_b_old;
+    #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+    double lkF, bcoeff, lx;
     #endif
 
     if(ixyz<NUMBER_ELEMENT)
@@ -399,15 +399,14 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         Zone = Complex(1.0, 0.0);
 
         // pairing
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         double nab=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
         lkF = pow(3.0*M_PI*M_PI*nab, 1.0/3.0); // kF
+        #endif
         V_a_old=h_potentials.V_a[ixyz];
         V_b_old=h_potentials.V_b[ixyz];
         t7=(dc_mu_a-V_a_old+dc_mu_b-V_b_old)/2.0;
-        #else
-        t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
-        #endif
+        
         p0 = thrust::sqrt( Complex(2.0*t7, 0.0) );
         if(p0.imag()<0.) p0 *= -1. ;
         #ifdef USE_CUBIC_CUTOFF
@@ -426,7 +425,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         ldelta = lnu*(-1.0*wz_0.real());
 
         // correction to the mean-field due to regularization
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
         lx = bcoeff*lkF * DX / M_PI;
         if(wz_0.real()<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
@@ -549,7 +548,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
     double na, nb, taua, taub;
     double Va, Vb, Va_const, Vb_const, Vanew, Vbnew;
     double t1, t2, t3, t4, t5, t6, t7;
-#ifdef USE_CUBIC_CUTOFF
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
     double lkF, bcoeff, lx;
 #endif
 
@@ -744,7 +743,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         }
 #endif
 
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
         #endif
         // computation of Va and Vb and delta
@@ -781,7 +780,7 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
                 ctilde_p / af_ * delta_abs_sq;
 
         // correction to the mean-field due to regularization
-        #ifdef USE_CUBIC_CUTOFF
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
         bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
         lx = bcoeff*lkF * DX / M_PI;
         if(g_eff<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems

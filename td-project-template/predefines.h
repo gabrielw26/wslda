@@ -97,6 +97,12 @@
 // #define REGULARIZATION_SCHEME CUBIC_CUTOFF
 
 /**
+ * Enable this flag to include mean-field correction from the regularization scheme.
+ * For more info see: Wiki -> Regularization schemes of the pairing field
+ */
+#define INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+
+/**
  * Meaningful only in the case of ASLDA and SLDAE.
  * Parameters defining the stabilization procedure of the ASLDA functional. 
  * For regions with density smaller than SLDA_STABILIZATION_EXCLUDE_BELOW_DENISTY, 
