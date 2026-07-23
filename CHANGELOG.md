@@ -3,7 +3,7 @@
 * New flag `INCLUDE_MF_CORRECTION_FROM_REG_SCHEME` was introduced in `predefines.h`.
 * Renamed `templates/` directory to `platform/` to better reflect its purpose.
 * The summary is printed at the end of the compilation process. 
-* Minor improvements, like corrections in error messages. 
+* Minor improvements, like corrections to error messages and additional prints to stdout.
 
 # 2026.01.27
 * Wave functions are written in WData format by static codes.
