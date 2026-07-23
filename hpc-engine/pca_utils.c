@@ -1073,6 +1073,8 @@ double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_
     return (N-md.qfNreq)/_qfNreq;
 }
 
+// only in static variant
+#ifdef WSLDA
 double wslda_residual_norm_d(int nxyz, double *array1, double *array2)
 {
     double norm=0.0;
@@ -1090,3 +1092,4 @@ double wslda_residual_norm_c(int nxyz, double complex *array1, double complex *a
     norm=sqrt(norm/nxyz);
     return norm;
 }
+#endif

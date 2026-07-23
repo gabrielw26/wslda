@@ -265,6 +265,7 @@ void convert_eigenstates_negative_into_positive(int n, int nxyz, double *En, voi
 double quantum_friction_switch(double t, double eF);
 double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_element);
 
+#ifdef WSLDA
 #include <complex.h>
 /**
  * The function computes the residual norm of two arrays of size nxyz of double type.
@@ -283,5 +284,6 @@ double wslda_residual_norm_d(int nxyz, double *array1, double *array2);
  * @return - residual norm: sqrt(sum(|array1[i]-array2[i]|^2)/nxyz)
  * */
 double wslda_residual_norm_c(int nxyz, double complex *array1, double complex *array2);
+#endif
 
 #endif
