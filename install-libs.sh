@@ -1,11 +1,23 @@
 #!/bin/bash
+
+# Set the C compiler to use GNU99 standard
 export CC="gcc -std=gnu99"
-export MPICPP="mpic++ -std=gnu99"
 # export CC="cc -std=gnu99"
-# export MPICPP="cc -lstdc++"
 
-echo "Installing libs..."
 
+# Test if WSLDA is already set
+if [ -z "$WSLDA" ]; then
+    echo "# WSLDA is not set. Setting it to the current directory."
+    export WSLDA=$(pwd)
+else
+    echo "# WSLDA is already set to $WSLDA. Using the existing value."
+fi
+
+# go to WSLDA root directory
+echo "# Changing to WSLDA root directory: $WSLDA"
+cd $WSLDA
+
+# libs
 # wderiv
 echo "# Making lib/wderiv.."
 make -C lib/wderiv

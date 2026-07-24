@@ -35,14 +35,4 @@
 // pass
 #endif
 
-// Strict 1d or 2d mode?
-#if NY==1 && NZ==1
-#warning STRICT 1D MODE. NUMBER OF LATTICE POINTS IS NY=NZ=1.
-#elif NY>1 && NZ==1
-#warning STRICT 2D MODE. NUMBER OF LATTICE POINTS IS NZ=1.
-#elif NY==1 && NZ>1
-#error NY=1 AND NZ>1! UNSUPPORTED CONFIGURATION! 
-#else
-// pass
-#endif
 

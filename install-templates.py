@@ -19,7 +19,7 @@ if __name__ == '__main__':
         print("Use:")
         print("%s system" % sys.argv[0])
         print("where system is:")
-        dirs = os.listdir("%s/templates" % WSLDA)
+        dirs = os.listdir("%s/platform" % WSLDA)
         for d in dirs:
             if d in ["legacy", "README.md"]: continue
             print("\t%s" % d)
@@ -43,18 +43,18 @@ if __name__ == '__main__':
     
     # Copy templates
     for ss in ['st-project-template','st-testcase-uniform']:
-        cmd = "cp -r %s/templates/%s/st/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
+        cmd = "cp -r %s/platform/%s/st/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
         print(cmd)
         os.system(cmd)
-        cmd = "cp %s/templates/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
+        cmd = "cp %s/platform/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
         print(cmd)
         os.system(cmd)
         
     for ss in ['td-project-template','td-testcase-uniform']:
-        cmd = "cp -r %s/templates/%s/td/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
+        cmd = "cp -r %s/platform/%s/td/* %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
         print(cmd)
         os.system(cmd)
-        cmd = "cp %s/templates/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
+        cmd = "cp %s/platform/%s/machine.h %s/%s" % (WSLDA,sys.argv[1],WSLDA,ss)
         print(cmd)
         os.system(cmd)
         

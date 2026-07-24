@@ -13,8 +13,8 @@ exec: cp ref/ho-r7_logger.h logger.h
 exec: cp ref/ho-r7_problem-definition.h problem-definition.h
 exec: cp ref/ho-r7_predefines.h predefines.h
 exec: cp ref/ho-r7_machine.h machine.h
-exec: cp $WSLDA/templates/dwarf/td/Makefile .
-exec: cp $WSLDA/templates/dwarf/td/env.sh .
+exec: cp $WSLDA/platform/dwarf/td/Makefile .
+exec: cp $WSLDA/platform/dwarf/td/env.sh .
 exec: make 1d EXTRA_CFLAGS="-DTESTSUITE" EXTRA_NVCCFLAGS="-DTESTSUITE"
 test: td-wslda-1d
 exec: timeout 1800 mpirun -np 8 ./td-wslda-1d input.txt

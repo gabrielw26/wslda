@@ -406,6 +406,7 @@ int main( int argc , char ** argv )
     wslda_density densall = convert_into_wslda_density(h_densities, NXYZ);
     wslda_density densall_partial = convert_into_wslda_density(h_densities_partial, NXYZ);
     wslda_potential potsall = convert_into_wslda_potential(h_potentials, NXYZ, mu);
+    wslda_potential potsall_old = convert_into_wslda_potential(h_potentials_old, NXYZ, mu);
 
     // For Broyden method
     cppmallocl(dens_in, (md.Mbroyden + 1), double*);
@@ -1378,7 +1379,21 @@ int main( int argc , char ** argv )
             if(iam==0) wprintf("# CHEMICAL POTENTIAL HAS CHANGED BY `mumaxchange`! RESTARTING BROYDEN TO AVOID INSTABILITY.\n");
         }
         rt_other+=e_t(0);
-
+        
+        // ------------------ residuals ----------------------
+        // for each potential:
+        // R_ = |potsall_i - potsall_old_i|
+        // This checks if we reached fixed point of the self-consistent loop
+        b_t();
+        double Rnorm_V_a=wslda_residual_norm_d(NXYZ, potsall.V_a, potsall_old.V_a)/eF;
+        double Rnorm_V_b=wslda_residual_norm_d(NXYZ, potsall.V_b, potsall_old.V_b)/eF;
+        double Rnorm_delta=wslda_residual_norm_c(NXYZ, potsall.delta, potsall_old.delta)/eF;
+        if(iam==0) wprintf("# RESIDUALS R[p] = K[p]-p:\n");
+        if(iam==0) wprintf("#   R[V_a]/eF   = %16.8g\n", Rnorm_V_a);
+        if(iam==0) wprintf("#   R[V_b]/eF   = %16.8g\n", Rnorm_V_b);
+        if(iam==0) wprintf("#   R[delta]/eF = %16.8g\n", Rnorm_delta);
+        rt_other+=e_t(0);
+        
         // ------------------ mix densities ------------------
         b_t();
         if(md.nomixstart==1 && kziter==0) //special case - no mixing for the first iteration

@@ -94,20 +94,20 @@ ext: dirs \
      (BINDIR)interpolate-dataset
 
 d1d: $(OBJS1D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
-	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-1d $(CFLAGS) -DWSLDA $^ $(LIBS)
+	$(PYTHON) $(SRCDIR)review-settings.py $(WSLDADIR) $(BINDIR)st-wslda-1d
 
 d2d: $(OBJS2D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
-	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-2d $(CFLAGS) -DWSLDA $^ $(LIBS)
+	$(PYTHON) $(SRCDIR)review-settings.py $(WSLDADIR) $(BINDIR)st-wslda-2d
 
 d3d: $(OBJS3D) $(OBJS) $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS)
-	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-3d $(CFLAGS) -DWSLDA $^ $(LIBS)
+	$(PYTHON) $(SRCDIR)review-settings.py $(WSLDADIR) $(BINDIR)st-wslda-3d
 
 d0d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
-	cat $(WSLDADIR)VERSION.h
 	$(CXX) -o $(BINDIR)st-wslda-0d $(CFLAGS) $(WSLDADIR)hpc-engine/s0dpca.c $(CFLAGS) $(LIBS)
+	cat $(WSLDADIR)VERSION.h
 
 (BINDIR)test-external-potentials-1d: $(WDATAOBJS) $(WDERIVOBJS) $(WINTERPOBJS) $(DEPSLOCAL)
 	$(CXX) -o $(BINDIR)test-external-potentials-1d $(CFLAGS) $(WDATAOBJS) $(WSLDADIR)extensions/st-test-external-potentials.c -DCODEDIM=1 -lm -lfftw3

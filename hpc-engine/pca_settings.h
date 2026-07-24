@@ -220,6 +220,26 @@
 #undef FAST_CONST_EFFECTIVE_MASS_MODE
 #endif
 
+#define SPHERICAL_CUTOFF 88
+#define CUBIC_CUTOFF 89
+
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define USE_CUBIC_CUTOFF
+#endif
+// otherwise use speherical cutoff
+
+// pairing
+#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+#define GAMMA0 -11.11
+#define REG_COEFF_K 2.442749607806335
+#define REG_COEFF_R0 (REG_COEFF_K/(4.0*M_PI*M_PI))
+#define REG_COEFF_R1 0.31786000
+#else
+#define GAMMA0 -11.11
+#define REG_COEFF_R0 (1./(2.0*M_PI*M_PI))
+#define REG_COEFF_R1 0.5
+#endif
+
 // Package size
 #ifdef SPINSYMMETRY_MODE
 
@@ -230,7 +250,11 @@
     #elif FUNCTIONAL==SLDAE
     #define EXCHANGE_SIZE   3
     #elif FUNCTIONAL==BDG
-    #define EXCHANGE_SIZE   2
+      #if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+        #define EXCHANGE_SIZE   3
+      #else
+        #define EXCHANGE_SIZE   2
+      #endif
     #else
     #define EXCHANGE_SIZE   7
     #endif
@@ -249,7 +273,11 @@
     #elif FUNCTIONAL==SLDAE
     #define EXCHANGE_SIZE   8
     #elif FUNCTIONAL==BDG
-    #define EXCHANGE_SIZE   2
+      #if REGULARIZATION_SCHEME==CUBIC_CUTOFF
+        #define EXCHANGE_SIZE   8
+      #else
+        #define EXCHANGE_SIZE   2
+      #endif
     #else
     #define EXCHANGE_SIZE   12
     #endif
@@ -270,22 +298,6 @@
 #endif
 #ifdef ELPA_USE_GPU_AMD
 #define ELPA_USE_GPU
-#endif
-
-#define SPHERICAL_CUTOFF 88
-#define CUBIC_CUTOFF 89
-
-#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
-#define USE_CUBIC_CUTOFF
-#endif
-// otherwise use speherical cutoff
-#define REGULARIZATION_SCHEME_K_CONST 2.442749607806335
-
-// pairing
-#if REGULARIZATION_SCHEME==CUBIC_CUTOFF
-#define GAMMA0 (-11.11*1.60)
-#else
-#define GAMMA0 -11.11
 #endif
 
 // defaults for ELPA
