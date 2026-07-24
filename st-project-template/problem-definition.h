@@ -1,19 +1,19 @@
-// // Here are useful functions that can speed-up coding of your problem
+// // Here are useful functions that can speed up the coding of your problem
 // #include "../extensions/wslda_utils.h"
 
 /**
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * After loading params array from input file, the parameters are processed by this routine.
- * The routine is executed at beginning of each iteration.
+ * After loading the params array from the input file, the parameters are processed by this routine.
+ * The routine is executed at the beginning of each iteration.
  * @param params array of size MAX_USER_PARAMS with parameters from input file.
  * @param kF typical Fermi momentum scale of the problem.
  *           kF=referencekF if the referencekF tag is indicated in the input file,
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to maximal density.
+ *           kF=referencekF(...) otherwise.
  *           You can also set kF at request in this function using (*kF)=myvalue;
  * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB].
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
- * For more info see: Wiki->User defined parameters
+ * For more info, see: Wiki-> User-defined parameters
  * */
 void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
@@ -34,7 +34,7 @@ void process_params(double *params, double *kF, double *mu, size_t extra_data_si
  *           NOTE: in case of 1d and 2d codes iz=0
  * @param it iteration number
  * @param spin spin indicator, value from set {SPINA,SPINB}
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external potential V_spin(x,y,z)
@@ -60,7 +60,7 @@ double v_ext(int ix, int iy, int iz, int it, int spin, double *params, size_t ex
  *           NOTE: in case of 1d and 2d codes iz=0
  * @param it iteration number
  * @param delta - value of delta computed self-consistently for given iteration it. 
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of external pairing potential Delta_{ext}(x,y,z)
@@ -88,7 +88,7 @@ double complex delta_ext(int ix, int iy, int iz, int it, double complex delta, d
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param coordinate - Cartesian coordinate of the external velocity vector that should be computed, value from set {XAXIS, YAXIS, ZAXIS}
  *                     NOTE: for 1d code only XAXIS is requested, for 2d code XAXIS and YAXIS are requested.
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external velocity vector v_ext(x,y,z)
@@ -109,13 +109,13 @@ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coordinate, do
 }
 
 /**
- * This function computes Fermi momentum, which is used as the reference value. 
+ * This function computes the Fermi momentum, which is used as the reference value. 
  * Other reference scales are set automatically to: eF=kF^2/2, Effg=(3/5)*N*eF (N-total number of particles)
- * For more details see: https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Reference%20scales
+ * For more details, see: Wiki -> Setting reference scales.
  * NOTE units are: hbar=m=k_b=1
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of Fermi momentum for your problem
@@ -132,7 +132,7 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
     for(ixyz=0; ixyz<h_densities.nx*h_densities.ny*h_densities.nz; ixyz++) 
         if(h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz]>max_dens) max_dens=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
     
-    // depending on dimensionality of the problem
+    // depending on the dimensionality of the problem
     if(NY==1 && NZ==1) kF = 0.5*M_PI*max_dens;                // 1D
     else if(NZ==1)     kF = pow(2.0*M_PI*max_dens,1./2.);     // 2D
     else               kF = pow(3.*M_PI*M_PI*max_dens,1./3.); // 3D
@@ -144,8 +144,8 @@ double referencekF(int it, wslda_density h_densities, double *params, size_t ext
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
  * Before each diagonalization process, the user can modify densities arbitrarily.
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -176,10 +176,10 @@ void modify_densities(int it, wslda_density h_densities, double *params, size_t 
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
  * Before each diagonalization process, the user can modify potentials arbitrarily.
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param h_potentials structure with potentials, see (wiki) documentation for list of fields
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -208,15 +208,15 @@ void modify_potentials(int it, wslda_density h_densities, wslda_potential h_pote
 
 /**
  * THIS FUNCTION IS CALLED DURING THE SELF-CONSISTENT PROCESS.
- * User can modify arbitrarily expression for energy comptation
+ * User can modify an arbitrary expression for energy computation
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ * @param h_potentials structure with potentials, see (wiki) documentation for list of fields
  *                    NOTE: potential structure is processed by modify_potentials(...) function before call of this function.
- * @param energy these entries user can modify.
+ * @param energy entries that the user can modify.
  *                    Contributions are stored in energy[ETAG], where TAG in {EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT}
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -267,11 +267,11 @@ size_t get_extra_data_size(double *params)
 /**
  * This function loads data into extra_data array.
  * This function is thread-safe.
- * @param extra_data_size size of array computed using function get_extra_data_size()
- * @param extra_data pointer to array that should be filled with data
+ * @param extra_data_size size of array computed using the function get_extra_data_size()
+ * @param extra_data pointer to an array that should be filled with data
  * @param params with input file parameters. 
  *               NOTE: the array contains bare input file values, not processed by process_params()!
- * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * @return 0 if load is successful, otherwise return error code. If a nonzero value is returned, the main code will terminate.
  * */
 int load_extra_data(size_t extra_data_size, void *extra_data, double *params)
 {
@@ -281,14 +281,14 @@ int load_extra_data(size_t extra_data_size, void *extra_data, double *params)
 /**
  * Scattering length, in code units.
  * This function is meaningful only in the case of BDG or SLDAE functionals.
- * For SLDA and ASLDA the scattering length is assumed to be infinite, and the function is ignored.
+ * For SLDA and ASLDA, the scattering length is assumed to be infinite, and the function is ignored.
  * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
  * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2),
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
  * @param it iteration number
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the scattering length a(x,y,z,t).
@@ -307,18 +307,18 @@ double scattering_length(int ix, int iy, int iz, int it, double *params, size_t 
  * */
 
 /**
- * This function computes internal energy in case is CUSTOMEDF functional is selected.
- * Otherwise the function is ignored.
- * For more info see wiki pages. 
+ * This function computes internal energy if the CUSTOMEDF functional is selected.
+ * Otherwise, the function is ignored.
+ * For more info, see the wiki pages. 
  * @param it iteration number
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials potentials corresponding to the densities (INPUT) 
  * @param energy array with contributions to the energy (OUTPUT)
  * @param npart array with contributions to the particle number (OUTPUT)
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
- * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * @return 0 if computation is successful, otherwise return error code. If a nonzero value is returned, the main code will terminate.
  * */
 int compute_energy_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *energy, double *npart, double *params, size_t extra_data_size, void *extra_data)
 {
@@ -326,20 +326,19 @@ int compute_energy_custom(int it, wslda_density h_densities, wslda_potential h_p
 }
 
 /**
- * This function computes potentials defining Hamiltonian in case is CUSTOMEDF functional is selected.
- * Otherwise the function is ignored.
- * For more info see wiki pages. 
+ * This function computes potentials defining the Hamiltonian in case the CUSTOMEDF functional is selected.
+ * Otherwise, the function is ignored.
+ * For more info, see the wiki pages. 
  * @param it iteration number
  * @param h_densities array with all densities (INPUT)
  * @param h_potentials potentials from PREVIOUS iteration as input, 
  *                     updated values as output (INPUT/OUTPUT) 
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
- * @return 0 if computation is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * @return 0 if computation is successful, otherwise return error code. If a nonzero value is returned, the main code will terminate.
  * */
 int compute_potentials_custom(int it, wslda_density h_densities, wslda_potential h_potentials, double *params, size_t extra_data_size, void *extra_data)
 {
     return 0;
 }
-

@@ -13,8 +13,8 @@ exec: cp ref/ho-r1_logger.h logger.h
 exec: cp ref/ho-r1_problem-definition.h problem-definition.h
 exec: cp ref/ho-r1_predefines.h predefines.h
 exec: cp ref/ho-r1_machine.h machine.h
-exec: cp $WSLDA/templates/dwarf/st/Makefile .
-exec: cp $WSLDA/templates/dwarf/st/env.sh .
+exec: cp $WSLDA/platform/dwarf/st/Makefile .
+exec: cp $WSLDA/platform/dwarf/st/env.sh .
 exec: make 1d EXTRA_CFLAGS="-DTESTSUITE"
 test: st-wslda-1d
 exec: timeout 360 mpirun -np 4 ./st-wslda-1d input.txt

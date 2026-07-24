@@ -6,7 +6,7 @@ static int lineid; // line id
  * @param kF typical Fermi momentum scale of the problem, value returned by referencekF() function.
  * @param mu array with chemical potentials: mu[SPINA], mu[SPINB].
  * @param npart array with computed particle numbers: npart[SPINA] and npart[SPINB].
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -17,7 +17,7 @@ double energy_unit(double kF, double *mu, double *npart,
     double eF = kF*kF/2.0; // Fermi energy
     double N = npart[SPINA]+npart[SPINB]; // total number of particles
 
-    // depending on dimensionality of the problem
+    // depending on the dimensionality of the problem
     if(NY==1 && NZ==1) Effg=(1./3.)*N*eF;   // 1D
     else if(NZ==1)     Effg=(1./2.)*N*eF;   // 2D
     else               Effg=(3./5.)*N*eF;   // 3D
@@ -38,7 +38,7 @@ double energy_unit(double kF, double *mu, double *npart,
  *                      contributions to the energy: EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT
  *                      entropy: ENTROPY
  * @param npart array with computed particle numbers: npart[SPINA] and  npart[SPINB]
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
@@ -142,7 +142,7 @@ int logger(FILE *log,
  * Use this routine to customize the metadata file (wtxt) of data sets.
  * This function is executed once at the beginning of the code.
  * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
@@ -153,7 +153,7 @@ int logger(FILE *log,
 int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
            double *params, size_t extra_data_size, void *extra_data)
 {
-    // // To add variable use this template
+    // // To add a variable, use this template
     // //                       var_name       type    unit
     // wdata_variable var1 = {"real_var_name", "real", "none", "wdat"}; // scalar variable
     // wdata_add_variable(wdmd, &var1);
@@ -166,7 +166,7 @@ int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
 }
 
 /**
- * Use this routine to write custom variable to wdata set.
+ * Use this routine to write a custom variable to the wdata set.
  * This function is executed for each writing event of the observables.
  * @param wdmd pointer wdata_metadata structure, see Wiki->W-data format for more info.
  * @param it iteration number.
@@ -174,7 +174,7 @@ int add_custom_variable_to_wdata_metadata(wdata_metadata *wdmd,
  * @param h_potentials structure with potentials, see (wiki) documentation for the list of fields.
  * @param kF typical Fermi momentum scale of the problem.
  * @param mu array with values of chemical potentials
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
@@ -203,15 +203,15 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
     //     ixyz++; // go to the next point, it should be the last line of the triple loop
     // }
 
-    // // to add variable to binary file use this function
+    // // to add a variable to a binary file, use this function
     // wdata_write_cycle(wdmd, "var_name", pointer_to_data);
 
     return 0;
 }
 
 /**
- * Use this routine to write wave functions to file.
- * NOTE: to use this routine, you need to be familiar with the MPI and data layout that WSLDA exploits.
+ * Use this routine to write wave functions to a file.
+ * NOTE: To use this routine, you need to be familiar with the MPI and data layout that WSLDA exploits.
  * @param it iteration number.
  * @param nxyz number of lattice points
  * @param nwfip number of wave functions per MPI process
@@ -223,14 +223,14 @@ int write_custom_variable_to_wdata_set(wdata_metadata *wdmd,
  *             Decoding: u_n(ixyz):=h_wf[n*nxyz+ixyz]; v_n(ixyz):=h_wf[nwfip*nxyz+n*nxyz+ixyz]
  *                       where n is the index of the wave function, and ixyz is the coordinate index
  * @param h_qpe instantaneous values of quasiparticle energies, the buffer of size nwfip*sizeof(double).
- *              It is computed as expectation values of the single particle hamiltonian over quasiparticle wave functions.
+ *              It is computed as expectation values of the single-particle Hamiltonian over quasiparticle wave functions.
  * @param h_kky wave vectors along y coordinate for plane wave representation, size nwfip*sizeof(double)
- *              Meaningful only in the case of 1d. Otherwise it is set to NULL.
+ *              Meaningful only in the case of 1d. Otherwise, it is set to NULL.
  * @param h_kkz wave vectors along z coordinate for plane wave representation, size nwfip*sizeof(double)
- *              Meaningful only in the case of 1d and 2d. Otherwise it is set to NULL.
+ *              Meaningful only in the case of 1d and 2d. Otherwise, it is set to NULL.
  * @param h_cnt degeneracy of states, size nwfip*sizeof(int).
  * @param d_wf device buffer with wave functions. It has the same structure as h_wf.
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return 0 if the entry has been added successfully, otherwise return the error code. If a nonzero value is returned, the main code will terminate.
@@ -245,7 +245,7 @@ int write_wave_functions(int it, int nxyz, int nwfip, int nwf, double beta, MPI_
                          double *params, size_t extra_data_size, void *extra_data
                         )
 {
-    // // example code demonstrating writing wave functions to data format (readable by VisIt).
+    // // example code demonstrating writing wave functions to wdata format (readable by VisIt).
     // int ip, np;
     // MPI_Comm_size(comm, &np); // np = total number of processes
     // MPI_Comm_rank(comm, &ip); // id of process st 0 <= ip < np

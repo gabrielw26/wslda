@@ -179,3 +179,5 @@ extensions/vortex-tracking/simple_vortex_track_2d
 st-testcase-uniform/st-wslda-0d
 st-project-template/st-wslda-0d
 extensions/post-processing-td/addvar-vs
+
+extensions/helmholtz-decomposition/wslda-hdc-3d

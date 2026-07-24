@@ -1072,3 +1072,24 @@ double quantum_friction_pccoeff(int nxyz, double *na, double *nb, double volume_
     // if(wsldapid==0) printf("N=%f, diff=%f\n", N, N-md.qfNreq);
     return (N-md.qfNreq)/_qfNreq;
 }
+
+// only in static variant
+#ifdef WSLDA
+double wslda_residual_norm_d(int nxyz, double *array1, double *array2)
+{
+    double norm=0.0;
+    int ixyz;
+    for(ixyz=0; ixyz<nxyz; ixyz++) norm+=pow(array1[ixyz]-array2[ixyz],2);
+    norm=sqrt(norm/nxyz);
+    return norm;
+}
+
+double wslda_residual_norm_c(int nxyz, double complex *array1, double complex *array2)
+{
+    double norm=0.0;
+    int ixyz;
+    for(ixyz=0; ixyz<nxyz; ixyz++) norm+=pow(cabs(array1[ixyz]-array2[ixyz]),2);
+    norm=sqrt(norm/nxyz);
+    return norm;
+}
+#endif

@@ -1,7 +1,11 @@
+## Info
+This folder contains `Makefile` and the `machine.h` files dedicated to various machines.  
+You are welcome to contribute to these templates. Once you have a template for a new machine, please send it to us or use the merge request functionality.
+
 ## Content
 * `legacy`: old template files
-* `generic`: use this templates as staring point for you changes
-* `simple`: templates that work with standard distributions of linux installed on desktop (like fedora)
+* `generic`: use this template as a starting point for your changes
+* `simple`: templates that work with standard distributions of Linux installed on desktops (like Fedora)
 * `dwarf`: http://datadwarf.if.pw.edu.pl/
 * `tsubame`: https://helpdesk.t3.gsic.titech.ac.jp/manuals/handbook.en/
 * `eagle`: https://wiki.man.poznan.pl/kdm/index.php?title=Eagle
@@ -14,7 +18,7 @@
 * `tsubame4`: https://www.t4.gsic.titech.ac.jp/en/hardware
 
 ## Installing templates
-You can use tool
+You can use the tool
 ```
 ./install-templates.py system
 where system is:
@@ -25,4 +29,7 @@ where system is:
         ...
         clean <-- use this to clear templates
 ```
-to copy selected templates to project folders
+to copy selected machine-dependent files to project folders.
+
+## Note
+In older versions, `VERSION<=2026.01.27`, this folder was named `templates`.  

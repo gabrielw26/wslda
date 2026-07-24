@@ -797,7 +797,11 @@ int scan_kzpca_info_files(const char * prefix, int nz, int *nwf, int *nwf_per_kz
         }
 
         pFile = fopen(file_name, "rb");
-        if(pFile==NULL) if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+        if(pFile==NULL)
+        {
+            if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+            else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+        }
         int info_dim;
         fread(&info_dim   , sizeof(int)         , 1 , pFile); // percision(8) or codedim(1,2,3)
         fread(&i          , sizeof(int)         , 1 , pFile); // nwf
@@ -975,10 +979,26 @@ int read_kzSLpca_wf(const char * prefix, int nz, int *nwf_per_kz, int mylidx, in
                     fkkz = fopen(file_name_kkz, "rb");
                     ffbeta = fopen(file_name_fbeta, "rb");
 
-                    if (fu==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
-                    if (fv==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
-                    if (fkkz==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
-                    if (ffbeta==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    if (fu==NULL)
+                    {
+                        if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                        else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    }
+                    if (fv==NULL)
+                    {
+                        if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                        else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    }
+                    if (fkkz==NULL)
+                    {
+                        if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                        else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    }
+                    if (ffbeta==NULL)
+                    {
+                        if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                        else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                    }
 
                     // shift pointer to correct position
                     if(fseek ( fu, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer
@@ -1095,10 +1115,26 @@ int read_kzSLpca_wf_with_doubling(const char * prefix, int nz, int *nwf_per_kz, 
                         fkkz = fopen(file_name_kkz, "rb");
                         ffbeta = fopen(file_name_fbeta, "rb");
                         
-                        if (fu==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;  
-                        if (fv==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
-                        if (fkkz==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
-                        if (ffbeta==NULL)  if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE; else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        if (fu==NULL)
+                        {
+                            if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                            else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        }
+                        if (fv==NULL)
+                        {
+                            if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                            else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        }
+                        if (fkkz==NULL)
+                        {
+                            if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                            else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        }
+                        if (ffbeta==NULL)
+                        {
+                            if(ikzadd==0) return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE;
+                            else return WSLDA_ERR_MISSING_FILE_FOR_INITSTATE_KZADD;
+                        }
 
                         // shift pointer to correct position
                         if(fseek ( fu, sizeof(double complex)*NXY*ii, SEEK_SET ) != 0 ) return -11; // cannot seek pointer

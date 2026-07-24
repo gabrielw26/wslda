@@ -60,6 +60,9 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
     double dalphm_dna, dalphm_dnb, dalphp_dna, dalphp_dnb;
     double Va, Vb, Vanew, Vbnew, Va_const, Vb_const;
     Complex p0, kc, wz_0, Zone, lnu, ldelta;
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+    double lkF, bcoeff, lx;
+#endif
 
     if(ixyz<NUMBER_ELEMENT)
     {
@@ -239,23 +242,27 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+        lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
+        #endif
         // computation of Va and Vb and delta
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
             // pairing
-#ifdef USE_CUBIC_CUTOFF
-            wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0);
-#else
             t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
             p0 = thrust::sqrt( Complex(2.0*t7/ alph_plus, 0.0) );
             if(p0.imag()<0.) p0 *= -1. ;
+            #ifdef USE_CUBIC_CUTOFF
+            kc=M_PI/DX;
+            #else
             kc = thrust::sqrt( Complex(2.0*(dc_ec+t7)/ alph_plus, 0.0) );
             if(kc.imag()<0.) kc *= -1. ;
+            #endif
 
             wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
             if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
-            wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
+            wz_0= kc * REG_COEFF_R0*( 1. - (p0 / kc) * REG_COEFF_R1 * wz_0);
+
             wz_0 = Zone*alph_plus / (Zone*t5 - wz_0);
             // g_eff = wz_0.real();
             ldelta = lnu*(-1.0*wz_0.real());
@@ -265,6 +272,25 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
             t7=thrust::norm(ldelta);
             Vanew = Va_const - t1*t6 - t3*t7;
             Vbnew = Vb_const - t2*t6 - t4*t7;
+
+            // correction to the mean-field due to regularization
+            #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+            bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
+            lx = bcoeff*lkF * DX / M_PI;
+            if(wz_0.real()<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+            {
+                wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                #define Lam_0 wz_0.real()
+                #define dLam_0_dx wz_0.imag()
+                lx = (lkF/(3.*(na+nb)*alph_plus))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                #define dLam_dn lx
+                Vanew+= dLam_dn*t7;
+                Vbnew+= dLam_dn*t7;
+                #undef Lam_0
+                #undef dLam_0_dx
+                #undef dLam_dn
+            }
+            #endif
 
             // mixing of potentials
             Va = UD_MIX_COEFF*Vanew+(1.0-UD_MIX_COEFF)*Va;
@@ -352,8 +378,12 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
     // registers
     double t5, t7; // working buffers
 
-    double Va, Vb;
+    double Va, Vb, alph_plus;
     Complex p0, kc, wz_0, Zone, lnu, ldelta;
+    double V_a_old, V_b_old;
+    #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+    double lkF, bcoeff, lx;
+    #endif
 
     if(ixyz<NUMBER_ELEMENT)
     {
@@ -363,28 +393,56 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         Va=u_ext(ix,iy,iz,it,SPINA);
         Vb=u_ext(ix,iy,iz,it,SPINB);
 
-        t7 = 0.5*(h_potentials.alpha_a[ixyz]+h_potentials.alpha_b[ixyz]);
-        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data)*t7);
+        alph_plus = 0.5*(h_potentials.alpha_a[ixyz]+h_potentials.alpha_b[ixyz]);
+        t5 = 1.0/ (4.0*M_PI*scattering_length(ix,iy,iz,it,dc_params,dc_extra_data_size,dc_extra_data)*alph_plus);
         lnu = h_densities.nu[ixyz];
         Zone = Complex(1.0, 0.0);
 
         // pairing
-#ifdef USE_CUBIC_CUTOFF
-        wz_0=Complex(REGULARIZATION_SCHEME_K_CONST/(4.0*M_PI*DX), 0.0); // FIXME: account for effective mass
-#else
-        t7=(dc_mu_a-Va+dc_mu_b-Vb)/2.0;
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+        double nab=h_densities.rho_a[ixyz]+h_densities.rho_b[ixyz];
+        lkF = pow(3.0*M_PI*M_PI*nab, 1.0/3.0); // kF
+        #endif
+        V_a_old=h_potentials.V_a[ixyz];
+        V_b_old=h_potentials.V_b[ixyz];
+        t7=(dc_mu_a-V_a_old+dc_mu_b-V_b_old)/2.0;
+        
         p0 = thrust::sqrt( Complex(2.0*t7, 0.0) );
         if(p0.imag()<0.) p0 *= -1. ;
+        #ifdef USE_CUBIC_CUTOFF
+        kc=M_PI/DX;
+        #else
         kc = thrust::sqrt( Complex(2.0*(dc_ec+t7), 0.0) );
         if(kc.imag()<0.) kc *= -1. ;
+        #endif
 
         wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
         if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
-        wz_0= kc / ( 2. * M_PI * M_PI ) *( 1. - p0 / ( 2. * kc ) * wz_0);
-#endif
+        wz_0= kc *REG_COEFF_R0/alph_plus *( 1. - (p0 / kc ) * REG_COEFF_R1 * wz_0);
+
         wz_0 = Zone / (Zone*t5 - wz_0);
         // g_eff = wz_0.real();
         ldelta = lnu*(-1.0*wz_0.real());
+
+        // correction to the mean-field due to regularization
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+        bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
+        lx = bcoeff*lkF * DX / M_PI;
+        if(wz_0.real()<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+        {
+                wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                #define Lam_0 wz_0.real()
+                #define dLam_0_dx wz_0.imag()
+                lx = (lkF/(3.*nab*alph_plus))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                #define dLam_dn lx
+                t7=thrust::norm(ldelta);
+                Va+= dLam_dn*t7;
+                Vb+= dLam_dn*t7;
+                #undef Lam_0
+                #undef dLam_0_dx
+                #undef dLam_dn
+        }
+        #endif
 
         // save results to global memory
         h_potentials.V_a[ixyz]=Va;
@@ -476,22 +534,23 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
 
     double as_, x_, kF_, eF_;
     double alpha_, beta_, inverse_gamma_;
-    double alpha_p, beta_p, inverse_gamma_p;
+    double alpha_p;
     double af_, bf_, cf_;    // functional parameters
     double af_p, bf_p, cf_p; // functional parameters (fderiv)
     double nt_, nt_reg, nt_1o3, nt_2o3;
     double dx_dnt_;
-    double deF_dnt_;
     double ctilde_, ctilde_p;
     double g_eff, inverse_gamma_eff, lambda_, lmu_sc;
-    double kc_, p0_;
-    double a_ln_a, a_ln_a_p;
+    Complex p0, kc, wz_0; // spherical cutoff integral
     Complex lnu, ldelta;
     double delta_dag_nu, delta_abs_sq;
 
     double na, nb, taua, taub;
     double Va, Vb, Va_const, Vb_const, Vanew, Vbnew;
     double t1, t2, t3, t4, t5, t6, t7;
+#ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+    double lkF, bcoeff, lx;
+#endif
 
 
     if(ixyz<NUMBER_ELEMENT)
@@ -528,18 +587,14 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         nt_reg = p_regularization(nt_);
         if (nt_reg > 0.0) {
           dx_dnt_ = nt_reg * x_ / (3. * nt_);
-          deF_dnt_ = nt_reg * pow(kF_, 2) / (3. * nt_);
         } else {
           dx_dnt_ = 0.00;
-          deF_dnt_ = 0.00;
         }
 
         alpha_ = alpha_parameter_d0(x_);
         beta_ = beta_parameter_d0(x_);
         inverse_gamma_ = inverse_gamma_parameter_d0(x_);
         alpha_p = dx_dnt_ * alpha_parameter_d1(x_);
-        beta_p = dx_dnt_ * beta_parameter_d1(x_);
-        inverse_gamma_p = dx_dnt_ * inverse_gamma_parameter_d1(x_);
         af_ = a_functional_d0(x_);
         bf_ = b_functional_d0(x_);
         cf_ = c_functional_d0(x_);
@@ -552,6 +607,15 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
           bf_p = 0.00;
           cf_p = 0.00;
         }
+
+        ctilde_ = af_ * nt_1o3 / cf_;
+        inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
+        if (nt_reg > 0.) {
+                ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
+        } else {
+                ctilde_p = 0.;
+        }
+        ctilde_p += af_p * nt_1o3 / cf_;
 
         // CURRENT CORRECTION SAVE
 #ifdef CURRENT_CORRECTIONS
@@ -679,35 +743,31 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
         }
 #endif
 
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+        lkF = pow(3.0*M_PI*M_PI*(na+nb), 1.0/3.0); // kF
+        #endif
         // computation of Va and Vb and delta
         for(i=0; i<UD_SCITERS; i++) // self-consistent loop
         {
           // effective pairing coupling constants and pairing field
           lmu_sc = (dc_mu_a - Va + dc_mu_b - Vb) / 2.;
-          kc_ = sqrt (fabs (2. * (dc_ec + lmu_sc) / af_));
-          p0_ = sqrt (fabs (2. * (0. + lmu_sc) / af_));
+          p0 = thrust::sqrt( Complex(2.0*lmu_sc/ af_, 0.0) );
+          if(p0.imag()<0.) p0 *= -1. ;
+          #ifdef USE_CUBIC_CUTOFF
+          kc=M_PI/DX;
+          #else
+          kc = thrust::sqrt( Complex(2.0*(dc_ec+lmu_sc)/ af_, 0.0) );
+          if(kc.imag()<0.) kc *= -1. ;
+          #endif
+
           //
-          ctilde_ = af_ * nt_1o3 / cf_;
-          inverse_gamma_eff = (1 / cf_) * (1. - 3. * nt_ / cf_ * cf_p);
-          if (nt_reg > 0.) {
-            ctilde_p = pow(nt_reg, 2./3.) * inverse_gamma_eff * af_ / (3. * nt_2o3);
-          } else {
-            ctilde_p = 0.;
-          }
-          ctilde_p += af_p * nt_1o3 / cf_;
+          wz_0 = thrust::log( ( kc + p0 ) / ( kc - p0 ) ) ;
+          if ( wz_0.imag() < 0. ) wz_0 += Complex(0.0, 2. * M_PI) ;
+          wz_0= kc * REG_COEFF_R0*( 1. - (p0 / kc) * REG_COEFF_R1 * wz_0);
+          lambda_=wz_0.real();
 
-          if (lmu_sc >= 0.) {
-            lambda_ = (kc_ + p0_) / (kc_ - p0_);
-            lambda_ = 1. - p0_ / (2. * kc_) * log(lambda_);
-            lambda_ *= kc_ / (2. * M_PI_SQ);
-          } else {
-            lambda_ = p0_ / kc_;
-            lambda_ = 1. + p0_ / kc_ * atan(lambda_);
-            lambda_ *= kc_ / (2. * M_PI_SQ);
-          }
-
-        g_eff = af_ / (ctilde_ - lambda_);
-        ldelta = -lnu * g_eff;
+          g_eff = af_ / (ctilde_ - lambda_);
+          ldelta = -lnu * g_eff;
 
         // potential
         delta_dag_nu = (thrust::conj(ldelta) * lnu).real();
@@ -718,6 +778,25 @@ __global__ void tdwslda_compute_potentials(int it, wslda_density h_densities, ws
                 ctilde_p / af_ * delta_abs_sq;
         Vbnew = Vb_const - (af_p / af_) * delta_dag_nu -
                 ctilde_p / af_ * delta_abs_sq;
+
+        // correction to the mean-field due to regularization
+        #ifdef INCLUDE_MF_CORRECTION_FROM_REG_SCHEME
+        bcoeff=(p0/(lkF+1.0e-12)).real(); // to avoid numerical problems when density is very low, add small number to denominator
+        lx = bcoeff*lkF * DX / M_PI;
+        if(g_eff<-1.0e-10 && lx>1.0e-10) // to avoid numerical problems
+        {
+                wz_0 = Complex(bcoeff*REG_COEFF_R0/lx *(1.0-REG_COEFF_R1*lx*log((1.0+lx)/(1.0-lx))), (-2.*bcoeff*REG_COEFF_R0*REG_COEFF_R1)/(1.-lx*lx) - bcoeff*REG_COEFF_R0/lx/lx); // reuse wz_0
+                #define Lam_0 wz_0.real()
+                #define dLam_0_dx wz_0.imag()
+                lx = (lkF/(3.*(na+nb)*af_))*(Lam_0+dLam_0_dx*bcoeff*DX*lkF/M_PI); // derivative of Lam with respect to n
+                #define dLam_dn lx
+                Vanew+= dLam_dn*delta_abs_sq;
+                Vbnew+= dLam_dn*delta_abs_sq;
+                #undef Lam_0
+                #undef dLam_0_dx
+                #undef dLam_dn
+        }
+        #endif
 
         // mixing of potentials
         Va = UD_MIX_COEFF * Vanew + (1. - UD_MIX_COEFF) * Va;

@@ -1,18 +1,18 @@
-// // Here are useful functions that can speed-up coding of your problem
+// // Here are useful functions that can speed up the coding of your problem
 // #include "../extensions/wslda_utils.h"
 
 /**
- * THIS FUNCTION IS CALLED AT THE BEGINNING OF SIMULATION.
- * After loading params array from input file, the parameters are processed by this routine.
+ * THIS FUNCTION IS CALLED AT THE BEGINNING OF THE SIMULATION.
+ * After loading the params array from the input file, the parameters are processed by this routine.
  * @param params array of size MAX_USER_PARAMS with parameters from input file.
  * @param kF typical Fermi momentum scale of the problem.
  *           kF=referencekF if the referencekF tag is indicated in the input file,
- *           otherwise to kF value is assigned according formula kF=(3*pi^2*n)^{1/3}, where n corresponds to density in the box center.
+ *           kF=referencekF(...) otherwise.
  *           Note that it is passed via a pointer, to access/modify it use kF[0] or (*kF).
  * @param mu array with chemical potentials: mu[SPINA] and mu[SPINB].
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
- * For more info see: Wiki->User defined parameters
+ * For more info, see: Wiki-> User-defined parameters
  * */
 extern "C" void process_params(double *params, double *kF, double *mu, size_t extra_data_size, void *extra_data)
 {
@@ -31,9 +31,9 @@ extern "C" void process_params(double *params, double *kF, double *mu, size_t ex
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external potential V_spin(x,y,z)
@@ -58,9 +58,9 @@ __device__ double v_ext(int ix, int iy, int iz, int it, int spin, double *params
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param delta - value of delta computed self-consistently for given iteration it. 
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of external pairing potential Delta_{ext}(x,y,z)
@@ -87,11 +87,11 @@ __device__ Complex delta_ext(int ix, int iy, int iz, int it, Complex delta, doub
  *           NOTE: in case of 1d code iy=0
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
- * @param it iteration number
+ * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
  * @param spin spin indicator, value from set {SPINA,SPINB}
  * @param coordinate - Cartesian coordinate of the external velocity vector that should be computed, value from set {XAXIS, YAXIS, ZAXIS}
  *                     NOTE: for 1d code only XAXIS is requested, for 2d code XAXIS and YAXIS are requested.
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the external velocity vector v_ext(x,y,z)
@@ -116,12 +116,12 @@ __device__ double velocity_ext(int ix, int iy, int iz, int it, int spin, int coo
  * THIS FUNCTION IS CALLED AFTER THE DENSITIES ARE CONSTRUCTED.
  * IT IS CALLED ONLY IF ENABLE_MODIFY_DENSITIES IS DEFINED (in predefines.h)
  * Before each computation of potentials, the user can modify densities arbitrarily.
- * The function is called by HOST. You need to copy data from device to host, modify and copy it back.
+ * The function is called by HOST. You need to copy data from the device to the host, modify it, and copy it back.
  * @param it iteration number
  * (HOST POINTERS)
  * @param h_densities structure with densities, see (wiki) documentation for list of fields (HOST)
- *                    NOTE: some of densities can be destroyed.
- *                    To avoid any problems copy densities from DEVICE to this (HOST) buffer.
+ *                    NOTE: some of the densities can be destroyed.
+ *                    To avoid any problems, copy densities from the DEVICE to this (HOST) buffer.
  * @param params array of input parameters (HOST).
  *               NOTE: If you modify this array, you must copy it to the DEVICE.
  *               Use: cudaMemcpyToSymbol(dc_params, params, MAX_USER_PARAMS*sizeof(double))
@@ -137,11 +137,11 @@ extern "C" void modify_densities(int it, wslda_density h_densities, double *para
                                          wslda_density d_densities,                                         void *d_extra_data)
 {
     // // SNIPPETS
-    // // To copy density from DEVICE to HOST use
+    // // To copy density from DEVICE to HOST, use
     // memcopy_gpu2host(d_densities.rho_a, h_densities.rho_a, NUMBER_ELEMENT*sizeof(double));
-    // // To copy density from HOST to DEVICE use
+    // // To copy density from HOST to DEVICE, use
     // memcopy_host2gpu(h_densities.rho_a, d_densities.rho_a, NUMBER_ELEMENT*sizeof(double));
-    // // To update array of DEVICE params use
+    // // To update the array of DEVICE params, use
     // memcopy_const_params(params);
     // // To update array of DEVICE d_extra_data use
     // memcopy_host2gpu(h_extra_data, d_extra_data, extra_data_size);
@@ -158,12 +158,11 @@ extern "C" void modify_densities(int it, wslda_density h_densities, double *para
  * Before each application of the Hamiltonian, the user can arbitrarily modify potentials.
  * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call ot this function.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ * @param h_potentials structure with potentials, see (wiki) documentation for list of fields
  * Global variabls deliver by tdwslda_functionals_framework_enable.h are:
- * GLOBAL VARIABLES ACCESSIBLE WITHIN THIS ROUTINE
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -180,8 +179,14 @@ __global__ void modify_potentials(int it, wslda_density h_densities, wslda_poten
         
         // h_potentials.V_a[ixyz] stores value of spin-up particles mean-field potential for coordinate (x,y,z)
         // and similarly for other potentials
-        // ... below you can modify them your wish ...
+        // ... below, you can modify them as you wish ...
         // 
+        // global variable that you can use here
+        //  - dc_sclgth: scattering length
+        //  - dc_kF: reference kF value
+        //  - dc_mu_a, dc_mu_b: chemical potentials
+        //  - dc_ec: energy cut-off
+        //  - params array with input parameters, processed by process_params() routine
     }
 }
 #include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
@@ -192,14 +197,14 @@ __global__ void modify_potentials(int it, wslda_density h_densities, wslda_poten
  * Users can modify arbitrary expressions for the energy computation.
  * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param it iteration number
- * @param h_densities structure with densities, see (wiki) documentation for list of fields
+ * @param h_densities structure with densities, see (wiki) documentation for the list of fields
  *                    NOTE: densities structure is processed by modify_densities(...) function before call of this function.
- * @param h_potentials struture with potentials, see (wiki) documentation for list of fields
+ * @param h_potentials structure with potentials, see (wiki) documentation for list of fields
  *                    NOTE: potential structure is processed by modify_potentials(...) function before call of this function.
- * @param energy these entries user can modify.
+ * @param energy entries that the user can modify.
  *                    Contributions are stored in energy[ETAG], where TAG in {EKIN, EPOT, EPAIR, ECURRENT, EPOTEXT, EPAIREXT, EVELEXT}
  * GLOBAL VARIABLES ACCESSIBLE WITHIN THIS ROUTINE
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -237,13 +242,13 @@ extern "C" size_t get_extra_data_size(double *params)
 }
 
 /**
- * This function loads data into extra_data array.
+ * This function loads data into the extra_data array.
  * This function is thread-safe.
- * @param extra_data_size size of array computed using function get_extra_data_size()
- * @param extra_data pointer to array that should be filled with data
+ * @param extra_data_size size of array computed using the function get_extra_data_size()
+ * @param extra_data pointer to an array that should be filled with data
  * @param params with input file parameters. 
  *               NOTE: the array contains bare input file values, not processed by process_params()!
- * @return 0 if load is successful, otherwise return error code. If nonzero value is returned the main code will terminate.
+ * @return 0 if load is successful, otherwise return error code. If a nonzero value is returned, the main code will terminate.
  * */
 extern "C" int load_extra_data(size_t extra_data_size, void *extra_data, double *params)
 {
@@ -253,7 +258,7 @@ extern "C" int load_extra_data(size_t extra_data_size, void *extra_data, double 
 /**
  * Scattering length, in code units.
  * This function is meaningful only in the case of BDG or SLDAE functionals.
- * For SLDA and ASLDA the scattering length is assumed to be infinite, and the function is ignored.
+ * For SLDA and ASLDA, the scattering length is assumed to be infinite, and the function is ignored.
  * The function is called by DEVICE. All pointers are DEVICE pointers.
  * @param ix x-coordinate from range [0,NX), to convert to Cartesian use: x = DX*(ix-NX/2)
  * @param iy y-coordinate from range [0,NY), to convert to Cartesian use: y = DY*(iy-NY/2),
@@ -261,7 +266,7 @@ extern "C" int load_extra_data(size_t extra_data_size, void *extra_data, double 
  * @param iz z-coordinate from range [0,NZ), to convert to Cartesian use: z = DZ*(iz-NZ/2)
  *           NOTE: in case of 1d and 2d codes iz=0
  * @param it time iteration, use dc_t0 + dc_dt*it to compute corresponding time 
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * @return value of the scattering length a(x,y,z,t).
@@ -280,7 +285,7 @@ __device__ double scattering_length(int ix, int iy, int iz, int it, double *para
  * @see hpc-engine/tdwslda_functionals.h for more details
  * The function is called by DEVICE. All pointers are DEVICE pointers.
  * GLOBAL VARIABLES ACCESSIBLE WITHIN ROUTINES BELOW
- * @param params array of input parameters, before call of this routine the params array is processed by process_params() routine
+ * @param params array of input parameters, before the call of this routine, the params array is processed by process_params() routine
  * @param extra_data_size size of extra_data in bytes, if extra_data size=0 the optional data is not uploaded
  * @param extra_data optional set of data uploaded by load_extra_data()
  * */
@@ -375,4 +380,3 @@ __global__ void tdwslda_compute_energy(int it, wslda_density h_densities, wslda_
 }
 #include "tdwslda_functionals_framework_disable.h" // DO NOT REMOVE!
 #endif
-

@@ -1,0 +1,73 @@
+# W-SLDA Toolkit (LLM index)
+
+W-SLDA Toolkit is a high-performance computing (HPC) simulation platform for fermionic superfluids.
+It solves problems formally equivalent to Bogoliubov-de Gennes (BdG) equations and superfluid density functionals
+(BdG, SLDA, ASLDA, SLDAE), enabling static (ground-state) and time-dependent real-time simulations in 1D/2D/3D.
+
+Primary domains: ultracold Fermi gases, superconducting BdG simulations, vortex dynamics, quantum turbulence, Josephson effects, impurity dynamics, spin/mass imbalance.
+
+## Start here (most important)
+
+- README.md
+  Project overview, capabilities, executables, quick start.
+
+- Installation / building (Wiki)
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Installing-the-toolkit
+  System requirements, dependencies, build instructions.
+
+- Setting up calculations (Wiki)
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Setting-up-calculations
+  How to configure projects, inputs, templates, and runs.
+
+- Types of codes
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Types-of-codes
+  Explanation of st-wslda-* and td-wslda-* executables and supported geometries.
+
+- Wiki pages
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/home
+  The online documentation for users. 
+
+## Tutorials / worked examples
+
+- Josephson junction example (full workflow)
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/wikis/Example-Josephson-junction
+  End-to-end example: configuration → run → visualization.
+
+## Data and formats
+
+- W-data format (recommended output format)
+  https://gitlab.fizyka.pw.edu.pl/wtools/wdata
+  Specification and tools for reading/processing W-SLDA outputs.
+
+## Contributing and community
+
+- CONTRIBUTING.md
+  Contribution guidelines, coding conventions, review process.
+
+- Issue tracker
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/issues
+  Bug reports, feature requests.
+
+- Contact
+  wslda@fizyka.pw.edu.pl
+
+## Citation
+
+- Paper (arXiv:2602.08982) 
+  https://arxiv.org/abs/2602.08982  
+  Please cite this work if you use W-SLDA Toolkit.
+
+## License
+
+- COPYING (GPLv3)
+  https://gitlab.fizyka.pw.edu.pl/wtools/wslda/-/blob/public/COPYING
+
+## Repositories
+
+- Main (authoritative): https://gitlab.fizyka.pw.edu.pl/wtools/wslda
+- Mirrors: https://gitlab.com/coldatoms/wslda , https://github.com/gabrielw26/wslda
+
+## Notes for AI assistants
+
+- W-SLDA uses a compile-time specialization model for performance: problem-defining components are provided in C and compiled into a dedicated executable optimized for a chosen geometry and lattice.
+- Prefer wiki pages above for user workflows; prefer README + source tree for developer questions.

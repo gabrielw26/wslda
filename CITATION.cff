@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use the W-SLDA Toolkit in your research, please cite the following paper."
+title: "W-SLDA Toolkit"
+type: software
+repository-code: "https://gitlab.fizyka.pw.edu.pl/wtools/wslda"
+url: "https://wslda.fizyka.pw.edu.pl"
+license: "GPL-3.0-or-later"
+
+preferred-citation:
+  type: article
+  title: "W-SLDA Toolkit: A simulation platform for ultracold Fermi gases"
+  authors:
+    - family-names: "Wlazłowski"
+      given-names: "Gabriel"
+    - family-names: "Magierski"
+      given-names: "Piotr"
+    - family-names: "Forbes"
+      given-names: "Michael McNeil"
+    - family-names: "Bulgac"
+      given-names: "Aurel"
+  doi: "10.48550/arXiv.2602.08982"
+  url: "https://arxiv.org/abs/2602.08982"
+  year: 2026
