@@ -1,4 +1,4 @@
-# 2026.xx.xx
+# 2026.07.23
 * The cubic regularization scheme was improved. 
 * New flag `INCLUDE_MF_CORRECTION_FROM_REG_SCHEME` was introduced in `predefines.h`.
 * Renamed `templates/` directory to `platform/` to better reflect its purpose.
