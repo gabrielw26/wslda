@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # To generate the token
-# goto gitlab, Click your icon: Edit profile->Access tokens->Add new token
+# goto gitlab, Click your icon: Edit profile->Access tokens->Add new token (Legacy token)
 # generate token with permissions: read_repository, write_repository
 
 # Variables
