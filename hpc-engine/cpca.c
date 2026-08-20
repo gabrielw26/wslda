@@ -825,7 +825,7 @@ int main( int argc , char ** argv )
     modify_densities(it, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
     // potentials
-//     if(md.inittype!=5) gpu_exec( compute_potentials(it, d_densities, d_potentials, 0.0, md.nthreads) );
+//     if(md.inittype!=5) gpu_exec( compute_potentials(it, d_densities, d_potentials, 1.0, md.nthreads) );
     // energy
     gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) ); 
     
@@ -1008,7 +1008,7 @@ int main( int argc , char ** argv )
             modify_densities(0, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
             // potentials - NOTE: it=0!
-            gpu_exec( compute_potentials(0, d_densities, d_potentials, 0.0, md.nthreads) );
+            gpu_exec( compute_potentials(0, d_densities, d_potentials, 1.0, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
             if(md.hkf_mode>=1)
@@ -1103,7 +1103,7 @@ int main( int argc , char ** argv )
             modify_densities(0, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
             // potentials - NOTE: it=0!
-            gpu_exec( compute_potentials(0, d_densities, d_potentials, 0.0, md.nthreads) );
+            gpu_exec( compute_potentials(0, d_densities, d_potentials, 1.0, md.nthreads) );
             // NOTE - densities and potentials are computed for midpoint 
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
@@ -1220,7 +1220,7 @@ int main( int argc , char ** argv )
         modify_densities(it, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
         // potentials
-        gpu_exec( compute_potentials(it, d_densities, d_potentials, 0.0, md.nthreads) );
+        gpu_exec( compute_potentials(it, d_densities, d_potentials, 1.0, md.nthreads) );
         // energy
         gpu_exec( compute_energy(it, d_densities, d_potentials, d_workarea, md.nthreads) );
     
@@ -1309,7 +1309,7 @@ int main( int argc , char ** argv )
             modify_densities(it+1, densall, md.params, extra_data_size, extra_data, densall_d, d_extra_data);
 #endif
             // potentials
-            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, 0.0, md.nthreads) );
+            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, 1.0, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
             if(md.hkf_mode>=1)
@@ -1393,7 +1393,7 @@ int main( int argc , char ** argv )
                 file_operation( write_measurments_subset(&wdmd, MPI_COMM_WORLD, "td", it, densall_subset) );
             }
             // potentials
-            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, 0.0, md.nthreads) );
+            gpu_exec( compute_potentials(it+1, d_densities, d_potentials, 1.0, md.nthreads) );
 #ifndef FAST_CONST_EFFECTIVE_MASS_MODE
             // filtering of effective masses
             if(md.hkf_mode>=1)
