@@ -1,3 +1,6 @@
+# 2026.08.20
+* Bug fix in the td codes in the mode A neq 1 when computing current corrections to the evolution Hamiltonian (affects ASLDA and SLADE functionals).
+
 # 2026.07.23
 * The cubic regularization scheme was improved. 
 * New flag `INCLUDE_MF_CORRECTION_FROM_REG_SCHEME` was introduced in `predefines.h`.
