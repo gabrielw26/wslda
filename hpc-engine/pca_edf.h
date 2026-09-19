@@ -28,7 +28,7 @@ __device__ __host__ inline double der_p_regularization(double n)
 {
     if(n<=P_NMIN) return 0.0;
     else if(n>=P_NMAX) return 0.0;
-    else return 0.5 + 0.5*P_ALPHA*M_PI / pow(cosh(P_ALPHA * tan( (M_PI*(n-P_NMIN))/(P_NMAX-P_NMIN) - M_PI/2.0 ) )*cos( (M_PI*(n-P_NMIN))/(P_NMAX-P_NMIN) - M_PI/2.0 ),2) / (P_NMAX-P_NMIN);
+    else return 0.5*P_ALPHA*M_PI / pow(cosh(P_ALPHA * tan( (M_PI*(n-P_NMIN))/(P_NMAX-P_NMIN) - M_PI/2.0 ) )*cos( (M_PI*(n-P_NMIN))/(P_NMAX-P_NMIN) - M_PI/2.0 ),2) / (P_NMAX-P_NMIN);
 }
 
 /**

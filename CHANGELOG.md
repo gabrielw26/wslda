@@ -1,3 +1,6 @@
+# 2026.xx.xx
+* Bug fix in current-dependent mean fields for ASLDA and SLDAE, including the low-density regularization term.
+
 # 2026.08.20
 * Bug fix in the td codes in the mode A neq 1 when computing current corrections to the evolution Hamiltonian (affects ASLDA and SLADE functionals).
 
