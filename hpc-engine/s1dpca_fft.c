@@ -119,3 +119,82 @@ int compute_laplace_real_f(double *f, double *laplace_f, metadata_s1dpca_fft *md
     return 0;
 }
 
+/**
+ * The function removes high frequencies from a real signal.
+ * The spectral filter is FD(mu,T)=1/(exp((k^2/2-mu)/T)+1).
+ * @param in signal to be filtered (INPUT)
+ * @param out filtered signal; may be the same as in (OUTPUT)
+ * @param fd_mu chemical-potential parameter of the filter
+ * @param fd_T temperature parameter of the filter
+ * @param mdfft FFT metadata and workspace
+ * @return 0
+ * */
+int high_frequency_filter_d(double *in, double *out, double fd_mu, double fd_T, metadata_s1dpca_fft *mdfft)
+{
+    int ix;
+    double kx, ek;
+
+    // copy data to working array
+    for(ix=0; ix<NX; ix++) mdfft->fft1rc[ix] = in[ix];
+
+    fftw_execute(mdfft->plan_f_rc);
+
+    // multiply by the filter function in momentum space
+    for(ix=0; ix<(NX/2+1); ix++)
+    {
+        if(ix<NX/2) kx=2.*M_PI/((double)NX*DX) * (double)(ix   );
+        else        kx=2.*M_PI/((double)NX*DX) * (double)(ix-NX);
+
+        ek = 0.5*kx*kx;
+        ek = 1.0/(exp((ek-fd_mu)/fd_T)+1.0) /NX; // inverse FFT normalization included
+
+        mdfft->fft1[ix]*=ek;
+    }
+
+    fftw_execute(mdfft->plan_b_cr);
+
+    // copy data to result table
+    for(ix=0; ix<NX; ix++) out[ix]=mdfft->fft1rc[ix];
+
+    return 0;
+}
+
+/**
+ * The function removes high frequencies from a complex signal.
+ * The spectral filter is FD(mu,T)=1/(exp((k^2/2-mu)/T)+1).
+ * @param in signal to be filtered (INPUT)
+ * @param out filtered signal; may be the same as in (OUTPUT)
+ * @param fd_mu chemical-potential parameter of the filter
+ * @param fd_T temperature parameter of the filter
+ * @param mdfft FFT metadata and workspace
+ * @return 0
+ * */
+int high_frequency_filter_c(double complex *in, double complex *out, double fd_mu, double fd_T, metadata_s1dpca_fft *mdfft)
+{
+    int ix;
+    double kx, ek;
+
+    // copy data to working array
+    for(ix=0; ix<NX; ix++) mdfft->fft1[ix] = in[ix];
+
+    fftw_execute(mdfft->plan_f);
+
+    // multiply by the filter function in momentum space
+    for(ix=0; ix<NX; ix++)
+    {
+        if(ix<NX/2) kx=2.*M_PI/((double)NX*DX) * (double)(ix   );
+        else        kx=2.*M_PI/((double)NX*DX) * (double)(ix-NX);
+
+        ek = 0.5*kx*kx;
+        ek = 1.0/(exp((ek-fd_mu)/fd_T)+1.0) /NX; // inverse FFT normalization included
+
+        mdfft->fft1[ix]*=ek;
+    }
+
+    fftw_execute(mdfft->plan_b);
+
+    // copy data to result table
+    for(ix=0; ix<NX; ix++) out[ix]=mdfft->fft1[ix];
+
+    return 0;
+}

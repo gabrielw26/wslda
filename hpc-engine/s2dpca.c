@@ -293,6 +293,10 @@ int main( int argc , char ** argv )
     if(iam==0) wprintf("# UNIFORM_TEST_MODE: Setting number of particles to be: (%f,%f)\n", md.Na,md.Nb);
 #endif
 
+    double Emax =  0.5*M_PI*M_PI/DX/DX; // E_max = p_max^2 / 2m, where: p_max is maximum momentum on the lattice, p_max=M_PI/dx
+    md.hkf_mu*=Emax;
+    md.hkf_T *=Emax;
+
     // check settings and print suitable comments or terminate the code.
     cpu_exec( wslda_check_settings(iam, CODEDIM, 's') );
 
@@ -1454,6 +1458,30 @@ int main( int argc , char ** argv )
         mu[SPINA]=dc_mu_a; mu[SPINB]=dc_mu_b;
         modify_potentials(it, densall, potsall, dc_params, extra_data_size, extra_data) ;
         dc_mu_a=mu[SPINA]; dc_mu_b=mu[SPINB];
+
+        // ------------------ noise filtering ------------------
+        if(md.hkf_mode>0) // filter real potentials
+        {
+#ifndef FAST_CONST_EFFECTIVE_MASS_MODE
+            cpu_exec( high_frequency_filter_d(potsall.alpha_a, potsall.alpha_a, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.alpha_b, potsall.alpha_b, md.hkf_mu, md.hkf_T, &mdfft) );
+#endif
+            cpu_exec( high_frequency_filter_d(potsall.V_a, potsall.V_a, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.V_b, potsall.V_b, md.hkf_mu, md.hkf_T, &mdfft) );
+#ifdef CURRENT_CORRECTIONS
+            cpu_exec( high_frequency_filter_d(potsall.A_a_x, potsall.A_a_x, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.A_a_y, potsall.A_a_y, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.A_a_z, potsall.A_a_z, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.A_b_x, potsall.A_b_x, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.A_b_y, potsall.A_b_y, md.hkf_mu, md.hkf_T, &mdfft) );
+            cpu_exec( high_frequency_filter_d(potsall.A_b_z, potsall.A_b_z, md.hkf_mu, md.hkf_T, &mdfft) );
+#endif
+        }
+        if(md.hkf_mode>1) // filter complex potentials
+        {
+            cpu_exec( high_frequency_filter_c(potsall.delta, potsall.delta, md.hkf_mu, md.hkf_T, &mdfft) );
+        }
+ 
         rt_pot+=e_t(0);
 
         // ------------------ update chemical potentials ------------------
