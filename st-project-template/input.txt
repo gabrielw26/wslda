@@ -125,6 +125,14 @@ Mbroyden                5        # number of previous iterations used by Broyden
 mb                      32
 nb                      32
 
+# -------------- HIGH K-WAVES FILTER ----------------
+# See: Wiki -> Stabilization of the time-dependent code
+# hkf_mode                1          # 0 - no noise filtering (default)
+                                     # 1 - noise filtering for mean-fields only
+                                     # 2 - noise filtering of mean-fields and pairing field
+# hkf_mu                  0.9        # mu parameter of the Fermi-Dirac (filtering) function, in Ec units, default=0.9
+# hkf_T                   0.02       # T  parameter of the Fermi-Dirac (filtering) function, in Ec units, default=0.02
+
 # ----------- IN CASE OF: inittype=0 ----------------
 # See: Wiki -> Initialization of the solver
 # init0Na                 28.0   # requested number of particles of type a, default=Na
