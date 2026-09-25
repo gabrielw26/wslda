@@ -1,4 +1,4 @@
-# 2026.xx.xx
+# 2026.09.25
 * Added configurable high-frequency noise filtering to the static solvers, consistent with the time-dependent solvers.
 * Bug fix in current-dependent mean fields for ASLDA and SLDAE, including the low-density regularization term.
 
