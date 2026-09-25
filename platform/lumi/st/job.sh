@@ -14,6 +14,7 @@
 #SBATCH --cpus-per-task=1        # Do not modify
 #SBATCH --ntasks-per-node=8      # Do not modify
 #SBATCH --gpus-per-node=8        # Do not modify
+#SBATCH --mem=480G
 
 ## ------ QUEUE SYSTEM ------
 ## For submission use:
